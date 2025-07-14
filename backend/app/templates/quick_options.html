@@ -1,0 +1,11 @@
+<!-- templates/quick_options.html -->
+<div class="card mb-4">
+  <div class="card-header">Quick Options</div>
+  <ul class="list-group list-group-flush">
+    {% for opt in quick_options %}
+    <li class="list-group-item">
+      <a href="{{ opt.url }}">{{ opt.label }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
