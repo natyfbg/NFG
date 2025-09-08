@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ w.name }} – NFG{% endblock %}
+
+{% block sidebar %}
+<div class="card">
+  <div class="card-header">Quick Options</div>
+  <div class="list-group list-group-flush">
+    {% for item in quick_options %}
+      <a class="list-group-item list-group-item-action" href="{{ item.url }}">{{ item.label }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">{{ w.name }}</h1>
+<ul class="list-group mb-3">
+  <li class="list-group-item"><strong>Difficulty:</strong> {{ w.level }}</li>
+  <li class="list-group-item"><strong>Body Part:</strong> {{ w.body_part }}</li>
+  <li class="list-group-item"><strong>Style:</strong> {{ w.style }}</li>
+  {% if w.tags %}<li class="list-group-item"><strong>Tags:</strong> {{ w.tags|join(', ') }}</li>{% endif %}
+  {% if w.rating is not none %}<li class="list-group-item"><strong>Rating:</strong> {{ w.rating }}</li>{% endif %}
+</ul>
+<a class="btn btn-secondary" href="{{ url_for('workouts_browse') }}">← Back to Browse</a>
+{% endblock %}

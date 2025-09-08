@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Browse Workouts – NFG{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Quick Options</div>
+  <div class="list-group list-group-flush">
+    {% for item in quick_options %}
+      <a class="list-group-item list-group-item-action" href="{{ item.url }}">{{ item.label }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">Browse Workouts</h1>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-md-3">
+    <select name="level" class="form-select">
+      <option value="">All Levels</option>
+      {% for lv in workout_levels %}
+        <option value="{{ lv }}" {{ 'selected' if level==lv else '' }}>{{ lv }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <select name="body" class="form-select">
+      <option value="">All Body Parts</option>
+      {% for bp in body_parts %}
+        <option value="{{ bp }}" {{ 'selected' if body==bp else '' }}>{{ bp }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <select name="style" class="form-select">
+      <option value="">All Styles</option>
+      {% for st in workout_styles %}
+        <option value="{{ st }}" {{ 'selected' if style==st else '' }}>{{ st }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <select name="sort" class="form-select">
+      <option value="name" {{ 'selected' if sort=='name' else '' }}>A–Z</option>
+      <option value="recent" {{ 'selected' if sort=='recent' else '' }}>Recently Added</option>
+      <option value="rating" {{ 'selected' if sort=='rating' else '' }}>Top Rated</option>
+      <option value="favorites" {{ 'selected' if sort=='favorites' else '' }}>Favorites</option>
+    </select>
+  </div>
+  <div class="col-md-6">
+    <input name="q" class="form-control" placeholder="Search…" value="{{ q }}">
+  </div>
+  <div class="col-md-3">
+    <input name="per_page" class="form-control" type="number" min="1" max="100" value="{{ per_page }}">
+  </div>
+  <div class="col-md-3 d-grid">
+    <button class="btn btn-primary">Apply</button>
+  </div>
+</form>
+
+<p class="text-muted mb-2">{{ total }} result{{ '' if total==1 else 's' }}</p>
+
+<div class="list-group">
+  {% for w in items %}
+    <a class="list-group-item list-group-item-action" href="{{ url_for('workout_detail', slug=w.slug) }}">
+      <div class="d-flex justify-content-between">
+        <div>
+          <strong>{{ w.name }}</strong>
+          <span class="badge text-bg-secondary ms-2">{{ w.level }}</span>
+          <span class="badge text-bg-secondary ms-1">{{ w.body_part }}</span>
+          <span class="badge text-bg-secondary ms-1">{{ w.style }}</span>
+        </div>
+        <small class="text-muted">{% if w.rating %}★ {{ '%.1f'|format(w.rating) }}{% endif %}</small>
+      </div>
+    </a>
+  {% else %}
+    <div class="alert alert-secondary">No workouts match that filter.</div>
+  {% endfor %}
+</div>
+
+<nav class="mt-3">
+  <ul class="pagination">
+    <li class="page-item {% if page<=1 %}disabled{% endif %}">
+      <a class="page-link"
+         href="{{ url_for('workouts_browse', level=level, body=body, style=style, q=q, sort=sort, per_page=per_page, page=page-1) }}">Previous</a>
+    </li>
+    <li class="page-item disabled"><span class="page-link">Page {{ page }}</span></li>
+    <li class="page-item {% if (page*per_page) >= total %}disabled{% endif %}">
+      <a class="page-link"
+         href="{{ url_for('workouts_browse', level=level, body=body, style=style, q=q, sort=sort, per_page=per_page, page=page+1) }}">Next</a>
+    </li>
+  </ul>
+</nav>
+{% endblock %}

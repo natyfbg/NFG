@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Search – NattyFit{% endblock %}
+{% block content %}
+<h1 class="mb-3">Results for “{{ q }}”</h1>
+<div class="row g-4 row-cols-1 row-cols-md-2">
+  <div class="col">
+    <div class="card h-100">
+      <div class="card-header">Workouts</div>
+      <ul class="list-group list-group-flush">
+        {% for w in workouts %}
+        <li class="list-group-item">{{ w.name }}</li>
+        {% else %}
+        <li class="list-group-item text-muted">No workouts found.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card h-100">
+      <div class="card-header">Recipes</div>
+      <ul class="list-group list-group-flush">
+        {% for r in recipes %}
+        <li class="list-group-item"><a href="{{ r.url }}" target="_blank">{{ r.name }}</a></li>
+        {% else %}
+        <li class="list-group-item text-muted">No recipes found.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
