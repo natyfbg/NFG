@@ -70,7 +70,10 @@
   <!-- All Workouts (A–Z) -->
   <div class="col">
     <div class="card h-100">
-      <div class="card-header">All Workouts (A–Z)</div>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>All Workouts (A–Z)</span>
+        <a class="small" href="{{ url_for('workouts_all') }}">View All</a>
+      </div>
       <ul class="list-group list-group-flush">
         {% for w in all_workouts %}
           <li class="list-group-item">
@@ -79,7 +82,7 @@
         {% endfor %}
       </ul>
       <div class="card-footer text-end">
-        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('workouts_browse') }}">Browse All</a>
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('workouts_all') }}">Browse All</a>
       </div>
     </div>
   </div>

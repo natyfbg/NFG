@@ -15,13 +15,11 @@
 {% block content %}
 <h1 class="mb-3">{{ w.name }}</h1>
 
-{# --- Media row: video on left, muscle image / gallery on right --- #}
 <div class="row g-4">
   <div class="col-lg-7">
     {% if w.youtube_id %}
       <div class="ratio ratio-16x9 rounded overflow-hidden shadow">
-        <iframe src="https://www.youtube.com/embed/{{ w.youtube_id }}"
-                title="YouTube video" allowfullscreen></iframe>
+        <iframe src="https://www.youtube.com/embed/{{ w.youtube_id }}" title="YouTube video" allowfullscreen></iframe>
       </div>
     {% else %}
       <div class="alert alert-secondary">Video coming soon.</div>
@@ -43,7 +41,6 @@
   </div>
 
   <div class="col-lg-5">
-    {# Gallery: images if present, else muscle diagram, else placeholder #}
     {% set imgs = w.images if w.images else [] %}
     {% if imgs|length > 0 %}
       <div id="gallery" class="carousel slide mb-3">
@@ -55,14 +52,14 @@
           {% endfor %}
         </div>
         {% if imgs|length > 1 %}
-        <button class="carousel-control-prev" type="button" data-bs-target="#gallery" data-bs-slide="prev">
-          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">Previous</span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#gallery" data-bs-slide="next">
-          <span class="carousel-control-next-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">Next</span>
-        </button>
+          <button class="carousel-control-prev" type="button" data-bs-target="#gallery" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#gallery" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+          </button>
         {% endif %}
       </div>
     {% elif w.muscle_image %}
@@ -71,9 +68,10 @@
       <img src="https://via.placeholder.com/800x450?text=Image+Coming+Soon" class="img-fluid rounded shadow mb-3" alt="No image">
     {% endif %}
 
+    {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
     <ul class="list-group">
       <li class="list-group-item"><strong>Difficulty:</strong> {{ w.level }}</li>
-      <li class="list-group-item"><strong>Body Part:</strong> {{ w.body_part }}</li>
+      <li class="list-group-item"><strong>Body Part(s):</strong> {{ parts|join(', ') }}</li>
       <li class="list-group-item"><strong>Style:</strong> {{ w.style }}</li>
       {% if w.tags %}<li class="list-group-item"><strong>Tags:</strong> {{ w.tags|join(', ') }}</li>{% endif %}
       {% if w.rating is not none %}<li class="list-group-item"><strong>Rating:</strong> {{ w.rating }}</li>{% endif %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}All Workouts (A–Z) – NFG{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Quick Options</div>
+  <div class="list-group list-group-flush">
+    {% for item in quick_options %}
+      <a class="list-group-item list-group-item-action" href="{{ item.url }}">{{ item.label }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">All Workouts (A–Z)</h1>
+
+<div class="list-group">
+  {% for w in items %}
+    <a class="list-group-item list-group-item-action" href="{{ url_for('workout_detail', slug=w.slug) }}">
+      {{ w.name }}
+    </a>
+  {% else %}
+    <div class="alert alert-secondary">No workouts yet.</div>
+  {% endfor %}
+</div>
+{% endblock %}

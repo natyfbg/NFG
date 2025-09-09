@@ -1,66 +1,84 @@
 {% extends "base.html" %}
-{% block title %}New Workout – NFG{% endblock %}
-
-{% block sidebar %}
-<div class="card">
-  <div class="card-header">Tips</div>
-  <div class="card-body">
-    <p class="mb-1">Tags are comma-separated. Slug auto-generates from name if left blank.</p>
-  </div>
-</div>
-{% endblock %}
+{% block title %}{{ 'Edit Workout' if edit else 'New Workout' }} – Admin – NFG{% endblock %}
 
 {% block content %}
-<h1 class="mb-3">Add Workout</h1>
+<h1 class="mb-3">{{ 'Edit Workout' if edit else 'New Workout' }}</h1>
+
 <form method="post" class="row g-3">
   <div class="col-md-6">
     <label class="form-label">Name</label>
-    <input name="name" class="form-control" required>
+    <input class="form-control" name="name" value="{{ data.get('name','') }}" required>
   </div>
   <div class="col-md-6">
-    <label class="form-label">Slug (optional)</label>
-    <input name="slug" class="form-control" placeholder="auto from name if blank">
+    <label class="form-label">Slug</label>
+    <input class="form-control" name="slug" value="{{ data.get('slug','') }}" placeholder="auto from name if blank">
   </div>
+
   <div class="col-md-4">
-    <label class="form-label">Difficulty</label>
-    <select name="level" class="form-select">
+    <label class="form-label">Level</label>
+    <select class="form-select" name="level" required>
+      <option value="">Choose…</option>
       {% for lv in levels %}
-        <option value="{{ lv }}">{{ lv }}</option>
+        <option value="{{ lv }}" {{ 'selected' if data.get('level')==lv else '' }}>{{ lv }}</option>
       {% endfor %}
     </select>
   </div>
   <div class="col-md-4">
     <label class="form-label">Body Part</label>
-    <input name="body_part" class="form-control" list="parts" placeholder="e.g., Chest" required>
+    <input list="parts" class="form-control" name="body_part" value="{{ data.get('body_part','') }}" required>
     <datalist id="parts">
-      {% for p in parts %}
-        <option value="{{ p }}"></option>
-      {% endfor %}
+      {% for p in parts %}<option value="{{ p }}">{% endfor %}
     </datalist>
   </div>
   <div class="col-md-4">
     <label class="form-label">Style</label>
-    <input name="style" class="form-control" list="styles" placeholder="e.g., BodyWeight" required>
+    <input list="styles" class="form-control" name="style" value="{{ data.get('style','') }}" required>
     <datalist id="styles">
-      {% for s in styles %}
-        <option value="{{ s }}"></option>
-      {% endfor %}
+      {% for s in styles %}<option value="{{ s }}">{% endfor %}
     </datalist>
   </div>
+
+  <div class="col-md-12">
+    <label class="form-label">Tags (comma separated)</label>
+    <input class="form-control" name="tags" value="{{ data.get('tags','') }}">
+  </div>
+
   <div class="col-md-6">
-    <label class="form-label">Tags (comma-separated)</label>
-    <input name="tags" class="form-control" placeholder="push, chest, strength">
+    <label class="form-label">Images (one per line or comma-separated)</label>
+    <textarea class="form-control" name="images" rows="5" placeholder="/static/img/one.jpg&#10;/static/img/two.jpg">{{ data.get('images','') }}</textarea>
+    <div class="form-text">URLs or /static paths. First image is used as thumbnail.</div>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Muscle Diagram Image (optional)</label>
+    <input class="form-control" name="muscle_image" value="{{ data.get('muscle_image','') }}" placeholder="/static/img/muscles_chest.png">
+  </div>
+
+  <div class="col-md-12">
+    <label class="form-label">Info (what it’s good for)</label>
+    <textarea class="form-control" name="info" rows="3">{{ data.get('info','') }}</textarea>
+  </div>
+  <div class="col-md-12">
+    <label class="form-label">Tips (one per line)</label>
+    <textarea class="form-control" name="tips" rows="4" placeholder="Keep a straight line from head to heels.&#10;Elbows ~45° from torso.">{{ data.get('tips','') }}</textarea>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">YouTube (ID or full URL)</label>
+    <input class="form-control" name="youtube_id" value="{{ data.get('youtube_id','') }}" placeholder="https://www.youtube.com/watch?v=XXXXXX or XXXXXXX">
   </div>
   <div class="col-md-3">
-    <label class="form-label">Rating (0–5)</label>
-    <input name="rating" type="number" step="0.1" min="0" max="5" class="form-control">
+    <label class="form-label">Rating</label>
+    <input class="form-control" name="rating" type="number" min="0" max="5" step="0.1" value="{{ data.get('rating', 0) }}">
   </div>
-  <div class="col-md-3 form-check" style="padding-left:2.5rem; margin-top:2.1rem;">
-    <input class="form-check-input" type="checkbox" id="is_favorite" name="is_favorite">
-    <label class="form-check-label" for="is_favorite">Favorite</label>
+  <div class="col-md-3 d-flex align-items-end">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" name="is_favorite" id="fav" {{ 'checked' if data.get('is_favorite') else '' }}>
+      <label class="form-check-label" for="fav">Favorite</label>
+    </div>
   </div>
+
   <div class="col-12">
-    <button class="btn btn-primary">Save Workout</button>
+    <button class="btn btn-primary">{{ 'Save Changes' if edit else 'Create Workout' }}</button>
     <a class="btn btn-secondary" href="{{ url_for('admin_index') }}">Cancel</a>
   </div>
 </form>

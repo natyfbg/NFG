@@ -61,15 +61,57 @@
 
 <p class="text-muted mb-2">{{ total }} result{{ '' if total==1 else 's' }}</p>
 
+{# === Active filters pill bar === #}
+{% set has_filters = (level or body or style or q or sort in ['recent','rating','favorites']) %}
+{% if has_filters %}
+  <div class="mb-3">
+    {% if level %}
+      <a class="btn btn-sm btn-outline-secondary me-1"
+         href="{{ url_for('workouts_browse', level='', body=body, style=style, q=q, sort=sort, per_page=per_page) }}">
+        Level: {{ level }} ✕
+      </a>
+    {% endif %}
+    {% if body %}
+      <a class="btn btn-sm btn-outline-secondary me-1"
+         href="{{ url_for('workouts_browse', level=level, body='', style=style, q=q, sort=sort, per_page=per_page) }}">
+        Body: {{ body }} ✕
+      </a>
+    {% endif %}
+    {% if style %}
+      <a class="btn btn-sm btn-outline-secondary me-1"
+         href="{{ url_for('workouts_browse', level=level, body=body, style='', q=q, sort=sort, per_page=per_page) }}">
+        Style: {{ style }} ✕
+      </a>
+    {% endif %}
+    {% if q %}
+      <a class="btn btn-sm btn-outline-secondary me-1"
+         href="{{ url_for('workouts_browse', level=level, body=body, style=style, q='', sort=sort, per_page=per_page) }}">
+        Search: “{{ q }}” ✕
+      </a>
+    {% endif %}
+    {% if sort in ['recent','rating','favorites'] %}
+      <a class="btn btn-sm btn-outline-secondary me-1"
+         href="{{ url_for('workouts_browse', level=level, body=body, style=style, q=q, sort='name', per_page=per_page) }}">
+        Sort: {{ 'Recent' if sort=='recent' else ('Top Rated' if sort=='rating' else 'Favorites') }} ✕
+      </a>
+    {% endif %}
+
+    <a class="btn btn-sm btn-outline-danger ms-2"
+       href="{{ url_for('workouts_browse') }}">Clear all</a>
+  </div>
+{% endif %}
+
+
 {# ===== Compact list view (kept) ===== #}
 <div class="list-group">
   {% for w in items %}
+    {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
     <a class="list-group-item list-group-item-action" href="{{ url_for('workout_detail', slug=w.slug) }}">
       <div class="d-flex justify-content-between">
         <div>
           <strong>{{ w.name }}</strong>
           <span class="badge text-bg-secondary ms-2">{{ w.level }}</span>
-          <span class="badge text-bg-secondary ms-1">{{ w.body_part }}</span>
+          <span class="badge text-bg-secondary ms-1">{{ parts|join(', ') }}</span>
           <span class="badge text-bg-secondary ms-1">{{ w.style }}</span>
         </div>
         <small class="text-muted">{% if w.rating %}★ {{ '%.1f'|format(w.rating) }}{% endif %}</small>
@@ -84,6 +126,7 @@
 <h2 class="mt-4 mb-2">Exercises</h2>
 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
   {% for w in items %}
+    {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
     <div class="col">
       <div class="card h-100">
         {# Pick first gallery image, else muscle diagram, else placeholder #}
@@ -97,7 +140,7 @@
             </a>
           </h5>
           <div class="small text-muted">
-            {{ w.level }} • {{ w.body_part }} • {{ w.style }}
+            {{ w.level }} • {{ parts|join(', ') }} • {{ w.style }}
           </div>
         </div>
       </div>
