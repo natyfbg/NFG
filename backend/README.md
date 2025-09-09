@@ -2,6 +2,15 @@
 
 ## Quick start
 ```bash
+
+# from backend/
+docker-compose build          # rebuild image (picks up new requirements.txt)
+docker-compose up -d app      # restart the app container
+# if you changed seed fields and want fresh data:
+# docker-compose run --rm app python seed.py
+
+
+
 python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env  # edit if needed
@@ -21,3 +30,5 @@ Open http://127.0.0.1:5000
 - Add forms or an admin area to create/edit workouts and recipes
 - Add user auth later (Flask-Login / JWT)
 - Switch to async Motor if needed for heavy workloads
+
+

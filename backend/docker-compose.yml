@@ -1,0 +1,34 @@
+# backend/docker-compose.yml
+services:
+  mongo:
+    image: mongo:7
+    container_name: nfg-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: nfg-app
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      # Inside compose, the hostname for Mongo is "mongo", not localhost
+      MONGO_URI: mongodb://mongo:27017/NFG
+      # optional: SECRET_KEY for Flask flash/session
+      SECRET_KEY: dev-secret
+    ports:
+      - "5050:5000"   # host:container (host 5050 -> container 5000)
+    volumes:
+      - .:/app        # live-reload while developing
+    command: python app.py
+
+volumes:
+  mongo_data:
