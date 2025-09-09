@@ -14,12 +14,72 @@
 
 {% block content %}
 <h1 class="mb-3">{{ w.name }}</h1>
-<ul class="list-group mb-3">
-  <li class="list-group-item"><strong>Difficulty:</strong> {{ w.level }}</li>
-  <li class="list-group-item"><strong>Body Part:</strong> {{ w.body_part }}</li>
-  <li class="list-group-item"><strong>Style:</strong> {{ w.style }}</li>
-  {% if w.tags %}<li class="list-group-item"><strong>Tags:</strong> {{ w.tags|join(', ') }}</li>{% endif %}
-  {% if w.rating is not none %}<li class="list-group-item"><strong>Rating:</strong> {{ w.rating }}</li>{% endif %}
-</ul>
-<a class="btn btn-secondary" href="{{ url_for('workouts_browse') }}">← Back to Browse</a>
+
+{# --- Media row: video on left, muscle image / gallery on right --- #}
+<div class="row g-4">
+  <div class="col-lg-7">
+    {% if w.youtube_id %}
+      <div class="ratio ratio-16x9 rounded overflow-hidden shadow">
+        <iframe src="https://www.youtube.com/embed/{{ w.youtube_id }}"
+                title="YouTube video" allowfullscreen></iframe>
+      </div>
+    {% else %}
+      <div class="alert alert-secondary">Video coming soon.</div>
+    {% endif %}
+
+    {% if w.info %}
+      <h3 class="mt-4">Info</h3>
+      <p>{{ w.info }}</p>
+    {% endif %}
+
+    {% if w.tips %}
+      <h3 class="mt-3">Tips</h3>
+      <ul class="list-group">
+        {% for tip in w.tips %}
+          <li class="list-group-item">{{ tip }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+
+  <div class="col-lg-5">
+    {# Gallery: images if present, else muscle diagram, else placeholder #}
+    {% set imgs = w.images if w.images else [] %}
+    {% if imgs|length > 0 %}
+      <div id="gallery" class="carousel slide mb-3">
+        <div class="carousel-inner rounded overflow-hidden shadow">
+          {% for img in imgs %}
+            <div class="carousel-item {% if loop.first %}active{% endif %}">
+              <img src="{{ img }}" class="d-block w-100" alt="{{ w.name }}">
+            </div>
+          {% endfor %}
+        </div>
+        {% if imgs|length > 1 %}
+        <button class="carousel-control-prev" type="button" data-bs-target="#gallery" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#gallery" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+        {% endif %}
+      </div>
+    {% elif w.muscle_image %}
+      <img src="{{ w.muscle_image }}" class="img-fluid rounded shadow mb-3" alt="Target muscles">
+    {% else %}
+      <img src="https://via.placeholder.com/800x450?text=Image+Coming+Soon" class="img-fluid rounded shadow mb-3" alt="No image">
+    {% endif %}
+
+    <ul class="list-group">
+      <li class="list-group-item"><strong>Difficulty:</strong> {{ w.level }}</li>
+      <li class="list-group-item"><strong>Body Part:</strong> {{ w.body_part }}</li>
+      <li class="list-group-item"><strong>Style:</strong> {{ w.style }}</li>
+      {% if w.tags %}<li class="list-group-item"><strong>Tags:</strong> {{ w.tags|join(', ') }}</li>{% endif %}
+      {% if w.rating is not none %}<li class="list-group-item"><strong>Rating:</strong> {{ w.rating }}</li>{% endif %}
+    </ul>
+  </div>
+</div>
+
+<a class="btn btn-secondary mt-4" href="{{ url_for('workouts_browse') }}">← Back to Browse</a>
 {% endblock %}

@@ -61,6 +61,7 @@
 
 <p class="text-muted mb-2">{{ total }} result{{ '' if total==1 else 's' }}</p>
 
+{# ===== Compact list view (kept) ===== #}
 <div class="list-group">
   {% for w in items %}
     <a class="list-group-item list-group-item-action" href="{{ url_for('workout_detail', slug=w.slug) }}">
@@ -76,6 +77,31 @@
     </a>
   {% else %}
     <div class="alert alert-secondary">No workouts match that filter.</div>
+  {% endfor %}
+</div>
+
+{# ===== Thumbnail grid of the same results ===== #}
+<h2 class="mt-4 mb-2">Exercises</h2>
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+  {% for w in items %}
+    <div class="col">
+      <div class="card h-100">
+        {# Pick first gallery image, else muscle diagram, else placeholder #}
+        {% set thumb = (w.images[0] if w.images and w.images|length>0 else (w.muscle_image if w.muscle_image else 'https://via.placeholder.com/600x350?text=No+Image')) %}
+        <img class="card-img-top" src="{{ thumb }}" alt="{{ w.name }}">
+
+        <div class="card-body">
+          <h5 class="card-title mb-1">
+            <a href="{{ url_for('workout_detail', slug=w.slug) }}" class="stretched-link text-decoration-none">
+              {{ w.name }}
+            </a>
+          </h5>
+          <div class="small text-muted">
+            {{ w.level }} • {{ w.body_part }} • {{ w.style }}
+          </div>
+        </div>
+      </div>
+    </div>
   {% endfor %}
 </div>
 
