@@ -25,8 +25,8 @@ app.secret_key = os.getenv("SECRET_KEY", "dev-secret")
 
 # ---- Auth config (basic single-admin) ----
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")          # plain text (MVP)
-ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")        # optional hash
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")          # plain text (MVP/dev)
+ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")        # preferred in prod
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"  # redirect here when not logged in
@@ -40,6 +40,14 @@ def load_user(user_id):
     if user_id == "admin":
         return User("admin")
     return None
+
+def _check_admin_credentials(username: str, password: str) -> bool:
+    """Prefer a hashed password if provided; fall back to plain for dev."""
+    if username != ADMIN_USERNAME:
+        return False
+    if ADMIN_PASSWORD_HASH:
+        return check_password_hash(ADMIN_PASSWORD_HASH, password)
+    return password == ADMIN_PASSWORD
 
 # -----------------------------------------------------------------------------
 # Canonical lists
@@ -114,7 +122,7 @@ def home():
 
 @app.route("/workouts")
 def workouts():
-    # Sidebar quick filters (still supported for future use)
+    # Sidebar quick filters (kept for future use)
     filt = request.args.get("filter")
     query, sort, limit = {}, [("name", ASCENDING)], None
     if filt == "favorites":
@@ -133,14 +141,14 @@ def workouts():
     # Featured Styles: always show the three picks
     workout_styles_featured = FEATURED_STYLES
 
-    # Limit the landing "All Workouts (A–Z)" card to 3 items
+    # Limit landing "All Workouts (A–Z)" card to 3 items
     all_ws = list(db.workouts.find({}).sort([("name", ASCENDING)]).limit(3))
 
     return render_template(
         "workouts.html",
         workout_levels=WORKOUT_LEVELS,
         body_parts_featured=body_parts_featured,
-        workout_styles=WORKOUT_STYLES,                  # full list (elsewhere)
+        workout_styles=WORKOUT_STYLES,                  # full list
         workout_styles_featured=workout_styles_featured, # 3 on landing
         all_workouts=all_ws,
     )
@@ -272,13 +280,7 @@ def login():
         username = (request.form.get("username") or "").strip()
         password = (request.form.get("password") or "").strip()
 
-        ok_user = (username == ADMIN_USERNAME)
-        if ADMIN_PASSWORD_HASH:
-            ok_pass = check_password_hash(ADMIN_PASSWORD_HASH, password)
-        else:
-            ok_pass = (password == ADMIN_PASSWORD)
-
-        if ok_user and ok_pass:
+        if _check_admin_credentials(username, password):
             login_user(User("admin"))
             flash("Logged in.", "success")
             next_url = request.args.get("next") or url_for("admin_index")
@@ -288,6 +290,7 @@ def login():
     return render_template("login.html")
 
 @app.route("/logout")
+@login_required
 def logout():
     logout_user()
     flash("Logged out.", "success")
