@@ -2,56 +2,57 @@
 {% block title %}All Workouts (A–Z) – NFG{% endblock %}
 
 {% block sidebar %}
-<div class="card">
-  <div class="card-header">Quick Options</div>
-  <div class="list-group list-group-flush">
-    {% for item in quick_options %}
-      <a class="list-group-item list-group-item-action" href="{{ item.url }}">{{ item.label }}</a>
-    {% endfor %}
-  </div>
-</div>
+  {% include "quick_options.html" %}
 {% endblock %}
 
 {% block content %}
-<h1 class="mb-3">All Workouts (A–Z)</h1>
+<h1 class="mb-1">All Workouts (A–Z)</h1>
+<p class="text-muted mb-3">{{ items|length }} workout{{ '' if (items|length)==1 else 's' }}</p>
 
-<!-- Optional: tiny filter pills to jump to Browse with a preset -->
-<div class="mb-3">
-  <a class="badge text-bg-secondary text-decoration-none me-1"
-     href="{{ url_for('workouts_browse', sort='name') }}">Browse with filters</a>
-</div>
+{% if not items %}
+  <div class="alert alert-secondary">No workouts yet. Try <a href="{{ url_for('workouts_browse') }}">Browse</a> or add some in Admin.</div>
+{% else %}
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+    {% for w in items %}
+      <div class="col">
+        <div class="card h-100 shadow-sm">
+          {% set thumb = (w.images[0] if w.images and w.images|length>0 else (w.muscle_image if w.muscle_image else 'https://via.placeholder.com/600x350?text=Workout')) %}
+          <img class="card-img-top" src="{{ thumb }}" alt="{{ w.name }}" loading="lazy">
 
-<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-  {% for w in items %}
-    <div class="col">
-      <div class="card h-100 shadow-sm">
-        {% set thumb = (w.images[0] if w.images and w.images|length>0 else (w.muscle_image if w.muscle_image else 'https://via.placeholder.com/600x350?text=No+Image')) %}
-        <img class="card-img-top" src="{{ thumb }}" alt="{{ w.name }}">
-        <div class="card-body">
-          <h5 class="card-title mb-1">
-            <a class="stretched-link text-decoration-none" href="{{ url_for('workout_detail', slug=w.slug) }}">
-              {{ w.name }}
-            </a>
-          </h5>
-          <div class="small text-muted mb-2">
-            {{ w.level }}
-            {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
-            {% if parts %} • {{ parts|join(', ') }}{% endif %}
-            {% if w.style %} • {{ w.style }}{% endif %}
-          </div>
-          {% if w.tags %}
-            <div class="d-flex flex-wrap gap-1">
-              {% for t in w.tags[:4] %}
-                <span class="badge rounded-pill text-bg-secondary">{{ t }}</span>
-              {% endfor %}
+          <div class="card-body">
+            <h5 class="card-title mb-1">
+              <a class="stretched-link text-decoration-none" href="{{ url_for('workout_detail', slug=w.slug) }}">
+                {{ w.name }}
+              </a>
+            </h5>
+            <div class="small text-muted mb-2">
+              {{ w.level }}
+              {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
+              {% if parts %} • {{ parts|join(', ') }}{% endif %}
+              {% if w.style %} • {{ w.style }}{% endif %}
             </div>
-          {% endif %}
-        </div>
-        <div class="card-footer d-flex justify-content-end">
-          {% if w.rating is not none %}<small class="text-muted">★ {{ '%.1f'|format(w.rating) }}</small>{% endif %}
+
+            {% if w.tags %}
+              <div class="d-flex flex-wrap gap-1">
+                {% for t in w.tags[:4] %}
+                  <span class="badge rounded-pill text-bg-secondary">{{ t }}</span>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="card-footer d-flex justify-content-end">
+            {% if w.rating is not none %}
+              <small class="text-muted">★ {{ '%.1f'|format(w.rating) }}</small>
+            {% endif %}
+          </div>
         </div>
       </div>
-    </div>
-  {% endfor %}
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="text-end mt-3">
+  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('workouts_browse') }}">Browse (filters & search)</a>
 </div>
 {% endblock %}

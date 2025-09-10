@@ -62,45 +62,44 @@
 <p class="text-muted mb-2">{{ total }} result{{ '' if total==1 else 's' }}</p>
 
 {# === Active filters pill bar === #}
-{% set has_filters = (level or body or style or q or sort in ['recent','rating','favorites']) %}
-{% if has_filters %}
-  <div class="mb-3">
+{% set show_pills = (level or body or style or q or sort in ['recent','rating','favorites']) %}
+{% if show_pills %}
+  <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
     {% if level %}
-      <a class="btn btn-sm btn-outline-secondary me-1"
+      <a class="badge rounded-pill text-bg-primary text-decoration-none"
          href="{{ url_for('workouts_browse', level='', body=body, style=style, q=q, sort=sort, per_page=per_page) }}">
         Level: {{ level }} ✕
       </a>
     {% endif %}
     {% if body %}
-      <a class="btn btn-sm btn-outline-secondary me-1"
+      <a class="badge rounded-pill text-bg-primary text-decoration-none"
          href="{{ url_for('workouts_browse', level=level, body='', style=style, q=q, sort=sort, per_page=per_page) }}">
         Body: {{ body }} ✕
       </a>
     {% endif %}
     {% if style %}
-      <a class="btn btn-sm btn-outline-secondary me-1"
+      <a class="badge rounded-pill text-bg-primary text-decoration-none"
          href="{{ url_for('workouts_browse', level=level, body=body, style='', q=q, sort=sort, per_page=per_page) }}">
         Style: {{ style }} ✕
       </a>
     {% endif %}
     {% if q %}
-      <a class="btn btn-sm btn-outline-secondary me-1"
+      <a class="badge rounded-pill text-bg-primary text-decoration-none"
          href="{{ url_for('workouts_browse', level=level, body=body, style=style, q='', sort=sort, per_page=per_page) }}">
         Search: “{{ q }}” ✕
       </a>
     {% endif %}
     {% if sort in ['recent','rating','favorites'] %}
-      <a class="btn btn-sm btn-outline-secondary me-1"
+      <a class="badge rounded-pill text-bg-primary text-decoration-none"
          href="{{ url_for('workouts_browse', level=level, body=body, style=style, q=q, sort='name', per_page=per_page) }}">
         Sort: {{ 'Recent' if sort=='recent' else ('Top Rated' if sort=='rating' else 'Favorites') }} ✕
       </a>
     {% endif %}
 
-    <a class="btn btn-sm btn-outline-danger ms-2"
+    <a class="badge rounded-pill text-bg-danger text-decoration-none"
        href="{{ url_for('workouts_browse') }}">Clear all</a>
   </div>
 {% endif %}
-
 
 {# ===== Compact list view (kept) ===== #}
 <div class="list-group">
@@ -127,11 +126,35 @@
 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
   {% for w in items %}
     {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
+    {% set imgs  = w.images if w.images else [] %}
+    {% set carousel_id = "card-" ~ loop.index %}
+
     <div class="col">
       <div class="card h-100">
-        {# Pick first gallery image, else muscle diagram, else placeholder #}
-        {% set thumb = (w.images[0] if w.images and w.images|length>0 else (w.muscle_image if w.muscle_image else 'https://via.placeholder.com/600x350?text=No+Image')) %}
-        <img class="card-img-top" src="{{ thumb }}" alt="{{ w.name }}">
+
+        {# Gallery: carousel if >1 image; else single image or fallback #}
+        {% if imgs|length > 1 %}
+          <div id="{{ carousel_id }}" class="carousel slide">
+            <div class="carousel-inner rounded-top">
+              {% for img in imgs %}
+                <div class="carousel-item {% if loop.first %}active{% endif %}">
+                  <img class="d-block w-100" src="{{ img }}" alt="{{ w.name }}">
+                </div>
+              {% endfor %}
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#{{ carousel_id }}" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#{{ carousel_id }}" data-bs-slide="next">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Next</span>
+            </button>
+          </div>
+        {% else %}
+          {% set thumb = (imgs[0] if imgs else (w.muscle_image if w.muscle_image else 'https://via.placeholder.com/600x350?text=No+Image')) %}
+          <img class="card-img-top" src="{{ thumb }}" alt="{{ w.name }}">
+        {% endif %}
 
         <div class="card-body">
           <h5 class="card-title mb-1">

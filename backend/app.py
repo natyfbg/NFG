@@ -3,13 +3,14 @@ from pymongo import MongoClient, ASCENDING
 from bson.regex import Regex
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
-import os, re, datetime
+import os, re, datetime, uuid
 
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
     login_required, current_user
 )
 from werkzeug.security import check_password_hash
+from werkzeug.utils import secure_filename
 
 # -----------------------------------------------------------------------------
 # Config / DB
@@ -89,6 +90,68 @@ def _extract_youtube_id(val: str | None):
         return None
     m = _YT_PAT.search(val.strip())
     return m.group(1) if m else val.strip()
+
+# -----------------------------------------------------------------------------
+# Uploads
+# -----------------------------------------------------------------------------
+ALLOWED_IMAGE_EXTS = {"png", "jpg", "jpeg", "gif", "webp"}
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10MB per request
+UPLOAD_BASE = os.getenv("UPLOAD_FOLDER", "static/uploads")
+
+def _allowed_image(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_IMAGE_EXTS
+
+def _save_one_file(file_storage) -> str | None:
+    """Save a single uploaded file and return its web path (/static/uploads/yyyymmdd/uuid.ext)."""
+    if not file_storage or not getattr(file_storage, "filename", ""):
+        return None
+    if not _allowed_image(file_storage.filename):
+        return None
+    ext = file_storage.filename.rsplit(".", 1)[1].lower()
+    day = datetime.datetime.utcnow().strftime("%Y%m%d")
+    folder_abs = os.path.join(app.root_path, UPLOAD_BASE, day)
+    os.makedirs(folder_abs, exist_ok=True)
+    fname = f"{uuid.uuid4().hex}.{ext}"
+    abs_path = os.path.join(folder_abs, secure_filename(fname))
+    file_storage.save(abs_path)
+    return "/" + "/".join([UPLOAD_BASE, day, fname]).replace("\\", "/")
+
+def _collect_ordered_images_from_form(req) -> list[str]:
+    """
+    Read ordered slots. Supports BOTH naming patterns:
+      - img1_url/img1_file, img2_url/img2_file, ...
+      - image_url_1/image_file_1, image_url_2/image_file_2, ...
+    Order = slot order. Empty slots are skipped.
+    """
+    ordered = []
+    # allow up to 8; the template currently shows 4
+    for i in range(1, 9):
+        # files first (file overrides URL)
+        up = req.files.get(f"img{i}_file") or req.files.get(f"image_file_{i}")
+        if up and getattr(up, "filename", ""):
+            saved = _save_one_file(up)
+            if saved:
+                ordered.append(saved)
+                continue
+        # then URLs
+        url = (req.form.get(f"img{i}_url") or req.form.get(f"image_url_{i}") or "").strip()
+        if url:
+            ordered.append(url)
+    # compatibility: if none found, accept legacy textarea "images"
+    if not ordered:
+        legacy = _split_list(req.form.get("images", ""))
+        ordered = legacy
+    return ordered
+
+def _collect_muscle_image_from_form(req) -> str | None:
+    """Allow setting muscle image via URL or file upload (file wins if present)."""
+    up = req.files.get("muscle_image_file")
+    if up and getattr(up, "filename", ""):
+        saved = _save_one_file(up)
+        if saved:
+            return saved
+    url = (req.form.get("muscle_image_url") or req.form.get("muscle_image") or "").strip()
+    return url or None
 
 # -----------------------------------------------------------------------------
 # Indexes (safe to call repeatedly)
@@ -318,8 +381,8 @@ def admin_workout_new():
         body_part  = body_parts[0] if body_parts else (request.form.get("body_part","").strip() or "")
 
         tags = _split_list(request.form.get("tags",""))
-        images = _split_list(request.form.get("images",""))
-        muscle_image = (request.form.get("muscle_image") or "").strip() or None
+        images = _collect_ordered_images_from_form(request)
+        muscle_image = _collect_muscle_image_from_form(request)
         info = (request.form.get("info") or "").strip() or None
         tips = _split_list(request.form.get("tips",""))
         youtube_id = _extract_youtube_id(request.form.get("youtube_id"))
@@ -381,8 +444,8 @@ def admin_workout_edit(id):
         body_part  = body_parts[0] if body_parts else (request.form.get("body_part","").strip() or "")
 
         tags = _split_list(request.form.get("tags",""))
-        images = _split_list(request.form.get("images",""))
-        muscle_image = (request.form.get("muscle_image") or "").strip() or None
+        images = _collect_ordered_images_from_form(request)
+        muscle_image = _collect_muscle_image_from_form(request)
         info = (request.form.get("info") or "").strip() or None
         tips = _split_list(request.form.get("tips",""))
         youtube_id = _extract_youtube_id(request.form.get("youtube_id"))
@@ -416,9 +479,10 @@ def admin_workout_edit(id):
 
     # GET populate form
     data = dict(w)
-    data["tags"]   = ", ".join(data.get("tags", []))
-    data["images"] = "\n".join(data.get("images", []))
-    data["tips"]   = "\n".join(data.get("tips", []))
+    data["tags"] = ", ".join(data.get("tags", []))
+    data["tips"] = "\n".join(data.get("tips", []))
+    # Provide list for the new form’s image rows
+    data["images_list"] = w.get("images", []) or []
     if isinstance(data.get("body_parts"), list):
         data["body_parts"] = ", ".join(data["body_parts"])
     else:

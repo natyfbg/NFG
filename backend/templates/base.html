@@ -19,43 +19,32 @@
         {% set ep = request.endpoint or '' %}
         <div class="collapse navbar-collapse" id="navMain">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <!-- Workouts dropdown -->
-            {% set workouts_active = 'active' if ep.startswith('workouts') else '' %}
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle {{ workouts_active }}" href="{{ url_for('workouts') }}"
-                 id="workoutsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Workouts
-              </a>
-              <ul class="dropdown-menu" aria-labelledby="workoutsDropdown">
-                <li>
-                  <a class="dropdown-item {{ 'active' if ep=='workouts' else '' }}"
-                     href="{{ url_for('workouts') }}">Landing</a>
-                </li>
-                <li>
-                  <a class="dropdown-item {{ 'active' if ep=='workouts_browse' else '' }}"
-                     href="{{ url_for('workouts_browse') }}">Browse (filters &amp; search)</a>
-                </li>
-                <li>
-                  <a class="dropdown-item {{ 'active' if ep=='workouts_all' else '' }}"
-                     href="{{ url_for('workouts_all') }}">All Workouts (A–Z)</a>
-                </li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                  <a class="dropdown-item {{ 'active' if ep=='styles_index' else '' }}"
-                     href="{{ url_for('styles_index') }}">All Styles</a>
-                </li>
-                <li>
-                  <a class="dropdown-item {{ 'active' if ep=='body_parts_index' else '' }}"
-                     href="{{ url_for('body_parts_index') }}">All Body Parts</a>
-                </li>
-              </ul>
-            </li>
+              <!-- Workouts: link + split dropdown -->
+              <li class="nav-item dropdown d-flex align-items-center">
+                <!-- Main label goes straight to landing -->
+                <a class="nav-link" href="{{ url_for('workouts') }}">Workouts</a>
 
-            <li class="nav-item">
-              <a class="nav-link {{ 'active' if ep=='recipes' else '' }}"
-                 href="{{ url_for('recipes') }}">Recipes</a>
-            </li>
-          </ul>
+                <!-- Split caret opens the menu -->
+                <button class="btn btn-sm btn-dark dropdown-toggle dropdown-toggle-split"
+                        data-bs-toggle="dropdown" aria-expanded="false"
+                        style="margin-left:-0.25rem;">
+                  <span class="visually-hidden">Toggle dropdown</span>
+                </button>
+
+                <ul class="dropdown-menu">
+                  <!-- Removed 'Landing' here on purpose -->
+                  <li><a class="dropdown-item" href="{{ url_for('workouts_browse') }}">Browse (filters &amp; search)</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('workouts_all') }}">All Workouts (A–Z)</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="{{ url_for('styles_index') }}">All Styles</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('body_parts_index') }}">All Body Parts</a></li>
+                </ul>
+              </li>
+
+              <!-- Recipes (unchanged) -->
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('recipes') }}">Recipes</a></li>
+            </ul>
+
 
           <!-- Search -->
           <form class="d-flex me-2" action="{{ url_for('search') }}" method="get" role="search">
