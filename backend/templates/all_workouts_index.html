@@ -2,7 +2,7 @@
 {% block title %}All Workouts (A–Z) – NFG{% endblock %}
 
 {% block sidebar %}
-<div class="card mb-3">
+<div class="card">
   <div class="card-header">Quick Options</div>
   <div class="list-group list-group-flush">
     {% for item in quick_options %}
@@ -15,13 +15,43 @@
 {% block content %}
 <h1 class="mb-3">All Workouts (A–Z)</h1>
 
-<div class="list-group">
+<!-- Optional: tiny filter pills to jump to Browse with a preset -->
+<div class="mb-3">
+  <a class="badge text-bg-secondary text-decoration-none me-1"
+     href="{{ url_for('workouts_browse', sort='name') }}">Browse with filters</a>
+</div>
+
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
   {% for w in items %}
-    <a class="list-group-item list-group-item-action" href="{{ url_for('workout_detail', slug=w.slug) }}">
-      {{ w.name }}
-    </a>
-  {% else %}
-    <div class="alert alert-secondary">No workouts yet.</div>
+    <div class="col">
+      <div class="card h-100 shadow-sm">
+        {% set thumb = (w.images[0] if w.images and w.images|length>0 else (w.muscle_image if w.muscle_image else 'https://via.placeholder.com/600x350?text=No+Image')) %}
+        <img class="card-img-top" src="{{ thumb }}" alt="{{ w.name }}">
+        <div class="card-body">
+          <h5 class="card-title mb-1">
+            <a class="stretched-link text-decoration-none" href="{{ url_for('workout_detail', slug=w.slug) }}">
+              {{ w.name }}
+            </a>
+          </h5>
+          <div class="small text-muted mb-2">
+            {{ w.level }}
+            {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
+            {% if parts %} • {{ parts|join(', ') }}{% endif %}
+            {% if w.style %} • {{ w.style }}{% endif %}
+          </div>
+          {% if w.tags %}
+            <div class="d-flex flex-wrap gap-1">
+              {% for t in w.tags[:4] %}
+                <span class="badge rounded-pill text-bg-secondary">{{ t }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        <div class="card-footer d-flex justify-content-end">
+          {% if w.rating is not none %}<small class="text-muted">★ {{ '%.1f'|format(w.rating) }}</small>{% endif %}
+        </div>
+      </div>
+    </div>
   {% endfor %}
 </div>
 {% endblock %}

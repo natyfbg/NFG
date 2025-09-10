@@ -10,31 +10,93 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
         <a class="navbar-brand" href="{{ url_for('home') }}">NFG</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
+                aria-controls="navMain" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
 
-        <div class="collapse navbar-collapse" id="nav">
+        {% set ep = request.endpoint or '' %}
+        <div class="collapse navbar-collapse" id="navMain">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('workouts') }}">Workouts</a></li>
-            <li class="nav-item"><a class="nav-link" href="{{ url_for('recipes') }}">Recipes</a></li>
+            <!-- Workouts dropdown -->
+            {% set workouts_active = 'active' if ep.startswith('workouts') else '' %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle {{ workouts_active }}" href="{{ url_for('workouts') }}"
+                 id="workoutsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Workouts
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="workoutsDropdown">
+                <li>
+                  <a class="dropdown-item {{ 'active' if ep=='workouts' else '' }}"
+                     href="{{ url_for('workouts') }}">Landing</a>
+                </li>
+                <li>
+                  <a class="dropdown-item {{ 'active' if ep=='workouts_browse' else '' }}"
+                     href="{{ url_for('workouts_browse') }}">Browse (filters &amp; search)</a>
+                </li>
+                <li>
+                  <a class="dropdown-item {{ 'active' if ep=='workouts_all' else '' }}"
+                     href="{{ url_for('workouts_all') }}">All Workouts (A–Z)</a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item {{ 'active' if ep=='styles_index' else '' }}"
+                     href="{{ url_for('styles_index') }}">All Styles</a>
+                </li>
+                <li>
+                  <a class="dropdown-item {{ 'active' if ep=='body_parts_index' else '' }}"
+                     href="{{ url_for('body_parts_index') }}">All Body Parts</a>
+                </li>
+              </ul>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link {{ 'active' if ep=='recipes' else '' }}"
+                 href="{{ url_for('recipes') }}">Recipes</a>
+            </li>
           </ul>
 
-          <form class="d-flex me-3" action="{{ url_for('search') }}" method="get" role="search">
-            <input class="form-control" type="search" placeholder="Search…" name="q" value="{{ request.args.get('q','') }}">
+          <!-- Search -->
+          <form class="d-flex me-2" action="{{ url_for('search') }}" method="get" role="search">
+            <input class="form-control" type="search" placeholder="Search…" name="q"
+                   value="{{ request.args.get('q','') }}">
           </form>
 
+          <!-- Auth buttons -->
           <div class="d-flex align-items-center gap-2">
             {% if current_user.is_authenticated %}
-              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_index') }}">Admin</a>
+              <a class="btn btn-sm btn-outline-secondary {{ 'active' if ep.startswith('admin_') else '' }}"
+                 href="{{ url_for('admin_index') }}">Admin</a>
               <a class="btn btn-sm btn-outline-light" href="{{ url_for('logout') }}">Logout</a>
             {% else %}
-              <a class="btn btn-sm btn-outline-light" href="{{ url_for('login') }}">Login</a>
+              <a class="btn btn-sm btn-outline-light {{ 'active' if ep=='login' else '' }}"
+                 href="{{ url_for('login') }}">Login</a>
             {% endif %}
           </div>
         </div>
       </div>
     </nav>
+
+    <!-- Flash alerts -->
+    <div class="container mt-3">
+      {% with msgs = get_flashed_messages(with_categories=True) %}
+        {% if msgs %}
+          <div class="position-relative" style="z-index: 1;">
+            {% for category, message in msgs %}
+              {% set bs = 'info' %}
+              {% if category in ['success','danger','warning','info','primary','secondary','light','dark'] %}
+                {% set bs = category %}
+              {% endif %}
+              <div class="alert alert-{{ bs }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+    </div>
 
     <main class="container my-4">
       <div class="row g-4">
