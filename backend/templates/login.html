@@ -5,17 +5,18 @@
 <div class="d-flex justify-content-center">
   <div class="card shadow-sm p-4" style="max-width: 420px; width: 100%;">
     <h1 class="h4 mb-3 text-center">Sign in</h1>
-    <form method="post">
-      <div class="mb-3">
-        <label class="form-label">Username</label>
-        <input class="form-control" name="username" required autofocus>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Password</label>
-        <input class="form-control" type="password" name="password" required>
-      </div>
-      <button class="btn btn-primary w-100">Sign in</button>
-    </form>
+        <form method="post" class="col-md-6 col-lg-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input class="form-control" name="username" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input class="form-control" type="password" name="password" required>
+          </div>
+          <button class="btn btn-primary">Sign in</button>
+        </form>
   </div>
 </div>
 {% endblock %}

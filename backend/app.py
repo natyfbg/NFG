@@ -3,7 +3,8 @@ from pymongo import MongoClient, ASCENDING
 from bson.regex import Regex
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
-import os, re, datetime, uuid
+import os, re, datetime, time
+from collections import deque
 
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
@@ -11,6 +12,9 @@ from flask_login import (
 )
 from werkzeug.security import check_password_hash
 from werkzeug.utils import secure_filename
+from flask_wtf import CSRFProtect
+import uuid
+
 
 # -----------------------------------------------------------------------------
 # Config / DB
@@ -23,6 +27,9 @@ db = client.get_default_database() if "/" in MONGO_URI.split("://", 1)[-1] else 
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret")
+
+# CSRF
+csrf = CSRFProtect(app)
 
 # ---- Auth config (basic single-admin) ----
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
@@ -49,6 +56,36 @@ def _check_admin_credentials(username: str, password: str) -> bool:
     if ADMIN_PASSWORD_HASH:
         return check_password_hash(ADMIN_PASSWORD_HASH, password)
     return password == ADMIN_PASSWORD
+
+# --- Simple in-memory login limiter (per IP) ---
+# Allow up to 5 failed attempts per 15 minutes per IP.
+FAILED_LOGINS = {}  # ip -> deque[timestamps]
+
+def _client_ip():
+    # works locally & behind simple reverse proxies
+    fwd = request.headers.get("X-Forwarded-For", "")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.remote_addr or "unknown"
+
+def _allowed_login_attempt(ip: str, limit=5, window_sec=900):
+    now = time.time()
+    dq = FAILED_LOGINS.get(ip)
+    if dq is None:
+        return True
+    # drop old entries
+    while dq and now - dq[0] > window_sec:
+        dq.popleft()
+    return len(dq) < limit
+
+def _record_failed_login(ip: str):
+    now = time.time()
+    dq = FAILED_LOGINS.setdefault(ip, deque())
+    dq.append(now)
+
+def _clear_failed_logins(ip: str):
+    FAILED_LOGINS.pop(ip, None)
+
 
 # -----------------------------------------------------------------------------
 # Canonical lists
@@ -340,24 +377,32 @@ def search():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        ip = _client_ip()
+        if not _allowed_login_attempt(ip):
+            flash("Too many failed login attempts. Try again in ~15 minutes.", "danger")
+            return render_template("login.html")
+
         username = (request.form.get("username") or "").strip()
         password = (request.form.get("password") or "").strip()
 
         if _check_admin_credentials(username, password):
+            _clear_failed_logins(ip)
             login_user(User("admin"))
             flash("Logged in.", "success")
             next_url = request.args.get("next") or url_for("admin_index")
             return redirect(next_url)
         else:
+            _record_failed_login(ip)
             flash("Invalid credentials.", "danger")
     return render_template("login.html")
 
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 @login_required
 def logout():
     logout_user()
     flash("Logged out.", "success")
     return redirect(url_for("home"))
+
 
 # -----------------------------------------------------------------------------
 # Admin (protected)
@@ -388,15 +433,25 @@ def admin_workout_new():
         youtube_id = _extract_youtube_id(request.form.get("youtube_id"))
         is_favorite = request.form.get("is_favorite") == "on"
         rating = float(request.form.get("rating") or 0)
-        slug = (request.form.get("slug") or slugify(name))
+        slug = (request.form.get("slug") or slugify(name)).strip()
 
         if not name:
             flash("Name is required.", "danger")
-            return render_template(
-                "admin_workout_form.html",
-                levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
-                data=request.form
-            )
+            return render_template("admin_workout_form.html",
+                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
+                                   data=request.form)
+
+        # --- NEW: slug uniqueness guard ---
+        if not slug:
+            slug = slugify(name)
+        existing = db.workouts.find_one({"slug": slug})
+        if existing:
+            flash(f"Slug '{slug}' is already used by another workout. Please choose a different slug.", "danger")
+            # repopulate the form but keep user's slug input
+            data = dict(request.form)
+            return render_template("admin_workout_form.html",
+                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
+                                   data=data)
 
         doc = {
             "name": name, "slug": slug, "level": level,
@@ -414,18 +469,15 @@ def admin_workout_new():
             return redirect(url_for("admin_index"))
         except Exception as e:
             flash(f"Error: {e}", "danger")
-            return render_template(
-                "admin_workout_form.html",
-                levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
-                data=request.form
-            )
+            return render_template("admin_workout_form.html",
+                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
+                                   data=request.form)
 
     # GET
-    return render_template(
-        "admin_workout_form.html",
-        levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
-        data={}
-    )
+    return render_template("admin_workout_form.html",
+                           levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
+                           data={})
+
 
 @app.route("/admin/workouts/<id>/edit", methods=["GET", "POST"])
 @login_required
@@ -451,15 +503,25 @@ def admin_workout_edit(id):
         youtube_id = _extract_youtube_id(request.form.get("youtube_id"))
         is_favorite = request.form.get("is_favorite") == "on"
         rating = float(request.form.get("rating") or 0)
-        slug = (request.form.get("slug") or slugify(name))
+        slug = (request.form.get("slug") or slugify(name)).strip()
 
         if not name:
             flash("Name is required.", "danger")
-            return render_template(
-                "admin_workout_form.html",
-                levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
-                data=request.form, edit=True, _id=id
-            )
+            return render_template("admin_workout_form.html",
+                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
+                                   data=request.form, edit=True, _id=id)
+
+        if not slug:
+            slug = slugify(name)
+
+        # --- NEW: slug uniqueness guard (exclude current doc) ---
+        existing = db.workouts.find_one({"slug": slug, "_id": {"$ne": ObjectId(id)}})
+        if existing:
+            flash(f"Slug '{slug}' is already used by another workout. Please choose a different slug.", "danger")
+            data = dict(request.form)
+            return render_template("admin_workout_form.html",
+                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
+                                   data=data, edit=True, _id=id)
 
         update = {
             "name": name, "slug": slug, "level": level,
@@ -479,20 +541,17 @@ def admin_workout_edit(id):
 
     # GET populate form
     data = dict(w)
-    data["tags"] = ", ".join(data.get("tags", []))
-    data["tips"] = "\n".join(data.get("tips", []))
-    # Provide list for the new form’s image rows
-    data["images_list"] = w.get("images", []) or []
+    data["tags"]   = ", ".join(data.get("tags", []))
+    data["images"] = "\n".join(data.get("images", []))
+    data["tips"]   = "\n".join(data.get("tips", []))
     if isinstance(data.get("body_parts"), list):
         data["body_parts"] = ", ".join(data["body_parts"])
     else:
         data["body_parts"] = data.get("body_parts") or data.get("body_part","")
 
-    return render_template(
-        "admin_workout_form.html",
-        levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
-        data=data, edit=True, _id=id
-    )
+    return render_template("admin_workout_form.html",
+                           levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
+                           data=data, edit=True, _id=id)
 
 @app.route("/admin/workouts/<id>/delete", methods=["POST"])
 @login_required

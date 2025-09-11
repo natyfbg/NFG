@@ -1,113 +1,335 @@
 {% extends "base.html" %}
-{% set is_edit = edit|default(False) %}
-{% block title %}{{ 'Edit' if is_edit else 'New' }} Workout – NFG{% endblock %}
+{% block title %}{{ 'Edit' if edit else 'New' }} Workout – NFG{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">{{ 'Edit' if is_edit else 'New' }} Workout</h1>
+<h1 class="mb-4">{{ 'Edit' if edit else 'New' }} Workout</h1>
 
-<form method="post" enctype="multipart/form-data" class="row g-3">
+<form method="post" enctype="multipart/form-data" id="workout-form" class="needs-validation" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {# --- Top row: core metadata --- #}
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <label class="form-label">Name</label>
+      <input class="form-control" name="name" required value="{{ data.get('name','') }}">
+      <div class="invalid-feedback">Name is required.</div>
+    </div>
+    <div class="col-lg-6">
+      <label class="form-label">Slug</label>
+      <input class="form-control" name="slug" value="{{ data.get('slug','') }}" placeholder="auto-generated if blank">
+    </div>
 
-  <div class="col-md-6">
-    <label class="form-label">Name</label>
-    <input class="form-control" name="name" value="{{ data.get('name','') }}" required>
-  </div>
+    <div class="col-md-4">
+      <label class="form-label">Level</label>
+      <select class="form-select" name="level">
+        <option value=""></option>
+        {% for lv in levels %}
+          <option value="{{ lv }}" {{ 'selected' if data.get('level')==lv else '' }}>{{ lv }}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-  <div class="col-md-6">
-    <label class="form-label">Slug</label>
-    <input class="form-control" name="slug" value="{{ data.get('slug','') }}" placeholder="auto from name if empty">
-  </div>
+        <div class="col-md-8">
+          <label class="form-label">Body Parts (comma or newline)</label>
+          <textarea class="form-control" id="body_parts" name="body_parts" rows="2"
+                    placeholder="e.g. Chest, Triceps, Shoulders">{{ data.get('body_parts','') }}</textarea>
+          <div class="form-text">Example: Chest, Triceps, Shoulders</div>
+        </div>
 
-  <div class="col-md-4">
-    <label class="form-label">Level</label>
-    <select class="form-select" name="level">
-      {% for lv in levels %}
-        <option value="{{ lv }}" {{ 'selected' if data.get('level')==lv else '' }}>{{ lv }}</option>
-      {% endfor %}
-    </select>
-  </div>
 
-  <div class="col-md-4">
-    <label class="form-label">Body Parts (comma or newline)</label>
-    <input class="form-control" name="body_parts" value="{{ data.get('body_parts','') }}">
-  </div>
+    <div class="col-md-6">
+      <label class="form-label">Style</label>
+      <select class="form-select" name="style">
+        <option value=""></option>
+        {% for st in styles %}
+          <option value="{{ st }}" {{ 'selected' if data.get('style')==st else '' }}>{{ st }}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-  <div class="col-md-4">
-    <label class="form-label">Style</label>
-    <select class="form-select" name="style">
-      {% for st in styles %}
-        <option value="{{ st }}" {{ 'selected' if data.get('style')==st else '' }}>{{ st }}</option>
-      {% endfor %}
-    </select>
-  </div>
+    <div class="col-md-6">
+      <label class="form-label">Tags (auto-filled from body parts; you can edit)</label>
+      <textarea class="form-control" id="tags" name="tags" rows="2"
+                placeholder="auto-filled from body parts">{{ data.get('tags','') }}</textarea>
+    </div>
 
-  <div class="col-md-8">
-    <label class="form-label">Tags (comma separated)</label>
-    <input class="form-control" name="tags" value="{{ data.get('tags','') }}">
-  </div>
 
-  <div class="col-md-2">
-    <label class="form-label">Rating</label>
-    <input class="form-control" type="number" step="0.1" min="0" max="5" name="rating" value="{{ data.get('rating','') }}">
-  </div>
+    <div class="col-md-3">
+      <label class="form-label">Rating</label>
+      <input class="form-control" name="rating" type="number" step="0.1" min="0" max="5"
+             value="{{ data.get('rating','') }}">
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="fav" name="is_favorite" {{ 'checked' if data.get('is_favorite') else '' }}>
+        <label class="form-check-label" for="fav">Favorite</label>
+      </div>
+    </div>
 
-  <div class="col-md-2 d-flex align-items-end">
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" id="fav" name="is_favorite" {{ 'checked' if data.get('is_favorite') else '' }}>
-      <label class="form-check-label" for="fav">Favorite</label>
+    <div class="col-12">
+      <label class="form-label">Info (what it’s good for)</label>
+      <textarea class="form-control" rows="3" name="info">{{ data.get('info','') }}</textarea>
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">Tips (one per line or comma)</label>
+      <textarea class="form-control" rows="3" name="tips">{{ data.get('tips','') }}</textarea>
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">YouTube URL or ID</label>
+      <input class="form-control" name="youtube_id" value="{{ data.get('youtube_id','') }}">
+      <div class="form-text">Paste a full YouTube URL or just the 11-char ID.</div>
     </div>
   </div>
 
-  <div class="col-12">
-    <label class="form-label">Info (what it’s good for)</label>
-    <textarea class="form-control" rows="3" name="info">{{ data.get('info','') }}</textarea>
+  <hr class="my-4">
+
+  {# --- IMAGES: ordered + previews + drag reorder --- #}
+  <h5 class="mb-2">Images (ordered)</h5>
+  <div class="form-text mb-2">
+    Top → bottom = display order. Drag cards to reorder. A file upload overrides the URL in that slot.
   </div>
 
-  <div class="col-12">
-    <label class="form-label">Tips (one per line)</label>
-    <textarea class="form-control" rows="3" name="tips">{{ data.get('tips','') }}</textarea>
-  </div>
-
-  <div class="col-md-6">
-    <label class="form-label">YouTube URL or ID (optional)</label>
-    <input class="form-control" name="youtube_id" value="{{ data.get('youtube_id','') }}" placeholder="https://youtu.be/... or 11-char id">
-  </div>
-
-  <div class="col-12 mt-3">
-    <h5>Images (ordered)</h5>
-    <p class="text-muted small mb-2">Top to bottom = display order. Paste a URL or upload a file; uploaded file overrides the URL input.</p>
-
+  {% set imgs = data.get('images', []) if data else [] %}
+  <div id="img-list" class="row g-3"
+       data-slot-count="4">
     {% for i in range(1,5) %}
-      <div class="row g-2 align-items-center mb-2">
-        <div class="col-md-7">
-          <input class="form-control" name="image_url_{{ i }}"
-                 value="{{ (data.get('images', '').split('\n')[i-1] if data.get('images') else (data.get('images_list', [])[i-1] if data.get('images_list') and data.get('images_list')|length >= i else '')) }}"
-                 placeholder="https://… or /static/uploads/…">
-        </div>
-        <div class="col-md-5">
-          <input class="form-control" type="file" name="image_file_{{ i }}" accept="image/*">
+      {% set pre = imgs[i-1] if imgs and imgs|length >= i else '' %}
+      <div class="col-md-6 img-slot" draggable="true" data-slot="{{ i }}">
+        <div class="card h-100 shadow-sm">
+          <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <span class="d-inline-flex align-items-center">
+              <span class="me-2" style="cursor:grab;">☰</span>
+              <strong>Image {{ i }}</strong>
+            </span>
+            <button type="button" class="btn btn-sm btn-outline-secondary clear-slot">Clear</button>
+          </div>
+          <div class="ratio ratio-16x9 bg-body-secondary">
+            <img class="img-preview" src="{{ pre or '' }}" alt="" style="object-fit:cover;">
+          </div>
+          <div class="card-body">
+            <label class="form-label small mb-1">URL (or /static/uploads/...)</label>
+            <input class="form-control img-url" name="img{{ i }}_url" value="{{ pre }}">
+            <div class="mt-2">
+              <label class="form-label small mb-1">Upload file</label>
+              <input class="form-control img-file" type="file" accept="image/*" name="img{{ i }}_file">
+            </div>
+          </div>
         </div>
       </div>
     {% endfor %}
-
-    <div class="form-text">You can reorder later by changing the top-to-bottom list.</div>
   </div>
 
-  <div class="col-12 mt-2">
-    <h6>Muscle Diagram Image (optional)</h6>
-    <div class="row g-2 align-items-center">
+  <hr class="my-4">
+
+  {# --- Muscle diagram --- #}
+    <h5 class="mb-2">Muscle Diagram Image (optional)</h5>
+    <div class="row g-3 align-items-end">
       <div class="col-md-7">
-        <input class="form-control" name="muscle_image_url" value="{{ data.get('muscle_image','') }}" placeholder="https://… or /static/uploads/…">
+        <label class="form-label">URL (or /static/uploads/...)</label>
+        <input class="form-control" name="muscle_image" id="muscle_image_url"
+               value="{{ data.get('muscle_image','') }}">
+        <div class="form-text">If you also upload a file, the upload will be used.</div>
       </div>
       <div class="col-md-5">
-        <input class="form-control" type="file" name="muscle_image_file" accept="image/*">
+        <label class="form-label">Upload file</label>
+        <input class="form-control" type="file" accept="image/*" name="muscle_image_file" id="muscle_image_file">
+      </div>
+
+      <div class="col-12">
+        <div class="ratio ratio-16x9 bg-body-secondary rounded overflow-hidden">
+          <img id="muscle-preview" src="{{ data.get('muscle_image','') }}" alt=""
+               style="object-fit:cover; width:100%; height:100%;">
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="col-12 mt-3">
+
+  <div class="mt-4 d-flex gap-2">
     <button class="btn btn-primary">Save</button>
     <a class="btn btn-secondary" href="{{ url_for('admin_index') }}">Cancel</a>
   </div>
-
+  {% if edit %}
+    <input type="hidden" name="_id" value="{{ _id }}">
+  {% endif %}
 </form>
+
+{# --- Tiny CSS to make drag clearer --- #}
+<style>
+  .img-slot.dragging { opacity: .6; }
+  .img-slot.drag-over { outline: 2px dashed var(--bs-primary); outline-offset: 4px; }
+</style>
+
+{# --- JS: previews, clear, drag reorder, renumber field names --- #}
+    <script>
+    (function() {
+      const list = document.getElementById('img-list');
+
+      // --- Preview helpers ---
+      function fileToDataURL(file, cb) {
+        const r = new FileReader();
+        r.onload = e => cb(e.target.result);
+        r.readAsDataURL(file);
+      }
+
+      function updatePreview(slotElem) {
+        const urlInput = slotElem.querySelector('.img-url');
+        const fileInput = slotElem.querySelector('.img-file');
+        const preview  = slotElem.querySelector('.img-preview');
+
+        if (fileInput.files && fileInput.files[0]) {
+          fileToDataURL(fileInput.files[0], dataUrl => { preview.src = dataUrl; });
+        } else {
+          preview.src = urlInput.value || '';
+        }
+      }
+
+      // Attach change listeners per slot
+      if (list) {
+        list.querySelectorAll('.img-slot').forEach(slot => {
+          slot.querySelector('.img-url').addEventListener('input', () => updatePreview(slot));
+          slot.querySelector('.img-file').addEventListener('change', () => updatePreview(slot));
+          const clearBtn = slot.querySelector('.clear-slot');
+          clearBtn.addEventListener('click', () => {
+            slot.querySelector('.img-url').value = '';
+            const f = slot.querySelector('.img-file');
+            f.value = ''; // clear file
+            slot.querySelector('.img-preview').src = '';
+          });
+          // initial preview
+          updatePreview(slot);
+        });
+
+        // --- Drag & drop reorder (HTML5) ---
+        let dragSrc = null;
+
+        function renumberNames() {
+          // After reorder, make sure names follow img1_*, img2_*, ...
+          const slots = Array.from(list.querySelectorAll('.img-slot'));
+          slots.forEach((slot, idx) => {
+            const n = idx + 1;
+            slot.dataset.slot = n;
+            slot.querySelector('.card-header strong').textContent = 'Image ' + n;
+
+            slot.querySelector('.img-url').setAttribute('name', `img${n}_url`);
+            slot.querySelector('.img-file').setAttribute('name', `img${n}_file`);
+          });
+        }
+
+        function handleDragStart(e) {
+          dragSrc = this;
+          this.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', '');
+        }
+        function handleDragOver(e) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          this.classList.add('drag-over');
+        }
+        function handleDragLeave() {
+          this.classList.remove('drag-over');
+        }
+        function handleDrop(e) {
+          e.stopPropagation();
+          this.classList.remove('drag-over');
+          if (dragSrc && dragSrc !== this) {
+            const nodes = Array.from(list.children);
+            const srcIndex = nodes.indexOf(dragSrc);
+            const dstIndex = nodes.indexOf(this);
+            list.insertBefore(dragSrc, (dstIndex > srcIndex) ? this.nextSibling : this);
+            renumberNames();
+          }
+        }
+        function handleDragEnd() {
+          this.classList.remove('dragging');
+          list.querySelectorAll('.img-slot').forEach(s => s.classList.remove('drag-over'));
+        }
+
+        list.querySelectorAll('.img-slot').forEach(slot => {
+          slot.addEventListener('dragstart', handleDragStart);
+          slot.addEventListener('dragover', handleDragOver);
+          slot.addEventListener('dragleave', handleDragLeave);
+          slot.addEventListener('drop', handleDrop);
+          slot.addEventListener('dragend', handleDragEnd);
+        });
+      }
+
+      // --- Client-side required validation (Bootstrap style) ---
+      const form = document.getElementById('workout-form');
+      if (form) {
+        form.addEventListener('submit', function (event) {
+          if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          form.classList.add('was-validated');
+        }, false);
+      }
+
+      // --- Muscle diagram preview ---
+      const muscleUrl  = document.getElementById('muscle_image_url');
+      const muscleFile = document.getElementById('muscle_image_file');
+      const musclePrev = document.getElementById('muscle-preview');
+
+      function updateMusclePreview() {
+        if (!musclePrev) return;
+        if (muscleFile && muscleFile.files && muscleFile.files[0]) {
+          fileToDataURL(muscleFile.files[0], dataUrl => { musclePrev.src = dataUrl; });
+        } else if (muscleUrl) {
+          musclePrev.src = muscleUrl.value || '';
+        }
+      }
+
+      if (muscleUrl)  muscleUrl.addEventListener('input', updateMusclePreview);
+      if (muscleFile) muscleFile.addEventListener('change', updateMusclePreview);
+      updateMusclePreview();
+
+      // --- Auto-populate Tags from Body Parts ---
+      const bodyPartsEl = document.getElementById('body_parts');
+      const tagsEl      = document.getElementById('tags');
+
+      // Normalize a label into a good search tag (lowercase, dashed)
+      function toTag(s) {
+        return (s || '')
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+      }
+
+      function parseParts(raw) {
+        if (!raw) return [];
+        // split on commas or newlines
+        return raw
+          .split(/[\n,]+/)
+          .map(s => s.trim())
+          .filter(Boolean);
+      }
+
+      function unique(arr) {
+        return Array.from(new Set(arr));
+      }
+
+      function syncTagsFromBodyParts() {
+        if (!bodyPartsEl || !tagsEl) return;
+        const parts = parseParts(bodyPartsEl.value);
+        // include both raw labels (as typed) and normalized tags
+        const rawLabels = parts.map(p => p);           // e.g. "Chest"
+        const normTags  = parts.map(p => toTag(p));    // e.g. "chest"
+        const all = unique([...rawLabels, ...normTags]).filter(Boolean);
+        tagsEl.value = all.join(', ');
+      }
+
+      if (bodyPartsEl && tagsEl) {
+        // update on input
+        bodyPartsEl.addEventListener('input', syncTagsFromBodyParts);
+
+        // if tags empty on load, initialize from body parts
+        if (!tagsEl.value || !tagsEl.value.trim()) {
+          syncTagsFromBodyParts();
+        }
+      }
+    })();
+    </script>
 {% endblock %}

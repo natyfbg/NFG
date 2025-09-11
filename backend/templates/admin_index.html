@@ -24,17 +24,34 @@
 {% else %}
   <div class="list-group">
     {% for w in items %}
+      {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
       <div class="list-group-item">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <strong>{{ w.name }}</strong>
-            <span class="badge text-bg-secondary ms-2">{{ w.level }}</span>
-            <span class="badge text-bg-secondary ms-1">{{ w.body_part }}</span>
-            <span class="badge text-bg-secondary ms-1">{{ w.style }}</span>
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-3">
+            {% if w.images and w.images|length > 0 %}
+              <img src="{{ w.images[0] }}" alt="" style="width:64px;height:36px;object-fit:cover;border-radius:.25rem;">
+            {% elif w.muscle_image %}
+              <img src="{{ w.muscle_image }}" alt="" style="width:64px;height:36px;object-fit:cover;border-radius:.25rem;">
+            {% else %}
+              <div class="bg-body-secondary" style="width:64px;height:36px;border-radius:.25rem;"></div>
+            {% endif %}
+
+            <div>
+              <div class="fw-semibold">
+                {{ w.name }}
+                <small class="text-muted">/{{ w.slug }}</small>
+              </div>
+              <div class="small text-muted">
+                {{ w.level or '—' }} • {{ parts|join(', ') or '—' }} • {{ w.style or '—' }}
+                {% if w.rating is not none %} • ★ {{ '%.1f'|format(w.rating) }}{% endif %}
+              </div>
+            </div>
           </div>
+
           <div class="d-flex gap-2">
             <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_workout_edit', id=w._id) }}">Edit</a>
-            <form method="post" action="{{ url_for('admin_workout_delete', id=w._id) }}" onsubmit="return confirm('Delete this workout?');">
+            <form method="post" action="{{ url_for('admin_workout_delete', id=w._id) }}" onsubmit="return confirm('Delete this workout?');" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-sm btn-outline-danger">Delete</button>
             </form>
           </div>

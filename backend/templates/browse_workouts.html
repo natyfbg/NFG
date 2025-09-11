@@ -121,55 +121,61 @@
   {% endfor %}
 </div>
 
-{# ===== Thumbnail grid of the same results ===== #}
-<h2 class="mt-4 mb-2">Exercises</h2>
-<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-  {% for w in items %}
-    {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
-    {% set imgs  = w.images if w.images else [] %}
-    {% set carousel_id = "card-" ~ loop.index %}
+{# ===== Thumbnail grid with in-card image carousel ===== #}
+{% if items %}
+  <h2 class="mt-4 mb-2">Exercises</h2>
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+    {% for w in items %}
+      {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
+      {% set thumbs = (w.images if w.images else ([])) %}
+      {% if (not thumbs or thumbs|length == 0) and w.muscle_image %}
+        {% set thumbs = [w.muscle_image] %}
+      {% endif %}
+      {% if not thumbs or thumbs|length == 0 %}
+        {% set thumbs = ['https://via.placeholder.com/800x450?text=Image+Coming+Soon'] %}
+      {% endif %}
+      {% set cid = 'car-' ~ w.slug %}
 
-    <div class="col">
-      <div class="card h-100">
-
-        {# Gallery: carousel if >1 image; else single image or fallback #}
-        {% if imgs|length > 1 %}
-          <div id="{{ carousel_id }}" class="carousel slide">
-            <div class="carousel-inner rounded-top">
-              {% for img in imgs %}
+      <div class="col">
+        <div class="card h-100 shadow-sm">
+          <div id="{{ cid }}" class="carousel slide" data-bs-ride="false">
+            <div class="carousel-inner ratio ratio-16x9">
+              {% for img in thumbs %}
                 <div class="carousel-item {% if loop.first %}active{% endif %}">
-                  <img class="d-block w-100" src="{{ img }}" alt="{{ w.name }}">
+                  <img
+                    src="{{ img }}"
+                    class="d-block w-100 h-100"
+                    style="object-fit: cover;"
+                    alt="{{ w.name }} image {{ loop.index }}"
+                    loading="lazy">
                 </div>
               {% endfor %}
             </div>
-            <button class="carousel-control-prev" type="button" data-bs-target="#{{ carousel_id }}" data-bs-slide="prev">
-              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-              <span class="visually-hidden">Previous</span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#{{ carousel_id }}" data-bs-slide="next">
-              <span class="carousel-control-next-icon" aria-hidden="true"></span>
-              <span class="visually-hidden">Next</span>
-            </button>
+            {% if thumbs|length > 1 %}
+              <button class="carousel-control-prev" type="button" data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous image">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              </button>
+              <button class="carousel-control-next" type="button" data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next image">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              </button>
+            {% endif %}
           </div>
-        {% else %}
-          {% set thumb = (imgs[0] if imgs else (w.muscle_image if w.muscle_image else 'https://via.placeholder.com/600x350?text=No+Image')) %}
-          <img class="card-img-top" src="{{ thumb }}" alt="{{ w.name }}">
-        {% endif %}
 
-        <div class="card-body">
-          <h5 class="card-title mb-1">
-            <a href="{{ url_for('workout_detail', slug=w.slug) }}" class="stretched-link text-decoration-none">
-              {{ w.name }}
-            </a>
-          </h5>
-          <div class="small text-muted">
-            {{ w.level }} • {{ parts|join(', ') }} • {{ w.style }}
+          <div class="card-body">
+            <h5 class="card-title mb-1">
+              <a href="{{ url_for('workout_detail', slug=w.slug) }}" class="stretched-link text-decoration-none">
+                {{ w.name }}
+              </a>
+            </h5>
+            <div class="small text-muted">
+              {{ w.level }} • {{ parts|join(', ') }} • {{ w.style }}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  {% endfor %}
-</div>
+    {% endfor %}
+  </div>
+{% endif %}
 
 <nav class="mt-3">
   <ul class="pagination">
@@ -184,4 +190,18 @@
     </li>
   </ul>
 </nav>
+
+<style>
+  /* Tiny polish so carousel controls are easy to use on cards */
+  .card .carousel-control-prev,
+  .card .carousel-control-next {
+    width: 12%;
+    opacity: .85;
+    transition: opacity .2s ease;
+  }
+  .card:hover .carousel-control-prev,
+  .card:hover .carousel-control-next {
+    opacity: 1;
+  }
+</style>
 {% endblock %}
