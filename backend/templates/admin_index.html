@@ -27,6 +27,7 @@
       {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
       <div class="list-group-item">
         <div class="d-flex align-items-center justify-content-between">
+          <!-- Thumbnail + details -->
           <div class="d-flex align-items-center gap-3">
             {% if w.images and w.images|length > 0 %}
               <img src="{{ w.images[0] }}" alt="" style="width:64px;height:36px;object-fit:cover;border-radius:.25rem;">
@@ -48,9 +49,14 @@
             </div>
           </div>
 
+          <!-- Actions -->
           <div class="d-flex gap-2">
-            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_workout_edit', id=w._id) }}">Edit</a>
-            <form method="post" action="{{ url_for('admin_workout_delete', id=w._id) }}" onsubmit="return confirm('Delete this workout?');" class="d-inline">
+            <a class="btn btn-sm btn-outline-secondary"
+               href="{{ url_for('admin_workout_edit', id=w._id) }}">Edit</a>
+            <form method="post"
+                  action="{{ url_for('admin_workout_delete', id=w._id) }}"
+                  onsubmit="return confirm('Delete this workout?');"
+                  class="d-inline">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-sm btn-outline-danger">Delete</button>
             </form>

@@ -3,9 +3,10 @@
 
 {% block content %}
 <h1 class="mb-4">{{ 'Edit' if edit else 'New' }} Workout</h1>
-
 <form method="post" enctype="multipart/form-data" id="workout-form" class="needs-validation" novalidate>
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <!-- CSRF -->
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
   {# --- Top row: core metadata --- #}
   <div class="row g-3">
     <div class="col-lg-6">
@@ -28,13 +29,12 @@
       </select>
     </div>
 
-        <div class="col-md-8">
-          <label class="form-label">Body Parts (comma or newline)</label>
-          <textarea class="form-control" id="body_parts" name="body_parts" rows="2"
-                    placeholder="e.g. Chest, Triceps, Shoulders">{{ data.get('body_parts','') }}</textarea>
-          <div class="form-text">Example: Chest, Triceps, Shoulders</div>
-        </div>
-
+    <div class="col-md-8">
+      <label class="form-label">Body Parts (comma or newline)</label>
+      <textarea class="form-control" id="body_parts" name="body_parts" rows="2"
+                placeholder="e.g. Chest, Triceps, Shoulders">{{ data.get('body_parts','') }}</textarea>
+      <div class="form-text">Example: Chest, Triceps, Shoulders</div>
+    </div>
 
     <div class="col-md-6">
       <label class="form-label">Style</label>
@@ -51,7 +51,6 @@
       <textarea class="form-control" id="tags" name="tags" rows="2"
                 placeholder="auto-filled from body parts">{{ data.get('tags','') }}</textarea>
     </div>
-
 
     <div class="col-md-3">
       <label class="form-label">Rating</label>
@@ -91,8 +90,7 @@
   </div>
 
   {% set imgs = data.get('images', []) if data else [] %}
-  <div id="img-list" class="row g-3"
-       data-slot-count="4">
+  <div id="img-list" class="row g-3" data-slot-count="4">
     {% for i in range(1,5) %}
       {% set pre = imgs[i-1] if imgs and imgs|length >= i else '' %}
       <div class="col-md-6 img-slot" draggable="true" data-slot="{{ i }}">
@@ -123,36 +121,37 @@
   <hr class="my-4">
 
   {# --- Muscle diagram --- #}
-    <h5 class="mb-2">Muscle Diagram Image (optional)</h5>
-    <div class="row g-3 align-items-end">
-      <div class="col-md-7">
-        <label class="form-label">URL (or /static/uploads/...)</label>
-        <input class="form-control" name="muscle_image" id="muscle_image_url"
-               value="{{ data.get('muscle_image','') }}">
-        <div class="form-text">If you also upload a file, the upload will be used.</div>
-      </div>
-      <div class="col-md-5">
-        <label class="form-label">Upload file</label>
-        <input class="form-control" type="file" accept="image/*" name="muscle_image_file" id="muscle_image_file">
-      </div>
-
-      <div class="col-12">
-        <div class="ratio ratio-16x9 bg-body-secondary rounded overflow-hidden">
-          <img id="muscle-preview" src="{{ data.get('muscle_image','') }}" alt=""
-               style="object-fit:cover; width:100%; height:100%;">
-        </div>
-      </div>
+  <h5 class="mb-2">Muscle Diagram Image (optional)</h5>
+  <div class="row g-3 align-items-end">
+    <div class="col-md-7">
+      <label class="form-label">URL (or /static/uploads/...)</label>
+      <input class="form-control" name="muscle_image" id="muscle_image_url"
+             value="{{ data.get('muscle_image','') }}">
+      <div class="form-text">If you also upload a file, the upload will be used.</div>
+    </div>
+    <div class="col-md-5">
+      <label class="form-label">Upload file</label>
+      <input class="form-control" type="file" accept="image/*" name="muscle_image_file" id="muscle_image_file">
     </div>
 
+    <div class="col-12">
+      <div class="ratio ratio-16x9 bg-body-secondary rounded overflow-hidden">
+        <img id="muscle-preview" src="{{ data.get('muscle_image','') }}" alt=""
+             style="object-fit:cover; width:100%; height:100%;">
+      </div>
+    </div>
+  </div>
 
   <div class="mt-4 d-flex gap-2">
     <button class="btn btn-primary">Save</button>
     <a class="btn btn-secondary" href="{{ url_for('admin_index') }}">Cancel</a>
   </div>
+
   {% if edit %}
     <input type="hidden" name="_id" value="{{ _id }}">
   {% endif %}
 </form>
+
 
 {# --- Tiny CSS to make drag clearer --- #}
 <style>

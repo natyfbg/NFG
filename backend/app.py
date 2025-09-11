@@ -5,6 +5,7 @@ from bson.objectid import ObjectId
 from dotenv import load_dotenv
 import os, re, datetime, time
 from collections import deque
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
@@ -34,10 +35,13 @@ csrf = CSRFProtect(app)
 # ---- Auth config (basic single-admin) ----
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")          # plain text (MVP/dev)
-ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")        # preferred in prod
+ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")      # preferred in prod
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"  # redirect here when not logged in
+
+login_manager.login_message = "Please sign in to access Admin."
+login_manager.login_message_category = "warning"
 
 class User(UserMixin):
     def __init__(self, user_id: str):
@@ -209,9 +213,16 @@ QUICK_OPTIONS = [
     {"label": "Recently Added", "url": "/workouts?filter=recent"},
     {"label": "Top Rated",      "url": "/workouts?filter=top"},
 ]
+
+# -----------------------------------------------------------------------------
+# Context processors (inject values into all templates)
+# -----------------------------------------------------------------------------
 @app.context_processor
-def inject_quick_options():
-    return {"quick_options": QUICK_OPTIONS}
+def inject_globals():
+    return {
+        "quick_options": QUICK_OPTIONS,
+        "csrf_token": generate_csrf
+    }
 
 # -----------------------------------------------------------------------------
 # Public
