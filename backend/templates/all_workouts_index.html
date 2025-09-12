@@ -10,24 +10,53 @@
 <p class="text-muted mb-3">{{ items|length }} workout{{ '' if (items|length)==1 else 's' }}</p>
 
 {% if not items %}
-  <div class="alert alert-secondary">No workouts yet. Try <a href="{{ url_for('workouts_browse') }}">Browse</a> or add some in Admin.</div>
+  <div class="alert alert-secondary">
+    No workouts yet. Try <a href="{{ url_for('workouts_browse') }}">Browse</a> or add some in Admin.
+  </div>
 {% else %}
   <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
     {% for w in items %}
+      {% set thumbs = (w.images if w.images else []) %}
+      {% if (not thumbs or thumbs|length == 0) and w.muscle_image %}
+        {% set thumbs = [w.muscle_image] %}
+      {% endif %}
+      {% if not thumbs or thumbs|length == 0 %}
+        {% set thumbs = ['https://via.placeholder.com/900x1600?text=Workout'] %}
+      {% endif %}
+      {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
+      {% set cid = 'car-all-' ~ (w._id|string if w._id else w.slug) %}
+
       <div class="col">
         <div class="card h-100 shadow-sm">
-          {% set thumb = (w.images[0] if w.images and w.images|length>0 else (w.muscle_image if w.muscle_image else 'https://via.placeholder.com/600x350?text=Workout')) %}
-          <img class="card-img-top" src="{{ thumb }}" alt="{{ w.name }}" loading="lazy">
+          <!-- Carousel for workout images -->
+          <div id="{{ cid }}" class="carousel slide card-media ratio-portrait" data-bs-ride="false">
+            <div class="carousel-inner">
+              {% for img in thumbs %}
+                <div class="carousel-item {% if loop.first %}active{% endif %}">
+                  <img src="{{ img }}" alt="{{ w.name }} image {{ loop.index }}">
+                </div>
+              {% endfor %}
+            </div>
+            {% if thumbs|length > 1 %}
+              <button class="carousel-control-prev" type="button"
+                      data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous image">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              </button>
+              <button class="carousel-control-next" type="button"
+                      data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next image">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              </button>
+            {% endif %}
+          </div>
 
           <div class="card-body">
             <h5 class="card-title mb-1">
-              <a class="stretched-link text-decoration-none" href="{{ url_for('workout_detail', slug=w.slug) }}">
+              <a class="text-decoration-none" href="{{ url_for('workout_detail', slug=w.slug) }}">
                 {{ w.name }}
               </a>
             </h5>
             <div class="small text-muted mb-2">
-              {{ w.level }}
-              {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
+              {{ w.level or '—' }}
               {% if parts %} • {{ parts|join(', ') }}{% endif %}
               {% if w.style %} • {{ w.style }}{% endif %}
             </div>
@@ -50,6 +79,13 @@
       </div>
     {% endfor %}
   </div>
+
+  <script>
+    // Prevent carousel arrows from triggering workout links
+    document.querySelectorAll('.carousel-control-prev, .carousel-control-next').forEach(btn => {
+      btn.addEventListener('click', e => e.stopPropagation());
+    });
+  </script>
 {% endif %}
 
 <div class="text-end mt-3">

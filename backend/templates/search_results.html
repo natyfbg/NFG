@@ -1,31 +1,87 @@
 {% extends "base.html" %}
-{% block title %}Search – NattyFit{% endblock %}
+{% block title %}Results for “{{ q }}” – NFG{% endblock %}
+
+{% block sidebar %}
+  {% include "quick_options.html" %}
+{% endblock %}
+
 {% block content %}
-<h1 class="mb-3">Results for “{{ q }}”</h1>
-<div class="row g-4 row-cols-1 row-cols-md-2">
-  <div class="col">
-    <div class="card h-100">
-      <div class="card-header">Workouts</div>
-      <ul class="list-group list-group-flush">
-        {% for w in workouts %}
-        <li class="list-group-item">{{ w.name }}</li>
-        {% else %}
-        <li class="list-group-item text-muted">No workouts found.</li>
-        {% endfor %}
-      </ul>
-    </div>
+<h1 class="mb-1">Results for “{{ q }}”</h1>
+
+{# ===== Workouts ===== #}
+<h5 class="mt-4">Workouts</h5>
+{% if workouts and workouts|length %}
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+    {% for w in workouts %}
+      {% set thumbs = (w.images if w.images else []) %}
+      {% if (not thumbs or thumbs|length == 0) and w.muscle_image %}
+        {% set thumbs = [w.muscle_image] %}
+      {% endif %}
+      {% if not thumbs or thumbs|length == 0 %}
+        {% set thumbs = ['https://via.placeholder.com/900x1600?text=Workout'] %}
+      {% endif %}
+      {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
+      {% set cid = 'car-s-' ~ (w._id|string if w._id else w.slug) %}
+
+      <div class="col">
+        <div class="card h-100 shadow-sm">
+          <!-- portrait carousel -->
+          <div id="{{ cid }}" class="carousel slide card-media ratio-portrait" data-bs-ride="false">
+            <div class="carousel-inner">
+              {% for img in thumbs %}
+                <div class="carousel-item {% if loop.first %}active{% endif %}">
+                  <img src="{{ img }}" alt="{{ w.name }} image {{ loop.index }}">
+                </div>
+              {% endfor %}
+            </div>
+            {% if thumbs|length > 1 %}
+              <button class="carousel-control-prev" type="button"
+                      data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous image">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              </button>
+              <button class="carousel-control-next" type="button"
+                      data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next image">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              </button>
+            {% endif %}
+          </div>
+
+          <div class="card-body">
+            <h5 class="card-title mb-1">
+              <a class="text-decoration-none" href="{{ url_for('workout_detail', slug=w.slug) }}">
+                {{ w.name }}
+              </a>
+            </h5>
+            <div class="small text-muted">
+              {{ w.level or '—' }}
+              {% if parts %} • {{ parts|join(', ') }}{% endif %}
+              {% if w.style %} • {{ w.style }}{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
   </div>
-  <div class="col">
-    <div class="card h-100">
-      <div class="card-header">Recipes</div>
-      <ul class="list-group list-group-flush">
-        {% for r in recipes %}
-        <li class="list-group-item"><a href="{{ r.url }}" target="_blank">{{ r.name }}</a></li>
-        {% else %}
-        <li class="list-group-item text-muted">No recipes found.</li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
-</div>
+
+  <script>
+    // keep carousel arrows from triggering the link
+    document.querySelectorAll('.carousel-control-prev, .carousel-control-next').forEach(btn => {
+      btn.addEventListener('click', e => e.stopPropagation());
+    });
+  </script>
+{% else %}
+  <div class="alert alert-secondary">No workouts matched “{{ q }}”.</div>
+{% endif %}
+
+{# ===== Recipes (we’ll upgrade later) ===== #}
+<h5 class="mt-4">Recipes</h5>
+{% if recipes and recipes|length %}
+  <ul class="list-group">
+    {% for r in recipes %}
+      <li class="list-group-item">{{ r.name }}</li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="text-muted">No recipes found.</p>
+{% endif %}
 {% endblock %}

@@ -121,7 +121,7 @@
   {% endfor %}
 </div>
 
-{# ===== Thumbnail grid with in-card image carousel ===== #}
+{# ===== Thumbnail grid with portrait in-card carousel ===== #}
 {% if items %}
   <h2 class="mt-4 mb-2">Exercises</h2>
   <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
@@ -132,30 +132,29 @@
         {% set thumbs = [w.muscle_image] %}
       {% endif %}
       {% if not thumbs or thumbs|length == 0 %}
-        {% set thumbs = ['https://via.placeholder.com/800x450?text=Image+Coming+Soon'] %}
+        {% set thumbs = ['https://via.placeholder.com/900x1600?text=No+Image'] %}
       {% endif %}
-      {% set cid = 'car-' ~ w.slug %}
+      {% set cid = 'car-' ~ (w._id|string if w._id else w.slug) %}
 
       <div class="col">
         <div class="card h-100 shadow-sm">
-          <div id="{{ cid }}" class="carousel slide" data-bs-ride="false">
-            <div class="carousel-inner ratio ratio-16x9">
+          <!-- Portrait ratio + dedicated media wrapper -->
+          <div id="{{ cid }}" class="carousel slide card-media ratio-portrait" data-bs-ride="false">
+            <div class="carousel-inner">
               {% for img in thumbs %}
                 <div class="carousel-item {% if loop.first %}active{% endif %}">
-                  <img
-                    src="{{ img }}"
-                    class="d-block w-100 h-100"
-                    style="object-fit: cover;"
-                    alt="{{ w.name }} image {{ loop.index }}"
-                    loading="lazy">
+                  <img src="{{ img }}" alt="{{ w.name }} image {{ loop.index }}">
                 </div>
               {% endfor %}
             </div>
+
             {% if thumbs|length > 1 %}
-              <button class="carousel-control-prev" type="button" data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous image">
+              <button class="carousel-control-prev" type="button"
+                      data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous image">
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
               </button>
-              <button class="carousel-control-next" type="button" data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next image">
+              <button class="carousel-control-next" type="button"
+                      data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next image">
                 <span class="carousel-control-next-icon" aria-hidden="true"></span>
               </button>
             {% endif %}
@@ -163,7 +162,8 @@
 
           <div class="card-body">
             <h5 class="card-title mb-1">
-              <a href="{{ url_for('workout_detail', slug=w.slug) }}" class="stretched-link text-decoration-none">
+              <!-- Keep only the title as the link (no stretched-link), so arrows stay clickable -->
+              <a href="{{ url_for('workout_detail', slug=w.slug) }}" class="text-decoration-none">
                 {{ w.name }}
               </a>
             </h5>
@@ -175,6 +175,13 @@
       </div>
     {% endfor %}
   </div>
+
+  <script>
+    // Stop carousel arrow clicks from bubbling (prevents navigating via the title link)
+    document.querySelectorAll('.carousel-control-prev, .carousel-control-next').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); });
+    });
+  </script>
 {% endif %}
 
 <nav class="mt-3">
