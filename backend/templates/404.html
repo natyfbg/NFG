@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Page not found – NFG{% endblock %}
+
+{% block sidebar %}
+  {% include "quick_options.html" %}
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-2">Page not found</h1>
+<p class="text-muted">We couldn’t find that page. Try searching or browse workouts.</p>
+
+<div class="d-flex gap-2 mt-3">
+  <a class="btn btn-primary" href="{{ url_for('workouts_browse') }}">Browse Workouts</a>
+  <a class="btn btn-outline-secondary" href="{{ url_for('home') }}">Home</a>
+</div>
+{% endblock %}

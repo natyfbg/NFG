@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Admin – NFG{% endblock %}
 
+<a class="list-group-item list-group-item-action" href="{{ url_for('admin_styles') }}">
+  Manage Styles
+</a>
+
+
 {% block sidebar %}
 <div class="card mb-3">
   <div class="card-header">Quick Options</div>

@@ -24,6 +24,7 @@
       {% endfor %}
     </select>
   </div>
+
   <div class="col-md-3">
     <select name="body" class="form-select">
       <option value="">All Body Parts</option>
@@ -32,6 +33,7 @@
       {% endfor %}
     </select>
   </div>
+
   <div class="col-md-3">
     <select name="style" class="form-select">
       <option value="">All Styles</option>
@@ -40,6 +42,7 @@
       {% endfor %}
     </select>
   </div>
+
   <div class="col-md-3">
     <select name="sort" class="form-select">
       <option value="name" {{ 'selected' if sort=='name' else '' }}>A–Z</option>
@@ -48,6 +51,7 @@
       <option value="favorites" {{ 'selected' if sort=='favorites' else '' }}>Favorites</option>
     </select>
   </div>
+
   <div class="col-md-6">
     <input name="q" class="form-control" placeholder="Search…" value="{{ q }}">
   </div>
@@ -121,40 +125,40 @@
   {% endfor %}
 </div>
 
-{# ===== Thumbnail grid with portrait in-card carousel ===== #}
+{# ===== BIGGER thumbnail grid (2-up on desktop) ===== #}
 {% if items %}
   <h2 class="mt-4 mb-2">Exercises</h2>
-  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+
+  {# change the column classes to control size:
+     - row-cols-md-2 => two big cards per row on md+
+     - row-cols-1   => one per row on phones #}
+  <div class="row row-cols-1 row-cols-md-2 g-4">
     {% for w in items %}
-      {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
+      {% set parts  = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
       {% set thumbs = (w.images if w.images else ([])) %}
       {% if (not thumbs or thumbs|length == 0) and w.muscle_image %}
         {% set thumbs = [w.muscle_image] %}
       {% endif %}
       {% if not thumbs or thumbs|length == 0 %}
-        {% set thumbs = ['https://via.placeholder.com/900x1600?text=No+Image'] %}
+        {% set thumbs = ['https://via.placeholder.com/1280x720?text=Image+Coming+Soon'] %}
       {% endif %}
-      {% set cid = 'car-' ~ (w._id|string if w._id else w.slug) %}
+      {% set cid = 'car-browse-' ~ (w._id|string if w._id else w.slug) %}
 
       <div class="col">
         <div class="card h-100 shadow-sm">
-          <!-- Portrait ratio + dedicated media wrapper -->
-          <div id="{{ cid }}" class="carousel slide card-media ratio-portrait" data-bs-ride="false">
-            <div class="carousel-inner">
+          <div id="{{ cid }}" class="carousel slide" data-bs-ride="false">
+            <div class="carousel-inner ratio ratio-16x9">
               {% for img in thumbs %}
                 <div class="carousel-item {% if loop.first %}active{% endif %}">
-                  <img src="{{ img }}" alt="{{ w.name }} image {{ loop.index }}">
+                  <img src="{{ img }}" class="d-block w-100 h-100" style="object-fit:cover;" alt="{{ w.name }} image {{ loop.index }}" loading="lazy">
                 </div>
               {% endfor %}
             </div>
-
             {% if thumbs|length > 1 %}
-              <button class="carousel-control-prev" type="button"
-                      data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous image">
+              <button class="carousel-control-prev" type="button" data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous image" style="width:14%;">
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
               </button>
-              <button class="carousel-control-next" type="button"
-                      data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next image">
+              <button class="carousel-control-next" type="button" data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next image" style="width:14%;">
                 <span class="carousel-control-next-icon" aria-hidden="true"></span>
               </button>
             {% endif %}
@@ -162,13 +166,13 @@
 
           <div class="card-body">
             <h5 class="card-title mb-1">
-              <!-- Keep only the title as the link (no stretched-link), so arrows stay clickable -->
+              {# Title is the link (not the whole card) so the arrows remain clickable #}
               <a href="{{ url_for('workout_detail', slug=w.slug) }}" class="text-decoration-none">
                 {{ w.name }}
               </a>
             </h5>
             <div class="small text-muted">
-              {{ w.level }} • {{ parts|join(', ') }} • {{ w.style }}
+              {{ w.level }}{% if parts %} • {{ parts|join(', ') }}{% endif %}{% if w.style %} • {{ w.style }}{% endif %}
             </div>
           </div>
         </div>
@@ -177,9 +181,9 @@
   </div>
 
   <script>
-    // Stop carousel arrow clicks from bubbling (prevents navigating via the title link)
+    // keep carousel arrows from triggering the title link
     document.querySelectorAll('.carousel-control-prev, .carousel-control-next').forEach(btn => {
-      btn.addEventListener('click', (e) => { e.stopPropagation(); });
+      btn.addEventListener('click', (e) => e.stopPropagation());
     });
   </script>
 {% endif %}
@@ -199,12 +203,11 @@
 </nav>
 
 <style>
-  /* Tiny polish so carousel controls are easy to use on cards */
+  /* Slightly wider hit-area for carousel controls on cards */
   .card .carousel-control-prev,
   .card .carousel-control-next {
-    width: 12%;
     opacity: .85;
-    transition: opacity .2s ease;
+    transition: opacity .15s ease-in-out;
   }
   .card:hover .carousel-control-prev,
   .card:hover .carousel-control-next {

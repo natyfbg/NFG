@@ -14,29 +14,35 @@
     No workouts yet. Try <a href="{{ url_for('workouts_browse') }}">Browse</a> or add some in Admin.
   </div>
 {% else %}
-  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+  {# Denser grid like Search: 2 / 3 / 4 columns #}
+  <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2">
     {% for w in items %}
+      {% set parts  = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
       {% set thumbs = (w.images if w.images else []) %}
       {% if (not thumbs or thumbs|length == 0) and w.muscle_image %}
         {% set thumbs = [w.muscle_image] %}
       {% endif %}
       {% if not thumbs or thumbs|length == 0 %}
-        {% set thumbs = ['https://via.placeholder.com/900x1600?text=Workout'] %}
+        {% set thumbs = ['https://via.placeholder.com/800x450?text=Image+Coming+Soon'] %}
       {% endif %}
-      {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
-      {% set cid = 'car-all-' ~ (w._id|string if w._id else w.slug) %}
+      {% set cid = 'car-all-' ~ w.slug %}
 
       <div class="col">
         <div class="card h-100 shadow-sm">
-          <!-- Carousel for workout images -->
-          <div id="{{ cid }}" class="carousel slide card-media ratio-portrait" data-bs-ride="false">
-            <div class="carousel-inner">
+          <div id="{{ cid }}" class="carousel slide" data-bs-ride="false">
+            <div class="carousel-inner ratio ratio-16x9">
               {% for img in thumbs %}
                 <div class="carousel-item {% if loop.first %}active{% endif %}">
-                  <img src="{{ img }}" alt="{{ w.name }} image {{ loop.index }}">
+                  <img
+                    src="{{ img }}"
+                    class="d-block w-100 h-100"
+                    style="object-fit: cover;"
+                    alt="{{ w.name }} image {{ loop.index }}"
+                    loading="lazy">
                 </div>
               {% endfor %}
             </div>
+
             {% if thumbs|length > 1 %}
               <button class="carousel-control-prev" type="button"
                       data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous image">
@@ -49,46 +55,32 @@
             {% endif %}
           </div>
 
-          <div class="card-body">
-            <h5 class="card-title mb-1">
-              <a class="text-decoration-none" href="{{ url_for('workout_detail', slug=w.slug) }}">
+          <div class="card-body py-2 px-2">
+            <h6 class="card-title mb-1">
+              <a href="{{ url_for('workout_detail', slug=w.slug) }}"
+                 class="stretched-link text-decoration-none">
                 {{ w.name }}
               </a>
-            </h5>
-            <div class="small text-muted mb-2">
-              {{ w.level or '—' }}
-              {% if parts %} • {{ parts|join(', ') }}{% endif %}
-              {% if w.style %} • {{ w.style }}{% endif %}
+            </h6>
+            <div class="small text-muted">
+              {{ w.level }}{% if parts %} • {{ parts|join(', ') }}{% endif %}{% if w.style %} • {{ w.style }}{% endif %}
             </div>
-
-            {% if w.tags %}
-              <div class="d-flex flex-wrap gap-1">
-                {% for t in w.tags[:4] %}
-                  <span class="badge rounded-pill text-bg-secondary">{{ t }}</span>
-                {% endfor %}
-              </div>
-            {% endif %}
-          </div>
-
-          <div class="card-footer d-flex justify-content-end">
-            {% if w.rating is not none %}
-              <small class="text-muted">★ {{ '%.1f'|format(w.rating) }}</small>
-            {% endif %}
           </div>
         </div>
       </div>
     {% endfor %}
   </div>
-
-  <script>
-    // Prevent carousel arrows from triggering workout links
-    document.querySelectorAll('.carousel-control-prev, .carousel-control-next').forEach(btn => {
-      btn.addEventListener('click', e => e.stopPropagation());
-    });
-  </script>
 {% endif %}
 
 <div class="text-end mt-3">
-  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('workouts_browse') }}">Browse (filters & search)</a>
+  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('workouts_browse') }}">Browse (filters &amp; search)</a>
 </div>
+
+{# Make carousel arrow clicks win over the stretched-link overlay #}
+<style>
+  .card { position: relative; }
+  .card .stretched-link { z-index: 5; }
+  .card .carousel-control-prev,
+  .card .carousel-control-next { z-index: 10; }
+</style>
 {% endblock %}

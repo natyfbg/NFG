@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Manage Styles – NFG{% endblock %}
+
+{% block content %}
+<h1 class="mb-3">Manage Workout Styles</h1>
+
+<form class="row g-2 mb-4" method="post">
+  <div class="col-md-6">
+    <input name="name" class="form-control" placeholder="New style name (e.g., TRX)" required>
+  </div>
+  <div class="col-md-2">
+    <input name="order" class="form-control" type="number" value="0" placeholder="Order">
+  </div>
+  <div class="col-md-2 d-grid">
+    <button class="btn btn-primary">Add Style</button>
+  </div>
+</form>
+
+<table class="table table-dark table-striped align-middle">
+  <thead>
+    <tr>
+      <th style="width: 40px;">#</th>
+      <th>Name</th>
+      <th>Slug</th>
+      <th style="width: 100px;">Active</th>
+      <th style="width: 180px;"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in styles %}
+      <tr>
+        <td>{{ s.order or 0 }}</td>
+        <td>{{ s.name }}</td>
+        <td class="text-muted small">{{ s.slug }}</td>
+        <td>
+          <span class="badge {{ 'text-bg-success' if s.active else 'text-bg-secondary' }}">
+            {{ 'Yes' if s.active else 'No' }}
+          </span>
+        </td>
+        <td class="text-end">
+          <form method="post" action="{{ url_for('admin_style_toggle', id=s._id) }}" class="d-inline">
+            <button class="btn btn-sm btn-outline-warning">{{ 'Deactivate' if s.active else 'Activate' }}</button>
+          </form>
+          <form method="post" action="{{ url_for('admin_style_delete', id=s._id) }}" class="d-inline" onsubmit="return confirm('Delete this style?');">
+            <button class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a class="btn btn-secondary" href="{{ url_for('admin_index') }}">← Back to Admin</a>
+{% endblock %}

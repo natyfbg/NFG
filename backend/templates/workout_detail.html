@@ -2,36 +2,32 @@
 {% block title %}{{ w.name }} – NFG{% endblock %}
 
 {% block sidebar %}
-<div class="card">
-  <div class="card-header">Quick Options</div>
-  <div class="list-group list-group-flush">
-    {% for item in quick_options %}
-      <a class="list-group-item list-group-item-action" href="{{ item.url }}">{{ item.label }}</a>
-    {% endfor %}
-  </div>
-</div>
+  {% include "quick_options.html" %}
 {% endblock %}
 
 {% block content %}
 <h1 class="mb-3">{{ w.name }}</h1>
 
 <div class="row g-4">
+  <!-- LEFT: Video + Info/Tips -->
   <div class="col-lg-7">
     {% if w.youtube_id %}
-      <div class="ratio ratio-16x9 rounded overflow-hidden shadow">
-        <iframe src="https://www.youtube.com/embed/{{ w.youtube_id }}" title="YouTube video" allowfullscreen></iframe>
+      <div class="ratio ratio-16x9 rounded overflow-hidden shadow mb-3">
+        <iframe
+          src="https://www.youtube.com/embed/{{ w.youtube_id }}"
+          title="{{ w.name }} video"
+          allowfullscreen>
+        </iframe>
       </div>
-    {% else %}
-      <div class="alert alert-secondary">Video coming soon.</div>
     {% endif %}
 
     {% if w.info %}
-      <h3 class="mt-4">Info</h3>
-      <p>{{ w.info }}</p>
+      <h3 class="h5 mt-3">Info</h3>
+      <p class="mb-2">{{ w.info }}</p>
     {% endif %}
 
-    {% if w.tips %}
-      <h3 class="mt-3">Tips</h3>
+    {% if w.tips and w.tips|length %}
+      <h3 class="h5 mt-3">Tips</h3>
       <ul class="list-group">
         {% for tip in w.tips %}
           <li class="list-group-item">{{ tip }}</li>
@@ -40,44 +36,192 @@
     {% endif %}
   </div>
 
+  <!-- RIGHT: Gallery + Meta -->
   <div class="col-lg-5">
-    {% set imgs = w.images if w.images else [] %}
-    {% if imgs|length > 0 %}
-      <div id="gallery" class="carousel slide mb-3">
-        <div class="carousel-inner rounded overflow-hidden shadow">
-          {% for img in imgs %}
-            <div class="carousel-item {% if loop.first %}active{% endif %}">
-              <img src="{{ img }}" class="d-block w-100" alt="{{ w.name }}">
-            </div>
-          {% endfor %}
-        </div>
-        {% if imgs|length > 1 %}
-          <button class="carousel-control-prev" type="button" data-bs-target="#gallery" data-bs-slide="prev">
-            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Previous</span>
-          </button>
-          <button class="carousel-control-next" type="button" data-bs-target="#gallery" data-bs-slide="next">
-            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            <span class="visually-hidden">Next</span>
-          </button>
-        {% endif %}
-      </div>
-    {% elif w.muscle_image %}
-      <img src="{{ w.muscle_image }}" class="img-fluid rounded shadow mb-3" alt="Target muscles">
-    {% else %}
-      <img src="https://via.placeholder.com/800x450?text=Image+Coming+Soon" class="img-fluid rounded shadow mb-3" alt="No image">
+
+    {# Build one gallery list: images + (muscle diagram last if present) #}
+    {% set gallery = (w.images if w.images else []) %}
+    {% if w.muscle_image and (w.muscle_image not in gallery) %}
+      {% set gallery = gallery + [w.muscle_image] %}
+    {% endif %}
+    {% if not gallery or gallery|length == 0 %}
+      {% set gallery = ['https://via.placeholder.com/900x1600?text=Workout'] %}
     {% endif %}
 
-    {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
-    <ul class="list-group">
-      <li class="list-group-item"><strong>Difficulty:</strong> {{ w.level }}</li>
-      <li class="list-group-item"><strong>Body Part(s):</strong> {{ parts|join(', ') }}</li>
-      <li class="list-group-item"><strong>Style:</strong> {{ w.style }}</li>
-      {% if w.tags %}<li class="list-group-item"><strong>Tags:</strong> {{ w.tags|join(', ') }}</li>{% endif %}
-      {% if w.rating is not none %}<li class="list-group-item"><strong>Rating:</strong> {{ w.rating }}</li>{% endif %}
+    {% set cid = 'detail-car-' ~ w.slug %}
+
+    <!-- Portrait media box with a max height so it doesn’t push content down -->
+    <div id="{{ cid }}" class="carousel slide media-box rounded overflow-hidden shadow" data-bs-ride="false">
+      <div class="carousel-inner">
+        {% for img in gallery %}
+          <div class="carousel-item {% if loop.first %}active{% endif %}">
+            <img src="{{ img }}" class="w-100 h-100" alt="{{ w.name }} image {{ loop.index }}" style="object-fit:cover;">
+          </div>
+        {% endfor %}
+      </div>
+
+      {% if gallery|length > 1 %}
+        <button class="carousel-control-prev" type="button" data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous image">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next image">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        </button>
+      {% endif %}
+    </div>
+
+    {% if gallery|length > 1 %}
+      <div class="d-flex gap-2 mt-2 flex-wrap">
+        {% for img in gallery %}
+          <img
+            src="{{ img }}"
+            data-bs-target="#{{ cid }}"
+            data-bs-slide-to="{{ loop.index0 }}"
+            class="thumb border rounded"
+            alt="thumbnail {{ loop.index }}"
+            style="width:56px;height:90px;object-fit:cover;cursor:pointer;">
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Meta panel with filter links -->
+    <ul class="list-group mt-3">
+      {% if w.level %}
+        <li class="list-group-item">
+          <strong>Difficulty:</strong>
+          <a href="{{ url_for('workouts_browse', level=w.level) }}">{{ w.level }}</a>
+        </li>
+      {% endif %}
+
+      {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
+      {% if parts %}
+        <li class="list-group-item">
+          <strong>Body Part(s):</strong>
+          {% for p in parts %}
+            <a class="badge rounded-pill text-bg-secondary text-decoration-none me-1"
+               href="{{ url_for('workouts_browse', body=p) }}">{{ p }}</a>
+          {% endfor %}
+        </li>
+      {% endif %}
+
+      {% if w.style %}
+        <li class="list-group-item">
+          <strong>Style:</strong>
+          <a href="{{ url_for('workouts_browse', style=w.style) }}">{{ w.style }}</a>
+        </li>
+      {% endif %}
+
+      {% if w.tags and w.tags|length %}
+        <li class="list-group-item">
+          <strong>Tags:</strong>
+          {% for t in w.tags %}
+            <a class="badge rounded-pill text-bg-light border text-decoration-none me-1"
+               href="{{ url_for('workouts_browse', q=t) }}">{{ t }}</a>
+          {% endfor %}
+        </li>
+      {% endif %}
+
+      {% if w.rating is not none %}
+        <li class="list-group-item"><strong>Rating:</strong> ★ {{ '%.1f'|format(w.rating) }}</li>
+      {% endif %}
     </ul>
   </div>
 </div>
 
+{% if related and related|length %}
+  <h3 class="h5 mt-4">Related Workouts</h3>
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+    {% for r in related %}
+      {% set thumbs = (r.images if r.images else []) %}
+      {% if r.muscle_image and (r.muscle_image not in thumbs) %}
+        {% set thumbs = thumbs + [r.muscle_image] %}
+      {% endif %}
+      {% if not thumbs or thumbs|length == 0 %}
+        {% set thumbs = ['https://via.placeholder.com/900x1600?text=Workout'] %}
+      {% endif %}
+      {% set rcid = 'rel-' ~ r.slug %}
+      {% set rparts = r.body_parts if r.body_parts else ([r.body_part] if r.body_part else []) %}
+
+      <div class="col">
+        <div class="card h-100 shadow-sm">
+          <div id="{{ rcid }}" class="carousel slide media-box-sm" data-bs-ride="false">
+            <div class="carousel-inner">
+              {% for img in thumbs %}
+                <div class="carousel-item {% if loop.first %}active{% endif %}">
+                  <img src="{{ img }}" class="w-100 h-100" style="object-fit:cover;" alt="{{ r.name }} image {{ loop.index }}">
+                </div>
+              {% endfor %}
+            </div>
+            {% if thumbs|length > 1 %}
+              <button class="carousel-control-prev" type="button" data-bs-target="#{{ rcid }}" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              </button>
+              <button class="carousel-control-next" type="button" data-bs-target="#{{ rcid }}" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              </button>
+            {% endif %}
+          </div>
+          <div class="card-body">
+            <h5 class="card-title mb-1">
+              <a href="{{ url_for('workout_detail', slug=r.slug) }}" class="text-decoration-none">{{ r.name }}</a>
+            </h5>
+            <div class="small text-muted">
+              {{ r.level or '—' }}{% if rparts %} • {{ rparts|join(', ') }}{% endif %}{% if r.style %} • {{ r.style }}{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
 <a class="btn btn-secondary mt-4" href="{{ url_for('workouts_browse') }}">← Back to Browse</a>
+
+<style>
+  /* Main gallery box: portrait-ish, capped so it won’t push content */
+  .media-box{
+    aspect-ratio: 4 / 5;
+    width: 100%;
+    max-height: 520px;      /* cap on large screens */
+  }
+  .media-box .carousel-inner,
+  .media-box img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Smaller version used in “Related” cards */
+  .media-box-sm{
+    aspect-ratio: 4 / 5;
+    width: 100%;
+  }
+  .media-box-sm .carousel-inner,
+  .media-box-sm img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Make carousel arrows a touch easier to hit within cards */
+  .carousel-control-prev, .carousel-control-next { width: 12%; }
+</style>
+
+<script>
+  // Prevent carousel arrow clicks from bubbling to any surrounding links
+  document.querySelectorAll('.carousel-control-prev, .carousel-control-next')
+    .forEach(btn => btn.addEventListener('click', e => e.stopPropagation()));
+
+  // Thumbnail click → jump to that slide
+  document.querySelectorAll('img.thumb').forEach(el => {
+    el.addEventListener('click', function () {
+      const target = this.getAttribute('data-bs-target');
+      const idx = parseInt(this.getAttribute('data-bs-slide-to'), 10);
+      const elCar = document.querySelector(target);
+      if (!elCar) return;
+      const instance = bootstrap.Carousel.getOrCreateInstance(elCar);
+      instance.to(idx);
+    });
+  });
+</script>
 {% endblock %}

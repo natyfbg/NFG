@@ -19,16 +19,31 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-fsS", "http://localhost:8000/healthz" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+    # Load env from .env (admin creds, secret, etc.)
+    env_file: .env
+
     environment:
-      # Inside compose, the hostname for Mongo is "mongo", not localhost
+      # IMPORTANT: Force app to use the Docker mongo service, regardless of what's in .env
       MONGO_URI: mongodb://mongo:27017/NFG
-      # optional: SECRET_KEY for Flask flash/session
-      SECRET_KEY: dev-secret
+      # Keep your secret key from .env if present; else fall back
+      SECRET_KEY: ${SECRET_KEY:-dev-secret}
+
     ports:
-      - "5050:5000"   # host:container (host 5050 -> container 5000)
+      - "5050:8000"   # host:container
+
     volumes:
-      - .:/app        # live-reload while developing
-    command: python app.py
+      - .:/app
+      - ./static/uploads:/app/static/uploads
+
+    # Run with Gunicorn (Flask app object is app:app)
+    command: gunicorn -w 3 -b 0.0.0.0:8000 app:app --timeout 120
 
 volumes:
   mongo_data:

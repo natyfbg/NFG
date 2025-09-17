@@ -1,11 +1,15 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, abort
+# app.py
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, g
 from pymongo import MongoClient, ASCENDING
 from bson.regex import Regex
 from bson.objectid import ObjectId
-from dotenv import load_dotenv
-import os, re, datetime, time
+from time import perf_counter
+
+import os, re, datetime, time, uuid, logging
 from collections import deque
-from flask_wtf.csrf import CSRFProtect, generate_csrf
+from logging.handlers import RotatingFileHandler
+
+from dotenv import load_dotenv
 
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
@@ -13,33 +17,71 @@ from flask_login import (
 )
 from werkzeug.security import check_password_hash
 from werkzeug.utils import secure_filename
-from flask_wtf import CSRFProtect
-import uuid
+
+# CSRF
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 
 
 # -----------------------------------------------------------------------------
 # Config / DB
 # -----------------------------------------------------------------------------
-load_dotenv()
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/NFG")
+load_dotenv(override=False)
+
+MONGO_URI = os.environ.get("MONGO_URI") or "mongodb://localhost:27017/NFG"
+SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret")
+
+app = Flask(__name__)
+app.secret_key = SECRET_KEY
 
 client = MongoClient(MONGO_URI)
 db = client.get_default_database() if "/" in MONGO_URI.split("://", 1)[-1] else client["NFG"]
 
-app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "dev-secret")
+# ---- Logging ----
+LOG_DIR = os.path.join(app.root_path, "instance", "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+log_path = os.path.join(LOG_DIR, "app.log")
 
-# CSRF
+file_handler = RotatingFileHandler(log_path, maxBytes=1_000_000, backupCount=3)
+file_handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
+file_handler.setLevel(logging.INFO)
+
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
+app.logger.info("App startup")
+app.logger.info(f"Using Mongo at: {MONGO_URI}")
+
+@app.before_request
+def _start_timer():
+    g._t0 = perf_counter()
+
+@app.after_request
+def _log_request(resp):
+    try:
+        dt = (perf_counter() - getattr(g, "_t0", perf_counter())) * 1000.0
+        app.logger.info(
+            "REQ %s %s %s %s %.1fms UA=%s",
+            request.method,
+            request.path,
+            resp.status_code,
+            request.headers.get("X-Forwarded-For", request.remote_addr),
+            dt,
+            request.headers.get("User-Agent", "")[:120],
+        )
+    except Exception:
+        pass
+    return resp
+
 csrf = CSRFProtect(app)
 
-# ---- Auth config (basic single-admin) ----
+# -----------------------------------------------------------------------------
+# Auth (single admin)
+# -----------------------------------------------------------------------------
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")          # plain text (MVP/dev)
-ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")      # preferred in prod
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
+ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
 
 login_manager = LoginManager(app)
-login_manager.login_view = "login"  # redirect here when not logged in
-
+login_manager.login_view = "login"
 login_manager.login_message = "Please sign in to access Admin."
 login_manager.login_message_category = "warning"
 
@@ -54,49 +96,41 @@ def load_user(user_id):
     return None
 
 def _check_admin_credentials(username: str, password: str) -> bool:
-    """Prefer a hashed password if provided; fall back to plain for dev."""
     if username != ADMIN_USERNAME:
         return False
     if ADMIN_PASSWORD_HASH:
         return check_password_hash(ADMIN_PASSWORD_HASH, password)
     return password == ADMIN_PASSWORD
 
-# --- Simple in-memory login limiter (per IP) ---
-# Allow up to 5 failed attempts per 15 minutes per IP.
-FAILED_LOGINS = {}  # ip -> deque[timestamps]
+FAILED_LOGINS = {}  # ip -> deque[times]
 
 def _client_ip():
-    # works locally & behind simple reverse proxies
     fwd = request.headers.get("X-Forwarded-For", "")
-    if fwd:
-        return fwd.split(",")[0].strip()
-    return request.remote_addr or "unknown"
+    return fwd.split(",")[0].strip() if fwd else (request.remote_addr or "unknown")
 
 def _allowed_login_attempt(ip: str, limit=5, window_sec=900):
     now = time.time()
     dq = FAILED_LOGINS.get(ip)
     if dq is None:
         return True
-    # drop old entries
     while dq and now - dq[0] > window_sec:
         dq.popleft()
     return len(dq) < limit
 
 def _record_failed_login(ip: str):
-    now = time.time()
-    dq = FAILED_LOGINS.setdefault(ip, deque())
-    dq.append(now)
+    FAILED_LOGINS.setdefault(ip, deque()).append(time.time())
 
 def _clear_failed_logins(ip: str):
     FAILED_LOGINS.pop(ip, None)
 
 
 # -----------------------------------------------------------------------------
-# Canonical lists
+# Canonical lists (levels & body parts remain static; styles become dynamic)
 # -----------------------------------------------------------------------------
 WORKOUT_LEVELS = ["Beginner", "Intermediate", "Advanced"]
 
-WORKOUT_STYLES = [
+# default list used only if DB has no styles yet
+DEFAULT_WORKOUT_STYLES = [
     "BodyWeight", "Barbell", "Dumbbell", "Kettlebell", "Resistance Bands",
     "Machines", "Calisthenics", "Cardio/Endurance",
     "Plyometric/Explosive", "CrossFit/Functional", "Yoga/Mobility",
@@ -109,8 +143,8 @@ BODY_PARTS_MASTER = [
     "Full Body","Neck"
 ]
 
-FEATURED_BODY_PARTS = ["Chest", "Back", "Legs"]               # landing card (3)
-FEATURED_STYLES     = ["BodyWeight", "Barbell", "Machines"]   # landing card (3)
+FEATURED_BODY_PARTS = ["Chest", "Back", "Legs"]
+FEATURED_STYLES     = ["BodyWeight", "Barbell", "Machines"]
 
 # -----------------------------------------------------------------------------
 # Helpers
@@ -119,31 +153,26 @@ def slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 def _split_list(text: str):
-    """Accept comma or newline separated; trim blanks."""
     if not text:
         return []
     return [p.strip() for p in re.split(r"[\n,]+", text) if p.strip()]
 
 _YT_PAT = re.compile(r"(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|shorts/))?([A-Za-z0-9_-]{11})")
-
 def _extract_youtube_id(val: str | None):
     if not val:
         return None
     m = _YT_PAT.search(val.strip())
     return m.group(1) if m else val.strip()
 
-# -----------------------------------------------------------------------------
 # Uploads
-# -----------------------------------------------------------------------------
 ALLOWED_IMAGE_EXTS = {"png", "jpg", "jpeg", "gif", "webp"}
-app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10MB per request
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
 UPLOAD_BASE = os.getenv("UPLOAD_FOLDER", "static/uploads")
 
 def _allowed_image(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_IMAGE_EXTS
 
 def _save_one_file(file_storage) -> str | None:
-    """Save a single uploaded file and return its web path (/static/uploads/yyyymmdd/uuid.ext)."""
     if not file_storage or not getattr(file_storage, "filename", ""):
         return None
     if not _allowed_image(file_storage.filename):
@@ -158,34 +187,23 @@ def _save_one_file(file_storage) -> str | None:
     return "/" + "/".join([UPLOAD_BASE, day, fname]).replace("\\", "/")
 
 def _collect_ordered_images_from_form(req) -> list[str]:
-    """
-    Read ordered slots. Supports BOTH naming patterns:
-      - img1_url/img1_file, img2_url/img2_file, ...
-      - image_url_1/image_file_1, image_url_2/image_file_2, ...
-    Order = slot order. Empty slots are skipped.
-    """
     ordered = []
-    # allow up to 8; the template currently shows 4
     for i in range(1, 9):
-        # files first (file overrides URL)
         up = req.files.get(f"img{i}_file") or req.files.get(f"image_file_{i}")
         if up and getattr(up, "filename", ""):
             saved = _save_one_file(up)
             if saved:
                 ordered.append(saved)
                 continue
-        # then URLs
         url = (req.form.get(f"img{i}_url") or req.form.get(f"image_url_{i}") or "").strip()
         if url:
             ordered.append(url)
-    # compatibility: if none found, accept legacy textarea "images"
     if not ordered:
         legacy = _split_list(req.form.get("images", ""))
         ordered = legacy
     return ordered
 
 def _collect_muscle_image_from_form(req) -> str | None:
-    """Allow setting muscle image via URL or file upload (file wins if present)."""
     up = req.files.get("muscle_image_file")
     if up and getattr(up, "filename", ""):
         saved = _save_one_file(up)
@@ -194,8 +212,9 @@ def _collect_muscle_image_from_form(req) -> str | None:
     url = (req.form.get("muscle_image_url") or req.form.get("muscle_image") or "").strip()
     return url or None
 
+
 # -----------------------------------------------------------------------------
-# Indexes (safe to call repeatedly)
+# Indexes
 # -----------------------------------------------------------------------------
 db.workouts.create_index([("slug", 1)], unique=True, sparse=True)
 db.workouts.create_index([("name", 1)])
@@ -204,6 +223,29 @@ db.workouts.create_index([("body_part", 1)])
 db.workouts.create_index([("style", 1)])
 db.workouts.create_index([("created_at", -1)])
 db.workouts.create_index([("rating", -1)])
+
+# Styles index + seed
+db.styles.create_index([("slug", 1)], unique=True, sparse=True)
+
+def get_styles() -> list[str]:
+    """Return active styles from DB; if empty, return the default list."""
+    styles = list(db.styles.find({"active": {"$ne": False}}).sort([("order", 1), ("name", 1)]))
+    if styles:
+        return [s["name"] for s in styles]
+    return DEFAULT_WORKOUT_STYLES
+
+def _ensure_style_seed_once():
+    try:
+        if db.styles.count_documents({}) == 0:
+            docs = [{"name": n, "slug": slugify(n), "order": i, "active": True}
+                    for i, n in enumerate(DEFAULT_WORKOUT_STYLES)]
+            if docs:
+                db.styles.insert_many(docs)
+    except Exception as e:
+        app.logger.warning(f"Styles seed skipped: {e}")
+
+_ensure_style_seed_once()
+
 
 # -----------------------------------------------------------------------------
 # Quick menu
@@ -215,17 +257,15 @@ QUICK_OPTIONS = [
 ]
 
 # -----------------------------------------------------------------------------
-# Context processors (inject values into all templates)
+# Context processors
 # -----------------------------------------------------------------------------
 @app.context_processor
 def inject_globals():
-    return {
-        "quick_options": QUICK_OPTIONS,
-        "csrf_token": generate_csrf
-    }
+    return {"quick_options": QUICK_OPTIONS, "csrf_token": generate_csrf}
+
 
 # -----------------------------------------------------------------------------
-# Public
+# Public pages
 # -----------------------------------------------------------------------------
 @app.route("/")
 def home():
@@ -233,7 +273,6 @@ def home():
 
 @app.route("/workouts")
 def workouts():
-    # Sidebar quick filters (kept for future use)
     filt = request.args.get("filter")
     query, sort, limit = {}, [("name", ASCENDING)], None
     if filt == "favorites":
@@ -243,24 +282,19 @@ def workouts():
     elif filt == "top":
         sort, limit = [("rating", -1), ("name", ASCENDING)], 20
 
-    # Featured Body Parts (support legacy single + new list)
     parts_single = set(db.workouts.distinct("body_part"))
     parts_multi  = set(db.workouts.distinct("body_parts"))
     parts_in_db  = parts_single | parts_multi
     body_parts_featured = [p for p in FEATURED_BODY_PARTS if p in parts_in_db] or FEATURED_BODY_PARTS[:]
 
-    # Featured Styles: always show the three picks
-    workout_styles_featured = FEATURED_STYLES
-
-    # Limit landing "All Workouts (A–Z)" card to 3 items
     all_ws = list(db.workouts.find({}).sort([("name", ASCENDING)]).limit(3))
 
     return render_template(
         "workouts.html",
         workout_levels=WORKOUT_LEVELS,
         body_parts_featured=body_parts_featured,
-        workout_styles=WORKOUT_STYLES,                  # full list
-        workout_styles_featured=workout_styles_featured, # 3 on landing
+        workout_styles=get_styles(),                  # full list (dynamic)
+        workout_styles_featured=FEATURED_STYLES,      # landing picks
         all_workouts=all_ws,
     )
 
@@ -271,8 +305,9 @@ def workouts_all():
 
 @app.route("/workouts/styles")
 def styles_index():
-    counts = {st: db.workouts.count_documents({"style": st}) for st in WORKOUT_STYLES}
-    return render_template("styles_index.html", styles=WORKOUT_STYLES, counts=counts)
+    styles = get_styles()
+    counts = {st: db.workouts.count_documents({"style": st}) for st in styles}
+    return render_template("styles_index.html", styles=styles, counts=counts)
 
 @app.route("/workouts/body-parts")
 def body_parts_index():
@@ -284,7 +319,6 @@ def body_parts_index():
 
 @app.route("/workouts/browse")
 def workouts_browse():
-    """Unified browse with filters, search, sort, pagination."""
     level    = request.args.get("level") or ""
     body     = request.args.get("body") or ""
     style    = request.args.get("style") or ""
@@ -293,42 +327,21 @@ def workouts_browse():
     page     = max(int(request.args.get("page", 1)), 1)
     per_page = min(max(int(request.args.get("per_page", 20)), 1), 100)
 
-    # Build filters using $and so $or blocks don't overwrite each other
     and_clauses = []
-
-    if level:
-        and_clauses.append({"level": level})
-
-    if style:
-        and_clauses.append({"style": style})
-
+    if level: and_clauses.append({"level": level})
+    if style: and_clauses.append({"style": style})
     if body:
-        and_clauses.append({
-            "$or": [
-                {"body_part": body},
-                {"body_parts": body},
-            ]
-        })
-
+        and_clauses.append({"$or": [{"body_part": body}, {"body_parts": body}]})
     if sort_key == "favorites":
         and_clauses.append({"is_favorite": True})
-
     if q:
         rx = Regex(q, "i")
-        and_clauses.append({
-            "$or": [
-                {"name": rx},
-                {"level": rx},
-                {"body_part": rx},
-                {"body_parts": rx},
-                {"style": rx},
-                {"tags": rx},
-            ]
-        })
+        and_clauses.append({"$or": [
+            {"name": rx},{"level": rx},{"body_part": rx},{"body_parts": rx},{"style": rx},{"tags": rx},
+        ]})
 
     query = {"$and": and_clauses} if and_clauses else {}
 
-    # Sorting
     sort = [("name", ASCENDING)]
     if sort_key == "recent":
         sort = [("created_at", -1)]
@@ -336,12 +349,7 @@ def workouts_browse():
         sort = [("rating", -1), ("name", ASCENDING)]
 
     total = db.workouts.count_documents(query)
-    items = list(
-        db.workouts.find(query)
-        .sort(sort)
-        .skip((page - 1) * per_page)
-        .limit(per_page)
-    )
+    items = list(db.workouts.find(query).sort(sort).skip((page - 1) * per_page).limit(per_page))
 
     return render_template(
         "browse_workouts.html",
@@ -349,14 +357,26 @@ def workouts_browse():
         level=level, body=body, style=style, q=q,
         workout_levels=WORKOUT_LEVELS,
         body_parts=BODY_PARTS_MASTER,
-        workout_styles=WORKOUT_STYLES
+        workout_styles=get_styles(),   # dynamic here too
     )
 
 @app.route("/workouts/<slug>")
 def workout_detail(slug):
     w = db.workouts.find_one({"slug": slug})
-    if not w: abort(404)
-    return render_template("workout_detail.html", w=w)
+    if not w:
+        abort(404)
+
+    parts = w.get("body_parts") or ([w.get("body_part")] if w.get("body_part") else [])
+    rel_q = {"$and": [
+        {"slug": {"$ne": w["slug"]}},
+        {"$or": ([{"body_parts": {"$in": parts}}] if parts else []) +
+                ([{"style": w.get("style")}] if w.get("style") else [])}
+    ]}
+    if not rel_q["$and"][1]["$or"]:
+        rel_q = {"slug": {"$ne": w["slug"]}}
+
+    related = list(db.workouts.find(rel_q).sort([("rating", -1), ("created_at", -1), ("name", 1)]).limit(6))
+    return render_template("workout_detail.html", w=w, related=related)
 
 @app.route("/recipes")
 def recipes():
@@ -368,22 +388,24 @@ def search():
     q = (request.args.get("q") or "").strip()
     if not q:
         return render_template("home.html", name="NFG")
+
+    page = max(int(request.args.get("page", 1)), 1)
+    per_page = min(max(int(request.args.get("per_page", 24)), 1), 100)
+
     rx = Regex(q, "i")
-    ws = list(db.workouts.find({
-        "$or": [
-            {"name": rx},
-            {"level": rx},
-            {"body_part": rx},
-            {"body_parts": rx},   # include list field
-            {"style": rx},
-            {"tags": rx}
-        ]
-    }).sort([("name", ASCENDING)]))
+    w_query = {"$or": [
+        {"name": rx},{"level": rx},{"body_part": rx},{"body_parts": rx},{"style": rx},{"tags": rx}
+    ]}
+    total = db.workouts.count_documents(w_query)
+    items = list(db.workouts.find(w_query).sort([("name", ASCENDING)]).skip((page-1)*per_page).limit(per_page))
     rs = list(db.recipes.find({"name": rx}).sort([("name", ASCENDING)]))
-    return render_template("search_results.html", q=q, workouts=ws, recipes=rs)
+
+    return render_template("search_results.html", q=q, items=items, total=total,
+                           page=page, per_page=per_page, recipes=rs)
+
 
 # -----------------------------------------------------------------------------
-# Auth (login/logout)
+# Auth routes
 # -----------------------------------------------------------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -400,8 +422,7 @@ def login():
             _clear_failed_logins(ip)
             login_user(User("admin"))
             flash("Logged in.", "success")
-            next_url = request.args.get("next") or url_for("admin_index")
-            return redirect(next_url)
+            return redirect(request.args.get("next") or url_for("admin_index"))
         else:
             _record_failed_login(ip)
             flash("Invalid credentials.", "danger")
@@ -415,8 +436,13 @@ def logout():
     return redirect(url_for("home"))
 
 
+@app.route("/health")
+def health():
+    return {"status": "ok"}, 200
+
+
 # -----------------------------------------------------------------------------
-# Admin (protected)
+# Admin: Workouts
 # -----------------------------------------------------------------------------
 @app.route("/admin")
 @login_required
@@ -431,11 +457,8 @@ def admin_workout_new():
         name = request.form.get("name","").strip()
         level = request.form.get("level","").strip()
         style = request.form.get("style","").strip()
-
-        # multiple muscles
         body_parts = _split_list(request.form.get("body_parts",""))
         body_part  = body_parts[0] if body_parts else (request.form.get("body_part","").strip() or "")
-
         tags = _split_list(request.form.get("tags",""))
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
@@ -449,27 +472,23 @@ def admin_workout_new():
         if not name:
             flash("Name is required.", "danger")
             return render_template("admin_workout_form.html",
-                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
+                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=get_styles(),
                                    data=request.form)
 
-        # --- NEW: slug uniqueness guard ---
         if not slug:
             slug = slugify(name)
         existing = db.workouts.find_one({"slug": slug})
         if existing:
-            flash(f"Slug '{slug}' is already used by another workout. Please choose a different slug.", "danger")
-            # repopulate the form but keep user's slug input
-            data = dict(request.form)
+            flash(f"Slug '{slug}' is already used by another workout.", "danger")
             return render_template("admin_workout_form.html",
-                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
-                                   data=data)
+                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=get_styles(),
+                                   data=request.form)
 
         doc = {
             "name": name, "slug": slug, "level": level,
-            "body_part": body_part,           # legacy primary
-            "body_parts": body_parts,         # list
-            "style": style,
-            "tags": tags, "images": images, "muscle_image": muscle_image,
+            "body_part": body_part, "body_parts": body_parts,
+            "style": style, "tags": tags,
+            "images": images, "muscle_image": muscle_image,
             "info": info, "tips": tips, "youtube_id": youtube_id,
             "is_favorite": is_favorite, "rating": rating,
             "created_at": datetime.datetime.utcnow()
@@ -480,15 +499,10 @@ def admin_workout_new():
             return redirect(url_for("admin_index"))
         except Exception as e:
             flash(f"Error: {e}", "danger")
-            return render_template("admin_workout_form.html",
-                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
-                                   data=request.form)
 
-    # GET
     return render_template("admin_workout_form.html",
-                           levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
+                           levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=get_styles(),
                            data={})
-
 
 @app.route("/admin/workouts/<id>/edit", methods=["GET", "POST"])
 @login_required
@@ -501,11 +515,8 @@ def admin_workout_edit(id):
         name = request.form.get("name","").strip()
         level = request.form.get("level","").strip()
         style = request.form.get("style","").strip()
-
-        # multiple muscles
         body_parts = _split_list(request.form.get("body_parts",""))
         body_part  = body_parts[0] if body_parts else (request.form.get("body_part","").strip() or "")
-
         tags = _split_list(request.form.get("tags",""))
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
@@ -519,25 +530,21 @@ def admin_workout_edit(id):
         if not name:
             flash("Name is required.", "danger")
             return render_template("admin_workout_form.html",
-                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
+                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=get_styles(),
                                    data=request.form, edit=True, _id=id)
 
         if not slug:
             slug = slugify(name)
-
-        # --- NEW: slug uniqueness guard (exclude current doc) ---
         existing = db.workouts.find_one({"slug": slug, "_id": {"$ne": ObjectId(id)}})
         if existing:
-            flash(f"Slug '{slug}' is already used by another workout. Please choose a different slug.", "danger")
-            data = dict(request.form)
+            flash(f"Slug '{slug}' is already used by another workout.", "danger")
             return render_template("admin_workout_form.html",
-                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
-                                   data=data, edit=True, _id=id)
+                                   levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=get_styles(),
+                                   data=request.form, edit=True, _id=id)
 
         update = {
             "name": name, "slug": slug, "level": level,
-            "body_part": body_part,          # legacy primary
-            "body_parts": body_parts,        # list
+            "body_part": body_part, "body_parts": body_parts,
             "style": style, "tags": tags,
             "images": images, "muscle_image": muscle_image,
             "info": info, "tips": tips, "youtube_id": youtube_id,
@@ -550,7 +557,6 @@ def admin_workout_edit(id):
         except Exception as e:
             flash(f"Error: {e}", "danger")
 
-    # GET populate form
     data = dict(w)
     data["tags"]   = ", ".join(data.get("tags", []))
     data["images"] = "\n".join(data.get("images", []))
@@ -561,7 +567,7 @@ def admin_workout_edit(id):
         data["body_parts"] = data.get("body_parts") or data.get("body_part","")
 
     return render_template("admin_workout_form.html",
-                           levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=WORKOUT_STYLES,
+                           levels=WORKOUT_LEVELS, parts=BODY_PARTS_MASTER, styles=get_styles(),
                            data=data, edit=True, _id=id)
 
 @app.route("/admin/workouts/<id>/delete", methods=["POST"])
@@ -570,6 +576,72 @@ def admin_workout_delete(id):
     db.workouts.delete_one({"_id": ObjectId(id)})
     flash("Workout deleted.", "success")
     return redirect(url_for("admin_index"))
+
+
+# -----------------------------------------------------------------------------
+# Admin: Styles (list/add, toggle active, delete)
+# -----------------------------------------------------------------------------
+@app.route("/admin/styles", methods=["GET", "POST"])
+@login_required
+def admin_styles():
+    if request.method == "POST":
+        name = (request.form.get("name") or "").strip()
+        order = int(request.form.get("order") or 0)
+        if not name:
+            flash("Style name is required.", "danger")
+            return redirect(url_for("admin_styles"))
+        slug = slugify(name)
+        if db.styles.find_one({"slug": slug}):
+            flash(f"Style '{name}' already exists.", "warning")
+            return redirect(url_for("admin_styles"))
+        db.styles.insert_one({"name": name, "slug": slug, "order": order, "active": True})
+        flash("Style added.", "success")
+        return redirect(url_for("admin_styles"))
+
+    styles = list(db.styles.find().sort([("order", 1), ("name", 1)]))
+    # You created templates/admin_style.html — we’ll use that:
+    return render_template("admin_style.html", styles=styles)
+
+@app.route("/admin/styles/<id>/toggle", methods=["POST"])
+@login_required
+def admin_style_toggle(id):
+    s = db.styles.find_one({"_id": ObjectId(id)})
+    if not s:
+        abort(404)
+    db.styles.update_one({"_id": s["_id"]}, {"$set": {"active": not s.get("active", True)}})
+    flash(f"Style {'activated' if not s.get('active', True) else 'deactivated'}.", "success")
+    return redirect(url_for("admin_styles"))
+
+@app.route("/admin/styles/<id>/delete", methods=["POST"])
+@login_required
+def admin_style_delete(id):
+    db.styles.delete_one({"_id": ObjectId(id)})
+    flash("Style deleted.", "success")
+    return redirect(url_for("admin_styles"))
+
+
+# -----------------------------------------------------------------------------
+# Errors & health
+# -----------------------------------------------------------------------------
+@app.errorhandler(404)
+def not_found(e):
+    app.logger.warning("404: %s %s", request.method, request.path)
+    return render_template("404.html"), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    app.logger.exception("500 on %s %s", request.method, request.path)
+    return render_template("500.html"), 500
+
+@app.route("/healthz")
+def healthz():
+    try:
+        client.admin.command("ping")
+        return {"status": "ok", "mongo": "up"}, 200
+    except Exception as e:
+        app.logger.warning("Healthz DB ping failed: %s", e)
+        return {"status": "ok", "mongo": "down"}, 200
+
 
 # -----------------------------------------------------------------------------
 # Main

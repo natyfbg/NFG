@@ -15,6 +15,13 @@
       .card .carousel-control-next {
         z-index: 3;
       }
+
+      h1, h2, .card-header {
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: default;
+      }
+
     </style>
   </head>
 
@@ -80,11 +87,17 @@
             </li>
           </ul>
 
-          <!-- Search -->
-          <form class="d-flex me-2" action="{{ url_for('search') }}" method="get" role="search">
-            <input class="form-control" type="search" placeholder="Search…" name="q"
-                   value="{{ request.args.get('q','') }}">
-          </form>
+
+
+                    <!-- Search -->
+            <form class="d-flex me-2" action="{{ url_for('search') }}" method="get" role="search">
+              <div class="input-group input-group-sm">
+                <input class="form-control" type="search" placeholder="Search…" name="q"
+                       value="{{ request.args.get('q','') }}">
+                <button class="btn btn-outline-light" type="submit">Search</button>
+              </div>
+            </form>
+
 
           <!-- Auth buttons -->
           <div class="d-flex align-items-center gap-2">
