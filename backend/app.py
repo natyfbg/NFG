@@ -325,7 +325,7 @@ def workouts_browse():
     q        = (request.args.get("q") or "").strip()
     sort_key = request.args.get("sort", "name")  # name|recent|rating|favorites
     page     = max(int(request.args.get("page", 1)), 1)
-    per_page = min(max(int(request.args.get("per_page", 20)), 1), 100)
+    per_page = min(max(int(request.args.get("per_page", 6)), 1), 100)
 
     and_clauses = []
     if level: and_clauses.append({"level": level})

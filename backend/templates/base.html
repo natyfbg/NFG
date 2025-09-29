@@ -4,24 +4,96 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}NFG{% endblock %}</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
-      /* Portrait card media (approx. phone screen) */
-      .ratio-portrait { aspect-ratio: 9 / 16; }
-      .card-media img { width: 100%; height: 100%; object-fit: cover; }
-      /* keep carousel arrows visible above stretched-link */
-      .card .carousel-control-prev,
-      .card .carousel-control-next {
-        z-index: 3;
+      /* ===== Global knobs used elsewhere ===== */
+      :root{
+        --media9x16-h: clamp(360px, 52vw, 520px);
+
+        /* nav dropdown theme */
+        --nav-dd-radius: 14px;
+        --nav-dd-backdrop: rgba(20,20,20,.55);
+
+        /* compact controls for workout menu */
+        --dd-font: clamp(.85rem, .9vw, .95rem);
+        --dd-item-py: .4rem;
+        --dd-item-px: .6rem;
+        --dd-min-w: 220px;   /* tighter */
+        --dd-max-w: 320px;   /* cap width on wide screens */
       }
 
-      h1, h2, .card-header {
-    user-select: none;
-    -webkit-user-select: none;
-    cursor: default;
+      /* ===== Detail page bits you already use ===== */
+      .media-9x16-lg{ aspect-ratio: 9 / 16; width:100%; max-height:min(var(--media9x16-h),78vh); }
+      .media-9x16-lg img{ width:100%; height:100%; object-fit:cover; }
+
+      .thumb-9x16{
+        --t: clamp(48px, 10vw, 64px);
+        width: var(--t); height: calc((16 / 9) * var(--t)); object-fit:cover; cursor:pointer; border-radius:.375rem;
+      }
+      .thumbscroller{ display:flex; gap:.5rem; flex-wrap:nowrap; overflow-x:auto; padding-bottom:.25rem;
+        scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; }
+      .thumbscroller img{ scroll-snap-align:center; }
+
+      @media (max-width:575.98px){ .detail-meta .list-group-item{ padding:.5rem .75rem; } }
+      h1.page-title{ font-size: clamp(1.75rem, 2.5vw, 2.25rem); }
+
+      /* ===== Workouts dropdown (compact + stable) ===== */
+      .navbar .workout-menu{
+        min-width: var(--dd-min-w);
+        max-width: var(--dd-max-w);
+        border-radius: var(--nav-dd-radius);
+        backdrop-filter: blur(6px);
+        z-index:1080;
+        font-size: var(--dd-font);
+        line-height: 1.2;
+
+        /* subtle reveal without reflow jump */
+        opacity:0; transform: translateY(4px);
+        transition: opacity .15s ease, transform .15s ease;
+      }
+      .navbar .workout-menu.show{ opacity:1; transform: translateY(0); }
+
+      .navbar .dropdown-item{
+        padding: var(--dd-item-py) var(--dd-item-px);
+        border-radius:.5rem;
+      }
+      .navbar .dropdown-item:hover,
+      .navbar .dropdown-item:focus{ background: rgba(255,255,255,.08); }
+
+      /* Hide Bootstrap’s default caret; we use our own */
+      .dropdown-toggle::after{ display:none !important; }
+
+      /* Custom caret (the only hover/click trigger for the menu) */
+      .caret-toggle{ padding-inline:.25rem !important; }
+      .caret{
+        display:inline-block; width:.5rem; height:.5rem;
+        border-right:2px solid currentColor; border-bottom:2px solid currentColor;
+        transform: rotate(45deg); transition: transform .18s ease;
+      }
+      .dropdown-hover .dropdown-menu.show ~ .caret,
+      .dropdown-hover.show .caret{ transform: rotate(225deg); }
+
+      /* Slight hint when hovering the caret only (not the “Workouts” text) */
+      @media (hover:hover) and (pointer:fine){
+        .caret-toggle:hover{ color: var(--bs-primary); }
       }
 
+      /* Mobile sheet: centered, fixed, safe height & width */
+      @media (max-width:575.98px){
+        .navbar .dropdown-menu.workout-menu{
+          position: fixed !important;
+          left:50% !important; transform: translate(-50%, 0) !important;
+          top: calc(var(--bs-navbar-padding-y, .5rem) + 56px) !important;
+          width: min(94vw, 420px);
+          max-height: 70svh; overflow:auto;
+          border-radius:18px; background: var(--nav-dd-backdrop);
+          opacity:1;
+        }
+        /* keep touch targets a bit larger on phones */
+        .navbar .dropdown-item{ padding:.65rem .9rem; }
+      }
     </style>
   </head>
 
@@ -41,44 +113,32 @@
 
         <div class="collapse navbar-collapse" id="navMain">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <!-- Workouts: text navigates; arrow is the ONLY dropdown trigger -->
+            <li class="nav-item dropdown dropdown-hover d-flex align-items-center">
+              <a class="nav-link {% if ep in workouts_eps %}active{% endif %}"
+                 href="{{ url_for('workouts') }}">Workouts</a>
 
-            <!-- Workouts: main label goes to landing; split-caret opens dropdown -->
-            <li class="nav-item dropdown d-flex align-items-center">
-              <a class="nav-link {% if ep in workouts_eps %}active{% endif %}" href="{{ url_for('workouts') }}">
-                Workouts
+              <a class="nav-link dropdown-toggle dropdown-toggle-split caret-toggle"
+                 href="#"
+                 id="workoutsMenu"
+                 role="button"
+                 data-bs-toggle="dropdown"
+                 data-bs-auto-close="outside"
+                 aria-expanded="false">
+                 <span class="caret"></span>
+                 <span class="visually-hidden">Toggle Workouts menu</span>
               </a>
-              <button class="btn btn-sm btn-dark dropdown-toggle dropdown-toggle-split"
-                      data-bs-toggle="dropdown" aria-expanded="false" style="margin-left:-0.25rem;">
-                <span class="visually-hidden">Toggle dropdown</span>
-              </button>
-              <ul class="dropdown-menu">
-                <!-- No 'Landing' item; click label for landing -->
-                <li>
-                  <a class="dropdown-item {% if ep == 'workouts_browse' %}active{% endif %}"
-                     href="{{ url_for('workouts_browse') }}">
-                    Browse (filters &amp; search)
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item {% if ep == 'workouts_all' %}active{% endif %}"
-                     href="{{ url_for('workouts_all') }}">
-                    All Workouts (A–Z)
-                  </a>
-                </li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                  <a class="dropdown-item {% if ep == 'styles_index' %}active{% endif %}"
-                     href="{{ url_for('styles_index') }}">
-                    All Styles
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item {% if ep == 'body_parts_index' %}active{% endif %}"
-                     href="{{ url_for('body_parts_index') }}">
-                    All Body Parts
-                  </a>
-                </li>
-              </ul>
+
+              <div class="dropdown-menu dropdown-menu-dark workout-menu shadow-lg rounded-3 p-2"
+                   aria-labelledby="workoutsMenu" data-popper-placement="bottom-start">
+                <a class="dropdown-item" href="{{ url_for('workouts_all') }}">All Workouts (A–Z)</a>
+                <a class="dropdown-item" href="{{ url_for('workouts_browse', sort='recent') }}">Recently Added</a>
+                <a class="dropdown-item" href="{{ url_for('workouts_browse', sort='rating') }}">Top Rated</a>
+                <div class="dropdown-divider my-2"></div>
+                <a class="dropdown-item" href="{{ url_for('styles_index') }}">All Styles</a>
+                <a class="dropdown-item" href="{{ url_for('body_parts_index') }}">All Body Parts</a>
+                <a class="dropdown-item" href="{{ url_for('workouts_browse') }}">Browse (filters &amp; search)</a>
+              </div>
             </li>
 
             <!-- Recipes -->
@@ -87,17 +147,14 @@
             </li>
           </ul>
 
-
-
-                    <!-- Search -->
-            <form class="d-flex me-2" action="{{ url_for('search') }}" method="get" role="search">
-              <div class="input-group input-group-sm">
-                <input class="form-control" type="search" placeholder="Search…" name="q"
-                       value="{{ request.args.get('q','') }}">
-                <button class="btn btn-outline-light" type="submit">Search</button>
-              </div>
-            </form>
-
+          <!-- Search -->
+          <form class="d-flex me-2" action="{{ url_for('search') }}" method="get" role="search">
+            <div class="input-group input-group-sm">
+              <input class="form-control" type="search" placeholder="Search…" name="q"
+                     value="{{ request.args.get('q','') }}">
+              <button class="btn btn-outline-light" type="submit">Search</button>
+            </div>
+          </form>
 
           <!-- Auth buttons -->
           <div class="d-flex align-items-center gap-2">
@@ -121,7 +178,7 @@
     <div class="container mt-3">
       {% with msgs = get_flashed_messages(with_categories=True) %}
         {% if msgs %}
-          <div class="position-relative" style="z-index: 1;">
+          <div class="position-relative" style="z-index:1;">
             {% for category, message in msgs %}
               {% set bs = 'info' %}
               {% if category in ['success','danger','warning','info','primary','secondary','light','dark'] %}
@@ -149,5 +206,53 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Desktop behavior: open only when hovering the ARROW (caret); debounced close to prevent flicker -->
+    <script>
+      (function(){
+        const li = document.querySelector('.dropdown-hover');
+        if (!li) return;
+
+        const toggle = document.getElementById('workoutsMenu');
+        const menu   = li.querySelector('.workout-menu');
+
+        // Place relative to <li> so it sits right under “Workouts”
+        const dd = bootstrap.Dropdown.getOrCreateInstance(toggle, {
+          autoClose: 'outside',
+          reference: 'parent',
+          popperConfig: {
+            placement: 'bottom-start',
+            strategy: 'fixed',
+            modifiers: [
+              { name: 'offset', options: { offset: [0, 8] } },
+              { name: 'preventOverflow', options: { boundary: 'viewport' } },
+              { name: 'flip', options: { fallbackPlacements: [] } }
+            ]
+          }
+        });
+
+        const mqHover = window.matchMedia('(hover:hover) and (pointer:fine)');
+        let hideTimer = null;
+
+        const open = () => { clearTimeout(hideTimer); dd.show(); };
+        const scheduleClose = () => {
+          clearTimeout(hideTimer);
+          hideTimer = setTimeout(() => dd.hide(), 160); // small delay = no blinking
+        };
+
+        if (mqHover.matches){
+          // ONLY the caret (toggle) and the menu control hover-open
+          toggle.addEventListener('mouseenter', open);
+          toggle.addEventListener('mouseleave', scheduleClose);
+          menu  .addEventListener('mouseenter', open);
+          menu  .addEventListener('mouseleave', scheduleClose);
+        }
+
+        // Click/tap outside closes
+        document.addEventListener('click', (e)=>{
+          if (!li.contains(e.target)) dd.hide();
+        });
+      })();
+    </script>
   </body>
 </html>

@@ -36,15 +36,21 @@
       <div class="form-text">Example: Chest, Triceps, Shoulders</div>
     </div>
 
-    <div class="col-md-6">
-      <label class="form-label">Style</label>
-      <select class="form-select" name="style">
-        <option value=""></option>
-        {% for st in styles %}
-          <option value="{{ st }}" {{ 'selected' if data.get('style')==st else '' }}>{{ st }}</option>
-        {% endfor %}
-      </select>
-    </div>
+        <div class="col-md-6">
+          <div class="d-flex align-items-center justify-content-between">
+            <label class="form-label mb-0">Style</label>
+            <a class="small text-decoration-none" href="{{ url_for('admin_styles') }}">Manage styles</a>
+          </div>
+          <select class="form-select" name="style">
+            <option value="">— Select a style —</option>
+            {% for st in styles %}
+              <option value="{{ st }}" {{ 'selected' if data.get('style')==st else '' }}>{{ st }}</option>
+            {% endfor %}
+          </select>
+          {% if not styles %}
+            <div class="form-text text-warning">No styles yet. Add one via <em>Manage styles</em>.</div>
+          {% endif %}
+        </div>
 
     <div class="col-md-6">
       <label class="form-label">Tags (auto-filled from body parts; you can edit)</label>
@@ -152,7 +158,6 @@
   {% endif %}
 </form>
 
-
 {# --- Tiny CSS to make drag clearer --- #}
 <style>
   .img-slot.dragging { opacity: .6; }
@@ -160,175 +165,160 @@
 </style>
 
 {# --- JS: previews, clear, drag reorder, renumber field names --- #}
-    <script>
-    (function() {
-      const list = document.getElementById('img-list');
+<script>
+(function() {
+  const list = document.getElementById('img-list');
 
-      // --- Preview helpers ---
-      function fileToDataURL(file, cb) {
-        const r = new FileReader();
-        r.onload = e => cb(e.target.result);
-        r.readAsDataURL(file);
+  // --- Preview helpers ---
+  function fileToDataURL(file, cb) {
+    const r = new FileReader();
+    r.onload = e => cb(e.target.result);
+    r.readAsDataURL(file);
+  }
+
+  function updatePreview(slotElem) {
+    const urlInput = slotElem.querySelector('.img-url');
+    const fileInput = slotElem.querySelector('.img-file');
+    const preview  = slotElem.querySelector('.img-preview');
+
+    if (fileInput.files && fileInput.files[0]) {
+      fileToDataURL(fileInput.files[0], dataUrl => { preview.src = dataUrl; });
+    } else {
+      preview.src = urlInput.value || '';
+    }
+  }
+
+  if (list) {
+    list.querySelectorAll('.img-slot').forEach(slot => {
+      slot.querySelector('.img-url').addEventListener('input', () => updatePreview(slot));
+      slot.querySelector('.img-file').addEventListener('change', () => updatePreview(slot));
+      const clearBtn = slot.querySelector('.clear-slot');
+      clearBtn.addEventListener('click', () => {
+        slot.querySelector('.img-url').value = '';
+        const f = slot.querySelector('.img-file');
+        f.value = '';
+        slot.querySelector('.img-preview').src = '';
+      });
+      updatePreview(slot);
+    });
+
+    // --- Drag & drop reorder ---
+    let dragSrc = null;
+
+    function renumberNames() {
+      const slots = Array.from(list.querySelectorAll('.img-slot'));
+      slots.forEach((slot, idx) => {
+        const n = idx + 1;
+        slot.dataset.slot = n;
+        slot.querySelector('.card-header strong').textContent = 'Image ' + n;
+        slot.querySelector('.img-url').setAttribute('name', `img${n}_url`);
+        slot.querySelector('.img-file').setAttribute('name', `img${n}_file`);
+      });
+    }
+
+    function handleDragStart(e) {
+      dragSrc = this;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', '');
+    }
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      this.classList.add('drag-over');
+    }
+    function handleDragLeave() {
+      this.classList.remove('drag-over');
+    }
+    function handleDrop(e) {
+      e.stopPropagation();
+      this.classList.remove('drag-over');
+      if (dragSrc && dragSrc !== this) {
+        const nodes = Array.from(list.children);
+        const srcIndex = nodes.indexOf(dragSrc);
+        const dstIndex = nodes.indexOf(this);
+        list.insertBefore(dragSrc, (dstIndex > srcIndex) ? this.nextSibling : this);
+        renumberNames();
       }
+    }
+    function handleDragEnd() {
+      this.classList.remove('dragging');
+      list.querySelectorAll('.img-slot').forEach(s => s.classList.remove('drag-over'));
+    }
 
-      function updatePreview(slotElem) {
-        const urlInput = slotElem.querySelector('.img-url');
-        const fileInput = slotElem.querySelector('.img-file');
-        const preview  = slotElem.querySelector('.img-preview');
+    list.querySelectorAll('.img-slot').forEach(slot => {
+      slot.addEventListener('dragstart', handleDragStart);
+      slot.addEventListener('dragover', handleDragOver);
+      slot.addEventListener('dragleave', handleDragLeave);
+      slot.addEventListener('drop', handleDrop);
+      slot.addEventListener('dragend', handleDragEnd);
+    });
+  }
 
-        if (fileInput.files && fileInput.files[0]) {
-          fileToDataURL(fileInput.files[0], dataUrl => { preview.src = dataUrl; });
-        } else {
-          preview.src = urlInput.value || '';
-        }
+  // --- Form validation ---
+  const form = document.getElementById('workout-form');
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
       }
+      form.classList.add('was-validated');
+    }, false);
+  }
 
-      // Attach change listeners per slot
-      if (list) {
-        list.querySelectorAll('.img-slot').forEach(slot => {
-          slot.querySelector('.img-url').addEventListener('input', () => updatePreview(slot));
-          slot.querySelector('.img-file').addEventListener('change', () => updatePreview(slot));
-          const clearBtn = slot.querySelector('.clear-slot');
-          clearBtn.addEventListener('click', () => {
-            slot.querySelector('.img-url').value = '';
-            const f = slot.querySelector('.img-file');
-            f.value = ''; // clear file
-            slot.querySelector('.img-preview').src = '';
-          });
-          // initial preview
-          updatePreview(slot);
-        });
+  // --- Muscle diagram preview ---
+  const muscleUrl  = document.getElementById('muscle_image_url');
+  const muscleFile = document.getElementById('muscle_image_file');
+  const musclePrev = document.getElementById('muscle-preview');
 
-        // --- Drag & drop reorder (HTML5) ---
-        let dragSrc = null;
+  function updateMusclePreview() {
+    if (!musclePrev) return;
+    if (muscleFile && muscleFile.files && muscleFile.files[0]) {
+      fileToDataURL(muscleFile.files[0], dataUrl => { musclePrev.src = dataUrl; });
+    } else if (muscleUrl) {
+      musclePrev.src = muscleUrl.value || '';
+    }
+  }
 
-        function renumberNames() {
-          // After reorder, make sure names follow img1_*, img2_*, ...
-          const slots = Array.from(list.querySelectorAll('.img-slot'));
-          slots.forEach((slot, idx) => {
-            const n = idx + 1;
-            slot.dataset.slot = n;
-            slot.querySelector('.card-header strong').textContent = 'Image ' + n;
+  if (muscleUrl)  muscleUrl.addEventListener('input', updateMusclePreview);
+  if (muscleFile) muscleFile.addEventListener('change', updateMusclePreview);
+  updateMusclePreview();
 
-            slot.querySelector('.img-url').setAttribute('name', `img${n}_url`);
-            slot.querySelector('.img-file').setAttribute('name', `img${n}_file`);
-          });
-        }
+  // --- Auto-populate Tags from Body Parts ---
+  const bodyPartsEl = document.getElementById('body_parts');
+  const tagsEl      = document.getElementById('tags');
 
-        function handleDragStart(e) {
-          dragSrc = this;
-          this.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', '');
-        }
-        function handleDragOver(e) {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          this.classList.add('drag-over');
-        }
-        function handleDragLeave() {
-          this.classList.remove('drag-over');
-        }
-        function handleDrop(e) {
-          e.stopPropagation();
-          this.classList.remove('drag-over');
-          if (dragSrc && dragSrc !== this) {
-            const nodes = Array.from(list.children);
-            const srcIndex = nodes.indexOf(dragSrc);
-            const dstIndex = nodes.indexOf(this);
-            list.insertBefore(dragSrc, (dstIndex > srcIndex) ? this.nextSibling : this);
-            renumberNames();
-          }
-        }
-        function handleDragEnd() {
-          this.classList.remove('dragging');
-          list.querySelectorAll('.img-slot').forEach(s => s.classList.remove('drag-over'));
-        }
+  function toTag(s) {
+    return (s || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
 
-        list.querySelectorAll('.img-slot').forEach(slot => {
-          slot.addEventListener('dragstart', handleDragStart);
-          slot.addEventListener('dragover', handleDragOver);
-          slot.addEventListener('dragleave', handleDragLeave);
-          slot.addEventListener('drop', handleDrop);
-          slot.addEventListener('dragend', handleDragEnd);
-        });
-      }
+  function parseParts(raw) {
+    if (!raw) return [];
+    return raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+  }
 
-      // --- Client-side required validation (Bootstrap style) ---
-      const form = document.getElementById('workout-form');
-      if (form) {
-        form.addEventListener('submit', function (event) {
-          if (!form.checkValidity()) {
-            event.preventDefault();
-            event.stopPropagation();
-          }
-          form.classList.add('was-validated');
-        }, false);
-      }
+  function unique(arr) { return Array.from(new Set(arr)); }
 
-      // --- Muscle diagram preview ---
-      const muscleUrl  = document.getElementById('muscle_image_url');
-      const muscleFile = document.getElementById('muscle_image_file');
-      const musclePrev = document.getElementById('muscle-preview');
+  function syncTagsFromBodyParts() {
+    if (!bodyPartsEl || !tagsEl) return;
+    const parts = parseParts(bodyPartsEl.value);
+    const rawLabels = parts.map(p => p);
+    const normTags  = parts.map(p => toTag(p));
+    const all = unique([...rawLabels, ...normTags]).filter(Boolean);
+    tagsEl.value = all.join(', ');
+  }
 
-      function updateMusclePreview() {
-        if (!musclePrev) return;
-        if (muscleFile && muscleFile.files && muscleFile.files[0]) {
-          fileToDataURL(muscleFile.files[0], dataUrl => { musclePrev.src = dataUrl; });
-        } else if (muscleUrl) {
-          musclePrev.src = muscleUrl.value || '';
-        }
-      }
-
-      if (muscleUrl)  muscleUrl.addEventListener('input', updateMusclePreview);
-      if (muscleFile) muscleFile.addEventListener('change', updateMusclePreview);
-      updateMusclePreview();
-
-      // --- Auto-populate Tags from Body Parts ---
-      const bodyPartsEl = document.getElementById('body_parts');
-      const tagsEl      = document.getElementById('tags');
-
-      // Normalize a label into a good search tag (lowercase, dashed)
-      function toTag(s) {
-        return (s || '')
-          .toLowerCase()
-          .trim()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '');
-      }
-
-      function parseParts(raw) {
-        if (!raw) return [];
-        // split on commas or newlines
-        return raw
-          .split(/[\n,]+/)
-          .map(s => s.trim())
-          .filter(Boolean);
-      }
-
-      function unique(arr) {
-        return Array.from(new Set(arr));
-      }
-
-      function syncTagsFromBodyParts() {
-        if (!bodyPartsEl || !tagsEl) return;
-        const parts = parseParts(bodyPartsEl.value);
-        // include both raw labels (as typed) and normalized tags
-        const rawLabels = parts.map(p => p);           // e.g. "Chest"
-        const normTags  = parts.map(p => toTag(p));    // e.g. "chest"
-        const all = unique([...rawLabels, ...normTags]).filter(Boolean);
-        tagsEl.value = all.join(', ');
-      }
-
-      if (bodyPartsEl && tagsEl) {
-        // update on input
-        bodyPartsEl.addEventListener('input', syncTagsFromBodyParts);
-
-        // if tags empty on load, initialize from body parts
-        if (!tagsEl.value || !tagsEl.value.trim()) {
-          syncTagsFromBodyParts();
-        }
-      }
-    })();
-    </script>
+  if (bodyPartsEl && tagsEl) {
+    bodyPartsEl.addEventListener('input', syncTagsFromBodyParts);
+    if (!tagsEl.value || !tagsEl.value.trim()) {
+      syncTagsFromBodyParts();
+    }
+  }
+})();
+</script>
 {% endblock %}

@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Admin – NFG{% endblock %}
+{##}
+{#<a class="list-group-item list-group-item-action" href="{{ url_for('admin_styles') }}">#}
+{#  Manage Styles#}
+{#</a>#}
 
-<a class="list-group-item list-group-item-action" href="{{ url_for('admin_styles') }}">
-  Manage Styles
-</a>
+<a class="btn btn-outline-primary btn-sm" href="{{ url_for('admin_styles') }}">Manage Styles</a>
 
 
 {% block sidebar %}

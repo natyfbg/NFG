@@ -14,7 +14,7 @@
     No workouts yet. Try <a href="{{ url_for('workouts_browse') }}">Browse</a> or add some in Admin.
   </div>
 {% else %}
-  {# Denser grid like Search: 2 / 3 / 4 columns #}
+  {# 2 / 3 / 4 grid #}
   <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2">
     {% for w in items %}
       {% set parts  = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
@@ -29,45 +29,47 @@
 
       <div class="col">
         <div class="card h-100 shadow-sm">
-          <div id="{{ cid }}" class="carousel slide" data-bs-ride="false">
-            <div class="carousel-inner ratio ratio-16x9">
-              {% for img in thumbs %}
-                <div class="carousel-item {% if loop.first %}active{% endif %}">
-                  <img
-                    src="{{ img }}"
-                    class="d-block w-100 h-100"
-                    style="object-fit: cover;"
-                    alt="{{ w.name }} image {{ loop.index }}"
-                    loading="lazy">
-                </div>
-              {% endfor %}
-            </div>
+          <!-- 16:9 media wrapper -->
+          <div class="ratio ratio-16x9">
+            <div id="{{ cid }}" class="carousel slide h-100" data-bs-ride="false">
+              <div class="carousel-inner h-100">
+                {% for img in thumbs %}
+                  <div class="carousel-item {% if loop.first %}active{% endif %} h-100">
+                    <img
+                      src="{{ img }}"
+                      alt="{{ w.name }} image {{ loop.index }}"
+                      class="d-block w-100 h-100"
+                      style="object-fit:cover;"
+                      {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
+                      decoding="async">
+                  </div>
+                {% endfor %}
+              </div>
 
-            {% if thumbs|length > 1 %}
-              <button class="carousel-control-prev" type="button"
-                      data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous image">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-              </button>
-              <button class="carousel-control-next" type="button"
-                      data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next image">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-              </button>
-            {% endif %}
+              {% if thumbs|length > 1 %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#{{ cid }}" data-bs-slide="prev">
+                  <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#{{ cid }}" data-bs-slide="next">
+                  <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                </button>
+              {% endif %}
+            </div>
           </div>
 
           <div class="card-body py-2 px-2">
             <h6 class="card-title mb-1">
-              <a href="{{ url_for('workout_detail', slug=w.slug) }}"
-                 class="stretched-link text-decoration-none">
+              <a href="{{ url_for('workout_detail', slug=w.slug) }}" class="stretched-link text-decoration-none">
                 {{ w.name }}
               </a>
             </h6>
             <div class="small text-muted">
-              {{ w.level }}{% if parts %} • {{ parts|join(', ') }}{% endif %}{% if w.style %} • {{ w.style }}{% endif %}
+              {{ w.level or '—' }}{% if parts %} • {{ parts|join(', ') }}{% endif %}{% if w.style %} • {{ w.style }}{% endif %}
             </div>
           </div>
         </div>
       </div>
+
     {% endfor %}
   </div>
 {% endif %}
@@ -76,7 +78,6 @@
   <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('workouts_browse') }}">Browse (filters &amp; search)</a>
 </div>
 
-{# Make carousel arrow clicks win over the stretched-link overlay #}
 <style>
   .card { position: relative; }
   .card .stretched-link { z-index: 5; }
