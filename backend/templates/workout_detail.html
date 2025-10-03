@@ -9,7 +9,7 @@
 <h1 class="mb-3 page-title">{{ w.name }}</h1>
 
 <div class="row g-4 align-items-start">
-  <!-- LEFT: Video + Info/Tips (first on all sizes) -->
+  <!-- LEFT: Video + Info/Tips -->
   <div class="col-lg-7 order-1">
     {% if w.youtube_id %}
       <div class="ratio ratio-16x9 rounded overflow-hidden shadow mb-3">
@@ -18,8 +18,7 @@
           title="YouTube video"
           allowfullscreen
           loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade">
-        </iframe>
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
       </div>
     {% endif %}
 
@@ -40,7 +39,6 @@
 
   <!-- RIGHT: Portrait gallery + Meta -->
   <div class="col-lg-5 order-2">
-    {# Build gallery list: ordered images + muscle diagram (if present) #}
     {% set gallery = (w.images if w.images else []) %}
     {% if w.muscle_image and (w.muscle_image not in gallery) %}
       {% set gallery = gallery + [w.muscle_image] %}
@@ -50,19 +48,15 @@
     {% endif %}
     {% set cid = 'detail-car-' ~ w.slug %}
 
-    <!-- MAIN PORTRAIT GALLERY (strict 9:16; height follows width) -->
     <div class="media-9x16 rounded overflow-hidden shadow">
-      <div id="{{ cid }}" class="carousel slide h-100" data-bs-ride="false">
+      <div id="{{ cid }}" class="carousel slide h-100" data-bs-ride="false" data-bs-touch="true" aria-label="Gallery for {{ w.name }}">
         <div class="carousel-inner h-100">
           {% for img in gallery %}
             <div class="carousel-item {% if loop.first %}active{% endif %} h-100">
-              <img
-                src="{{ img }}"
-                alt="{{ w.name }} image {{ loop.index }}"
-                class="d-block w-100 h-100"
-                style="object-fit:cover;"
-                {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
-                decoding="async">
+              <img src="{{ img }}" alt="{{ w.name }} image {{ loop.index }}"
+                   class="d-block w-100 h-100" style="object-fit:cover;"
+                   {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
+                   decoding="async">
             </div>
           {% endfor %}
         </div>
@@ -79,17 +73,11 @@
     </div>
 
     {% if gallery|length > 1 %}
-      <!-- Responsive, scrollable portrait thumbnails -->
-      <div class="thumbscroller mt-2">
+      <div class="thumbscroller mt-2" id="{{ cid }}-thumbs">
         {% for img in gallery %}
-          <img
-            src="{{ img }}"
-            data-bs-target="#{{ cid }}"
-            data-bs-slide-to="{{ loop.index0 }}"
-            class="border thumb-9x16"
-            alt="thumbnail {{ loop.index }}"
-            loading="lazy"
-            decoding="async">
+          <img src="{{ img }}" data-bs-target="#{{ cid }}" data-bs-slide-to="{{ loop.index0 }}"
+               class="border thumb-9x16" alt="thumbnail {{ loop.index }}"
+               loading="lazy" decoding="async">
         {% endfor %}
       </div>
     {% endif %}
@@ -102,35 +90,29 @@
           <a href="{{ url_for('workouts_browse', level=w.level) }}">{{ w.level }}</a>
         </li>
       {% endif %}
-
       {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
       {% if parts %}
         <li class="list-group-item">
           <strong>Body Part(s):</strong>
           {% for p in parts %}
-            <a class="badge rounded-pill text-bg-secondary text-decoration-none me-1"
-               href="{{ url_for('workouts_browse', body=p) }}">{{ p }}</a>
+            <a class="badge rounded-pill text-bg-secondary text-decoration-none me-1" href="{{ url_for('workouts_browse', body=p) }}">{{ p }}</a>
           {% endfor %}
         </li>
       {% endif %}
-
       {% if w.style %}
         <li class="list-group-item">
           <strong>Style:</strong>
           <a href="{{ url_for('workouts_browse', style=w.style) }}">{{ w.style }}</a>
         </li>
       {% endif %}
-
       {% if w.tags and w.tags|length %}
         <li class="list-group-item">
           <strong>Tags:</strong>
           {% for t in w.tags %}
-            <a class="badge rounded-pill text-bg-light border text-decoration-none me-1"
-               href="{{ url_for('workouts_browse', q=t) }}">{{ t }}</a>
+            <a class="badge rounded-pill text-bg-light border text-decoration-none me-1" href="{{ url_for('workouts_browse', q=t) }}">{{ t }}</a>
           {% endfor %}
         </li>
       {% endif %}
-
       {% if w.rating is not none %}
         <li class="list-group-item"><strong>Rating:</strong> ★ {{ '%.1f'|format(w.rating) }}</li>
       {% endif %}
@@ -150,27 +132,17 @@
         {% set thumbs = ['https://via.placeholder.com/900x1600?text=Workout'] %}
       {% endif %}
       {% set rcid = 'rel-' ~ r.slug %}
-      {% set rparts = r.body_parts if r.body_parts else ([r.body_part] if r.body_part else []) %}
-
       <div class="col">
-        <!-- Whole card is strict 9:16; caption overlays -->
         <div class="card portrait-card shadow overflow-hidden">
           <div class="card-media position-relative h-100">
-            <div id="{{ rcid }}" class="carousel slide h-100" data-bs-ride="false">
+            <div id="{{ rcid }}" class="carousel slide h-100" data-bs-ride="false" data-bs-touch="true">
               <div class="carousel-inner h-100">
                 {% for img in thumbs %}
                   <div class="carousel-item {% if loop.first %}active{% endif %} h-100">
-                    <img
-                      src="{{ img }}"
-                      alt="{{ r.name }} image {{ loop.index }}"
-                      class="d-block w-100 h-100"
-                      style="object-fit:cover;"
-                      loading="lazy"
-                      decoding="async">
+                    <img src="{{ img }}" alt="{{ r.name }} image {{ loop.index }}" class="d-block w-100 h-100" style="object-fit:cover;" loading="lazy" decoding="async">
                   </div>
                 {% endfor %}
               </div>
-
               {% if thumbs|length > 1 %}
                 <button class="carousel-control-prev" type="button" data-bs-target="#{{ rcid }}" data-bs-slide="prev" aria-label="Previous image">
                   <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -182,14 +154,8 @@
             </div>
 
             <div class="card-caption">
-              <h6 class="mb-1">
-                <a class="stretched-link text-white text-decoration-none" href="{{ url_for('workout_detail', slug=r.slug) }}">
-                  {{ r.name }}
-                </a>
-              </h6>
-              <div class="small opacity-75">
-                {{ r.level or '—' }}{% if rparts %} • {{ rparts|join(', ') }}{% endif %}{% if r.style %} • {{ r.style }}{% endif %}
-              </div>
+              <h6 class="mb-1"><a class="stretched-link text-white text-decoration-none" href="{{ url_for('workout_detail', slug=r.slug) }}">{{ r.name }}</a></h6>
+              <div class="small opacity-75">{{ r.level or '—' }}{% if r.body_parts %} • {{ r.body_parts|join(', ') }}{% endif %}</div>
             </div>
           </div>
         </div>
@@ -201,88 +167,84 @@
 <a class="btn btn-secondary mt-4" href="{{ url_for('workouts_browse') }}">← Back to Browse</a>
 
 <style>
-  /* ================= Responsive knobs ================= */
+  /* Responsive gallery caps */
   :root{
-    /* Use *small* and *dynamic* viewport units to handle mobile browser chrome. */
-    --gallery-max-vh: 78svh;  /* small-viewport height cap */
-    --gallery-max-dvh: 78dvh; /* dynamic-viewport fallback */
+    --gallery-max-vh: 78svh;
+    --gallery-max-dvh: 78dvh;
   }
-
-  /* Title scales a bit across sizes */
-  h1.page-title{ font-size: clamp(1.75rem, 2.5vw, 2.25rem); }
-
-  /* ======== Detail main portrait (right column) ======== */
-  .media-9x16{
-    aspect-ratio: 9 / 16;
-    width: 100%;
-    /* Height follows width; cap to viewport height to prevent overflow on phones */
-    max-height: min(var(--gallery-max-vh), var(--gallery-max-dvh));
-  }
+  .media-9x16{ aspect-ratio: 9 / 16; width:100%; max-height: min(var(--gallery-max-vh), var(--gallery-max-dvh)); }
   .media-9x16 img{ width:100%; height:100%; object-fit:cover; }
 
-  /* On the *smallest* screens, also limit width so 9:16 doesn't grow too tall */
-  @media (max-width: 480px){
-    .media-9x16{
-      /* keep some gutters and shrink a touch so thumbs/meta fit without overflow */
-      width: min(92vw, 420px);
-      margin-inline: auto;
-      max-height: min(72svh, 72dvh);
-    }
-    .thumbscroller{ justify-content: center; }
-  }
-
-  /* ======== Portrait cards (related) ======== */
-  .portrait-card{ aspect-ratio: 9 / 16; width:100%; }
-  .portrait-card .card-media{ width:100%; height:100%; }
-  .portrait-card img{ width:100%; height:100%; object-fit:cover; }
-
-  .card-caption{
-    position:absolute; left:0; right:0; bottom:0;
-    padding:.6rem .75rem; color:#fff;
-    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.55) 60%, rgba(0,0,0,.78) 100%);
-  }
-
-  /* ======== Thumbnails: responsive + scrollable row ======== */
-  .thumb-9x16{
-    --t: clamp(48px, 10vw, 64px);  /* width adapts 48→64px */
-    width: var(--t);
-    height: calc((16 / 9) * var(--t));
-    object-fit: cover;
-    border-radius: .375rem;
-    cursor: pointer;
-  }
-  .thumbscroller{
-    display:flex; gap:.5rem; flex-wrap:nowrap;
-    overflow-x:auto; padding-bottom:.25rem;
-    scroll-snap-type:x proximity; -webkit-overflow-scrolling: touch;
-  }
+  /* Thumbnails */
+  .thumb-9x16{ --t: clamp(48px, 10vw, 64px); width:var(--t); height: calc((16/9) * var(--t)); object-fit:cover; border-radius:.375rem; cursor:pointer; }
+  .thumbscroller{ display:flex; gap:.5rem; flex-wrap:nowrap; overflow-x:auto; padding-bottom:.25rem; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; }
   .thumbscroller img{ scroll-snap-align:center; }
 
-  /* Tighter meta spacing on very small screens */
-  @media (max-width: 575.98px){
-    .detail-meta .list-group-item{ padding:.5rem .75rem; }
+  /* EXTRA-SMALL: allow wrapping and reduce size */
+  @media (max-width:380px){
+    .thumbscroller{ flex-wrap:wrap; justify-content:center; gap:.4rem; padding-bottom:.3rem; }
+    .thumb-9x16{ --t: clamp(38px, 12vw, 46px); width:var(--t); height: calc((16/9) * var(--t)); }
   }
 
-  /* Carousel controls wider on tall media */
-  .card .carousel-control-prev,
-  .card .carousel-control-next { width: 14%; }
+  /* Portrait card styles for related */
+  .portrait-card{ aspect-ratio: 9 / 16; width:100%; }
+  .card-caption{ position:absolute; left:0; right:0; bottom:0; padding:.6rem .75rem; color:#fff; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.55) 60%, rgba(0,0,0,.78) 100%); }
+
+  /* Locked carousel (small screens): hide controls */
+  .carousel.locked .carousel-control-prev,
+  .carousel.locked .carousel-control-next { display:none !important; pointer-events:none; }
+
+  /* Prevent carousel from expanding unexpectedly */
+  .carousel .carousel-item img{ object-fit:cover; }
 </style>
 
 <script>
-  // Prevent arrow clicks from triggering overlay/stretched links
+  // stop arrow clicks from activating stretched-link
   document.querySelectorAll('.carousel-control-prev, .carousel-control-next')
     .forEach(btn => btn.addEventListener('click', e => e.stopPropagation()));
 
-  // Thumbnail click → jump to that slide
-  document.querySelectorAll('img.thumb-9x16').forEach(el => {
-    el.addEventListener('click', function () {
-      const target = this.getAttribute('data-bs-target');
-      const idx = parseInt(this.getAttribute('data-bs-slide-to'), 10);
-      const elCar = document.querySelector(target);
-      if (!elCar) return;
-      const instance = bootstrap.Carousel.getOrCreateInstance(elCar);
+  // thumbnail click wiring
+  document.querySelectorAll('img[data-bs-target][data-bs-slide-to]').forEach(el => {
+    el.addEventListener('click', function(){
+      const target = this.dataset.bsTarget;
+      const idx = parseInt(this.dataset.bsSlideTo, 10);
+      const car = document.querySelector(target);
+      if (!car) return;
+      const instance = bootstrap.Carousel.getOrCreateInstance(car);
       instance.to(idx);
     });
   });
+
+  // -- Lockdown & touch management for carousels on very small screens
+  (function(){
+    const LOCK_W = 380; // px threshold; tweak if desired
+    const carSelector = '.carousel';
+
+    function updateLock(){
+      const lock = window.innerWidth <= LOCK_W;
+      document.querySelectorAll(carSelector).forEach(carEl => {
+        // ensure instance
+        const inst = bootstrap.Carousel.getOrCreateInstance(carEl, { ride: false });
+        if (lock){
+          carEl.classList.add('locked');
+          // jump to first slide and pause
+          try { inst.to(0); } catch(e){}
+          inst.pause();
+          carEl.dataset.bsTouch = "false";
+        } else {
+          carEl.classList.remove('locked');
+          carEl.dataset.bsTouch = "true";
+          // keep instance ready - but not auto-cycling
+          const slides = carEl.querySelectorAll('.carousel-item').length;
+          if (slides > 1) { try { inst.pause(); } catch(e){} }
+        }
+      });
+    }
+
+    let t;
+    window.addEventListener('resize', ()=>{ clearTimeout(t); t = setTimeout(updateLock, 120); }, { passive:true });
+    document.addEventListener('DOMContentLoaded', updateLock);
+    if (document.readyState !== 'loading') updateLock();
+  })();
 </script>
 {% endblock %}

@@ -65,46 +65,19 @@
 
 <p class="text-muted mb-2">{{ total }} result{{ '' if total==1 else 's' }}</p>
 
-{# === Active filters pill bar === #}
+{# Active filter pills #}
 {% set show_pills = (level or body or style or q or sort in ['recent','rating','favorites']) %}
 {% if show_pills %}
   <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
-    {% if level %}
-      <a class="badge rounded-pill text-bg-primary text-decoration-none"
-         href="{{ url_for('workouts_browse', level='', body=body, style=style, q=q, sort=sort, per_page=per_page) }}">
-        Level: {{ level }} ✕
-      </a>
-    {% endif %}
-    {% if body %}
-      <a class="badge rounded-pill text-bg-primary text-decoration-none"
-         href="{{ url_for('workouts_browse', level=level, body='', style=style, q=q, sort=sort, per_page=per_page) }}">
-        Body: {{ body }} ✕
-      </a>
-    {% endif %}
-    {% if style %}
-      <a class="badge rounded-pill text-bg-primary text-decoration-none"
-         href="{{ url_for('workouts_browse', level=level, body=body, style='', q=q, sort=sort, per_page=per_page) }}">
-        Style: {{ style }} ✕
-      </a>
-    {% endif %}
-    {% if q %}
-      <a class="badge rounded-pill text-bg-primary text-decoration-none"
-         href="{{ url_for('workouts_browse', level=level, body=body, style=style, q='', sort=sort, per_page=per_page) }}">
-        Search: “{{ q }}” ✕
-      </a>
-    {% endif %}
-    {% if sort in ['recent','rating','favorites'] %}
-      <a class="badge rounded-pill text-bg-primary text-decoration-none"
-         href="{{ url_for('workouts_browse', level=level, body=body, style=style, q=q, sort='name', per_page=per_page) }}">
-        Sort: {{ 'Recent' if sort=='recent' else ('Top Rated' if sort=='rating' else 'Favorites') }} ✕
-      </a>
-    {% endif %}
-    <a class="badge rounded-pill text-bg-danger text-decoration-none"
-       href="{{ url_for('workouts_browse') }}">Clear all</a>
+    {% if level %}<a class="badge rounded-pill text-bg-primary" href="{{ url_for('workouts_browse', level='', body=body, style=style, q=q, sort=sort, per_page=per_page) }}">Level: {{ level }} ✕</a>{% endif %}
+    {% if body %}<a class="badge rounded-pill text-bg-primary" href="{{ url_for('workouts_browse', level=level, body='', style=style, q=q, sort=sort, per_page=per_page) }}">Body: {{ body }} ✕</a>{% endif %}
+    {% if style %}<a class="badge rounded-pill text-bg-primary" href="{{ url_for('workouts_browse', level=level, body=body, style='', q=q, sort=sort, per_page=per_page) }}">Style: {{ style }} ✕</a>{% endif %}
+    {% if q %}<a class="badge rounded-pill text-bg-primary" href="{{ url_for('workouts_browse', level=level, body=body, style=style, q='', sort=sort, per_page=per_page) }}">Search: “{{ q }}” ✕</a>{% endif %}
+    {% if sort in ['recent','rating','favorites'] %}<a class="badge rounded-pill text-bg-primary" href="{{ url_for('workouts_browse', level=level, body=body, style=style, q=q, sort='name', per_page=per_page) }}">Sort: {{ 'Recent' if sort=='recent' else ('Top Rated' if sort=='rating' else 'Favorites') }} ✕</a>{% endif %}
+    <a class="badge rounded-pill text-bg-danger" href="{{ url_for('workouts_browse') }}">Clear all</a>
   </div>
 {% endif %}
 
-{# ===== Compact list view (kept) ===== #}
 <div class="list-group">
   {% for w in items %}
     {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
@@ -124,7 +97,6 @@
   {% endfor %}
 </div>
 
-{# ===== Portrait thumbnail grid (same ratio as detail) ===== #}
 {% if items %}
   <h2 class="mt-4 mb-2">Exercises</h2>
 
@@ -143,17 +115,11 @@
       <div class="col">
         <div class="card portrait-card shadow overflow-hidden">
           <div class="card-media position-relative h-100">
-            <div id="{{ cid }}" class="carousel slide h-100" data-bs-ride="false">
+            <div id="{{ cid }}" class="carousel slide h-100" data-bs-ride="false" data-bs-touch="true" aria-label="Images for {{ w.name }}">
               <div class="carousel-inner h-100">
                 {% for img in thumbs %}
                   <div class="carousel-item {% if loop.first %}active{% endif %} h-100">
-                    <img
-                      src="{{ img }}"
-                      class="d-block w-100 h-100"
-                      style="object-fit:cover;"
-                      alt="{{ w.name }} image {{ loop.index }}"
-                      {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
-                      decoding="async">
+                    <img src="{{ img }}" class="d-block w-100 h-100" style="object-fit:cover;" alt="{{ w.name }} image {{ loop.index }}" {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async">
                   </div>
                 {% endfor %}
               </div>
@@ -169,13 +135,8 @@
             </div>
 
             <div class="card-caption">
-              <h6 class="mb-1">
-                <a class="stretched-link text-white text-decoration-none"
-                   href="{{ url_for('workout_detail', slug=w.slug) }}">{{ w.name }}</a>
-              </h6>
-              <div class="small opacity-75">
-                {{ w.level or '—' }}{% if parts %} • {{ parts|join(', ') }}{% endif %}{% if w.style %} • {{ w.style }}{% endif %}
-              </div>
+              <h6 class="mb-1"><a class="stretched-link text-white text-decoration-none" href="{{ url_for('workout_detail', slug=w.slug) }}">{{ w.name }}</a></h6>
+              <div class="small opacity-75">{{ w.level or '—' }}{% if parts %} • {{ parts|join(', ') }}{% endif %}{% if w.style %} • {{ w.style }}{% endif %}</div>
             </div>
           </div>
         </div>
@@ -184,50 +145,64 @@
   </div>
 
   <script>
-    // keep carousel arrows from triggering the stretched-link
+    // stop carousel arrow clicks from activating stretched links
     document.querySelectorAll('.carousel-control-prev, .carousel-control-next')
-      .forEach(btn => btn.addEventListener('click', (e) => e.stopPropagation()));
+      .forEach(btn => btn.addEventListener('click', e => e.stopPropagation()));
   </script>
 {% endif %}
 
 <nav class="mt-3">
   <ul class="pagination">
     <li class="page-item {% if page<=1 %}disabled{% endif %}">
-      <a class="page-link"
-         href="{{ url_for('workouts_browse', level=level, body=body, style=style, q=q, sort=sort, per_page=per_page, page=page-1) }}">Previous</a>
+      <a class="page-link" href="{{ url_for('workouts_browse', level=level, body=body, style=style, q=q, sort=sort, per_page=per_page, page=page-1) }}">Previous</a>
     </li>
     <li class="page-item disabled"><span class="page-link">Page {{ page }}</span></li>
     <li class="page-item {% if (page*per_page) >= total %}disabled{% endif %}">
-      <a class="page-link"
-         href="{{ url_for('workouts_browse', level=level, body=body, style=style, q=q, sort=sort, per_page=per_page, page=page+1) }}">Next</a>
+      <a class="page-link" href="{{ url_for('workouts_browse', level=level, body=body, style=style, q=q, sort=sort, per_page=per_page, page=page+1) }}">Next</a>
     </li>
   </ul>
 </nav>
 
 <style>
-  /* ======= Portrait cards (exactly like detail) ======= */
   .portrait-card{ aspect-ratio: 9 / 16; width:100%; }
   .portrait-card .card-media{ width:100%; height:100%; }
   .portrait-card img{ width:100%; height:100%; object-fit:cover; }
+  .card-caption{ position:absolute; left:0; right:0; bottom:0; padding:.6rem .75rem; color:#fff; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.55) 60%, rgba(0,0,0,.78) 100%); }
 
-  /* ~30% smaller feel is achieved by showing 2-up on phones and 3-up on md+;
-     aspect-ratio keeps height proportional with width, so no fixed heights needed. */
+  /* Locked carousel hiding controls (small screens) */
+  .carousel.locked .carousel-control-prev,
+  .carousel.locked .carousel-control-next { display:none !important; pointer-events:none; }
 
-  /* Caption overlay */
-  .card-caption{
-    position:absolute; left:0; right:0; bottom:0;
-    padding:.6rem .75rem; color:#fff;
-    background: linear-gradient(180deg, rgba(0,0,0,0) 0%,
-                                         rgba(0,0,0,.55) 60%,
-                                         rgba(0,0,0,.78) 100%);
-  }
-
-  /* Carousel controls a tad wider on tall media */
-  .card .carousel-control-prev,
-  .card .carousel-control-next {
-    opacity:.9; transition:opacity .15s; width:14%;
-  }
-  .card:hover .carousel-control-prev,
-  .card:hover .carousel-control-next { opacity:1; }
+  /* Make controls slightly narrower on tall cards */
+  .card .carousel-control-prev, .card .carousel-control-next { width:14%; }
 </style>
+
+<script>
+  // Lock behavior reused for browse page carousels
+  (function(){
+    const LOCK_W = 380;
+    function updateLock(){
+      const lock = window.innerWidth <= LOCK_W;
+      document.querySelectorAll('.carousel').forEach(carEl => {
+        const inst = bootstrap.Carousel.getOrCreateInstance(carEl, { ride:false });
+        if (lock){
+          carEl.classList.add('locked');
+          try { inst.to(0); } catch(e){}
+          inst.pause();
+          carEl.dataset.bsTouch = "false";
+        } else {
+          carEl.classList.remove('locked');
+          carEl.dataset.bsTouch = "true";
+          const slides = carEl.querySelectorAll('.carousel-item').length;
+          if (slides > 1) { try { inst.pause(); } catch(e){} }
+        }
+      });
+    }
+
+    let t;
+    window.addEventListener('resize', ()=>{ clearTimeout(t); t = setTimeout(updateLock, 120); }, { passive:true });
+    document.addEventListener('DOMContentLoaded', updateLock);
+    if (document.readyState !== 'loading') updateLock();
+  })();
+</script>
 {% endblock %}
