@@ -1,4 +1,5 @@
-# backend/docker-compose.yml
+version: "3.9"
+
 services:
   mongo:
     image: mongo:7
@@ -8,42 +9,60 @@ services:
     volumes:
       - mongo_data:/data/db
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand({ ping: 1 }).ok"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: nfg-app
     depends_on:
       mongo:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-fsS", "http://localhost:8000/healthz" ]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]
       interval: 10s
       timeout: 3s
       retries: 5
       start_period: 10s
 
-    # Load env from .env (admin creds, secret, etc.)
-    env_file: .env
+    # This compose file lives in backend/, but .env is at repo root.
+    # If you move .env into backend/, change this to ".env".
+    env_file: ../.env
 
     environment:
-      # IMPORTANT: Force app to use the Docker mongo service, regardless of what's in .env
+      # Force the app to use the Docker mongo service in local dev.
       MONGO_URI: mongodb://mongo:27017/NFG
-      # Keep your secret key from .env if present; else fall back
+      # Keep SECRET_KEY from .env if present; else fallback.
       SECRET_KEY: ${SECRET_KEY:-dev-secret}
 
     ports:
-      - "5050:8000"   # host:container
+      - "5050:8000"  # host:container
 
     volumes:
       - .:/app
       - ./static/uploads:/app/static/uploads
 
-    # Run with Gunicorn (Flask app object is app:app)
     command: gunicorn -w 3 -b 0.0.0.0:8000 app:app --timeout 120
+    restart: unless-stopped
+
+  # One-shot seeding helper (run manually).
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      mongo:
+        condition: service_healthy
+    env_file: ../.env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/NFG
+    command: python seed.py
+    profiles: ["tools"]  # won't start with `up` unless profile is specified
 
 volumes:
   mongo_data:

@@ -28,13 +28,26 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf
 load_dotenv(override=False)
 
 MONGO_URI = os.environ.get("MONGO_URI") or "mongodb://localhost:27017/NFG"
+MONGO_DB  = os.environ.get("MONGO_DB")  # optional override to align with seed.py
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret")
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
+# Safer cookies in hosted envs (Render sets RENDER=true)
+if os.getenv("RENDER"):
+    app.config.update(
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+    )
+
+# Pick database: prefer MONGO_DB if provided; else if the URI has a /db part use that,
+# otherwise fall back to NFG
 client = MongoClient(MONGO_URI)
-db = client.get_default_database() if "/" in MONGO_URI.split("://", 1)[-1] else client["NFG"]
+if MONGO_DB:
+    db = client[MONGO_DB]
+else:
+    db = client.get_default_database() if "/" in MONGO_URI.split("://", 1)[-1] else client["NFG"]
 
 # ---- Logging ----
 LOG_DIR = os.path.join(app.root_path, "instance", "logs")
@@ -48,7 +61,7 @@ file_handler.setLevel(logging.INFO)
 app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info("App startup")
-app.logger.info(f"Using Mongo at: {MONGO_URI}")
+app.logger.info(f"Using Mongo at: {MONGO_URI} (db={db.name})")
 
 @app.before_request
 def _start_timer():
@@ -599,7 +612,6 @@ def admin_styles():
         return redirect(url_for("admin_styles"))
 
     styles = list(db.styles.find().sort([("order", 1), ("name", 1)]))
-    # You created templates/admin_style.html — we’ll use that:
     return render_template("admin_style.html", styles=styles)
 
 @app.route("/admin/styles/<id>/toggle", methods=["POST"])

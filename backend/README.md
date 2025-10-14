@@ -1,34 +1,55 @@
-# NattyFit – Workouts & Recipes (Flask + MongoDB)
+# 🏋️‍♂️ NattyFit (NFG) — Workout & Recipe Platform  
+*A modern Flask + MongoDB web app built for fitness trainers, creators, and enthusiasts.*
 
-## Quick start
+---
+
+## 🌟 Overview
+
+**NattyFit (NFG)** is a fitness-focused web application built with **Flask**, **MongoDB**, and **Bootstrap 5**.  
+It allows users to **browse, search, and manage workouts and recipes** through a responsive interface — with an admin dashboard for managing content and dynamic filtering for workouts.
+
+This project is designed to be:
+- ✅ Lightweight and portable (works locally or in Docker)
+- ✅ Ready for production (deployable on **Render**, with persistent MongoDB)
+- ✅ Scalable for future extensions (authentication, user dashboards, media uploads)
+
+---
+
+## 🧱 Tech Stack
+
+| Layer | Technology | Purpose |
+|-------|-------------|----------|
+| **Backend** | Flask (Python 3.11) | RESTful routes, templates, admin logic |
+| **Database** | MongoDB 7 | Document-based storage for workouts & recipes |
+| **Auth** | Flask-Login | Admin authentication |
+| **Forms** | Flask-WTF + CSRFProtect | Secure forms with CSRF protection |
+| **Frontend** | Jinja2 Templates + Bootstrap 5 | Responsive UI, quick rendering |
+| **Deployment** | Docker + Render | Portable & cloud-native |
+| **Server** | Gunicorn | Production-grade WSGI HTTP server |
+
+---
+
+## 🚀 Quick Start
+
+You can run **NattyFit** in two main ways:
+
+### 🧩 Option 1 — Local Python environment (developer-friendly)
 ```bash
+# From repo root
+cd backend
 
-# from backend/
-docker-compose build          # rebuild image (picks up new requirements.txt)
-docker-compose up -d app      # restart the app container
-# if you changed seed fields and want fresh data:
-# docker-compose run --rm app python seed.py
+# 1. Create and activate a virtual environment
+python -m venv .venv
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
 
-
-
-python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
+# 2. Install dependencies
 pip install -r requirements.txt
-cp .env.example .env  # edit if needed
+
+# 3. Copy and configure environment
+cp .env.example .env
+
+# 4. Seed database (loads demo workouts & recipes)
 python seed.py
+
+# 5. Run app
 python app.py
-```
-Open http://127.0.0.1:5000
-
-## What’s inside
-- `app.py` – Flask app with routes: home, /workouts, /recipes, /search
-- `templates/base.html` – Bootstrap layout + navbar + search bar
-- Reuses your `home.html`, `workouts.html`, `recipes.html`, `quick_options.html`
-- `seed.py` – loads a few sample workouts & recipes
-- `requirements.txt`, `.env.example`
-
-## Next steps
-- Add forms or an admin area to create/edit workouts and recipes
-- Add user auth later (Flask-Login / JWT)
-- Switch to async Motor if needed for heavy workloads
-
-

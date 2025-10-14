@@ -1,17 +1,62 @@
-# Virtual environment
+# ==============================
+# Python / Flask
+# ==============================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
 .venv/
 venv/
+env/
+ENV/
 
-# Python cache
-__pycache__/
-*.pyc
+# Instance & logs
+instance/
+*.log
+*.sqlite3
 
-# Environment files
-.env
+# Environment files (keep example)
+../.env
 .env.*
-!.env.example   # keep the example file tracked
+!.env.example
 
-
-# user uploaded assets
+# ==============================
+# User uploads & static cache
+# ==============================
 static/uploads/*
 !static/uploads/.gitkeep
+static/cache/*
+!static/cache/.gitkeep
+
+# ==============================
+# Build / packaging / cache
+# ==============================
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+pip-wheel-metadata/
+.cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+
+# ==============================
+# Docker / Render
+# ==============================
+# Avoid committing local container data
+mongo_data/
+docker-compose.override.yml
+
+# ==============================
+# IDE / editor files
+# ==============================
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

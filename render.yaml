@@ -1,0 +1,67 @@
+# render.yaml
+# Defines infrastructure and services for deploying NFG on Render
+
+services:
+  # === 1) Web Service (Flask + Gunicorn) ===
+  - type: web
+    name: nfg-app
+    env: docker
+    plan: starter
+    region: oregon
+    autoDeploy: true
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    startCommand: >
+      gunicorn -w 3 -b 0.0.0.0:8000 app:app --timeout 120
+    envVars:
+      - key: MONGO_URI
+        fromService:
+          type: pserv
+          name: nfg-mongo
+          property: connectionString
+      - key: MONGO_DB
+        value: NFG
+      - key: SECRET_KEY
+        sync: false   # set in Render dashboard
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD_HASH
+        sync: false   # set in Render dashboard
+      - key: UPLOAD_FOLDER
+        value: /app/static/uploads
+    healthCheckPath: /healthz
+    numInstances: 1
+    disk:
+      name: uploads
+      mountPath: /app/static/uploads
+      sizeGB: 2
+
+  # === 2) Persistent MongoDB container ===
+  - type: pserv
+    name: nfg-mongo
+    env: docker
+    plan: starter
+    region: oregon
+    image:
+      url: mongo:7
+    disk:
+      name: mongo_data
+      mountPath: /data/db
+      sizeGB: 10
+
+  # === 3) One-off seed job (manual trigger) ===
+  - type: job
+    name: nfg-seed
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    startCommand: python seed.py
+    autoDeploy: false         # run manually after first deploy
+    envVars:
+      - key: MONGO_URI
+        fromService:
+          type: pserv
+          name: nfg-mongo
+          property: connectionString
+      - key: MONGO_DB
+        value: NFG
