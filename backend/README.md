@@ -53,3 +53,23 @@ python seed.py
 
 # 5. Run app
 python app.py
+
+
+[//]: # (To Run App)
+
+[//]: # ()
+[//]: # (# 1&#41; Make sure your .env is at the repo root &#40;NFG/.env&#41;)
+
+[//]: # (# 2&#41; Build and start)
+
+[//]: # (docker compose up -d --build)
+
+[//]: # ()
+[//]: # (# 3&#41; Seed sample data &#40;optional, but handy&#41;)
+
+[//]: # (docker compose run --rm app python seed.py)
+
+[//]: # ()
+[//]: # (# 4&#41; Tail logs &#40;optional, to see requests/errors&#41;)
+
+[//]: # (docker compose logs -f app)

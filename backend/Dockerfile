@@ -28,6 +28,6 @@ ENV MONGO_URI=mongodb://mongo:27017/NFG
 # Expose port for Render / local dev
 EXPOSE 5000
 
-# Start app with Gunicorn (production-grade WSGI server)
-# Render automatically sets PORT environment variable
-CMD ["gunicorn", "-b", "0.0.0.0:${PORT:-5000}", "app:app"]
+# Start app with Gunicorn; run via shell so ${PORT} expands at runtime
+# You can tweak WEB_CONCURRENCY / GUNICORN_THREADS via env vars.
+CMD ["sh", "-lc", "gunicorn -w ${WEB_CONCURRENCY:-3} -k gthread --threads ${GUNICORN_THREADS:-2} -b 0.0.0.0:${PORT:-5000} app:app"]

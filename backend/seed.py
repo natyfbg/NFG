@@ -18,19 +18,22 @@ Flags:
   --no-placeholders     Don’t add placeholder images when missing
   --keep-placeholders   Force placeholder images when missing (default)
 """
-from dotenv import load_dotenv
-from pymongo import MongoClient, ASCENDING
-from pymongo.errors import DuplicateKeyError
-import os
+
+import argparse
 import datetime
+import os
 import re
 import sys
-import argparse
+
+from dotenv import load_dotenv
+from pymongo import ASCENDING, MongoClient
+from pymongo.errors import DuplicateKeyError
 
 load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 MONGO_DB = os.getenv("MONGO_DB", None)  # optional override
+
 
 def get_db():
     client = MongoClient(MONGO_URI)
@@ -45,11 +48,13 @@ def get_db():
     except Exception:
         return client["NFG"]
 
+
 def slugify(text: str) -> str:
     text = (text or "").strip().lower()
     s = re.sub(r"[^a-z0-9]+", "-", text)
     s = re.sub(r"-{2,}", "-", s)
     return s.strip("-")
+
 
 def ensure_indexes(db, quiet=False):
     try:
@@ -60,9 +65,11 @@ def ensure_indexes(db, quiet=False):
     except Exception as e:
         print("Warning: could not create indexes:", e)
 
+
 def make_default_image(name):
     key = re.sub(r"\W+", "+", (name or "").strip()) or "Workout"
     return f"https://via.placeholder.com/900x1600?text={key}"
+
 
 def seed_data(now, use_placeholders=True):
     workouts = [
@@ -80,7 +87,7 @@ def seed_data(now, use_placeholders=True):
             "tips": [
                 "Keep a straight line from head to heels.",
                 "Elbows ~45° from your torso.",
-                "Brace your core and squeeze glutes."
+                "Brace your core and squeeze glutes.",
             ],
             "youtube_id": "",  # optionally add a valid ID
         },
@@ -136,15 +143,23 @@ def seed_data(now, use_placeholders=True):
 
     return workouts, recipes
 
+
 def parse_args():
     p = argparse.ArgumentParser(description="Seed MongoDB with sample NFG data.")
-    p.add_argument("-d", "--drop", action="store_true",
-                   help="Drop collections (workouts, recipes) before seeding (DEV ONLY).")
+    p.add_argument(
+        "-d",
+        "--drop",
+        action="store_true",
+        help="Drop collections (workouts, recipes) before seeding (DEV ONLY).",
+    )
     p.add_argument("-q", "--quiet", action="store_true", help="Reduce output.")
     g = p.add_mutually_exclusive_group()
     g.add_argument("--no-placeholders", action="store_true", help="Do NOT add placeholder images.")
-    g.add_argument("--keep-placeholders", action="store_true", help="Force placeholder images (default).")
+    g.add_argument(
+        "--keep-placeholders", action="store_true", help="Force placeholder images (default)."
+    )
     return p.parse_args()
+
 
 def main():
     args = parse_args()
@@ -196,8 +211,11 @@ def main():
 
     if not quiet:
         print(f"Upserted/updated: {upserted_w} workouts, {upserted_r} recipes.")
-        print(f"Totals now: {db.workouts.count_documents({})} workouts, {db.recipes.count_documents({})} recipes.")
+        print(
+            f"Totals now: {db.workouts.count_documents({})} workouts, {db.recipes.count_documents({})} recipes."
+        )
         print("Seed complete.")
+
 
 if __name__ == "__main__":
     try:
