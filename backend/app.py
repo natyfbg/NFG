@@ -12,7 +12,17 @@ from time import perf_counter
 from bson.objectid import ObjectId
 from bson.regex import Regex
 from dotenv import load_dotenv
-from flask import Flask, abort, flash, g, redirect, render_template, request, url_for
+from flask import (
+    Flask,
+    abort,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    url_for,
+)
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from pymongo import ASCENDING, MongoClient
@@ -24,10 +34,26 @@ from werkzeug.utils import secure_filename
 # -----------------------------------------------------------------------------
 load_dotenv(override=False)
 
+# Primary DB settings
 MONGO_URI = os.environ.get("MONGO_URI") or "mongodb://localhost:27017/NFG"
 MONGO_DB = os.environ.get("MONGO_DB")  # optional override to align with seed.py
+
+# Secrets
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret")
 
+# Upload/media configuration (Render Disk ready)
+# Option A: Mounted disk (recommended for now)
+#   MEDIA_ROOT=/app/static/uploads (or /var/media)
+#   MEDIA_URL=/media/    (app will serve from this path)
+#
+# Option B: Legacy in-repo static dir (works too)
+#   no MEDIA_ROOT given -> files go under /static/uploads and are served at /static/uploads/...
+MEDIA_ROOT = os.getenv("MEDIA_ROOT", "").strip()
+MEDIA_URL = (os.getenv("MEDIA_URL") or "/media/").strip() or "/media/"
+# Legacy env (kept for backward-compat)
+UPLOAD_FOLDER_LEGACY = os.getenv("UPLOAD_FOLDER", "static/uploads").strip()
+
+# Flask app
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
@@ -38,8 +64,7 @@ if os.getenv("RENDER"):
         SESSION_COOKIE_SAMESITE="Lax",
     )
 
-# Pick database: prefer MONGO_DB if provided; else if the URI has a /db part use that,
-# otherwise fall back to NFG
+# --- Mongo client / db selection
 client = MongoClient(MONGO_URI)
 if MONGO_DB:
     db = client[MONGO_DB]
@@ -63,6 +88,37 @@ app.logger.info("App startup")
 app.logger.info(f"Using Mongo at: {MONGO_URI} (db={db.name})")
 
 
+# Ensure upload root exists on boot
+def _abs_upload_root() -> str:
+    """
+    Resolve the absolute folder where we write files.
+    - If MEDIA_ROOT is set and absolute, use it directly.
+    - If MEDIA_ROOT is set and relative, place it under app.root_path.
+    - Else fall back to legacy UPLOAD_FOLDER_LEGACY (relative to app).
+    """
+    base = MEDIA_ROOT if MEDIA_ROOT else UPLOAD_FOLDER_LEGACY
+    return base if os.path.isabs(base) else os.path.join(app.root_path, base)
+
+
+def _public_base_url() -> str:
+    """
+    Base URL prefix for serving files.
+    - If MEDIA_ROOT is used, serve at MEDIA_URL (defaults to /media/).
+    - Else serve under /static/uploads/...
+    """
+    if MEDIA_ROOT:
+        return MEDIA_URL if MEDIA_URL.endswith("/") else MEDIA_URL + "/"
+    # legacy
+    path = "/" + UPLOAD_FOLDER_LEGACY.strip("/")
+    return path if path.endswith("/") else path + "/"
+
+
+UPLOAD_ROOT_ABS = _abs_upload_root()
+PUBLIC_BASE = _public_base_url()
+os.makedirs(UPLOAD_ROOT_ABS, exist_ok=True)
+app.logger.info(f"Uploads: saving to {UPLOAD_ROOT_ABS} ; public at {PUBLIC_BASE}")
+
+
 @app.before_request
 def _start_timer():
     g._t0 = perf_counter()
@@ -72,6 +128,9 @@ def _start_timer():
 def _log_request(resp):
     try:
         dt = (perf_counter() - getattr(g, "_t0", perf_counter())) * 1000.0
+        # Light caching for media routes
+        if MEDIA_ROOT and request.path.startswith(MEDIA_URL.rstrip("/") + "/"):
+            resp.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
         app.logger.info(
             "REQ %s %s %s %s %.1fms UA=%s",
             request.method,
@@ -92,7 +151,7 @@ csrf = CSRFProtect(app)
 # Auth (single admin)
 # -----------------------------------------------------------------------------
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")  # only used if no hash set
 ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
 
 login_manager = LoginManager(app)
@@ -222,8 +281,7 @@ def _extract_youtube_id(val: str | None):
 
 # Uploads
 ALLOWED_IMAGE_EXTS = {"png", "jpg", "jpeg", "gif", "webp"}
-app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
-UPLOAD_BASE = os.getenv("UPLOAD_FOLDER", "static/uploads")
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB
 
 
 def _allowed_image(filename: str) -> bool:
@@ -231,18 +289,22 @@ def _allowed_image(filename: str) -> bool:
 
 
 def _save_one_file(file_storage) -> str | None:
+    """Save a single FileStorage and return its public URL path."""
     if not file_storage or not getattr(file_storage, "filename", ""):
         return None
     if not _allowed_image(file_storage.filename):
         return None
+
     ext = file_storage.filename.rsplit(".", 1)[1].lower()
     day = datetime.datetime.utcnow().strftime("%Y%m%d")
-    folder_abs = os.path.join(app.root_path, UPLOAD_BASE, day)
+    folder_abs = os.path.join(UPLOAD_ROOT_ABS, day)
     os.makedirs(folder_abs, exist_ok=True)
     fname = f"{uuid.uuid4().hex}.{ext}"
     abs_path = os.path.join(folder_abs, secure_filename(fname))
     file_storage.save(abs_path)
-    return "/" + "/".join([UPLOAD_BASE, day, fname]).replace("\\", "/")
+
+    # Public URL
+    return f"{PUBLIC_BASE}{day}/{fname}".replace("//", "/").replace("//", "/")  # normalize
 
 
 def _collect_ordered_images_from_form(req) -> list[str]:
@@ -320,6 +382,24 @@ QUICK_OPTIONS = [
     {"label": "Recently Added", "url": "/workouts?filter=recent"},
     {"label": "Top Rated", "url": "/workouts?filter=top"},
 ]
+
+
+# -----------------------------------------------------------------------------
+# Static/media serving for Render Disk
+# -----------------------------------------------------------------------------
+# If MEDIA_ROOT is set, expose it at MEDIA_URL (default /media/)
+# This keeps /static for bundled assets and /media for user uploads.
+if MEDIA_ROOT:
+    # Normalize MEDIA_URL (leading/trailing slash)
+    if not MEDIA_URL.startswith("/"):
+        MEDIA_URL = "/" + MEDIA_URL
+    if not MEDIA_URL.endswith("/"):
+        MEDIA_URL = MEDIA_URL + "/"
+
+    @app.route(f"{MEDIA_URL}<path:fp>")
+    def _serve_media(fp):
+        # Long-lived caching handled in after_request
+        return send_from_directory(MEDIA_ROOT, fp, conditional=True)
 
 
 # -----------------------------------------------------------------------------
@@ -812,7 +892,14 @@ def healthz():
 
 
 # -----------------------------------------------------------------------------
-# Main
+# Main (dev only)
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
+    # In dev, serve MEDIA_ROOT too if set (mirrors production behavior)
+    if MEDIA_ROOT and not any(r.rule.startswith(MEDIA_URL) for r in app.url_map.iter_rules()):
+
+        @app.route(f"{MEDIA_URL}<path:fp>")
+        def _dev_media(fp):
+            return send_from_directory(MEDIA_ROOT, fp, conditional=True)
+
     app.run(host="0.0.0.0", debug=True)
