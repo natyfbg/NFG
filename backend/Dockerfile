@@ -20,8 +20,9 @@ ENV FLASK_ENV=production
 ENV MONGO_URI=mongodb://mongo:27017/NFG
 
 # Add our start script and make it executable
-COPY start.sh /app/start.sh
+COPY starter.sh /app/start.sh
 RUN chmod +x /app/start.sh
+
 
 EXPOSE 5000
 
