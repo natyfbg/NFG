@@ -7,7 +7,7 @@
   <!-- CSRF -->
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-  {# --- Top row: core metadata --- #}
+  <!-- Top row: core metadata -->
   <div class="row g-3">
     <div class="col-lg-6">
       <label class="form-label">Name</label>
@@ -36,21 +36,21 @@
       <div class="form-text">Example: Chest, Triceps, Shoulders</div>
     </div>
 
-        <div class="col-md-6">
-          <div class="d-flex align-items-center justify-content-between">
-            <label class="form-label mb-0">Style</label>
-            <a class="small text-decoration-none" href="{{ url_for('admin_styles') }}">Manage styles</a>
-          </div>
-          <select class="form-select" name="style">
-            <option value="">— Select a style —</option>
-            {% for st in styles %}
-              <option value="{{ st }}" {{ 'selected' if data.get('style')==st else '' }}>{{ st }}</option>
-            {% endfor %}
-          </select>
-          {% if not styles %}
-            <div class="form-text text-warning">No styles yet. Add one via <em>Manage styles</em>.</div>
-          {% endif %}
-        </div>
+    <div class="col-md-6">
+      <div class="d-flex align-items-center justify-content-between">
+        <label class="form-label mb-0">Style</label>
+        <a class="small text-decoration-none" href="{{ url_for('admin_styles') }}">Manage styles</a>
+      </div>
+      <select class="form-select" name="style">
+        <option value="">— Select a style —</option>
+        {% for st in styles %}
+          <option value="{{ st }}" {{ 'selected' if data.get('style')==st else '' }}>{{ st }}</option>
+        {% endfor %}
+      </select>
+      {% if not styles %}
+        <div class="form-text text-warning">No styles yet. Add one via <em>Manage styles</em>.</div>
+      {% endif %}
+    </div>
 
     <div class="col-md-6">
       <label class="form-label">Tags (auto-filled from body parts; you can edit)</label>
@@ -89,16 +89,25 @@
 
   <hr class="my-4">
 
-  {# --- IMAGES: ordered + previews + drag reorder --- #}
+  <!-- IMAGES: ordered + previews + drag reorder -->
   <h5 class="mb-2">Images (ordered)</h5>
   <div class="form-text mb-2">
     Top → bottom = display order. Drag cards to reorder. A file upload overrides the URL in that slot.
   </div>
 
-  {% set imgs = data.get('images', []) if data else [] %}
+  {# Normalize images to a list for previews whether it's a list or newline/comma string #}
+  {% set _imgs_raw = data.get('images', []) %}
+  {% if _imgs_raw is string %}
+    {% set imgs = _imgs_raw.splitlines() %}
+    {% set _extra = _imgs_raw.replace('\n', ',') %}
+    {% set imgs = (_extra.split(',') if imgs|length == 1 else imgs) | map('trim') | list %}
+  {% else %}
+    {% set imgs = _imgs_raw %}
+  {% endif %}
+
   <div id="img-list" class="row g-3" data-slot-count="4">
     {% for i in range(1,5) %}
-      {% set pre = imgs[i-1] if imgs and imgs|length >= i else '' %}
+      {% set pre = (imgs[i-1] if imgs and imgs|length >= i else '') %}
       <div class="col-md-6 img-slot" draggable="true" data-slot="{{ i }}">
         <div class="card h-100 shadow-sm">
           <div class="card-header d-flex justify-content-between align-items-center py-2">
@@ -112,7 +121,7 @@
             <img class="img-preview" src="{{ pre or '' }}" alt="" style="object-fit:cover;">
           </div>
           <div class="card-body">
-            <label class="form-label small mb-1">URL (or /static/uploads/...)</label>
+            <label class="form-label small mb-1">URL (or /media/...)</label>
             <input class="form-control img-url" name="img{{ i }}_url" value="{{ pre }}">
             <div class="mt-2">
               <label class="form-label small mb-1">Upload file</label>
@@ -126,12 +135,12 @@
 
   <hr class="my-4">
 
-  {# --- Muscle diagram --- #}
+  <!-- Muscle diagram -->
   <h5 class="mb-2">Muscle Diagram Image (optional)</h5>
   <div class="row g-3 align-items-end">
     <div class="col-md-7">
-      <label class="form-label">URL (or /static/uploads/...)</label>
-      <input class="form-control" name="muscle_image" id="muscle_image_url"
+      <label class="form-label">URL (or /media/...)</label>
+      <input class="form-control" name="muscle_image_url" id="muscle_image_url"
              value="{{ data.get('muscle_image','') }}">
       <div class="form-text">If you also upload a file, the upload will be used.</div>
     </div>
@@ -158,13 +167,11 @@
   {% endif %}
 </form>
 
-{# --- Tiny CSS to make drag clearer --- #}
 <style>
   .img-slot.dragging { opacity: .6; }
   .img-slot.drag-over { outline: 2px dashed var(--bs-primary); outline-offset: 4px; }
 </style>
 
-{# --- JS: previews, clear, drag reorder, renumber field names --- #}
 <script>
 (function() {
   const list = document.getElementById('img-list');
