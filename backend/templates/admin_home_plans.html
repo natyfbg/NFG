@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Admin – Home Plans{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Quick Options</div>
+  <div class="list-group list-group-flush">
+    {% for item in quick_options %}
+      <a class="list-group-item list-group-item-action" href="{{ item.url }}">
+        {{ item.label }}
+      </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Content Management</div>
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action"
+       href="{{ url_for('admin_index') }}">
+      Workouts
+    </a>
+    <a class="list-group-item list-group-item-action"
+       href="{{ url_for('admin_styles') }}">
+      Styles
+    </a>
+    <a class="list-group-item list-group-item-action active"
+       href="{{ url_for('admin_home_plans') }}">
+      Home Plans
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+  <h1 class="mb-0">Home Plans</h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_index') }}">Back</a>
+    <a class="btn btn-primary" href="{{ url_for('admin_home_plan_new') }}">+ New Home Plan</a>
+  </div>
+</div>
+
+<p class="text-muted mb-3">
+  These cards show on the Home page (ex: “Week 1 Plan”, “Leg Day”, “Month 1 Program”).
+</p>
+
+{% if plans|length == 0 %}
+  <div class="alert alert-secondary">No home plans yet.</div>
+{% else %}
+  <div class="list-group">
+    {% for p in plans %}
+      {% set is_active = p.get('active', True) %}
+      <div class="list-group-item">
+        <div class="d-flex align-items-center justify-content-between gap-3">
+
+          <!-- Thumbnail + details -->
+          <div class="d-flex align-items-center gap-3">
+            {% if p.cover_image %}
+              <img src="{{ p.cover_image }}" alt=""
+                   style="width:64px;height:36px;object-fit:cover;border-radius:.25rem;">
+            {% else %}
+              <div class="bg-body-secondary" style="width:64px;height:36px;border-radius:.25rem;"></div>
+            {% endif %}
+
+            <div>
+              <div class="fw-semibold d-flex align-items-center flex-wrap gap-2">
+                <span>{{ p.title }}</span>
+                {% if p.slug %}
+                  <small class="text-muted">/{{ p.slug }}</small>
+                {% endif %}
+                <span class="badge {{ 'text-bg-success' if is_active else 'text-bg-secondary' }}">
+                  {{ 'Active' if is_active else 'Hidden' }}
+                </span>
+              </div>
+
+              <div class="small text-muted">
+                {{ p.category or '—' }}
+                {% if p.duration_label %} • {{ p.duration_label }}{% endif %}
+                {% if p.order is not none %} • order: {{ p.order }}{% endif %}
+              </div>
+
+              {% if p.summary %}
+                <div class="small text-muted mt-1">{{ p.summary }}</div>
+              {% endif %}
+
+              {% if p.cta_url %}
+                <div class="small mt-2">
+                  <span class="text-muted">CTA:</span>
+                  <span class="text-break">{{ p.cta_label or 'View Plan' }} → {{ p.cta_url }}</span>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="d-flex gap-2 flex-wrap justify-content-end">
+            <form method="post"
+                  action="{{ url_for('admin_home_plan_toggle', id=p._id) }}"
+                  class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {% if is_active %}
+                <button class="btn btn-sm btn-outline-secondary" type="submit">Hide</button>
+              {% else %}
+                <button class="btn btn-sm btn-outline-success" type="submit">Activate</button>
+              {% endif %}
+            </form>
+
+            <a class="btn btn-sm btn-outline-secondary"
+               href="{{ url_for('admin_home_plan_edit', id=p._id) }}">
+              Edit
+            </a>
+
+            <form method="post"
+                  action="{{ url_for('admin_home_plan_delete', id=p._id) }}"
+                  onsubmit="return confirm('Delete this home plan?');"
+                  class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Admin – Programs{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Quick Options</div>
+  <div class="list-group list-group-flush">
+    {% for item in quick_options %}
+      <a class="list-group-item list-group-item-action" href="{{ item.url }}">
+        {{ item.label }}
+      </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Content Management</div>
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action" href="{{ url_for('admin_index') }}">Workouts</a>
+    <a class="list-group-item list-group-item-action" href="{{ url_for('admin_styles') }}">Styles</a>
+    <a class="list-group-item list-group-item-action" href="{{ url_for('admin_home_plans') }}">Home Plans</a>
+    <a class="list-group-item list-group-item-action active" href="{{ url_for('admin_programs') }}">Programs</a>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header">Notes</div>
+  <div class="card-body text-muted small">
+    Programs are the “containers” (ex: 6 Week Beginner). Next we’ll add admin tools to create Weeks and add workouts inside each week.
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-start justify-content-between mb-3">
+  <div>
+    <h1 class="mb-1">Programs</h1>
+    <p class="text-muted mb-0">Create and manage program cards. Users can view active programs at <code>/programs</code>.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-primary" href="{{ url_for('admin_program_new') }}">+ New Program</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('programs_index') }}">View Public</a>
+  </div>
+</div>
+
+{% if programs and programs|length > 0 %}
+  <div class="list-group">
+    {% for p in programs %}
+      <div class="list-group-item">
+        <div class="d-flex align-items-start justify-content-between gap-3">
+
+          <!-- Left: cover + meta -->
+          <div class="d-flex align-items-start gap-3">
+            {% if p.cover_image %}
+              <img src="{{ p.cover_image }}" alt=""
+                   style="width:96px;height:54px;object-fit:cover;border-radius:.5rem;">
+            {% else %}
+              <div class="bg-body-secondary"
+                   style="width:96px;height:54px;border-radius:.5rem;"></div>
+            {% endif %}
+
+            <div>
+              <div class="fw-semibold">
+                {{ p.title }}
+                <small class="text-muted">/{{ p.slug }}</small>
+              </div>
+
+              {% if p.summary %}
+                <div class="text-muted small">{{ p.summary }}</div>
+              {% endif %}
+
+              <div class="small text-muted mt-1">
+                {{ p.category or 'Program' }}
+                {% if p.duration_label %} • {{ p.duration_label }}{% endif %}
+                {% if p.order is not none %} • order: {{ p.order }}{% endif %}
+              </div>
+
+              <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
+                {% if p.active is not defined or p.active %}
+                  <span class="badge text-bg-success">Active</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">Inactive</span>
+                {% endif %}
+
+                {% if p.show_on_home %}
+                  <span class="badge text-bg-dark">Home</span>
+                {% else %}
+                  <span class="badge text-bg-light border text-dark">Not on Home</span>
+                {% endif %}
+
+                <a class="small" href="{{ url_for('program_detail', slug=p.slug) }}">Open public</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: actions -->
+          <div class="d-flex flex-wrap gap-2 justify-content-end">
+            <a class="btn btn-sm btn-outline-secondary"
+               href="{{ url_for('admin_program_edit', id=p._id) }}">
+              Edit
+            </a>
+
+            <form method="post"
+                  action="{{ url_for('admin_program_toggle_active', id=p._id) }}"
+                  class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {% if p.active is not defined or p.active %}
+                <button class="btn btn-sm btn-outline-warning" type="submit">Deactivate</button>
+              {% else %}
+                <button class="btn btn-sm btn-outline-success" type="submit">Activate</button>
+              {% endif %}
+            </form>
+
+            <form method="post"
+                  action="{{ url_for('admin_program_toggle_home', id=p._id) }}"
+                  class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {% if p.show_on_home %}
+                <button class="btn btn-sm btn-outline-dark" type="submit">Remove from Home</button>
+              {% else %}
+                <button class="btn btn-sm btn-outline-dark" type="submit">Show on Home</button>
+              {% endif %}
+            </form>
+
+            <form method="post"
+                  action="{{ url_for('admin_program_delete', id=p._id) }}"
+                  onsubmit="return confirm('Delete this program? This will also delete its weeks + workouts inside weeks.');"
+                  class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+{% else %}
+  <div class="alert alert-secondary">
+    No programs yet.
+    <div class="small text-muted mt-1">
+      Click <strong>+ New Program</strong> to create your first one (ex: “6 Week Beginner Program”).
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="fw-semibold mb-1">Recommended next steps</div>
+      <div class="text-muted small">
+        After you create a program, we’ll add Weeks (Week 1..N) and then add workouts inside each week
+        (linked workouts from your DB OR placeholder workouts with sets/reps).
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

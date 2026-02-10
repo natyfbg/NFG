@@ -1,20 +1,45 @@
 {% extends "base.html" %}
 {% block title %}Admin – NFG{% endblock %}
-{##}
-{#<a class="list-group-item list-group-item-action" href="{{ url_for('admin_styles') }}">#}
-{#  Manage Styles#}
-{#</a>#}
-
-<a class="btn btn-outline-primary btn-sm" href="{{ url_for('admin_styles') }}">Manage Styles</a>
-
 
 {% block sidebar %}
 <div class="card mb-3">
   <div class="card-header">Quick Options</div>
   <div class="list-group list-group-flush">
     {% for item in quick_options %}
-      <a class="list-group-item list-group-item-action" href="{{ item.url }}">{{ item.label }}</a>
+      <a class="list-group-item list-group-item-action" href="{{ item.url }}">
+        {{ item.label }}
+      </a>
     {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Content Management</div>
+
+  {% set ep = request.endpoint or '' %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
+  {% set admin_program_eps = ['admin_programs','admin_program_new','admin_program_edit'] %}
+
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}"
+       href="{{ url_for('admin_index') }}">
+      Workouts
+    </a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_styles'] %}active{% endif %}"
+       href="{{ url_for('admin_styles') }}">
+      Styles
+    </a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_home_plans','admin_home_plan_new','admin_home_plan_edit'] %}active{% endif %}"
+       href="{{ url_for('admin_home_plans') }}">
+      Home Plans
+    </a>
+
+    <a class="list-group-item list-group-item-action {% if ep in admin_program_eps %}active{% endif %}"
+       href="{{ url_for('admin_programs') }}">
+      Programs
+    </a>
   </div>
 </div>
 {% endblock %}
@@ -22,8 +47,22 @@
 {% block content %}
 <h1 class="mb-3">Admin</h1>
 
-<div class="mb-3 d-flex gap-2">
-  <a class="btn btn-primary" href="{{ url_for('admin_workout_new') }}">+ New Workout</a>
+<div class="mb-3 d-flex gap-2 flex-wrap">
+  <a class="btn btn-primary" href="{{ url_for('admin_workout_new') }}">
+    + New Workout
+  </a>
+
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin_styles') }}">
+    Manage Styles
+  </a>
+
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin_home_plans') }}">
+    Manage Home Plans
+  </a>
+
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">
+    Manage Programs
+  </a>
 </div>
 
 {% if items|length == 0 %}
@@ -33,15 +72,21 @@
     {% for w in items %}
       {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
       <div class="list-group-item">
-        <div class="d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center justify-content-between gap-3">
+
           <!-- Thumbnail + details -->
           <div class="d-flex align-items-center gap-3">
             {% if w.images and w.images|length > 0 %}
-              <img src="{{ w.images[0] }}" alt="" style="width:64px;height:36px;object-fit:cover;border-radius:.25rem;">
+              <img src="{{ w.images[0] }}"
+                   alt=""
+                   style="width:64px;height:36px;object-fit:cover;border-radius:.25rem;">
             {% elif w.muscle_image %}
-              <img src="{{ w.muscle_image }}" alt="" style="width:64px;height:36px;object-fit:cover;border-radius:.25rem;">
+              <img src="{{ w.muscle_image }}"
+                   alt=""
+                   style="width:64px;height:36px;object-fit:cover;border-radius:.25rem;">
             {% else %}
-              <div class="bg-body-secondary" style="width:64px;height:36px;border-radius:.25rem;"></div>
+              <div class="bg-body-secondary"
+                   style="width:64px;height:36px;border-radius:.25rem;"></div>
             {% endif %}
 
             <div>
@@ -50,8 +95,12 @@
                 <small class="text-muted">/{{ w.slug }}</small>
               </div>
               <div class="small text-muted">
-                {{ w.level or '—' }} • {{ parts|join(', ') or '—' }} • {{ w.style or '—' }}
-                {% if w.rating is not none %} • ★ {{ '%.1f'|format(w.rating) }}{% endif %}
+                {{ w.level or '—' }}
+                • {{ parts|join(', ') or '—' }}
+                • {{ w.style or '—' }}
+                {% if w.rating is not none %}
+                  • ★ {{ '%.1f'|format(w.rating) }}
+                {% endif %}
               </div>
             </div>
           </div>
@@ -59,15 +108,20 @@
           <!-- Actions -->
           <div class="d-flex gap-2">
             <a class="btn btn-sm btn-outline-secondary"
-               href="{{ url_for('admin_workout_edit', id=w._id) }}">Edit</a>
+               href="{{ url_for('admin_workout_edit', id=w._id) }}">
+              Edit
+            </a>
             <form method="post"
                   action="{{ url_for('admin_workout_delete', id=w._id) }}"
                   onsubmit="return confirm('Delete this workout?');"
                   class="d-inline">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="btn btn-sm btn-outline-danger">Delete</button>
+              <button class="btn btn-sm btn-outline-danger">
+                Delete
+              </button>
             </form>
           </div>
+
         </div>
       </div>
     {% endfor %}

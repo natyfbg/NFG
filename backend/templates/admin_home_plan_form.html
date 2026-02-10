@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}{% if edit %}Edit Program{% else %}New Program{% endif %} – Admin{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Content Management</div>
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action" href="{{ url_for('admin_index') }}">Workouts</a>
+    <a class="list-group-item list-group-item-action" href="{{ url_for('admin_styles') }}">Styles</a>
+    <a class="list-group-item list-group-item-action" href="{{ url_for('admin_home_plans') }}">Home Plans</a>
+    <a class="list-group-item list-group-item-action active" href="{{ url_for('admin_programs') }}">Programs</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Tip</div>
+  <div class="card-body text-muted small">
+    Create the program first (title/slug/summary). Next we’ll add Weeks + Workouts inside each week.
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-start justify-content-between mb-3">
+  <div>
+    <h1 class="mb-1">{% if edit %}Edit Program{% else %}New Program{% endif %}</h1>
+    <p class="text-muted mb-0">Programs are the top-level containers (ex: “6 Week Beginner”).</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">Back</a>
+    {% if edit and data.slug %}
+      <a class="btn btn-outline-dark" href="{{ url_for('program_detail', slug=data.slug) }}">View Public</a>
+    {% endif %}
+  </div>
+</div>
+
+<form method="post" class="card shadow-sm">
+  <div class="card-body">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="row g-3">
+      <div class="col-12">
+        <label class="form-label">Title <span class="text-danger">*</span></label>
+        <input class="form-control" name="title" required
+               value="{{ data.title if data else '' }}"
+               placeholder="6 Week Beginner Program">
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Slug</label>
+        <input class="form-control" name="slug"
+               value="{{ data.slug if data else '' }}"
+               placeholder="auto-generated if blank (recommended)">
+        <div class="form-text">
+          Used in URL: <code>/programs/&lt;slug&gt;</code>. Leave blank to auto-generate.
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Category</label>
+        <input class="form-control" name="category"
+               value="{{ data.category if data else '' }}"
+               placeholder="Beginner / Strength / Hypertrophy / Split...">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Duration Label</label>
+        <input class="form-control" name="duration_label"
+               value="{{ data.duration_label if data else '' }}"
+               placeholder="6 weeks / 4 weeks / 12 sessions...">
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Summary</label>
+        <textarea class="form-control" name="summary" rows="3"
+                  placeholder="Short description shown on cards">{{ data.summary if data else '' }}</textarea>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Cover Image URL</label>
+        <input class="form-control" name="cover_image"
+               value="{{ data.cover_image if data else '' }}"
+               placeholder="https://...">
+        <div class="form-text">
+          (Optional) Later we can support uploads like workouts.
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">Order</label>
+        <input class="form-control" type="number" name="order"
+               value="{{ data.order if data and data.order is not none else 0 }}">
+        <div class="form-text">Lower shows first.</div>
+      </div>
+
+      <div class="col-md-4 d-flex align-items-center">
+        <div class="form-check mt-4">
+          <input class="form-check-input" type="checkbox" name="active"
+                 id="active"
+                 {% if data and (data.active is not defined or data.active) %}checked{% endif %}>
+          <label class="form-check-label" for="active">Active</label>
+        </div>
+      </div>
+
+      <div class="col-md-4 d-flex align-items-center">
+        <div class="form-check mt-4">
+          <input class="form-check-input" type="checkbox" name="show_on_home"
+                 id="show_on_home"
+                 {% if data and data.show_on_home %}checked{% endif %}>
+          <label class="form-check-label" for="show_on_home">Show on Home</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-footer d-flex justify-content-end gap-2">
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">Cancel</a>
+    <button class="btn btn-primary" type="submit">
+      {% if edit %}Save Changes{% else %}Create Program{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}

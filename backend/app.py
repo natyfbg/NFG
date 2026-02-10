@@ -34,26 +34,15 @@ from werkzeug.utils import secure_filename
 # -----------------------------------------------------------------------------
 load_dotenv(override=False)
 
-# Primary DB settings
 MONGO_URI = os.environ.get("MONGO_URI") or "mongodb://localhost:27017/NFG"
 MONGO_DB = os.environ.get("MONGO_DB")  # optional override to align with seed.py
-
-# Secrets
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret")
 
 # Upload/media configuration (Render Disk ready)
-# Option A: Mounted disk (recommended for now)
-#   MEDIA_ROOT=/app/static/uploads (or /var/media)
-#   MEDIA_URL=/media/    (app will serve from this path)
-#
-# Option B: Legacy in-repo static dir (works too)
-#   no MEDIA_ROOT given -> files go under /static/uploads and are served at /static/uploads/...
 MEDIA_ROOT = os.getenv("MEDIA_ROOT", "").strip()
 MEDIA_URL = (os.getenv("MEDIA_URL") or "/media/").strip() or "/media/"
-# Legacy env (kept for backward-compat)
 UPLOAD_FOLDER_LEGACY = os.getenv("UPLOAD_FOLDER", "static/uploads").strip()
 
-# Flask app
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
@@ -64,14 +53,16 @@ if os.getenv("RENDER"):
         SESSION_COOKIE_SAMESITE="Lax",
     )
 
-# --- Mongo client / db selection
 client = MongoClient(MONGO_URI)
 if MONGO_DB:
     db = client[MONGO_DB]
 else:
+    # If URI includes a default db name, use it; otherwise fallback to "NFG"
     db = client.get_default_database() if "/" in MONGO_URI.split("://", 1)[-1] else client["NFG"]
 
-# ---- Logging ----
+# -----------------------------------------------------------------------------
+# Logging
+# -----------------------------------------------------------------------------
 LOG_DIR = os.path.join(app.root_path, "instance", "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 log_path = os.path.join(LOG_DIR, "app.log")
@@ -87,8 +78,34 @@ app.logger.setLevel(logging.INFO)
 app.logger.info("App startup")
 app.logger.info(f"Using Mongo at: {MONGO_URI} (db={db.name})")
 
+# -----------------------------------------------------------------------------
+# Helpers (general)
+# -----------------------------------------------------------------------------
+def slugify(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
 
-# Ensure upload root exists on boot
+
+def _split_list(text: str):
+    if not text:
+        return []
+    return [p.strip() for p in re.split(r"[\n,]+", text) if p.strip()]
+
+
+_YT_PAT = re.compile(
+    r"(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|shorts/))?([A-Za-z0-9_-]{11})"
+)
+
+
+def _extract_youtube_id(val: str | None):
+    if not val:
+        return None
+    m = _YT_PAT.search(val.strip())
+    return m.group(1) if m else val.strip()
+
+
+# -----------------------------------------------------------------------------
+# Upload helpers
+# -----------------------------------------------------------------------------
 def _abs_upload_root() -> str:
     """
     Resolve the absolute folder where we write files.
@@ -108,7 +125,6 @@ def _public_base_url() -> str:
     """
     if MEDIA_ROOT:
         return MEDIA_URL if MEDIA_URL.endswith("/") else MEDIA_URL + "/"
-    # legacy
     path = "/" + UPLOAD_FOLDER_LEGACY.strip("/")
     return path if path.endswith("/") else path + "/"
 
@@ -116,9 +132,74 @@ def _public_base_url() -> str:
 UPLOAD_ROOT_ABS = _abs_upload_root()
 PUBLIC_BASE = _public_base_url()
 os.makedirs(UPLOAD_ROOT_ABS, exist_ok=True)
+
+# keep for backwards compat / easy debugging
+app.config["UPLOAD_ROOT_ABS"] = UPLOAD_ROOT_ABS
+app.config["PUBLIC_UPLOAD_BASE"] = PUBLIC_BASE
+
 app.logger.info(f"Uploads: saving to {UPLOAD_ROOT_ABS} ; public at {PUBLIC_BASE}")
 
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB
+ALLOWED_IMAGE_EXTS = {"png", "jpg", "jpeg", "gif", "webp"}
 
+
+def _allowed_image(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_IMAGE_EXTS
+
+
+def _save_one_file(file_storage) -> str | None:
+    """Save a single FileStorage and return its public URL path."""
+    if not file_storage or not getattr(file_storage, "filename", ""):
+        return None
+    if not _allowed_image(file_storage.filename):
+        return None
+
+    ext = file_storage.filename.rsplit(".", 1)[1].lower()
+    day = datetime.datetime.utcnow().strftime("%Y%m%d")
+    folder_abs = os.path.join(UPLOAD_ROOT_ABS, day)
+    os.makedirs(folder_abs, exist_ok=True)
+
+    fname = f"{uuid.uuid4().hex}.{ext}"
+    abs_path = os.path.join(folder_abs, secure_filename(fname))
+    file_storage.save(abs_path)
+
+    # Public URL
+    return f"{PUBLIC_BASE}{day}/{fname}".replace("//", "/").replace("//", "/")
+
+
+def _collect_ordered_images_from_form(req) -> list[str]:
+    ordered: list[str] = []
+    for i in range(1, 9):
+        up = req.files.get(f"img{i}_file") or req.files.get(f"image_file_{i}")
+        if up and getattr(up, "filename", ""):
+            saved = _save_one_file(up)
+            if saved:
+                ordered.append(saved)
+                continue
+
+        url = (req.form.get(f"img{i}_url") or req.form.get(f"image_url_{i}") or "").strip()
+        if url:
+            ordered.append(url)
+
+    if not ordered:
+        legacy = _split_list(req.form.get("images", ""))
+        ordered = legacy
+    return ordered
+
+
+def _collect_muscle_image_from_form(req) -> str | None:
+    up = req.files.get("muscle_image_file")
+    if up and getattr(up, "filename", ""):
+        saved = _save_one_file(up)
+        if saved:
+            return saved
+    url = (req.form.get("muscle_image_url") or req.form.get("muscle_image") or "").strip()
+    return url or None
+
+
+# -----------------------------------------------------------------------------
+# Request timing / caching logs
+# -----------------------------------------------------------------------------
 @app.before_request
 def _start_timer():
     g._t0 = perf_counter()
@@ -128,9 +209,11 @@ def _start_timer():
 def _log_request(resp):
     try:
         dt = (perf_counter() - getattr(g, "_t0", perf_counter())) * 1000.0
-        # Light caching for media routes
+
+        # Long caching for media routes
         if MEDIA_ROOT and request.path.startswith(MEDIA_URL.rstrip("/") + "/"):
             resp.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
+
         app.logger.info(
             "REQ %s %s %s %s %.1fms UA=%s",
             request.method,
@@ -151,7 +234,7 @@ csrf = CSRFProtect(app)
 # Auth (single admin)
 # -----------------------------------------------------------------------------
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")  # only used if no hash set
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
 ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
 
 login_manager = LoginManager(app)
@@ -180,7 +263,7 @@ def _check_admin_credentials(username: str, password: str) -> bool:
     return password == ADMIN_PASSWORD
 
 
-FAILED_LOGINS = {}  # ip -> deque[times]
+FAILED_LOGINS: dict[str, deque] = {}
 
 
 def _client_ip():
@@ -207,11 +290,10 @@ def _clear_failed_logins(ip: str):
 
 
 # -----------------------------------------------------------------------------
-# Canonical lists (levels & body parts remain static; styles become dynamic)
+# Canonical lists (static)
 # -----------------------------------------------------------------------------
 WORKOUT_LEVELS = ["Beginner", "Intermediate", "Advanced"]
 
-# default list used only if DB has no styles yet
 DEFAULT_WORKOUT_STYLES = [
     "BodyWeight",
     "Barbell",
@@ -255,88 +337,7 @@ FEATURED_STYLES = ["BodyWeight", "Barbell", "Machines"]
 
 
 # -----------------------------------------------------------------------------
-# Helpers
-# -----------------------------------------------------------------------------
-def slugify(text: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
-
-
-def _split_list(text: str):
-    if not text:
-        return []
-    return [p.strip() for p in re.split(r"[\n,]+", text) if p.strip()]
-
-
-_YT_PAT = re.compile(
-    r"(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|shorts/))?([A-Za-z0-9_-]{11})"
-)
-
-
-def _extract_youtube_id(val: str | None):
-    if not val:
-        return None
-    m = _YT_PAT.search(val.strip())
-    return m.group(1) if m else val.strip()
-
-
-# Uploads
-ALLOWED_IMAGE_EXTS = {"png", "jpg", "jpeg", "gif", "webp"}
-app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB
-
-
-def _allowed_image(filename: str) -> bool:
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_IMAGE_EXTS
-
-
-def _save_one_file(file_storage) -> str | None:
-    """Save a single FileStorage and return its public URL path."""
-    if not file_storage or not getattr(file_storage, "filename", ""):
-        return None
-    if not _allowed_image(file_storage.filename):
-        return None
-
-    ext = file_storage.filename.rsplit(".", 1)[1].lower()
-    day = datetime.datetime.utcnow().strftime("%Y%m%d")
-    folder_abs = os.path.join(UPLOAD_ROOT_ABS, day)
-    os.makedirs(folder_abs, exist_ok=True)
-    fname = f"{uuid.uuid4().hex}.{ext}"
-    abs_path = os.path.join(folder_abs, secure_filename(fname))
-    file_storage.save(abs_path)
-
-    # Public URL
-    return f"{PUBLIC_BASE}{day}/{fname}".replace("//", "/").replace("//", "/")  # normalize
-
-
-def _collect_ordered_images_from_form(req) -> list[str]:
-    ordered = []
-    for i in range(1, 9):
-        up = req.files.get(f"img{i}_file") or req.files.get(f"image_file_{i}")
-        if up and getattr(up, "filename", ""):
-            saved = _save_one_file(up)
-            if saved:
-                ordered.append(saved)
-                continue
-        url = (req.form.get(f"img{i}_url") or req.form.get(f"image_url_{i}") or "").strip()
-        if url:
-            ordered.append(url)
-    if not ordered:
-        legacy = _split_list(req.form.get("images", ""))
-        ordered = legacy
-    return ordered
-
-
-def _collect_muscle_image_from_form(req) -> str | None:
-    up = req.files.get("muscle_image_file")
-    if up and getattr(up, "filename", ""):
-        saved = _save_one_file(up)
-        if saved:
-            return saved
-    url = (req.form.get("muscle_image_url") or req.form.get("muscle_image") or "").strip()
-    return url or None
-
-
-# -----------------------------------------------------------------------------
-# Indexes
+# Indexes (safe to call repeatedly)
 # -----------------------------------------------------------------------------
 db.workouts.create_index([("slug", 1)], unique=True, sparse=True)
 db.workouts.create_index([("name", 1)])
@@ -346,12 +347,32 @@ db.workouts.create_index([("style", 1)])
 db.workouts.create_index([("created_at", -1)])
 db.workouts.create_index([("rating", -1)])
 
-# Styles index + seed
 db.styles.create_index([("slug", 1)], unique=True, sparse=True)
+
+# Legacy "home_plans" (keep for now so nothing breaks)
+db.home_plans.create_index([("slug", 1)], unique=True, sparse=True)
+db.home_plans.create_index([("order", 1)])
+db.home_plans.create_index([("created_at", -1)])
+db.home_plans.create_index([("active", 1)])
+
+# Programs (new hierarchy)
+db.programs.create_index([("slug", 1)], unique=True, sparse=True)
+db.programs.create_index([("active", 1)])
+db.programs.create_index([("order", 1)])
+db.programs.create_index([("created_at", -1)])
+db.programs.create_index([("show_on_home", 1)])
+
+db.program_weeks.create_index([("program_id", 1)])
+db.program_weeks.create_index([("week_number", 1)])
+db.program_weeks.create_index([("order", 1)])
+
+db.program_items.create_index([("week_id", 1)])
+db.program_items.create_index([("order", 1)])
+db.program_items.create_index([("created_at", 1)])
+db.program_items.create_index([("workout_id", 1)])
 
 
 def get_styles() -> list[str]:
-    """Return active styles from DB; if empty, return the default list."""
     styles = list(db.styles.find({"active": {"$ne": False}}).sort([("order", 1), ("name", 1)]))
     if styles:
         return [s["name"] for s in styles]
@@ -375,7 +396,7 @@ _ensure_style_seed_once()
 
 
 # -----------------------------------------------------------------------------
-# Quick menu
+# Quick menu (sidebar)
 # -----------------------------------------------------------------------------
 QUICK_OPTIONS = [
     {"label": "Favorites", "url": "/workouts?filter=favorites"},
@@ -387,10 +408,9 @@ QUICK_OPTIONS = [
 # -----------------------------------------------------------------------------
 # Static/media serving for Render Disk
 # -----------------------------------------------------------------------------
-# If MEDIA_ROOT is set, expose it at MEDIA_URL (default /media/)
-# This keeps /static for bundled assets and /media for user uploads.
+# IMPORTANT: serve from UPLOAD_ROOT_ABS (resolved), not raw MEDIA_ROOT,
+# so relative MEDIA_ROOT works reliably.
 if MEDIA_ROOT:
-    # Normalize MEDIA_URL (leading/trailing slash)
     if not MEDIA_URL.startswith("/"):
         MEDIA_URL = "/" + MEDIA_URL
     if not MEDIA_URL.endswith("/"):
@@ -398,8 +418,7 @@ if MEDIA_ROOT:
 
     @app.route(f"{MEDIA_URL}<path:fp>")
     def _serve_media(fp):
-        # Long-lived caching handled in after_request
-        return send_from_directory(MEDIA_ROOT, fp, conditional=True)
+        return send_from_directory(UPLOAD_ROOT_ABS, fp, conditional=True)
 
 
 # -----------------------------------------------------------------------------
@@ -415,18 +434,72 @@ def inject_globals():
 # -----------------------------------------------------------------------------
 @app.route("/")
 def home():
-    return render_template("home.html", name="NFG")
+    # Featured Programs on home (admin controlled later)
+    featured_programs = list(
+        db.programs.find({"active": {"$ne": False}, "show_on_home": True})
+        .sort([("order", 1), ("created_at", -1)])
+        .limit(6)
+    )
+    return render_template("home.html", name="NFG", featured_programs=featured_programs)
+
+
+# ---------------------------------------------------------------------------
+# Public: Programs (read-only)
+# ---------------------------------------------------------------------------
+@app.route("/programs")
+def programs_index():
+    programs = list(
+        db.programs.find({"active": {"$ne": False}})
+        .sort([("order", 1), ("created_at", -1)])
+        .limit(100)
+    )
+    return render_template("programs.html", programs=programs)
+
+
+@app.route("/programs/<slug>")
+def program_detail(slug):
+    program = db.programs.find_one({"slug": slug, "active": {"$ne": False}})
+    if not program:
+        abort(404)
+
+    weeks = list(
+        db.program_weeks.find({"program_id": program["_id"]})
+        .sort([("week_number", 1), ("order", 1)])
+    )
+
+    week_ids = [w["_id"] for w in weeks]
+    rows = []
+    if week_ids:
+        rows = list(
+            db.program_items.find({"week_id": {"$in": week_ids}})
+            .sort([("order", 1), ("created_at", 1)])
+        )
+
+    rows_by_week = {wid: [] for wid in week_ids}
+    for r in rows:
+        rows_by_week.setdefault(r["week_id"], []).append(r)
+
+    workout_ids = [r.get("workout_id") for r in rows if r.get("workout_id")]
+    workout_map = {}
+    if workout_ids:
+        ws = list(db.workouts.find({"_id": {"$in": workout_ids}}, {"name": 1, "slug": 1}))
+        workout_map = {w["_id"]: w for w in ws}
+
+    return render_template(
+        "program_detail.html",
+        program=program,
+        weeks=weeks,
+        rows_by_week=rows_by_week,
+        workout_map=workout_map,
+    )
 
 
 @app.route("/workouts")
 def workouts():
-    # Landing page shows featured sections + a small sample; no query/sort here.
     parts_single = set(db.workouts.distinct("body_part"))
     parts_multi = set(db.workouts.distinct("body_parts"))
     parts_in_db = parts_single | parts_multi
-    body_parts_featured = [
-        p for p in FEATURED_BODY_PARTS if p in parts_in_db
-    ] or FEATURED_BODY_PARTS[:]
+    body_parts_featured = [p for p in FEATURED_BODY_PARTS if p in parts_in_db] or FEATURED_BODY_PARTS[:]
 
     all_ws = list(db.workouts.find({}).sort([("name", ASCENDING)]).limit(3))
 
@@ -434,8 +507,8 @@ def workouts():
         "workouts.html",
         workout_levels=WORKOUT_LEVELS,
         body_parts_featured=body_parts_featured,
-        workout_styles=get_styles(),  # full list (dynamic)
-        workout_styles_featured=FEATURED_STYLES,  # landing picks
+        workout_styles=get_styles(),
+        workout_styles_featured=FEATURED_STYLES,
         all_workouts=all_ws,
     )
 
@@ -468,7 +541,7 @@ def workouts_browse():
     body = request.args.get("body") or ""
     style = request.args.get("style") or ""
     q = (request.args.get("q") or "").strip()
-    sort_key = request.args.get("sort", "name")  # name|recent|rating|favorites
+    sort_key = request.args.get("sort", "name")
     page = max(int(request.args.get("page", 1)), 1)
     per_page = min(max(int(request.args.get("per_page", 6)), 1), 100)
 
@@ -520,7 +593,7 @@ def workouts_browse():
         q=q,
         workout_levels=WORKOUT_LEVELS,
         body_parts=BODY_PARTS_MASTER,
-        workout_styles=get_styles(),  # dynamic here too
+        workout_styles=get_styles(),
     )
 
 
@@ -559,7 +632,7 @@ def recipes():
 def search():
     q = (request.args.get("q") or "").strip()
     if not q:
-        return render_template("home.html", name="NFG")
+        return render_template("home.html", name="NFG", featured_programs=[])
 
     page = max(int(request.args.get("page", 1)), 1)
     per_page = min(max(int(request.args.get("per_page", 24)), 1), 100)
@@ -575,6 +648,7 @@ def search():
             {"tags": rx},
         ]
     }
+
     total = db.workouts.count_documents(w_query)
     items = list(
         db.workouts.find(w_query)
@@ -614,9 +688,10 @@ def login():
             login_user(User("admin"))
             flash("Logged in.", "success")
             return redirect(request.args.get("next") or url_for("admin_index"))
-        else:
-            _record_failed_login(ip)
-            flash("Invalid credentials.", "danger")
+
+        _record_failed_login(ip)
+        flash("Invalid credentials.", "danger")
+
     return render_template("login.html")
 
 
@@ -631,8 +706,6 @@ def logout():
 @app.route("/health")
 def health():
     return {"status": "ok"}, 200
-
-
 # -----------------------------------------------------------------------------
 # Admin: Workouts
 # -----------------------------------------------------------------------------
@@ -651,9 +724,7 @@ def admin_workout_new():
         level = request.form.get("level", "").strip()
         style = request.form.get("style", "").strip()
         body_parts = _split_list(request.form.get("body_parts", ""))
-        body_part = (
-            body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
-        )
+        body_part = body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
         tags = _split_list(request.form.get("tags", ""))
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
@@ -676,8 +747,8 @@ def admin_workout_new():
 
         if not slug:
             slug = slugify(name)
-        existing = db.workouts.find_one({"slug": slug})
-        if existing:
+
+        if db.workouts.find_one({"slug": slug}):
             flash(f"Slug '{slug}' is already used by another workout.", "danger")
             return render_template(
                 "admin_workout_form.html",
@@ -704,6 +775,7 @@ def admin_workout_new():
             "rating": rating,
             "created_at": datetime.datetime.utcnow(),
         }
+
         try:
             db.workouts.insert_one(doc)
             flash("Workout added.", "success")
@@ -732,9 +804,7 @@ def admin_workout_edit(id):
         level = request.form.get("level", "").strip()
         style = request.form.get("style", "").strip()
         body_parts = _split_list(request.form.get("body_parts", ""))
-        body_part = (
-            body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
-        )
+        body_part = body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
         tags = _split_list(request.form.get("tags", ""))
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
@@ -759,6 +829,7 @@ def admin_workout_edit(id):
 
         if not slug:
             slug = slugify(name)
+
         existing = db.workouts.find_one({"slug": slug, "_id": {"$ne": ObjectId(id)}})
         if existing:
             flash(f"Slug '{slug}' is already used by another workout.", "danger")
@@ -788,6 +859,7 @@ def admin_workout_edit(id):
             "is_favorite": is_favorite,
             "rating": rating,
         }
+
         try:
             db.workouts.update_one({"_id": ObjectId(id)}, {"$set": update})
             flash("Workout updated.", "success")
@@ -824,7 +896,7 @@ def admin_workout_delete(id):
 
 
 # -----------------------------------------------------------------------------
-# Admin: Styles (list/add, toggle active, delete)
+# Admin: Styles
 # -----------------------------------------------------------------------------
 @app.route("/admin/styles", methods=["GET", "POST"])
 @login_required
@@ -832,13 +904,16 @@ def admin_styles():
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
         order = int(request.form.get("order") or 0)
+
         if not name:
             flash("Style name is required.", "danger")
             return redirect(url_for("admin_styles"))
+
         slug = slugify(name)
         if db.styles.find_one({"slug": slug}):
             flash(f"Style '{name}' already exists.", "warning")
             return redirect(url_for("admin_styles"))
+
         db.styles.insert_one({"name": name, "slug": slug, "order": order, "active": True})
         flash("Style added.", "success")
         return redirect(url_for("admin_styles"))
@@ -865,6 +940,306 @@ def admin_style_delete(id):
     flash("Style deleted.", "success")
     return redirect(url_for("admin_styles"))
 
+
+# -----------------------------------------------------------------------------
+# Admin: Home Plans (legacy) — keep for now so nothing breaks
+# -----------------------------------------------------------------------------
+@app.route("/admin/home-plans")
+@login_required
+def admin_home_plans():
+    plans = list(db.home_plans.find().sort([("active", -1), ("order", 1), ("created_at", -1)]))
+    return render_template("admin_home_plans.html", plans=plans)
+
+
+@app.route("/admin/home-plans/new", methods=["GET", "POST"])
+@login_required
+def admin_home_plan_new():
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        slug = (request.form.get("slug") or "").strip() or slugify(title)
+        category = (request.form.get("category") or "").strip() or None
+        duration_label = (request.form.get("duration_label") or "").strip() or None
+        summary = (request.form.get("summary") or "").strip() or None
+        cover_image = (request.form.get("cover_image") or "").strip() or None
+        cta_label = (request.form.get("cta_label") or "").strip() or "View Plan"
+        cta_url = (request.form.get("cta_url") or "").strip()
+        order = int(request.form.get("order") or 0)
+        active = request.form.get("active") == "on"
+
+        if not title:
+            flash("Title is required.", "danger")
+            return render_template("admin_home_plan_form.html", data=request.form, edit=False)
+
+        if not cta_url:
+            flash("Primary button URL is required.", "danger")
+            return render_template("admin_home_plan_form.html", data=request.form, edit=False)
+
+        if db.home_plans.find_one({"slug": slug}):
+            flash(f"Slug '{slug}' already exists.", "danger")
+            return render_template("admin_home_plan_form.html", data=request.form, edit=False)
+
+        doc = {
+            "title": title,
+            "slug": slug,
+            "category": category,
+            "duration_label": duration_label,
+            "summary": summary,
+            "cover_image": cover_image,
+            "cta_label": cta_label,
+            "cta_url": cta_url,
+            "order": order,
+            "active": active,
+            "created_at": datetime.datetime.utcnow(),
+        }
+
+        try:
+            db.home_plans.insert_one(doc)
+            flash("Home plan created.", "success")
+            return redirect(url_for("admin_home_plans"))
+        except Exception as e:
+            flash(f"Error: {e}", "danger")
+
+    return render_template("admin_home_plan_form.html", data={}, edit=False)
+
+
+@app.route("/admin/home-plans/<id>/edit", methods=["GET", "POST"])
+@login_required
+def admin_home_plan_edit(id):
+    p = db.home_plans.find_one({"_id": ObjectId(id)})
+    if not p:
+        abort(404)
+
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        slug = (request.form.get("slug") or "").strip() or slugify(title)
+        category = (request.form.get("category") or "").strip() or None
+        duration_label = (request.form.get("duration_label") or "").strip() or None
+        summary = (request.form.get("summary") or "").strip() or None
+        cover_image = (request.form.get("cover_image") or "").strip() or None
+        cta_label = (request.form.get("cta_label") or "").strip() or "View Plan"
+        cta_url = (request.form.get("cta_url") or "").strip()
+        order = int(request.form.get("order") or 0)
+        active = request.form.get("active") == "on"
+
+        if not title:
+            flash("Title is required.", "danger")
+            return render_template("admin_home_plan_form.html", data=request.form, edit=True, _id=id)
+
+        if not cta_url:
+            flash("Primary button URL is required.", "danger")
+            return render_template("admin_home_plan_form.html", data=request.form, edit=True, _id=id)
+
+        existing = db.home_plans.find_one({"slug": slug, "_id": {"$ne": ObjectId(id)}})
+        if existing:
+            flash(f"Slug '{slug}' already exists.", "danger")
+            return render_template("admin_home_plan_form.html", data=request.form, edit=True, _id=id)
+
+        update = {
+            "title": title,
+            "slug": slug,
+            "category": category,
+            "duration_label": duration_label,
+            "summary": summary,
+            "cover_image": cover_image,
+            "cta_label": cta_label,
+            "cta_url": cta_url,
+            "order": order,
+            "active": active,
+        }
+
+        try:
+            db.home_plans.update_one({"_id": ObjectId(id)}, {"$set": update})
+            flash("Home plan updated.", "success")
+            return redirect(url_for("admin_home_plans"))
+        except Exception as e:
+            flash(f"Error: {e}", "danger")
+
+    return render_template("admin_home_plan_form.html", data=dict(p), edit=True, _id=id)
+
+
+@app.route("/admin/home-plans/<id>/toggle", methods=["POST"])
+@login_required
+def admin_home_plan_toggle(id):
+    p = db.home_plans.find_one({"_id": ObjectId(id)})
+    if not p:
+        abort(404)
+    db.home_plans.update_one({"_id": p["_id"]}, {"$set": {"active": not p.get("active", True)}})
+    flash("Home plan updated.", "success")
+    return redirect(url_for("admin_home_plans"))
+
+
+@app.route("/admin/home-plans/<id>/delete", methods=["POST"])
+@login_required
+def admin_home_plan_delete(id):
+    db.home_plans.delete_one({"_id": ObjectId(id)})
+    flash("Home plan deleted.", "success")
+    return redirect(url_for("admin_home_plans"))
+
+
+# -----------------------------------------------------------------------------
+# Admin: Programs (NEW)
+# -----------------------------------------------------------------------------
+@app.route("/admin/programs")
+@login_required
+def admin_programs():
+    programs = list(
+        db.programs.find().sort(
+            [
+                ("active", -1),
+                ("show_on_home", -1),
+                ("order", 1),
+                ("created_at", -1),
+            ]
+        )
+    )
+    return render_template("admin_programs.html", programs=programs)
+
+
+@app.route("/admin/programs/new", methods=["GET", "POST"])
+@login_required
+def admin_program_new():
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        slug = (request.form.get("slug") or "").strip() or slugify(title)
+
+        category = (request.form.get("category") or "").strip() or None
+        duration_label = (request.form.get("duration_label") or "").strip() or None
+        summary = (request.form.get("summary") or "").strip() or None
+        cover_image = (request.form.get("cover_image") or "").strip() or None
+
+        order = int(request.form.get("order") or 0)
+        active = request.form.get("active") == "on"
+        show_on_home = request.form.get("show_on_home") == "on"
+
+        if not title:
+            flash("Title is required.", "danger")
+            return render_template("admin_program_form.html", data=request.form, edit=False)
+
+        if not slug:
+            slug = slugify(title)
+
+        if db.programs.find_one({"slug": slug}):
+            flash(f"Slug '{slug}' already exists.", "danger")
+            return render_template("admin_program_form.html", data=request.form, edit=False)
+
+        doc = {
+            "title": title,
+            "slug": slug,
+            "category": category,
+            "duration_label": duration_label,
+            "summary": summary,
+            "cover_image": cover_image,
+            "order": order,
+            "active": active,
+            "show_on_home": show_on_home,
+            "created_at": datetime.datetime.utcnow(),
+        }
+
+        try:
+            db.programs.insert_one(doc)
+            flash("Program created.", "success")
+            return redirect(url_for("admin_programs"))
+        except Exception as e:
+            flash(f"Error: {e}", "danger")
+
+    return render_template("admin_program_form.html", data={}, edit=False)
+
+
+@app.route("/admin/programs/<id>/edit", methods=["GET", "POST"])
+@login_required
+def admin_program_edit(id):
+    p = db.programs.find_one({"_id": ObjectId(id)})
+    if not p:
+        abort(404)
+
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        slug = (request.form.get("slug") or "").strip() or slugify(title)
+
+        category = (request.form.get("category") or "").strip() or None
+        duration_label = (request.form.get("duration_label") or "").strip() or None
+        summary = (request.form.get("summary") or "").strip() or None
+        cover_image = (request.form.get("cover_image") or "").strip() or None
+
+        order = int(request.form.get("order") or 0)
+        active = request.form.get("active") == "on"
+        show_on_home = request.form.get("show_on_home") == "on"
+
+        if not title:
+            flash("Title is required.", "danger")
+            return render_template("admin_program_form.html", data=request.form, edit=True, _id=id)
+
+        existing = db.programs.find_one({"slug": slug, "_id": {"$ne": ObjectId(id)}})
+        if existing:
+            flash(f"Slug '{slug}' already exists.", "danger")
+            return render_template("admin_program_form.html", data=request.form, edit=True, _id=id)
+
+        update = {
+            "title": title,
+            "slug": slug,
+            "category": category,
+            "duration_label": duration_label,
+            "summary": summary,
+            "cover_image": cover_image,
+            "order": order,
+            "active": active,
+            "show_on_home": show_on_home,
+        }
+
+        try:
+            db.programs.update_one({"_id": ObjectId(id)}, {"$set": update})
+            flash("Program updated.", "success")
+            return redirect(url_for("admin_programs"))
+        except Exception as e:
+            flash(f"Error: {e}", "danger")
+
+    return render_template("admin_program_form.html", data=dict(p), edit=True, _id=id)
+
+
+@app.route("/admin/programs/<id>/toggle-active", methods=["POST"])
+@login_required
+def admin_program_toggle_active(id):
+    p = db.programs.find_one({"_id": ObjectId(id)})
+    if not p:
+        abort(404)
+    db.programs.update_one({"_id": p["_id"]}, {"$set": {"active": not p.get("active", True)}})
+    flash("Program updated.", "success")
+    return redirect(url_for("admin_programs"))
+
+
+@app.route("/admin/programs/<id>/toggle-home", methods=["POST"])
+@login_required
+def admin_program_toggle_home(id):
+    p = db.programs.find_one({"_id": ObjectId(id)})
+    if not p:
+        abort(404)
+    db.programs.update_one(
+        {"_id": p["_id"]},
+        {"$set": {"show_on_home": not p.get("show_on_home", False)}},
+    )
+    flash("Program updated.", "success")
+    return redirect(url_for("admin_programs"))
+
+
+@app.route("/admin/programs/<id>/delete", methods=["POST"])
+@login_required
+def admin_program_delete(id):
+    prog = db.programs.find_one({"_id": ObjectId(id)})
+    if not prog:
+        abort(404)
+
+    # Cascade delete weeks + items so we don't leave orphan data.
+    weeks = list(db.program_weeks.find({"program_id": prog["_id"]}, {"_id": 1}))
+    week_ids = [w["_id"] for w in weeks]
+
+    if week_ids:
+        db.program_items.delete_many({"week_id": {"$in": week_ids}})
+        db.program_weeks.delete_many({"_id": {"$in": week_ids}})
+
+    db.programs.delete_one({"_id": prog["_id"]})
+
+    flash("Program deleted.", "success")
+    return redirect(url_for("admin_programs"))
 
 # -----------------------------------------------------------------------------
 # Errors & health
@@ -896,10 +1271,5 @@ def healthz():
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
     # In dev, serve MEDIA_ROOT too if set (mirrors production behavior)
-    if MEDIA_ROOT and not any(r.rule.startswith(MEDIA_URL) for r in app.url_map.iter_rules()):
-
-        @app.route(f"{MEDIA_URL}<path:fp>")
-        def _dev_media(fp):
-            return send_from_directory(MEDIA_ROOT, fp, conditional=True)
-
+    # NOTE: if MEDIA_ROOT is set, the route is already registered above.
     app.run(host="0.0.0.0", debug=True)

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}{{ program.get('title', 'Program') }} – Programs{% endblock %}
+
+{% block content %}
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+    <div class="me-2">
+      <h1 class="page-title mb-1">{{ program.get('title', 'Program') }}</h1>
+
+      {% if program.get('summary') %}
+        <p class="text-muted mb-0">{{ program.get('summary') }}</p>
+      {% endif %}
+
+      <div class="small text-muted mt-1">
+        {{ program.get('category') or 'Program' }}
+        {% if program.get('duration_label') %} • {{ program.get('duration_label') }}{% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{{ url_for('programs_index') }}">Back</a>
+    </div>
+  </div>
+
+  {# Optional cover image if you add it later to programs #}
+  {% if program.get('cover_image') %}
+    <div class="card shadow-sm mb-3">
+      <img src="{{ program.get('cover_image') }}" alt=""
+           style="width:100%; max-height:260px; object-fit:cover;">
+    </div>
+  {% endif %}
+
+  {% if not weeks or weeks|length == 0 %}
+    <div class="alert alert-secondary">No weeks have been added yet.</div>
+  {% else %}
+    <div class="accordion" id="weeksAccordion">
+      {% for w in weeks %}
+        {% set wid = w.get('_id') %}
+        {% set items = rows_by_week.get(wid, []) %}
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="heading{{ loop.index }}">
+            <button class="accordion-button {% if not loop.first %}collapsed{% endif %}"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#collapse{{ loop.index }}"
+                    aria-expanded="{% if loop.first %}true{% else %}false{% endif %}"
+                    aria-controls="collapse{{ loop.index }}">
+
+              <div class="d-flex flex-column">
+                <div class="fw-semibold">
+                  Week {{ w.get('week_number', loop.index) }}
+                  {% if w.get('title') %}
+                    <span class="ms-2 text-muted fw-normal">— {{ w.get('title') }}</span>
+                  {% endif %}
+                </div>
+                <div class="small text-muted">
+                  {{ items|length }} workout{% if items|length != 1 %}s{% endif %}
+                </div>
+              </div>
+
+            </button>
+          </h2>
+
+          <div id="collapse{{ loop.index }}"
+               class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
+               aria-labelledby="heading{{ loop.index }}"
+               data-bs-parent="#weeksAccordion">
+            <div class="accordion-body">
+
+              {% if items|length == 0 %}
+                <div class="text-muted">No workouts added for this week yet.</div>
+              {% else %}
+                <div class="list-group">
+                  {% for it in items %}
+                    {% set workout_id = it.get('workout_id') %}
+                    {% set linked = workout_id and workout_map.get(workout_id) %}
+
+                    <div class="list-group-item">
+                      <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="me-2">
+
+                          {% if linked %}
+                            <div class="fw-semibold">
+                              <a class="text-decoration-none"
+                                 href="{{ url_for('workout_detail', slug=linked.get('slug')) }}">
+                                {{ linked.get('name', 'Workout') }}
+                              </a>
+                            </div>
+                          {% else %}
+                            <div class="fw-semibold">{{ it.get('custom_name') or 'Workout' }}</div>
+                          {% endif %}
+
+                          <div class="d-flex flex-wrap gap-2 mt-2">
+                            {% if it.get('sets') %}<span class="badge text-bg-light border">Sets: {{ it.get('sets') }}</span>{% endif %}
+                            {% if it.get('reps') %}<span class="badge text-bg-light border">Reps: {{ it.get('reps') }}</span>{% endif %}
+                            {% if it.get('rest') %}<span class="badge text-bg-light border">Rest: {{ it.get('rest') }}</span>{% endif %}
+                          </div>
+
+                          {% if it.get('notes') %}
+                            <div class="small text-muted mt-2">{{ it.get('notes') }}</div>
+                          {% endif %}
+                        </div>
+
+                        <div class="text-end">
+                          {% if linked %}
+                            <span class="badge text-bg-dark">Linked</span>
+                          {% else %}
+                            <span class="badge text-bg-secondary">Placeholder</span>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

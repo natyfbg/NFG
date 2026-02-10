@@ -1,5 +1,103 @@
-{% extends "base.html" %} {% block title %}Home – NattyFit{% endblock %} {%
-block content %}
-<h1>Welcome, {{ name }}!</h1>
-<p>This is your home page.</p>
+{% extends "base.html" %}
+
+{% block title %}Home – NFG{% endblock %}
+
+{% block content %}
+  <!-- Header -->
+  <div class="d-flex align-items-start justify-content-between mb-3">
+    <div>
+      <h1 class="page-title mb-1">Welcome, {{ name }}!</h1>
+      <p class="text-muted mb-0">Build consistency with simple programs and clear workout guidance.</p>
+    </div>
+  </div>
+
+  <!-- Bio / Welcome Note -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+        This is your home for structured workout plans, a visual exercise library, and guided recipes — all in one place.
+        <p class="text-muted mb-0">
+            Train with programs that break weeks into workouts, learn exercises with images and videos, and find recipes that actually support your training. No clutter. No guesswork. Just progress.
+      </p>
+    </div>
+  </div>
+
+  <!-- Featured Programs -->
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <h5 class="mb-0">Featured programs</h5>
+    <a class="small text-muted text-decoration-none" href="{{ url_for('programs_index') }}">
+      View all
+    </a>
+  </div>
+
+  {% if featured_programs and featured_programs|length > 0 %}
+    <div class="row g-3">
+      {% for p in featured_programs %}
+        <div class="col-12">
+          <a href="{{ url_for('program_detail', slug=p.slug) }}" class="text-decoration-none">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <div class="d-flex align-items-start justify-content-between gap-3">
+                  <div class="me-2">
+                    <div class="fw-semibold text-dark">{{ p.title }}</div>
+
+                    {% if p.summary %}
+                      <div class="text-muted small">{{ p.summary }}</div>
+                    {% endif %}
+
+                    <div class="small text-muted mt-1">
+                      {{ p.category or 'Program' }}
+                      {% if p.duration_label %} • {{ p.duration_label }}{% endif %}
+                    </div>
+
+                    <div class="mt-3 d-flex align-items-center gap-2">
+                      <span class="btn btn-sm btn-outline-dark">Open</span>
+                      <span class="text-muted small">View weeks</span>
+                    </div>
+                  </div>
+
+                  {% if p.cover_image %}
+                    <img src="{{ p.cover_image }}" alt=""
+                         style="width:120px;height:68px;object-fit:cover;border-radius:.75rem;">
+                  {% else %}
+                    <div class="bg-body-secondary"
+                         style="width:120px;height:68px;border-radius:.75rem;"></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-secondary mb-0">
+      No featured programs yet.
+      <div class="small text-muted mt-1">
+        Create one in Admin → Programs, and enable “Show on Home”.
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block sidebar %}
+  <div class="card shadow-sm">
+    <div class="card-header bg-white">
+      <strong>Today’s focus</strong>
+    </div>
+    <div class="card-body">
+      <p class="mb-2 text-muted">
+        Keep it simple: pick a program, complete today’s work, and build momentum.
+      </p>
+      <ul class="mb-0">
+        <li>Choose a program</li>
+        <li>Complete one workout</li>
+        <li>Come back tomorrow</li>
+      </ul>
+
+      <div class="mt-3 d-grid gap-2">
+        <a class="btn btn-dark" href="{{ url_for('programs_index') }}">Browse programs</a>
+        <a class="btn btn-outline-dark" href="{{ url_for('workouts') }}">Browse workouts</a>
+      </div>
+    </div>
+  </div>
 {% endblock %}

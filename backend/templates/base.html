@@ -7,85 +7,8 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <style>
-      /* ===== Global knobs ===== */
-      :root{
-        --media9x16-h: clamp(360px, 52vw, 520px);
-        --nav-dd-radius: 14px;
-        --nav-dd-backdrop: rgba(20,20,20,.55);
-
-        /* dropdown sizing */
-        --dd-min-w: 220px;
-        --dd-max-w: 320px;
-
-        /* animation timing */
-        --dd-duration: .12s;
-      }
-
-      /* Basic page scaling */
-      h1.page-title{ font-size: clamp(1.75rem, 2.5vw, 2.25rem); }
-
-      /* ===== Workouts dropdown styling (compact & roll-down) ===== */
-      .navbar .workout-menu{
-        min-width: var(--dd-min-w);
-        max-width: var(--dd-max-w);
-        border-radius: var(--nav-dd-radius);
-        backdrop-filter: blur(6px);
-        background-color: rgba(0,0,0,.9);
-        z-index: 1080;
-        padding:.35rem;
-        font-size: .94rem;
-
-        /* subtle roll down animation via transform + opacity */
-        transform-origin: top center;
-        transform: translateY(-6px) scale(.995);
-        opacity: 0;
-        transition: transform var(--dd-duration) ease, opacity var(--dd-duration) ease;
-      }
-      .navbar .workout-menu.show{
-        transform: translateY(0) scale(1);
-        opacity: 1;
-      }
-
-      .navbar .dropdown-item{
-        padding:.36rem .6rem;
-        border-radius:.375rem;
-      }
-      .navbar .dropdown-item:hover,
-      .navbar .dropdown-item:focus{ background: rgba(255,255,255,.06); }
-
-      /* hide default caret, we use custom small caret */
-      .dropdown-toggle::after{ display:none !important; }
-
-      .caret{
-        display:inline-block; width:.5rem; height:.5rem;
-        border-right:2px solid currentColor; border-bottom:2px solid currentColor;
-        transform: rotate(45deg);
-        transition: transform var(--dd-duration) ease;
-        margin-left:.25rem;
-      }
-      .workouts-caret-open .caret{ transform: rotate(225deg); }
-
-      /* Mobile sheet: fixed & centered */
-      @media (max-width:575.98px){
-        .navbar .dropdown-menu.workout-menu{
-          position: fixed !important;
-          left: 50% !important; transform: translate(-50%, 0) !important;
-          top: calc(var(--bs-navbar-padding-y, .5rem) + 56px) !important;
-          width: min(94vw, 420px);
-          max-height: 70svh; overflow:auto;
-          border-radius: 12px;
-          background: var(--nav-dd-backdrop);
-          padding:.5rem;
-          opacity:1;
-        }
-        .navbar .dropdown-item{ padding:.65rem .9rem; }
-      }
-
-      /* Keep dropdown visually above alerts etc. */
-      .alert { z-index: 1; position: relative; }
-
-    </style>
+    <!-- App CSS (moved out of base.html for maintainability) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   </head>
 
   <body class="bg-light">
@@ -100,6 +23,7 @@
 
         {% set ep = request.endpoint or '' %}
         {% set workouts_eps = ['workouts','workouts_browse','workouts_all','styles_index','body_parts_index','workout_detail'] %}
+        {% set programs_eps = ['programs_index','program_detail'] %}
         {% set admin_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
 
         <div class="collapse navbar-collapse" id="navMain">
@@ -128,6 +52,10 @@
                 <a class="dropdown-item" href="{{ url_for('body_parts_index') }}">All Body Parts</a>
                 <a class="dropdown-item" href="{{ url_for('workouts_browse') }}">Browse (filters &amp; search)</a>
               </div>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link {% if ep in programs_eps %}active{% endif %}" href="{{ url_for('programs_index') }}">Programs</a>
             </li>
 
             <li class="nav-item">
@@ -182,24 +110,51 @@
       {% endwith %}
     </div>
 
-    <main class="container my-4">
-      <div class="row g-4">
-        <div class="col-lg-8">
-          {% block content %}{% endblock %}
+    <!-- Swipe + slide animation zone -->
+    <main class="container my-4" id="swipe-zone">
+      <div id="page-shell">
+        <div class="row g-4">
+          <div class="col-lg-8">
+            {% block content %}{% endblock %}
+          </div>
+          <aside class="col-lg-4">
+            {% block sidebar %}{% endblock %}
+          </aside>
         </div>
-        <aside class="col-lg-4">
-          {% block sidebar %}{% endblock %}
-        </aside>
       </div>
     </main>
+
+    <!-- Bottom navigation (mobile floating pill) -->
+    <nav class="bottom-nav" aria-label="Primary">
+      <div class="nav-wrap">
+        <a href="{{ url_for('home') }}" class="{% if ep == 'home' %}active{% endif %}" data-nav="home" aria-label="Home">
+          <span class="icon" aria-hidden="true"></span>
+          <span class="label">Home</span>
+        </a>
+
+        <a href="{{ url_for('workouts') }}" class="{% if ep in workouts_eps %}active{% endif %}" data-nav="workouts" aria-label="Workouts">
+          <span class="icon" aria-hidden="true"></span>
+          <span class="label">Workouts</span>
+        </a>
+
+        <a href="{{ url_for('programs_index') }}" class="{% if ep in programs_eps %}active{% endif %}" data-nav="programs" aria-label="Programs">
+          <span class="icon" aria-hidden="true"></span>
+          <span class="label">Programs</span>
+        </a>
+
+        <a href="{{ url_for('recipes') }}" class="{% if ep == 'recipes' %}active{% endif %}" data-nav="recipes" aria-label="Recipes">
+          <span class="icon" aria-hidden="true"></span>
+          <span class="label">Recipes</span>
+        </a>
+      </div>
+    </nav>
 
     <!-- Bootstrap JS (bundle includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-      /* Dropdown behavior: only caret toggles; on desktop allow hover on caret to open.
-         Debounced close prevents flicker. Popper placement uses bottom-start with a small offset.
-         We also set a class on the <li> so caret rotates via CSS. */
+      /* Workouts dropdown behavior: only caret toggles; on desktop allow hover on caret to open.
+         Debounced close prevents flicker. */
       (function(){
         const li = document.getElementById('nav-workouts');
         if (!li) return;
@@ -207,7 +162,6 @@
         const toggle = document.getElementById('workoutsMenu');
         const menu = li.querySelector('.dropdown-menu');
 
-        // create bootstrap dropdown with sensible popper options
         const dd = bootstrap.Dropdown.getOrCreateInstance(toggle, {
           autoClose: 'outside',
           popperConfig: {
@@ -220,14 +174,12 @@
           }
         });
 
-        // when Bootstrap opens/closes, toggle the caret class on parent li
         const observer = new MutationObserver(() => {
           const open = menu.classList.contains('show');
           li.classList.toggle('workouts-caret-open', open);
         });
         observer.observe(menu, { attributes: true, attributeFilter: ['class'] });
 
-        // Hover open on pointer:fine devices but only when hovering the caret (toggle)
         const mqHover = window.matchMedia('(hover:hover) and (pointer:fine)');
         let closeTimer = null;
         const open = ()=> { clearTimeout(closeTimer); dd.show(); };
@@ -240,10 +192,115 @@
           menu.addEventListener('mouseleave', scheduleClose);
         }
 
-        // Always close when clicking outside
         document.addEventListener('click', (e)=>{
           if (!li.contains(e.target)) dd.hide();
         });
+      })();
+    </script>
+
+    <script>
+      /* Swipe navigation with a slide animation (mobile-first)
+         - Captures swipe on the main content zone
+         - Animates the current page sliding out
+         - Navigates after the animation for a smooth "swipe between tabs" feel
+      */
+      (function(){
+        const zone = document.getElementById('swipe-zone');
+        const shell = document.getElementById('page-shell');
+        if (!zone || !shell) return;
+
+        const isMobile = () => window.matchMedia('(max-width: 991.98px)').matches;
+        if (!isMobile()) return;
+
+        const ep = "{{ ep }}";
+        const routes = [
+          { key: 'home',     endpoints: ['home'],                      url: "{{ url_for('home') }}" },
+          { key: 'workouts', endpoints: {{ workouts_eps|tojson }},     url: "{{ url_for('workouts') }}" },
+          { key: 'programs', endpoints: {{ programs_eps|tojson }},     url: "{{ url_for('programs_index') }}" },
+          { key: 'recipes',  endpoints: ['recipes'],                  url: "{{ url_for('recipes') }}" }
+        ];
+
+        function currentIndex(){
+          for (let i=0; i<routes.length; i++){
+            if (routes[i].endpoints.includes(ep)) return i;
+          }
+          return 0;
+        }
+
+        const SWIPE_MIN_X = 55;     // px
+        const SWIPE_MAX_Y = 70;     // px vertical tolerance
+        const EDGE_GUARD  = 12;     // ignore tiny edge gestures
+        const NAV_COOLDOWN = 700;   // ms
+        let lastNavAt = 0;
+
+        let startX = 0, startY = 0;
+        let tracking = false;
+
+        const isInteractive = (el) => {
+          if (!el) return false;
+          return !!el.closest('a,button,input,textarea,select,label,[role="button"],.dropdown-menu,.navbar');
+        };
+
+        const animateAndGo = (dir, url) => {
+          // dir: -1 = swipe left (go next, slide left), +1 = swipe right (go prev, slide right)
+          shell.classList.remove('slide-out-left', 'slide-out-right');
+          // trigger reflow
+          void shell.offsetWidth;
+          shell.classList.add(dir < 0 ? 'slide-out-left' : 'slide-out-right');
+
+          // navigate after animation starts
+          setTimeout(() => { window.location.href = url; }, 150);
+        };
+
+        zone.addEventListener('touchstart', (e) => {
+          if (!isMobile()) return;
+          if (!e.touches || e.touches.length !== 1) return;
+
+          const t = e.touches[0];
+          if (t.clientX < EDGE_GUARD || (window.innerWidth - t.clientX) < EDGE_GUARD) return;
+          if (isInteractive(e.target)) return;
+
+          startX = t.clientX;
+          startY = t.clientY;
+          tracking = true;
+        }, { passive: true });
+
+        zone.addEventListener('touchmove', (e) => {
+          if (!tracking) return;
+          const t = e.touches[0];
+          const dy = Math.abs(t.clientY - startY);
+          const dx = Math.abs(t.clientX - startX);
+          if (dy > dx && dy > 18) tracking = false;
+        }, { passive: true });
+
+        zone.addEventListener('touchend', (e) => {
+          if (!tracking) return;
+          tracking = false;
+
+          const now = Date.now();
+          if (now - lastNavAt < NAV_COOLDOWN) return;
+
+          const t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+          if (!t) return;
+
+          const dx = t.clientX - startX;
+          const dy = t.clientY - startY;
+
+          if (Math.abs(dx) < SWIPE_MIN_X) return;
+          if (Math.abs(dy) > SWIPE_MAX_Y) return;
+
+          const idx = currentIndex();
+          let nextIdx = idx;
+
+          if (dx < 0) nextIdx = Math.min(routes.length - 1, idx + 1);  // swipe left -> next
+          if (dx > 0) nextIdx = Math.max(0, idx - 1);                  // swipe right -> prev
+          if (nextIdx === idx) return;
+
+          lastNavAt = now;
+
+          const dir = dx < 0 ? -1 : 1;
+          animateAndGo(dir, routes[nextIdx].url);
+        }, { passive: true });
       })();
     </script>
   </body>

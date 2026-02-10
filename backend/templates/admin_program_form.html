@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}{% if edit %}Edit{% else %}New{% endif %} Program – Admin{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Content Management</div>
+
+  {% set ep = request.endpoint or '' %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
+  {% set admin_program_eps = ['admin_programs','admin_program_new','admin_program_edit'] %}
+
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}"
+       href="{{ url_for('admin_index') }}">
+      Workouts
+    </a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_styles'] %}active{% endif %}"
+       href="{{ url_for('admin_styles') }}">
+      Styles
+    </a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_home_plans','admin_home_plan_new','admin_home_plan_edit'] %}active{% endif %}"
+       href="{{ url_for('admin_home_plans') }}">
+      Home Plans
+    </a>
+
+    <a class="list-group-item list-group-item-action {% if ep in admin_program_eps %}active{% endif %}"
+       href="{{ url_for('admin_programs') }}">
+      Programs
+    </a>
+  </div>
+</div>
+
+{% if edit and data and data.slug %}
+  <div class="card">
+    <div class="card-header">Quick Links</div>
+    <div class="list-group list-group-flush">
+      <a class="list-group-item list-group-item-action"
+         href="{{ url_for('program_detail', slug=data.slug) }}">
+        View public page
+      </a>
+      {# Later: add "Manage weeks" link once we create that admin screen #}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h1 class="mb-0">{% if edit %}Edit{% else %}New{% endif %} Program</h1>
+    <div class="text-muted small mt-1">
+      This creates the top-level Program (Weeks + Workouts get added in the next step).
+    </div>
+  </div>
+
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">Back</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="row g-3">
+        <div class="col-12 col-md-8">
+          <label class="form-label">Title *</label>
+          <input class="form-control" name="title" required
+                 value="{{ data.title or '' }}"
+                 placeholder="6 Week Beginner Program">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Slug (optional)</label>
+          <input class="form-control" name="slug"
+                 value="{{ data.slug or '' }}"
+                 placeholder="6-week-beginner">
+          <div class="form-text">If blank, we auto-generate from Title.</div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Category</label>
+          <input class="form-control" name="category"
+                 value="{{ data.category or '' }}"
+                 placeholder="Beginner / Strength / Full Body">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Duration label</label>
+          <input class="form-control" name="duration_label"
+                 value="{{ data.duration_label or '' }}"
+                 placeholder="6 weeks / 4 weeks / 14 days">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Sort order</label>
+          <input class="form-control" type="number" name="order"
+                 value="{{ data.order if data.order is not none else 0 }}">
+          <div class="form-text">Lower shows first.</div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Summary</label>
+          <textarea class="form-control" name="summary" rows="2"
+                    placeholder="Short 1–2 line description shown on Programs and (optionally) Home.">{{ data.summary or '' }}</textarea>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Cover image URL (optional)</label>
+          <input class="form-control" name="cover_image"
+                 value="{{ data.cover_image or '' }}"
+                 placeholder="https://...">
+          <div class="form-text">You can paste a hosted image URL for now. Upload support can come later.</div>
+        </div>
+
+        <div class="col-12">
+          <div class="d-flex flex-wrap gap-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="active"
+                     name="active" {% if data.active %}checked{% endif %}>
+              <label class="form-check-label" for="active">
+                Active (visible on Programs page)
+              </label>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="show_on_home"
+                     name="show_on_home" {% if data.show_on_home %}checked{% endif %}>
+              <label class="form-check-label" for="show_on_home">
+                Show on Home (featured)
+              </label>
+            </div>
+          </div>
+
+          <div class="form-text mt-1">
+            “Show on Home” only matters if Active is enabled.
+          </div>
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-primary" type="submit">
+            {% if edit %}Save Changes{% else %}Create Program{% endif %}
+          </button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if edit %}
+  <div class="alert alert-info mt-3 mb-0">
+    Next step: we’ll add an Admin screen to create <strong>Weeks</strong> under this program,
+    and then add <strong>Workouts</strong> (linked or placeholder) inside each week.
+  </div>
+{% endif %}
+{% endblock %}
