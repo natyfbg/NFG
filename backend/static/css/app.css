@@ -19,6 +19,14 @@
 /* Basic page scaling */
 h1.page-title{ font-size: clamp(1.75rem, 2.5vw, 2.25rem); }
 
+/* Prevent horizontal jiggle on mobile */
+html, body{ overflow-x: hidden; }
+
+/* Slightly nicer card text rhythm (helps your Bio block) */
+.card .card-body{
+  line-height: 1.35;
+}
+
 /* ===== Workouts dropdown styling (compact & roll-down) ===== */
 .navbar .workout-menu{
   min-width: var(--dd-min-w);
@@ -63,8 +71,12 @@ h1.page-title{ font-size: clamp(1.75rem, 2.5vw, 2.25rem); }
 @media (max-width:575.98px){
   .navbar .dropdown-menu.workout-menu{
     position: fixed !important;
-    left: 50% !important; transform: translate(-50%, 0) !important;
-    top: calc(var(--bs-navbar-padding-y, .5rem) + 56px) !important;
+    left: 50% !important;
+    transform: translate(-50%, 0) !important;
+
+    /* slightly safer offset under your navbar */
+    top: calc(56px + 12px) !important;
+
     width: min(94vw, 420px);
     max-height: 70svh; overflow:auto;
     border-radius: 12px;
@@ -104,7 +116,7 @@ body{
 
 .bottom-nav .nav-wrap{
   pointer-events: auto;
-  width: min(420px, calc(100% - 24px));
+  width: min(460px, calc(100% - 24px));
   margin: 0 auto;
   height: 100%;
   padding: 6px;
@@ -116,7 +128,7 @@ body{
   box-shadow: 0 10px 30px rgba(0,0,0,.25);
 
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr); /* ✅ now supports 4 tabs */
   gap: 6px;
 }
 
@@ -129,6 +141,11 @@ body{
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   padding: 6px 4px;
+
+  transition: background .12s ease, color .12s ease, transform .08s ease;
+}
+.bottom-nav a:active{
+  transform: scale(.98);
 }
 
 .bottom-nav a.active{
@@ -143,6 +160,30 @@ body{
   border-radius: 7px;
   background: rgba(255,255,255,.12);
   margin-bottom: 2px;
+  position: relative;
+}
+
+/* Simple “icon” differentiation per tab (no SVG) */
+.bottom-nav a[data-nav="home"] .icon{
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.18);
+}
+.bottom-nav a[data-nav="workouts"] .icon::before{
+  content:"";
+  position:absolute; inset: 5px 6px;
+  border-top: 2px solid rgba(255,255,255,.22);
+  border-bottom: 2px solid rgba(255,255,255,.22);
+}
+.bottom-nav a[data-nav="programs"] .icon::before{
+  content:"";
+  position:absolute; inset: 5px;
+  border: 2px solid rgba(255,255,255,.22);
+  border-radius: 5px;
+}
+.bottom-nav a[data-nav="recipes"] .icon::before{
+  content:"";
+  position:absolute; left: 6px; right: 6px; top: 6px; bottom: 6px;
+  border-left: 2px solid rgba(255,255,255,.22);
+  border-right: 2px solid rgba(255,255,255,.22);
 }
 
 .bottom-nav .label{

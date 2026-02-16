@@ -22,9 +22,21 @@
         </button>
 
         {% set ep = request.endpoint or '' %}
+
+        {# Public endpoints #}
         {% set workouts_eps = ['workouts','workouts_browse','workouts_all','styles_index','body_parts_index','workout_detail'] %}
         {% set programs_eps = ['programs_index','program_detail'] %}
-        {% set admin_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
+        {% set recipes_eps = ['recipes'] %}
+
+        {# Admin endpoints (expand to cover all admin pages) #}
+        {% set admin_eps = [
+          'admin_index',
+          'admin_workout_new','admin_workout_edit',
+          'admin_styles','admin_style_toggle','admin_style_delete',
+          'admin_home_plans','admin_home_plan_new','admin_home_plan_edit','admin_home_plan_toggle','admin_home_plan_delete',
+          'admin_programs','admin_program_new','admin_program_edit',
+          'admin_program_toggle_active','admin_program_toggle_home','admin_program_delete'
+        ] %}
 
         <div class="collapse navbar-collapse" id="navMain">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
@@ -59,7 +71,7 @@
             </li>
 
             <li class="nav-item">
-              <a class="nav-link {% if ep == 'recipes' %}active{% endif %}" href="{{ url_for('recipes') }}">Recipes</a>
+              <a class="nav-link {% if ep in recipes_eps %}active{% endif %}" href="{{ url_for('recipes') }}">Recipes</a>
             </li>
           </ul>
 
@@ -142,7 +154,7 @@
           <span class="label">Programs</span>
         </a>
 
-        <a href="{{ url_for('recipes') }}" class="{% if ep == 'recipes' %}active{% endif %}" data-nav="recipes" aria-label="Recipes">
+        <a href="{{ url_for('recipes') }}" class="{% if ep in recipes_eps %}active{% endif %}" data-nav="recipes" aria-label="Recipes">
           <span class="icon" aria-hidden="true"></span>
           <span class="label">Recipes</span>
         </a>
@@ -161,6 +173,7 @@
 
         const toggle = document.getElementById('workoutsMenu');
         const menu = li.querySelector('.dropdown-menu');
+        if (!toggle || !menu) return;
 
         const dd = bootstrap.Dropdown.getOrCreateInstance(toggle, {
           autoClose: 'outside',
@@ -199,11 +212,7 @@
     </script>
 
     <script>
-      /* Swipe navigation with a slide animation (mobile-first)
-         - Captures swipe on the main content zone
-         - Animates the current page sliding out
-         - Navigates after the animation for a smooth "swipe between tabs" feel
-      */
+      /* Swipe navigation with a slide animation (mobile-first) */
       (function(){
         const zone = document.getElementById('swipe-zone');
         const shell = document.getElementById('page-shell');
@@ -217,7 +226,7 @@
           { key: 'home',     endpoints: ['home'],                      url: "{{ url_for('home') }}" },
           { key: 'workouts', endpoints: {{ workouts_eps|tojson }},     url: "{{ url_for('workouts') }}" },
           { key: 'programs', endpoints: {{ programs_eps|tojson }},     url: "{{ url_for('programs_index') }}" },
-          { key: 'recipes',  endpoints: ['recipes'],                  url: "{{ url_for('recipes') }}" }
+          { key: 'recipes',  endpoints: {{ recipes_eps|tojson }},      url: "{{ url_for('recipes') }}" }
         ];
 
         function currentIndex(){
@@ -227,10 +236,10 @@
           return 0;
         }
 
-        const SWIPE_MIN_X = 55;     // px
-        const SWIPE_MAX_Y = 70;     // px vertical tolerance
-        const EDGE_GUARD  = 12;     // ignore tiny edge gestures
-        const NAV_COOLDOWN = 700;   // ms
+        const SWIPE_MIN_X = 55;
+        const SWIPE_MAX_Y = 70;
+        const EDGE_GUARD  = 12;
+        const NAV_COOLDOWN = 700;
         let lastNavAt = 0;
 
         let startX = 0, startY = 0;
@@ -242,13 +251,9 @@
         };
 
         const animateAndGo = (dir, url) => {
-          // dir: -1 = swipe left (go next, slide left), +1 = swipe right (go prev, slide right)
           shell.classList.remove('slide-out-left', 'slide-out-right');
-          // trigger reflow
           void shell.offsetWidth;
           shell.classList.add(dir < 0 ? 'slide-out-left' : 'slide-out-right');
-
-          // navigate after animation starts
           setTimeout(() => { window.location.href = url; }, 150);
         };
 
@@ -292,8 +297,8 @@
           const idx = currentIndex();
           let nextIdx = idx;
 
-          if (dx < 0) nextIdx = Math.min(routes.length - 1, idx + 1);  // swipe left -> next
-          if (dx > 0) nextIdx = Math.max(0, idx - 1);                  // swipe right -> prev
+          if (dx < 0) nextIdx = Math.min(routes.length - 1, idx + 1);
+          if (dx > 0) nextIdx = Math.max(0, idx - 1);
           if (nextIdx === idx) return;
 
           lastNavAt = now;

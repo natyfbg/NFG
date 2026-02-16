@@ -1,0 +1,213 @@
+{# backend/templates/program_week_detail.html #}
+{% extends "base.html" %}
+
+{% block title %}
+Week {{ week_number }} – {{ track.title if track and track.title else "Program" }}
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px;">
+
+  {% set lvl = (level or 'beginner')|lower %}
+  {% set envv = (env or 'home')|lower %}
+  {% set hub_slug = (hub.slug if hub and hub.slug else (track.hub_slug if track and track.hub_slug else '8-week-challenge')) %}
+
+  <style>
+    .pill{
+      display:inline-flex; align-items:center; gap:.35rem;
+      border: 1px solid rgba(0,0,0,.15);
+      background: rgba(0,0,0,.03);
+      border-radius: 999px;
+      padding: .2rem .6rem;
+      font-size:.78rem;
+      text-decoration:none;
+      color: inherit;
+    }
+    .pill.active{
+      background: rgba(0,0,0,.08);
+      border-color: rgba(0,0,0,.25);
+      font-weight: 600;
+    }
+    .card-soft{
+      border: 1px solid rgba(0,0,0,.12);
+      border-radius: 1rem;
+      box-shadow: 0 .35rem .9rem rgba(0,0,0,.05);
+    }
+    .item-row{
+      border: 1px solid rgba(0,0,0,.12);
+      border-radius: .9rem;
+      padding: 1rem;
+      background: #fff;
+    }
+    .muted{ color: rgba(0,0,0,.6); }
+  </style>
+
+  <!-- Header -->
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+    <div class="me-2">
+      <div class="text-muted small">Week detail</div>
+      <h1 class="h4 mb-1">
+        Week {{ week_number }}
+        {% if week and (week.title is defined or week.get('title')) %}
+          {% set wtitle = week.title if week.title is defined else week.get('title') %}
+          <span class="text-muted">•</span> <span class="text-muted">{{ wtitle }}</span>
+        {% endif %}
+      </h1>
+
+      <div class="text-muted">
+        {{ track.title if track and track.title else "Program" }}
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mt-2">
+        <span class="pill">Level: <strong>{{ lvl|capitalize }}</strong></span>
+        <span class="pill">Env: <strong>{{ envv|capitalize }}</strong></span>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm"
+         href="{{ url_for('program_hub_weeks', hub_slug=hub_slug, level=lvl, env=envv) }}">
+        Back to weeks
+      </a>
+
+      <a class="btn btn-outline-dark btn-sm"
+         href="{{ url_for('program_detail', slug=hub_slug) }}">
+        Program home
+      </a>
+    </div>
+  </div>
+
+  <!-- Level / Environment Switchers -->
+  <div class="card card-soft mb-3">
+    <div class="card-body">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+          <div class="fw-semibold mb-1">Switch level</div>
+          <div class="d-flex flex-wrap gap-2">
+            {% for l in (levels or ['beginner','intermediate','advanced']) %}
+              {% set lnorm = l|lower %}
+              <a class="pill {{ 'active' if lnorm == lvl else '' }}"
+                 href="{{ url_for('program_hub_week_detail', hub_slug=hub_slug, week_number=week_number, level=lnorm, env=envv) }}">
+                {{ lnorm|capitalize }}
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div>
+          <div class="fw-semibold mb-1">Switch environment</div>
+          <div class="d-flex flex-wrap gap-2">
+            {% for e in (envs or ['home','gym','hybrid']) %}
+              {% set enorm = e|lower %}
+              <a class="pill {{ 'active' if enorm == envv else '' }}"
+                 href="{{ url_for('program_hub_week_detail', hub_slug=hub_slug, week_number=week_number, level=lvl, env=enorm) }}">
+                {{ enorm|capitalize }}
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="text-muted small mt-3">
+        Tip: these toggles just reload the correct Track (level + environment) for the same week number.
+      </div>
+    </div>
+  </div>
+
+  <!-- Items / Workouts -->
+  {% if items and items|length > 0 %}
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <h2 class="h6 mb-0">This week’s plan</h2>
+      <span class="text-muted small">{{ items|length }} item{{ '' if items|length == 1 else 's' }}</span>
+    </div>
+
+    <div class="d-grid gap-3">
+      {% for it in items %}
+        {% set wid = it.get('workout_id') %}
+        {% set w = workout_map.get(wid) if workout_map else None %}
+        {% set label = it.get('label') or it.get('title') or it.get('name') or 'Workout' %}
+        {% set note = it.get('note') or it.get('description') or it.get('instructions') %}
+        {% set day = it.get('day') or it.get('day_label') %}
+
+        <div class="item-row">
+          <div class="d-flex align-items-start justify-content-between gap-2">
+            <div>
+              <div class="fw-semibold">
+                {{ label }}
+                {% if day %}<span class="text-muted">•</span> <span class="muted">{{ day }}</span>{% endif %}
+              </div>
+
+              {% if w %}
+                <div class="mt-1">
+                  <a href="{{ url_for('workout_detail', slug=w.get('slug')) }}" class="text-decoration-none">
+                    View workout: <strong>{{ w.get('name') }}</strong>
+                  </a>
+                </div>
+              {% else %}
+                <div class="muted small mt-1">
+                  No workout linked yet (you can attach one in Admin later).
+                </div>
+              {% endif %}
+
+              {% if note %}
+                <div class="muted small mt-2">{{ note }}</div>
+              {% endif %}
+            </div>
+
+            <div class="text-end">
+              <span class="badge text-bg-light border text-dark">Item</span>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <!-- Placeholder if no items exist yet -->
+    <div class="card card-soft">
+      <div class="card-body">
+        <h2 class="h6 mb-2">Week {{ week_number }} isn’t built yet</h2>
+        <p class="text-muted mb-2">
+          This is a placeholder so navigation works end-to-end.
+          When you’re ready, add the week + items in Admin.
+        </p>
+
+        <div class="row g-3 mt-1">
+          <div class="col-12 col-md-6">
+            <div class="p-3 border rounded-4">
+              <div class="fw-semibold">Suggested focus</div>
+              <div class="muted small mt-1">
+                - 3–5 strength sessions<br/>
+                - 2–3 low intensity cardio sessions<br/>
+                - Prioritize form + consistent sleep
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <div class="p-3 border rounded-4">
+              <div class="fw-semibold">How we’ll build this later</div>
+              <div class="muted small mt-1">
+                1) Create Week {{ week_number }} under this Track<br/>
+                2) Add program items (days/workouts)<br/>
+                3) Link each item to an existing workout
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <a class="btn btn-dark btn-sm" href="{{ url_for('admin_programs') }}">
+            Go to Admin → Programs
+          </a>
+          <a class="btn btn-outline-secondary btn-sm"
+             href="{{ url_for('program_hub_weeks', hub_slug=hub_slug, level=lvl, env=envv) }}">
+            Back to weeks
+          </a>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
