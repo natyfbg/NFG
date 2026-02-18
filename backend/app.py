@@ -74,13 +74,16 @@ os.makedirs(LOG_DIR, exist_ok=True)
 log_path = os.path.join(LOG_DIR, "app.log")
 
 file_handler = RotatingFileHandler(log_path, maxBytes=1_000_000, backupCount=3)
-file_handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s"))
+file_handler.setFormatter(
+    logging.Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s")
+)
 file_handler.setLevel(logging.INFO)
 
 app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info("App startup")
 app.logger.info("Using Mongo at: %s (db=%s)", MONGO_URI, db.name)
+
 
 # -----------------------------------------------------------------------------
 # Helpers (general)
@@ -95,7 +98,9 @@ def _split_list(text: str) -> List[str]:
     return [p.strip() for p in re.split(r"[\n,]+", text) if p.strip()]
 
 
-_YT_PAT = re.compile(r"(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|shorts/))?([A-Za-z0-9_-]{11})")
+_YT_PAT = re.compile(
+    r"(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|shorts/))?([A-Za-z0-9_-]{11})"
+)
 
 
 def _extract_youtube_id(val: Optional[str]) -> Optional[str]:
@@ -377,8 +382,9 @@ def _get_hub_or_404(hub_slug: str) -> dict:
 
 def _tracks_for_hub(hub_slug: str) -> List[dict]:
     return list(
-        db.programs.find({"kind": "track", "hub_slug": hub_slug, "active": {"$ne": False}})
-        .sort([("order", 1), ("created_at", -1)])
+        db.programs.find({"kind": "track", "hub_slug": hub_slug, "active": {"$ne": False}}).sort(
+            [("order", 1), ("created_at", -1)]
+        )
     )
 
 
@@ -415,7 +421,10 @@ def _pick_track_for(hub_slug: str, level: str, env: str) -> Optional[dict]:
     env = _norm_choice(env)
 
     for t in tracks:
-        if _norm_choice(t.get("track_level")) == level and _infer_env_from_slug(t.get("slug", "")) == env:
+        if (
+            _norm_choice(t.get("track_level")) == level
+            and _infer_env_from_slug(t.get("slug", "")) == env
+        ):
             return t
 
     for t in tracks:
@@ -472,7 +481,10 @@ def get_styles() -> List[str]:
 def _ensure_style_seed_once() -> None:
     try:
         if db.styles.count_documents({}) == 0:
-            docs = [{"name": n, "slug": slugify(n), "order": i, "active": True} for i, n in enumerate(DEFAULT_WORKOUT_STYLES)]
+            docs = [
+                {"name": n, "slug": slugify(n), "order": i, "active": True}
+                for i, n in enumerate(DEFAULT_WORKOUT_STYLES)
+            ]
             if docs:
                 db.styles.insert_many(docs)
     except Exception as e:
@@ -685,12 +697,20 @@ def program_detail(slug):
     if program.get("kind") == "hub":
         return redirect(url_for("program_hub_level", hub_slug=program["slug"]))
 
-    weeks = list(db.program_weeks.find({"program_id": program["_id"]}).sort([("week_number", 1), ("order", 1)]))
+    weeks = list(
+        db.program_weeks.find({"program_id": program["_id"]}).sort(
+            [("week_number", 1), ("order", 1)]
+        )
+    )
 
     week_ids = [w["_id"] for w in weeks]
     rows = []
     if week_ids:
-        rows = list(db.program_items.find({"week_id": {"$in": week_ids}}).sort([("order", 1), ("created_at", 1)]))
+        rows = list(
+            db.program_items.find({"week_id": {"$in": week_ids}}).sort(
+                [("order", 1), ("created_at", 1)]
+            )
+        )
 
     rows_by_week = {wid: [] for wid in week_ids}
     for r in rows:
@@ -752,12 +772,18 @@ def program_hub_weeks(hub_slug):
 
     track = _pick_track_for(hub_slug, level, env)
     if not track:
-        flash("That track isn't set up yet. Create a Track program in Admin for this Hub.", "warning")
+        flash(
+            "That track isn't set up yet. Create a Track program in Admin for this Hub.", "warning"
+        )
         return redirect(url_for("program_hub_environment", hub_slug=hub_slug, level=level))
 
-    weeks = list(db.program_weeks.find({"program_id": track["_id"]}).sort([("week_number", 1), ("order", 1)]))
+    weeks = list(
+        db.program_weeks.find({"program_id": track["_id"]}).sort([("week_number", 1), ("order", 1)])
+    )
     if not weeks:
-        n = _week_count_from_duration_label(track.get("duration_label") or hub.get("duration_label"))
+        n = _week_count_from_duration_label(
+            track.get("duration_label") or hub.get("duration_label")
+        )
         weeks = [{"week_number": i, "title": None} for i in range(1, n + 1)]
 
     return render_or_fallback("program_weeks.html", track=track, level=level, env=env, weeks=weeks)
@@ -787,7 +813,9 @@ def program_hub_week_detail(hub_slug, week_number: int):
     items = []
     workout_map = {}
     if week:
-        items = list(db.program_items.find({"week_id": week["_id"]}).sort([("order", 1), ("created_at", 1)]))
+        items = list(
+            db.program_items.find({"week_id": week["_id"]}).sort([("order", 1), ("created_at", 1)])
+        )
         workout_ids = [it.get("workout_id") for it in items if it.get("workout_id")]
         if workout_ids:
             ws = list(db.workouts.find({"_id": {"$in": workout_ids}}, {"name": 1, "slug": 1}))
@@ -824,7 +852,9 @@ def workouts():
     parts_single = set(db.workouts.distinct("body_part"))
     parts_multi = set(db.workouts.distinct("body_parts"))
     parts_in_db = parts_single | parts_multi
-    body_parts_featured = [p for p in FEATURED_BODY_PARTS if p in parts_in_db] or FEATURED_BODY_PARTS[:]
+    body_parts_featured = [
+        p for p in FEATURED_BODY_PARTS if p in parts_in_db
+    ] or FEATURED_BODY_PARTS[:]
 
     all_ws = list(db.workouts.find({}).sort([("name", ASCENDING)]).limit(3))
 
@@ -853,7 +883,10 @@ def styles_index():
 
 @app.route("/workouts/body-parts")
 def body_parts_index():
-    counts = {bp: db.workouts.count_documents({"$or": [{"body_part": bp}, {"body_parts": bp}]}) for bp in BODY_PARTS_MASTER}
+    counts = {
+        bp: db.workouts.count_documents({"$or": [{"body_part": bp}, {"body_parts": bp}]})
+        for bp in BODY_PARTS_MASTER
+    }
     return render_template("body_parts_index.html", body_parts=BODY_PARTS_MASTER, counts=counts)
 
 
@@ -929,13 +962,18 @@ def workout_detail(slug):
     rel_q = {
         "$and": [
             {"slug": {"$ne": w["slug"]}},
-            {"$or": ([{"body_parts": {"$in": parts}}] if parts else []) + ([{"style": w.get("style")}] if w.get("style") else [])},
+            {
+                "$or": ([{"body_parts": {"$in": parts}}] if parts else [])
+                + ([{"style": w.get("style")}] if w.get("style") else [])
+            },
         ]
     }
     if not rel_q["$and"][1]["$or"]:
         rel_q = {"slug": {"$ne": w["slug"]}}
 
-    related = list(db.workouts.find(rel_q).sort([("rating", -1), ("created_at", -1), ("name", 1)]).limit(6))
+    related = list(
+        db.workouts.find(rel_q).sort([("rating", -1), ("created_at", -1), ("name", 1)]).limit(6)
+    )
     return render_template("workout_detail.html", w=w, related=related)
 
 
@@ -958,10 +996,24 @@ def search():
     per_page = min(max(int(request.args.get("per_page", 24)), 1), 100)
 
     rx = Regex(q, "i")
-    w_query = {"$or": [{"name": rx}, {"level": rx}, {"body_part": rx}, {"body_parts": rx}, {"style": rx}, {"tags": rx}]}
+    w_query = {
+        "$or": [
+            {"name": rx},
+            {"level": rx},
+            {"body_part": rx},
+            {"body_parts": rx},
+            {"style": rx},
+            {"tags": rx},
+        ]
+    }
 
     total = db.workouts.count_documents(w_query)
-    items = list(db.workouts.find(w_query).sort([("name", ASCENDING)]).skip((page - 1) * per_page).limit(per_page))
+    items = list(
+        db.workouts.find(w_query)
+        .sort([("name", ASCENDING)])
+        .skip((page - 1) * per_page)
+        .limit(per_page)
+    )
     rs = list(db.recipes.find({"name": rx}).sort([("name", ASCENDING)]))
 
     return render_template(
@@ -1032,7 +1084,9 @@ def admin_workout_new():
         level = request.form.get("level", "").strip()
         style = request.form.get("style", "").strip()
         body_parts = _split_list(request.form.get("body_parts", ""))
-        body_part = body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
+        body_part = (
+            body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
+        )
         tags = _split_list(request.form.get("tags", ""))
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
@@ -1112,7 +1166,9 @@ def admin_workout_edit(id):
         level = request.form.get("level", "").strip()
         style = request.form.get("style", "").strip()
         body_parts = _split_list(request.form.get("body_parts", ""))
-        body_part = body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
+        body_part = (
+            body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
+        )
         tags = _split_list(request.form.get("tags", ""))
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
@@ -1331,16 +1387,22 @@ def admin_home_plan_edit(id):
 
         if not title:
             flash("Title is required.", "danger")
-            return render_template("admin_home_plan_form.html", data=request.form, edit=True, _id=id)
+            return render_template(
+                "admin_home_plan_form.html", data=request.form, edit=True, _id=id
+            )
 
         if not cta_url:
             flash("Primary button URL is required.", "danger")
-            return render_template("admin_home_plan_form.html", data=request.form, edit=True, _id=id)
+            return render_template(
+                "admin_home_plan_form.html", data=request.form, edit=True, _id=id
+            )
 
         existing = db.home_plans.find_one({"slug": slug, "_id": {"$ne": ObjectId(id)}})
         if existing:
             flash(f"Slug '{slug}' already exists.", "danger")
-            return render_template("admin_home_plan_form.html", data=request.form, edit=True, _id=id)
+            return render_template(
+                "admin_home_plan_form.html", data=request.form, edit=True, _id=id
+            )
 
         update = {
             "title": title,
@@ -1390,7 +1452,11 @@ def admin_home_plan_delete(id):
 @app.route("/admin/programs")
 @login_required
 def admin_programs():
-    programs = list(db.programs.find().sort([("active", -1), ("show_on_home", -1), ("order", 1), ("created_at", -1)]))
+    programs = list(
+        db.programs.find().sort(
+            [("active", -1), ("show_on_home", -1), ("order", 1), ("created_at", -1)]
+        )
+    )
     return render_template("admin_programs.html", programs=programs)
 
 
@@ -1537,7 +1603,9 @@ def admin_program_toggle_home(id):
     p = db.programs.find_one({"_id": ObjectId(id)})
     if not p:
         abort(404)
-    db.programs.update_one({"_id": p["_id"]}, {"$set": {"show_on_home": not p.get("show_on_home", False)}})
+    db.programs.update_one(
+        {"_id": p["_id"]}, {"$set": {"show_on_home": not p.get("show_on_home", False)}}
+    )
     flash("Program updated.", "success")
     return redirect(url_for("admin_programs"))
 
@@ -1572,7 +1640,11 @@ def admin_program_weeks(program_id):
     if not program:
         abort(404)
 
-    weeks = list(db.program_weeks.find({"program_id": program["_id"]}).sort([("week_number", 1), ("order", 1)]))
+    weeks = list(
+        db.program_weeks.find({"program_id": program["_id"]}).sort(
+            [("week_number", 1), ("order", 1)]
+        )
+    )
     return render_template("admin_program_weeks.html", program=program, weeks=weeks)
 
 
