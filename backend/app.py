@@ -473,7 +473,12 @@ db.program_items.create_index([("workout_id", 1)])
 
 
 def get_styles() -> List[str]:
-    styles = list(db.styles.find({"active": {"$ne": False}}).sort([("order", 1), ("name", 1)]))
+    cursor = (
+        db.styles.find({"active": {"$ne": False}})
+        .sort([("order", 1), ("name", 1)])
+    )
+    styles = list(cursor)
+
     if styles:
         return [s["name"] for s in styles]
     return DEFAULT_WORKOUT_STYLES
@@ -848,6 +853,7 @@ def eight_week_hub_redirect():
 # -----------------------------------------------------------------------------
 # Workouts
 # -----------------------------------------------------------------------------
+
 @app.route("/workouts")
 def workouts():
     parts_single = set(db.workouts.distinct("body_part"))
@@ -934,7 +940,14 @@ def workouts_browse():
         sort = [("rating", -1), ("name", ASCENDING)]
 
     total = db.workouts.count_documents(query)
-    items = list(db.workouts.find(query).sort(sort).skip((page - 1) * per_page).limit(per_page))
+    cursor = (
+        db.workouts.find(query)
+        .sort(sort)
+        .skip((page - 1) * per_page)
+        .limit(per_page)
+    )
+
+    items = list(cursor)
 
     return render_template(
         "browse_workouts.html",
