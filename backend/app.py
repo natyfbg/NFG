@@ -88,6 +88,7 @@ app.logger.info("Using Mongo at: %s (db=%s)", MONGO_URI, db.name)
 # -----------------------------------------------------------------------------
 # Helpers (general)
 # -----------------------------------------------------------------------------
+
 def slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
 
