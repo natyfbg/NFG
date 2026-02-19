@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Programs – NFG{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Explore</div>
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action" href="{{ url_for('home') }}">Home</a>
+    <a class="list-group-item list-group-item-action" href="{{ url_for('workouts') }}">Workouts</a>
+    <a class="list-group-item list-group-item-action" href="{{ url_for('recipes') }}">Recipes</a>
+    <a class="list-group-item list-group-item-action active" href="{{ url_for('programs_index') }}">Programs</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Tip</div>
+  <div class="card-body text-muted">
+    Programs are view-only right now. Progress tracking and “Start program” will come later once user accounts exist.
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h1 class="page-title mb-1">Programs</h1>
+    <p class="text-muted mb-0">
+      Start the current challenge. (More programs can come later — but for now we keep this simple and mobile-friendly.)
+    </p>
+  </div>
+
+  <div class="d-flex align-items-center gap-2">
+    {% if current_user.is_authenticated %}
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_programs') }}">Manage (Admin)</a>
+    {% endif %}
+  </div>
+</div>
+
+{# -----------------------------------------------------------------------------
+   Show ONLY the hub program.
+   Today we key off slug == '8-week-challenge'.
+   Later you can add p.kind == 'hub' or p.is_hub == True and it will still work.
+----------------------------------------------------------------------------- #}
+
+{% set hub = none %}
+{% if programs and programs|length > 0 %}
+  {% for p in programs %}
+    {% set slug = (p.get('slug') or '') %}
+    {% set kind = (p.get('kind') or '') %}
+    {% set is_hub = (p.get('is_hub') if p.get('is_hub') is defined else false) %}
+
+    {% if slug == '8-week-challenge' or kind == 'hub' or is_hub %}
+      {% set hub = p %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+{% if hub %}
+  <div class="row g-3">
+    <div class="col-12">
+      <a href="{{ url_for('program_detail', slug=hub.get('slug')) }}" class="text-decoration-none">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex align-items-start justify-content-between gap-3">
+              <div class="me-2 flex-grow-1">
+                <div class="fw-semibold text-dark">{{ hub.get('title', '8 Week Challenge') }}</div>
+
+                {% if hub.get('summary') %}
+                  <div class="text-muted small mt-1">{{ hub.get('summary') }}</div>
+                {% else %}
+                  <div class="text-muted small mt-1">
+                    Pick your level and training environment. Follow the weekly plan and build momentum.
+                  </div>
+                {% endif %}
+
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                  <span class="badge text-bg-dark">{{ hub.get('category') or 'Challenge' }}</span>
+                  <span class="badge text-bg-light border text-dark">{{ hub.get('duration_label') or '8 weeks' }}</span>
+
+                  {% if hub.get('show_on_home') %}
+                    <span class="badge text-bg-dark">Featured</span>
+                  {% endif %}
+                </div>
+
+                <div class="mt-3 d-flex align-items-center gap-2">
+                  <span class="btn btn-sm btn-outline-dark">Open</span>
+                  <span class="text-muted small">Pick level</span>
+                </div>
+              </div>
+
+              {% if hub.get('cover_image') %}
+                <img src="{{ hub.get('cover_image') }}" alt=""
+                     style="width:120px;height:68px;object-fit:cover;border-radius:.75rem;">
+              {% else %}
+                <div class="bg-body-secondary"
+                     style="width:120px;height:68px;border-radius:.75rem;"></div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="alert alert-secondary small mt-3 mb-0">
+    Note: the Beginner/Intermediate/Advanced tracks exist in the database, but we keep them hidden here so users only see
+    the single “8 Week Challenge” entry point.
+  </div>
+
+{% else %}
+  <div class="alert alert-secondary">
+    The “8 Week Challenge” hub program hasn’t been created yet.
+    <div class="small text-muted mt-1">
+      In <strong>Admin → Programs</strong>, create a program with slug <code>8-week-challenge</code> and set it Active.
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

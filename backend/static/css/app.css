@@ -1,0 +1,212 @@
+/* ===== Global knobs ===== */
+:root{
+  --media9x16-h: clamp(360px, 52vw, 520px);
+  --nav-dd-radius: 14px;
+  --nav-dd-backdrop: rgba(20,20,20,.55);
+
+  /* dropdown sizing */
+  --dd-min-w: 220px;
+  --dd-max-w: 320px;
+
+  /* animation timing */
+  --dd-duration: .12s;
+
+  /* bottom nav (floating pill) */
+  --bottom-nav-h: 54px;
+  --bottom-nav-gap: 12px;
+}
+
+/* Basic page scaling */
+h1.page-title{ font-size: clamp(1.75rem, 2.5vw, 2.25rem); }
+
+/* Prevent horizontal jiggle on mobile */
+html, body{ overflow-x: hidden; }
+
+/* Slightly nicer card text rhythm (helps your Bio block) */
+.card .card-body{
+  line-height: 1.35;
+}
+
+/* ===== Workouts dropdown styling (compact & roll-down) ===== */
+.navbar .workout-menu{
+  min-width: var(--dd-min-w);
+  max-width: var(--dd-max-w);
+  border-radius: var(--nav-dd-radius);
+  backdrop-filter: blur(6px);
+  background-color: rgba(0,0,0,.9);
+  z-index: 1080;
+  padding:.35rem;
+  font-size: .94rem;
+
+  transform-origin: top center;
+  transform: translateY(-6px) scale(.995);
+  opacity: 0;
+  transition: transform var(--dd-duration) ease, opacity var(--dd-duration) ease;
+}
+.navbar .workout-menu.show{
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.navbar .dropdown-item{
+  padding:.36rem .6rem;
+  border-radius:.375rem;
+}
+.navbar .dropdown-item:hover,
+.navbar .dropdown-item:focus{ background: rgba(255,255,255,.06); }
+
+/* hide default caret */
+.dropdown-toggle::after{ display:none !important; }
+
+.caret{
+  display:inline-block; width:.5rem; height:.5rem;
+  border-right:2px solid currentColor; border-bottom:2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform var(--dd-duration) ease;
+  margin-left:.25rem;
+}
+.workouts-caret-open .caret{ transform: rotate(225deg); }
+
+/* Mobile sheet: fixed & centered */
+@media (max-width:575.98px){
+  .navbar .dropdown-menu.workout-menu{
+    position: fixed !important;
+    left: 50% !important;
+    transform: translate(-50%, 0) !important;
+
+    /* slightly safer offset under your navbar */
+    top: calc(56px + 12px) !important;
+
+    width: min(94vw, 420px);
+    max-height: 70svh; overflow:auto;
+    border-radius: 12px;
+    background: var(--nav-dd-backdrop);
+    padding:.5rem;
+    opacity:1;
+  }
+  .navbar .dropdown-item{ padding:.65rem .9rem; }
+}
+
+/* Keep dropdown above alerts */
+.alert { z-index: 1; position: relative; }
+
+/* ===== Floating bottom navigation (mobile) ===== */
+body{
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@media (max-width: 991.98px){
+  body{
+    padding-bottom: calc(var(--bottom-nav-h) + var(--bottom-nav-gap) + env(safe-area-inset-bottom));
+  }
+}
+
+.bottom-nav{
+  position: fixed;
+  left: 0; right: 0;
+  bottom: calc(var(--bottom-nav-gap) + env(safe-area-inset-bottom));
+  height: var(--bottom-nav-h);
+  display: none;
+  z-index: 1090;
+  pointer-events: none; /* only inner pill clickable */
+}
+
+@media (max-width: 991.98px){
+  .bottom-nav{ display: flex; }
+}
+
+.bottom-nav .nav-wrap{
+  pointer-events: auto;
+  width: min(460px, calc(100% - 24px));
+  margin: 0 auto;
+  height: 100%;
+  padding: 6px;
+  border-radius: 18px;
+
+  background: rgba(15,15,15,.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* ✅ now supports 4 tabs */
+  gap: 6px;
+}
+
+.bottom-nav a{
+  text-decoration: none;
+  color: rgba(255,255,255,.72);
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  padding: 6px 4px;
+
+  transition: background .12s ease, color .12s ease, transform .08s ease;
+}
+.bottom-nav a:active{
+  transform: scale(.98);
+}
+
+.bottom-nav a.active{
+  color: #fff;
+  background: rgba(255,255,255,.08);
+}
+
+.bottom-nav .icon{
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+  border-radius: 7px;
+  background: rgba(255,255,255,.12);
+  margin-bottom: 2px;
+  position: relative;
+}
+
+/* Simple “icon” differentiation per tab (no SVG) */
+.bottom-nav a[data-nav="home"] .icon{
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.18);
+}
+.bottom-nav a[data-nav="workouts"] .icon::before{
+  content:"";
+  position:absolute; inset: 5px 6px;
+  border-top: 2px solid rgba(255,255,255,.22);
+  border-bottom: 2px solid rgba(255,255,255,.22);
+}
+.bottom-nav a[data-nav="programs"] .icon::before{
+  content:"";
+  position:absolute; inset: 5px;
+  border: 2px solid rgba(255,255,255,.22);
+  border-radius: 5px;
+}
+.bottom-nav a[data-nav="recipes"] .icon::before{
+  content:"";
+  position:absolute; left: 6px; right: 6px; top: 6px; bottom: 6px;
+  border-left: 2px solid rgba(255,255,255,.22);
+  border-right: 2px solid rgba(255,255,255,.22);
+}
+
+.bottom-nav .label{
+  font-size: .75rem;
+  line-height: 1;
+}
+
+/* ===== Swipe slide animation ===== */
+#page-shell{
+  will-change: transform, opacity;
+}
+#page-shell.slide-out-left{
+  animation: slideOutLeft 160ms ease forwards;
+}
+#page-shell.slide-out-right{
+  animation: slideOutRight 160ms ease forwards;
+}
+
+@keyframes slideOutLeft{
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(-10%); opacity: .2; }
+}
+@keyframes slideOutRight{
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(10%); opacity: .2; }
+}

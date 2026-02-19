@@ -1,0 +1,122 @@
+{# backend/templates/program_level.html #}
+{% extends "base.html" %}
+{% block title %}{{ hub.title if hub else "8 Week Challenge" }} – Pick Your Level{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 720px;">
+
+  <!-- Top bar (mobile-first) -->
+  <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <div class="text-muted small">Program</div>
+      <h1 class="h4 mb-0">{{ hub.title if hub else "8 Week Challenge" }}</h1>
+    </div>
+
+    <a class="btn btn-sm btn-outline-secondary"
+       href="{{ url_for('home') }}"
+       aria-label="Back to Home">
+      Back
+    </a>
+  </div>
+
+  <!-- Program card -->
+  <div class="card shadow-sm mb-3">
+    {% if hub and hub.cover_image %}
+      <img src="{{ hub.cover_image }}" alt=""
+           style="width:100%;height:180px;object-fit:cover;border-top-left-radius:.75rem;border-top-right-radius:.75rem;">
+    {% endif %}
+    <div class="card-body">
+      <div class="d-flex align-items-start justify-content-between gap-2">
+        <div>
+          <div class="fw-semibold">Featured Program</div>
+          <div class="text-muted small">
+            Pick your level and training environment. Then follow the weekly plan.
+          </div>
+        </div>
+        <span class="badge text-bg-dark">{{ hub.duration_label if hub and hub.duration_label else "8 Weeks" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step header -->
+  <div class="mb-2">
+    <div class="text-muted small">Step 1 of 2</div>
+    <h2 class="h5 mb-1">Pick your level</h2>
+    <p class="text-muted mb-0">
+      Choose the level that matches your current strength and consistency.
+      You can change it later.
+    </p>
+  </div>
+
+  <!-- Level options -->
+  <div class="row g-2 mb-3">
+    {% set lvl_list = levels if levels else ["beginner","intermediate","advanced"] %}
+
+    {% for lvl in lvl_list %}
+      {# normalize just in case DB stores "Beginner" vs "beginner" #}
+      {% set lvl_norm = lvl|string|lower %}
+
+      {% set label =
+        "Beginner" if lvl_norm == "beginner"
+        else ("Intermediate" if lvl_norm == "intermediate" else "Advanced")
+      %}
+
+      {% set desc =
+        "New or returning. Focus on form, consistency, and building the habit."
+        if lvl_norm == "beginner" else
+        ("Training consistently already. Build volume, strength, and work capacity."
+         if lvl_norm == "intermediate" else
+         "Experienced. Higher intensity, better recovery habits, and stronger baseline.")
+      %}
+
+      <div class="col-12">
+        <a class="text-decoration-none"
+           href="{{ url_for('program_hub_environment',
+                            hub_slug=(hub.slug if hub else '8-week-challenge'),
+                            level=lvl_norm) }}">
+          <div class="card shadow-sm">
+            <div class="card-body d-flex align-items-start justify-content-between gap-3">
+              <div>
+                <div class="fw-semibold text-dark">{{ label }}</div>
+                <div class="text-muted small mt-1">{{ desc }}</div>
+
+                <div class="mt-3 d-flex align-items-center gap-2">
+                  <span class="btn btn-sm btn-outline-dark">Choose</span>
+                  <span class="text-muted small">Continue</span>
+                </div>
+              </div>
+
+              <div class="text-end">
+                <span class="badge text-bg-light border text-dark">Level</span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Rules -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="fw-semibold mb-2">Program rules</div>
+
+      {% set rules = (hub.rules if hub and hub.rules is defined else []) %}
+      {% if rules and rules|length > 0 %}
+        <ul class="mb-0 text-muted">
+          {% for r in rules %}
+            <li class="mb-1">{{ r }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <ul class="mb-0 text-muted">
+          <li class="mb-1">Diet: low/zero added sugar • 3–6L water • prioritize protein + whole foods.</li>
+          <li class="mb-1">Cardio: 20–30 min steady pace • conversational breathing.</li>
+          <li class="mb-0">Consistency beats intensity. Keep form clean.</li>
+        </ul>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

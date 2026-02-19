@@ -1,0 +1,131 @@
+{# backend/templates/program_weeks.html #}
+{% extends "base.html" %}
+
+{% block title %}
+Weeks – {{ track.title if track and track.title else "Program" }}
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 840px;">
+
+  {% set lvl = (level or 'beginner')|lower %}
+  {% set envv = (env or 'home')|lower %}
+
+  <style>
+    .week-card{
+      border: 1px solid rgba(0,0,0,.12);
+      border-radius: 1rem;
+      box-shadow: 0 .35rem .9rem rgba(0,0,0,.05);
+      background:#fff;
+      text-decoration:none;
+      display:block;
+      color: inherit;
+      padding: 1rem;
+    }
+    .week-card:active{ transform: scale(.995); }
+    .pill{
+      display:inline-flex; align-items:center; gap:.35rem;
+      border: 1px solid rgba(0,0,0,.15);
+      background: rgba(0,0,0,.03);
+      border-radius: 999px;
+      padding: .2rem .6rem;
+      font-size:.78rem;
+    }
+    .muted{ color: rgba(0,0,0,.6); }
+  </style>
+
+  <!-- Header -->
+  <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+    <div class="me-2">
+      <div class="text-muted small">Weeks</div>
+      <h1 class="h4 mb-1">{{ track.title if track and track.title else "Program Weeks" }}</h1>
+      <div class="d-flex flex-wrap gap-2">
+        <span class="pill">Level: <strong>{{ lvl|capitalize }}</strong></span>
+        <span class="pill">Env: <strong>{{ envv|capitalize }}</strong></span>
+      </div>
+      {% if track and track.summary %}
+        <p class="text-muted mt-2 mb-0">{{ track.summary }}</p>
+      {% endif %}
+    </div>
+
+    <div class="d-flex gap-2">
+      <!-- Back goes to environment step -->
+      <a class="btn btn-outline-secondary btn-sm"
+         href="{{ url_for('program_hub_environment', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'), level=lvl) }}">
+        Back
+      </a>
+
+      <a class="btn btn-outline-dark btn-sm"
+         href="{{ url_for('programs_index') }}">
+        All programs
+      </a>
+    </div>
+  </div>
+
+  <!-- Rules -->
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <div class="fw-semibold mb-1">Program rules</div>
+      {% if track and track.rules %}
+        {% if track.rules is string %}
+          <div class="text-muted small">{{ track.rules }}</div>
+        {% else %}
+          <ul class="mb-0 text-muted small">
+            {% for r in track.rules %}
+              <li>{{ r }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      {% else %}
+        <div class="text-muted small">
+          Stay consistent. Keep form clean. Scale intensity so you can complete every week.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Weeks list -->
+  {% if weeks and weeks|length > 0 %}
+    <div class="row g-3">
+      {% for w in weeks %}
+        {% set wn = w.week_number if w.week_number is defined else w.get('week_number') %}
+        {% set wtitle = (w.title if w.title is defined else w.get('title')) %}
+        <div class="col-12">
+          <a class="week-card"
+             href="{{ url_for('program_hub_week_detail', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'), week_number=wn, level=lvl, env=envv) }}">
+            <div class="d-flex align-items-start justify-content-between gap-3">
+              <div>
+                <div class="fw-semibold">Week {{ wn }}</div>
+                {% if wtitle %}
+                  <div class="muted small mt-1">{{ wtitle }}</div>
+                {% else %}
+                  <div class="muted small mt-1">View workouts and guidance for this week.</div>
+                {% endif %}
+
+                <div class="mt-3">
+                  <span class="btn btn-sm btn-dark">Open</span>
+                  <span class="text-muted small ms-2">See week details</span>
+                </div>
+              </div>
+
+              <div class="text-end">
+                <span class="badge text-bg-light border text-dark">Week</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="fw-semibold mb-1">No weeks found</div>
+        <div class="text-muted">
+          This track doesn’t have weeks yet. Go to Admin → Programs → Weeks to add them.
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

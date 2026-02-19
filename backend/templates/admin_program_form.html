@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}{% if edit %}Edit{% else %}New{% endif %} Program – Admin{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Content Management</div>
+
+  {% set ep = request.endpoint or '' %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
+  {% set admin_program_eps = ['admin_programs','admin_program_new','admin_program_edit'] %}
+
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}"
+       href="{{ url_for('admin_index') }}">
+      Workouts
+    </a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_styles'] %}active{% endif %}"
+       href="{{ url_for('admin_styles') }}">
+      Styles
+    </a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_home_plans','admin_home_plan_new','admin_home_plan_edit'] %}active{% endif %}"
+       href="{{ url_for('admin_home_plans') }}">
+      Home Plans
+    </a>
+
+    <a class="list-group-item list-group-item-action {% if ep in admin_program_eps %}active{% endif %}"
+       href="{{ url_for('admin_programs') }}">
+      Programs
+    </a>
+  </div>
+</div>
+
+{% if edit and data and data.slug %}
+  <div class="card">
+    <div class="card-header">Quick Links</div>
+    <div class="list-group list-group-flush">
+      <a class="list-group-item list-group-item-action"
+         href="{{ url_for('program_detail', slug=data.slug) }}">
+        View public page
+      </a>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+{# ----------------------------------------------------------------------------
+   Safe getters: support dict from Mongo OR request.form
+   - Mongo dict uses data["field"] (accessed as data.field in Jinja)
+   - request.form only used to re-populate after validation errors
+---------------------------------------------------------------------------- #}
+
+{# Kind: prefer data.kind, else form.kind, else default hub #}
+{% set kind_val = (data.kind if data and data.kind is defined else (request.form.get('kind') or '')) %}
+{% set kind_val = (kind_val|string|lower) %}
+{% if kind_val not in ['hub','track'] %}
+  {% set kind_val = 'hub' %}
+{% endif %}
+
+{# Track-only fields #}
+{% set hub_slug_val = (data.hub_slug if data and data.hub_slug is defined else (request.form.get('hub_slug') or '')) %}
+{% set track_level_val = (data.track_level if data and data.track_level is defined else (request.form.get('track_level') or '')) %}
+
+{# If not track, keep UI inputs empty (backend will null them anyway) #}
+{% if kind_val != 'track' %}
+  {% set hub_slug_val = '' %}
+  {% set track_level_val = '' %}
+{% endif %}
+
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h1 class="mb-0">{% if edit %}Edit{% else %}New{% endif %} Program</h1>
+    <div class="text-muted small mt-1">
+      Programs are the cards users see. (Weeks + workouts are the next step.)
+    </div>
+  </div>
+
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">Back</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="row g-3">
+
+        <!-- Program Type -->
+        <div class="col-12">
+          <label class="form-label">Program type</label>
+          <div class="d-flex flex-wrap gap-2">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="kind" id="kindHub" value="hub"
+                     {% if kind_val == 'hub' %}checked{% endif %}>
+              <label class="form-check-label" for="kindHub">
+                <strong>Hub</strong> (entry screen)
+              </label>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="kind" id="kindTrack" value="track"
+                     {% if kind_val == 'track' %}checked{% endif %}>
+              <label class="form-check-label" for="kindTrack">
+                <strong>Track</strong> (weekly plan)
+              </label>
+            </div>
+          </div>
+
+          <div class="form-text">
+            Example: <strong>“8 Week Challenge”</strong> is a <em>Hub</em>. “8 Week Challenge — Beginner” is a <em>Track</em>.
+          </div>
+        </div>
+
+        <div class="col-12 col-md-8">
+          <label class="form-label">Title *</label>
+          <input class="form-control" name="title" required
+                 value="{{ (data.title if data and data.title is defined else (request.form.get('title') or '')) }}"
+                 placeholder="8 Week Challenge">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Slug (optional)</label>
+          <input class="form-control" name="slug"
+                 value="{{ (data.slug if data and data.slug is defined else (request.form.get('slug') or '')) }}"
+                 placeholder="8-week-challenge">
+          <div class="form-text">If blank, we auto-generate from Title.</div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Category</label>
+          <input class="form-control" name="category"
+                 value="{{ (data.category if data and data.category is defined else (request.form.get('category') or '')) }}"
+                 placeholder="Challenge / Beginner / Strength">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Duration label</label>
+          <input class="form-control" name="duration_label"
+                 value="{{ (data.duration_label if data and data.duration_label is defined else (request.form.get('duration_label') or '')) }}"
+                 placeholder="8 weeks">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Sort order</label>
+          <input class="form-control" type="number" name="order"
+                 value="{% if data and data.order is defined and data.order is not none %}{{ data.order }}{% else %}{{ request.form.get('order', 0) }}{% endif %}">
+          <div class="form-text">Lower shows first.</div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Summary</label>
+          <textarea class="form-control" name="summary" rows="2"
+                    placeholder="Short 1–2 line description shown on Programs and (optionally) Home.">{{ (data.summary if data and data.summary is defined else (request.form.get('summary') or '')) }}</textarea>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Cover image URL (optional)</label>
+          <input class="form-control" name="cover_image"
+                 value="{{ (data.cover_image if data and data.cover_image is defined else (request.form.get('cover_image') or '')) }}"
+                 placeholder="https://...">
+          <div class="form-text">Hosted image URL for now. Upload support can come later.</div>
+        </div>
+
+        <!-- Hub / Track extra settings -->
+        <div class="col-12">
+          <div class="card bg-body-tertiary border-0">
+            <div class="card-body">
+              <div class="fw-semibold mb-1">Hub / Track settings</div>
+
+              {# small helper note #}
+              <div class="small text-muted mb-2">
+                These fields are saved only when <strong>Program type = Track</strong>.
+              </div>
+
+              <div class="row g-3">
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Hub slug (for Track programs)</label>
+                  <input class="form-control" name="hub_slug"
+                         value="{{ hub_slug_val }}"
+                         placeholder="8-week-challenge"
+                         {% if kind_val != 'track' %}disabled{% endif %}>
+                  <div class="form-text">
+                    If this is a Track, set the Hub slug it belongs to (example: <code>8-week-challenge</code>).
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                  <label class="form-label">Track level (for Track programs)</label>
+                  <select class="form-select" name="track_level" {% if kind_val != 'track' %}disabled{% endif %}>
+                    <option value="" {% if not track_level_val %}selected{% endif %}>—</option>
+                    <option value="Beginner" {% if track_level_val == 'Beginner' %}selected{% endif %}>Beginner</option>
+                    <option value="Intermediate" {% if track_level_val == 'Intermediate' %}selected{% endif %}>Intermediate</option>
+                    <option value="Advanced" {% if track_level_val == 'Advanced' %}selected{% endif %}>Advanced</option>
+                  </select>
+                  <div class="form-text">
+                    Optional: helps group tracks under the hub (Beginner/Intermediate/Advanced).
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <div class="small text-muted">
+                    Tip: Set <code>hub_slug</code> to the hub’s slug (ex: <code>8-week-challenge</code>) so you can group tracks later.
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Flags -->
+        <div class="col-12">
+          <div class="d-flex flex-wrap gap-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="active"
+                     name="active"
+                     {% if (data and data.active is defined and data.active) or request.form.get('active') %}checked{% endif %}>
+              <label class="form-check-label" for="active">
+                Active (visible on Programs page)
+              </label>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="show_on_home"
+                     name="show_on_home"
+                     {% if (data and data.show_on_home is defined and data.show_on_home) or request.form.get('show_on_home') %}checked{% endif %}>
+              <label class="form-check-label" for="show_on_home">
+                Show on Home (featured)
+              </label>
+            </div>
+          </div>
+
+          <div class="form-text mt-1">
+            “Show on Home” only matters if Active is enabled.
+          </div>
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-primary" type="submit">
+            {% if edit %}Save Changes{% else %}Create Program{% endif %}
+          </button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">Cancel</a>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if edit %}
+  <div class="alert alert-info mt-3 mb-0">
+    Next step: we’ll add an Admin screen to create <strong>Weeks</strong> under this program,
+    and then add <strong>Workouts</strong> (linked or placeholder) inside each week.
+  </div>
+{% endif %}
+
+{# Optional: auto-enable/disable Track fields when toggling kind (no JS required for save, but helps UX) #}
+<script>
+  (function () {
+    const hubRadio = document.getElementById('kindHub');
+    const trackRadio = document.getElementById('kindTrack');
+    const hubSlug = document.querySelector('input[name="hub_slug"]');
+    const trackLevel = document.querySelector('select[name="track_level"]');
+
+    function sync() {
+      const isTrack = trackRadio && trackRadio.checked;
+      if (hubSlug) hubSlug.disabled = !isTrack;
+      if (trackLevel) trackLevel.disabled = !isTrack;
+      if (!isTrack) {
+        if (hubSlug) hubSlug.value = '';
+        if (trackLevel) trackLevel.value = '';
+      }
+    }
+
+    if (hubRadio) hubRadio.addEventListener('change', sync);
+    if (trackRadio) trackRadio.addEventListener('change', sync);
+    sync();
+  })();
+</script>
+
+{% endblock %}

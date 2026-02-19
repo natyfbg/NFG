@@ -1,61 +1,125 @@
 {% extends "base.html" %}
-{% block title %}Manage Styles – NFG{% endblock %}
+{% block title %}Admin – Styles{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Quick Options</div>
+  <div class="list-group list-group-flush">
+    {% for item in quick_options %}
+      <a class="list-group-item list-group-item-action" href="{{ item.url }}">
+        {{ item.label }}
+      </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Content Management</div>
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action"
+       href="{{ url_for('admin_index') }}">
+      Workouts
+    </a>
+    <a class="list-group-item list-group-item-action active"
+       href="{{ url_for('admin_styles') }}">
+      Styles
+    </a>
+    <a class="list-group-item list-group-item-action"
+       href="{{ url_for('admin_home_plans') }}">
+      Home Plans
+    </a>
+  </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<h1 class="mb-3">Manage Styles</h1>
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+  <h1 class="mb-0">Styles</h1>
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin_index') }}">Back</a>
+</div>
+
+<p class="text-muted mb-3">
+  Styles control the “Workout Style” options users browse (and what you assign in workouts).
+</p>
 
 <div class="row g-3">
   <!-- Add new style -->
   <div class="col-lg-4">
-    <form method="post" class="card card-body">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="mb-2">
-        <label class="form-label">Style name</label>
-        <input class="form-control" name="name" placeholder="e.g. TRX, Sandbag" required>
+    <form method="post" class="card">
+      <div class="card-header">Add a style</div>
+      <div class="card-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-2">
+          <label class="form-label">Style name *</label>
+          <input class="form-control" name="name" placeholder="e.g. TRX, Sandbag" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Order (optional)</label>
+          <input class="form-control" name="order" type="number" step="1" min="0" value="0">
+          <div class="form-text">Lower shows first.</div>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button class="btn btn-primary" type="submit">Add style</button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('admin_index') }}">Cancel</a>
+        </div>
       </div>
-      <div class="mb-3">
-        <label class="form-label">Order (optional)</label>
-        <input class="form-control" name="order" type="number" step="1" min="0" value="0">
-      </div>
-      <button class="btn btn-primary">Add style</button>
-      <a class="btn btn-secondary ms-2" href="{{ url_for('admin_index') }}">Back to Admin</a>
     </form>
   </div>
 
   <!-- Existing styles -->
   <div class="col-lg-8">
     <div class="card">
-      <div class="card-header">Existing Styles</div>
+      <div class="card-header">Existing styles</div>
+
       <div class="list-group list-group-flush">
         {% if styles %}
           {% for s in styles %}
-            <div class="list-group-item d-flex align-items-center justify-content-between">
+            <div class="list-group-item d-flex align-items-center justify-content-between gap-3">
               <div>
-                <strong>{{ s.name }}</strong>
-                <span class="badge {{ 'text-bg-success' if s.get('active', True) else 'text-bg-secondary' }} ms-2">
-                  {{ 'Active' if s.get('active', True) else 'Hidden' }}
-                </span>
-                {% if s.order is not none %}
-                  <span class="text-muted small ms-2">order: {{ s.order }}</span>
-                {% endif %}
+                <div class="fw-semibold d-flex align-items-center flex-wrap gap-2">
+                  <span>{{ s.name }}</span>
+
+                  {% set is_active = s.get('active', True) %}
+                  <span class="badge {{ 'text-bg-success' if is_active else 'text-bg-secondary' }}">
+                    {{ 'Active' if is_active else 'Hidden' }}
+                  </span>
+
+                  {% if s.order is not none %}
+                    <span class="text-muted small">order: {{ s.order }}</span>
+                  {% endif %}
+                </div>
+                <div class="small text-muted">
+                  Slug: {{ s.slug if s.slug is defined else '—' }}
+                </div>
               </div>
-              <div class="d-flex gap-2">
-                <form method="post" action="{{ url_for('admin_style_toggle', id=s._id) }}">
+
+              <div class="d-flex gap-2 flex-wrap justify-content-end">
+                <form method="post" action="{{ url_for('admin_style_toggle', id=s._id) }}" class="d-inline">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-sm {{ 'btn-outline-secondary' if s.get('active', True) else 'btn-outline-success' }}">
-                    {{ 'Hide' if s.get('active', True) else 'Activate' }}
-                  </button>
+                  {% if is_active %}
+                    <button class="btn btn-sm btn-outline-secondary" type="submit">Hide</button>
+                  {% else %}
+                    <button class="btn btn-sm btn-outline-success" type="submit">Activate</button>
+                  {% endif %}
                 </form>
-                <form method="post" action="{{ url_for('admin_style_delete', id=s._id) }}"
-                      onsubmit="return confirm('Delete \"{{ s.name }}\"? This does not change existing workouts that use the name.');">
+
+                <form method="post"
+                      action="{{ url_for('admin_style_delete', id=s._id) }}"
+                      onsubmit="return confirm('Delete \"{{ s.name }}\"? This does not change existing workouts that already use the name.');"
+                      class="d-inline">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
                 </form>
               </div>
             </div>
           {% endfor %}
         {% else %}
-          <div class="list-group-item text-muted">No styles yet. Add one using the form on the left.</div>
+          <div class="list-group-item text-muted">
+            No styles yet. Add one using the form on the left.
+          </div>
         {% endif %}
       </div>
     </div>

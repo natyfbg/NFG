@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% block title %}Admin – Programs{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Quick Options</div>
+  <div class="list-group list-group-flush">
+    {% for item in quick_options %}
+      <a class="list-group-item list-group-item-action" href="{{ item.url }}">
+        {{ item.label }}
+      </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Content Management</div>
+
+  {% set ep = request.endpoint or '' %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
+  {# include admin_program_weeks so sidebar stays active when you're on weeks page #}
+  {% set admin_program_eps = ['admin_programs','admin_program_new','admin_program_edit','admin_program_weeks'] %}
+
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}"
+       href="{{ url_for('admin_index') }}">Workouts</a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_styles'] %}active{% endif %}"
+       href="{{ url_for('admin_styles') }}">Styles</a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_home_plans','admin_home_plan_new','admin_home_plan_edit'] %}active{% endif %}"
+       href="{{ url_for('admin_home_plans') }}">Home Plans</a>
+
+    <a class="list-group-item list-group-item-action {% if ep in admin_program_eps %}active{% endif %}"
+       href="{{ url_for('admin_programs') }}">Programs</a>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header">How Programs work</div>
+  <div class="card-body text-muted small">
+    <div class="mb-2">
+      <strong>Programs</strong> are the cards users see on <code>/programs</code> (and optionally on Home).
+    </div>
+    <ul class="mb-0">
+      <li><strong>Hub</strong> programs (ex: “8 Week Challenge”) show on <code>/programs</code>.</li>
+      <li><strong>Track</strong> programs are the weekly plans (Beginner / Intermediate / Advanced).</li>
+      <li>Next step: add Admin tools to create <strong>Weeks</strong> + add <strong>workouts inside weeks</strong>.</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h1 class="mb-1">Programs</h1>
+    <p class="text-muted mb-0">Manage program cards shown to users. Active programs appear on <code>/programs</code>.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-primary" href="{{ url_for('admin_program_new') }}">+ New Program</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('programs_index') }}">View Public</a>
+  </div>
+</div>
+
+{# Lightweight client-side tools (no backend changes) #}
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-6">
+        <label class="form-label small text-muted mb-1">Search</label>
+        <input id="progSearch" class="form-control" placeholder="Search by title, slug, category, hub slug, level…">
+      </div>
+      <div class="col-12 col-md-6">
+        <label class="form-label small text-muted mb-1">Quick filters</label>
+        <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-sm btn-outline-dark" type="button" data-filter="all">All</button>
+          <button class="btn btn-sm btn-outline-success" type="button" data-filter="active">Active</button>
+          <button class="btn btn-sm btn-outline-secondary" type="button" data-filter="inactive">Inactive</button>
+          <button class="btn btn-sm btn-outline-dark" type="button" data-filter="home">Shown on Home</button>
+          <button class="btn btn-sm btn-outline-primary" type="button" data-filter="hub">Hub</button>
+          <button class="btn btn-sm btn-outline-primary" type="button" data-filter="track">Track</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="small text-muted mt-2">
+      Tip: Use <strong>Show on Home</strong> to feature a program card on the Home page.
+    </div>
+  </div>
+</div>
+
+{% if programs and programs|length > 0 %}
+  <div class="list-group" id="programList">
+    {% for p in programs %}
+      {% set title = p.title or '' %}
+      {% set slug = p.slug or '' %}
+      {% set category = p.category or '' %}
+
+      {% set kind = (p.kind or 'hub')|lower %}
+      {% if kind not in ['hub','track'] %}{% set kind = 'hub' %}{% endif %}
+
+      {% set hub_slug = (p.hub_slug if p.hub_slug is defined else '') %}
+      {% set track_level = (p.track_level if p.track_level is defined else '') %}
+
+      <div class="list-group-item program-row"
+           data-title="{{ title|lower }}"
+           data-slug="{{ slug|lower }}"
+           data-category="{{ category|lower }}"
+           data-hubslug="{{ (hub_slug or '')|lower }}"
+           data-tracklevel="{{ (track_level or '')|lower }}"
+           data-active="{{ '1' if (p.active is not defined or p.active) else '0' }}"
+           data-home="{{ '1' if p.show_on_home else '0' }}"
+           data-kind="{{ kind }}">
+
+        <div class="d-flex align-items-start justify-content-between gap-3">
+
+          <!-- Left: cover + meta -->
+          <div class="d-flex align-items-start gap-3">
+            {% if p.cover_image %}
+              <img src="{{ p.cover_image }}" alt=""
+                   style="width:96px;height:54px;object-fit:cover;border-radius:.5rem;">
+            {% else %}
+              <div class="bg-body-secondary"
+                   style="width:96px;height:54px;border-radius:.5rem;"></div>
+            {% endif %}
+
+            <div>
+              <div class="fw-semibold">
+                {{ p.title }}
+                <small class="text-muted">/{{ p.slug }}</small>
+              </div>
+
+              {% if p.summary %}
+                <div class="text-muted small">{{ p.summary }}</div>
+              {% endif %}
+
+              <div class="small text-muted mt-1">
+                {{ p.category or 'Program' }}
+                {% if p.duration_label %} • {{ p.duration_label }}{% endif %}
+                {% if p.order is not none %} • order: {{ p.order }}{% endif %}
+              </div>
+
+              {# Track metadata line #}
+              {% if kind == 'track' %}
+                <div class="small text-muted mt-1">
+                  <span class="me-2">Hub: <code>{{ hub_slug or '—' }}</code></span>
+                  <span>Level: <strong>{{ track_level or '—' }}</strong></span>
+                </div>
+              {% endif %}
+
+              <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
+                {% if p.active is not defined or p.active %}
+                  <span class="badge text-bg-success">Active</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">Inactive</span>
+                {% endif %}
+
+                {% if p.show_on_home %}
+                  <span class="badge text-bg-dark">Home</span>
+                {% else %}
+                  <span class="badge text-bg-light border text-dark">Not on Home</span>
+                {% endif %}
+
+                {% if kind == 'hub' %}
+                  <span class="badge text-bg-primary">Hub</span>
+                {% else %}
+                  <span class="badge text-bg-primary bg-opacity-75">Track</span>
+                {% endif %}
+
+                <a class="small" href="{{ url_for('program_detail', slug=p.slug) }}">Open public</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: actions -->
+          <div class="d-flex flex-wrap gap-2 justify-content-end">
+            {# Use this ONLY if admin_program_weeks exists in app.py #}
+            <a class="btn btn-sm btn-outline-primary"
+               href="{{ url_for('admin_program_weeks', program_id=p._id|string) }}">
+              Manage Weeks
+            </a>
+
+            <a class="btn btn-sm btn-outline-secondary"
+               href="{{ url_for('admin_program_edit', id=p._id|string) }}">
+              Edit
+            </a>
+
+            <form method="post"
+                  action="{{ url_for('admin_program_toggle_active', id=p._id|string) }}"
+                  class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {% if p.active is not defined or p.active %}
+                <button class="btn btn-sm btn-outline-warning" type="submit">Deactivate</button>
+              {% else %}
+                <button class="btn btn-sm btn-outline-success" type="submit">Activate</button>
+              {% endif %}
+            </form>
+
+            <form method="post"
+                  action="{{ url_for('admin_program_toggle_home', id=p._id|string) }}"
+                  class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {% if p.show_on_home %}
+                <button class="btn btn-sm btn-outline-dark" type="submit">Remove from Home</button>
+              {% else %}
+                <button class="btn btn-sm btn-outline-dark" type="submit">Show on Home</button>
+              {% endif %}
+            </form>
+
+            <form method="post"
+                  action="{{ url_for('admin_program_delete', id=p._id|string) }}"
+                  onsubmit="return confirm('Delete this program? This will also delete its weeks + workouts inside weeks.');"
+                  class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <script>
+    (function () {
+      const search = document.getElementById('progSearch');
+      const list = document.getElementById('programList');
+      if (!search || !list) return;
+
+      const rows = Array.from(list.querySelectorAll('.program-row'));
+      let activeFilter = 'all';
+
+      const matchesSearch = (row, q) => {
+        if (!q) return true;
+        const t = row.dataset.title || '';
+        const s = row.dataset.slug || '';
+        const c = row.dataset.category || '';
+        const hs = row.dataset.hubslug || '';
+        const tl = row.dataset.tracklevel || '';
+        return (t.includes(q) || s.includes(q) || c.includes(q) || hs.includes(q) || tl.includes(q));
+      };
+
+      const matchesFilter = (row) => {
+        const isActive = row.dataset.active === '1';
+        const isHome = row.dataset.home === '1';
+        const kind = row.dataset.kind;
+
+        switch (activeFilter) {
+          case 'active': return isActive;
+          case 'inactive': return !isActive;
+          case 'home': return isHome;
+          case 'hub': return kind === 'hub';
+          case 'track': return kind === 'track';
+          default: return true;
+        }
+      };
+
+      const apply = () => {
+        const q = (search.value || '').trim().toLowerCase();
+        rows.forEach(row => {
+          const ok = matchesSearch(row, q) && matchesFilter(row);
+          row.style.display = ok ? '' : 'none';
+        });
+      };
+
+      search.addEventListener('input', apply);
+
+      document.querySelectorAll('[data-filter]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeFilter = btn.getAttribute('data-filter') || 'all';
+          apply();
+        });
+      });
+
+      apply();
+    })();
+  </script>
+
+{% else %}
+  <div class="alert alert-secondary">
+    No programs yet.
+    <div class="small text-muted mt-1">
+      Click <strong>+ New Program</strong> to create your first one (ex: “8 Week Challenge”).
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="fw-semibold mb-1">Recommended next steps</div>
+      <div class="text-muted small">
+        Create a “Hub” program (the entry point), then create “Track” programs (Beginner/Intermediate/Advanced),
+        then we’ll add Weeks + workouts inside weeks.
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+{% block title %}{{ program.get('title', 'Program') }} – Programs{% endblock %}
+
+{% block content %}
+  {% set slug = program.get('slug','') %}
+  {% set is_hub = (slug == '8-week-challenge') %}
+
+  {# ----------------------------
+     Helpers for TRACK slugs
+     Expected track slug format:
+     8-week-challenge-<level>-<env>
+     ---------------------------- #}
+  {% set parts = slug.split('-') %}
+  {% set current_level = (parts[3] if parts|length >= 5 else '') %}
+  {% set current_env   = (parts[4] if parts|length >= 5 else '') %}
+
+  {% set levels = ['beginner','intermediate','advanced'] %}
+  {% set envs   = ['home','gym','hybrid'] %}
+
+  {% macro track_slug(level, env) -%}
+    {{ '8-week-challenge-' ~ level ~ '-' ~ env }}
+  {%- endmacro %}
+
+  <style>
+    /* Mobile-first tweaks local to this file */
+    .page-wrap{ max-width: 760px; margin: 0 auto; }
+
+    .topbar{
+      display:flex; align-items:flex-start; justify-content:space-between;
+      gap:.75rem; flex-wrap:wrap;
+    }
+
+    .back-right{ display:flex; justify-content:flex-end; }
+
+    .sticky-rules{
+      position: sticky;
+      top: 12px;
+      z-index: 5;
+    }
+
+    .pill-toggle{
+      display:flex;
+      gap:.35rem;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .pill-toggle a{
+      border: 1px solid rgba(0,0,0,.15);
+      border-radius: 999px;
+      padding: .25rem .6rem;
+      font-size: .78rem;
+      text-decoration:none;
+      color: inherit;
+      background: rgba(0,0,0,.03);
+    }
+    .pill-toggle a.active{
+      background: rgba(0,0,0,.85);
+      color: #fff;
+      border-color: rgba(0,0,0,.85);
+    }
+
+    .week-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:.65rem;
+    }
+    @media (min-width: 576px){
+      .week-grid{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+    }
+
+    .week-chip{
+      border: 1px solid rgba(0,0,0,.15);
+      border-radius: .85rem;
+      padding: .75rem .75rem;
+      text-decoration:none;
+      display:block;
+      background: #fff;
+      box-shadow: 0 .25rem .75rem rgba(0,0,0,.04);
+    }
+    .week-chip .t{ font-weight: 600; color: #111; }
+    .week-chip .s{ font-size:.8rem; color: rgba(0,0,0,.55); margin-top:.1rem; }
+    .week-chip:active{ transform: scale(.995); }
+
+    .week-card{ scroll-margin-top: 120px; }
+  </style>
+
+  <div class="page-wrap">
+
+    {# ----------------------------
+       Header (mobile-friendly)
+       ---------------------------- #}
+    <div class="topbar mb-2">
+      <div class="me-2">
+        <h1 class="page-title mb-1">{{ program.get('title', 'Program') }}</h1>
+
+        {% if program.get('summary') %}
+          <p class="text-muted mb-0">{{ program.get('summary') }}</p>
+        {% endif %}
+
+        <div class="small text-muted mt-1">
+          {{ program.get('category') or 'Program' }}
+          {% if program.get('duration_label') %} • {{ program.get('duration_label') }}{% endif %}
+        </div>
+      </div>
+
+      <div class="back-right">
+        <a class="btn btn-outline-secondary btn-sm"
+           href="{{ url_for('programs_index') }}">
+          Back
+        </a>
+      </div>
+    </div>
+
+    {% if program.get('cover_image') %}
+      <div class="card shadow-sm mb-3 overflow-hidden">
+        <img src="{{ program.get('cover_image') }}" alt=""
+             style="width:100%; max-height:260px; object-fit:cover;">
+      </div>
+    {% endif %}
+
+    {# ----------------------------
+       Program Rules (sticky)
+       ---------------------------- #}
+    <div class="card shadow-sm mb-3 sticky-rules">
+      <div class="card-body">
+        <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+          <div class="me-2">
+            <div class="fw-semibold mb-1">Program Rules</div>
+
+            {% if program.get('rules') %}
+              {% if program.get('rules') is string %}
+                <div class="text-muted small">{{ program.get('rules') }}</div>
+              {% else %}
+                <ul class="mb-0 text-muted small">
+                  {% for r in program.get('rules') %}
+                    <li>{{ r }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            {% else %}
+              <div class="row g-2">
+                <div class="col-12">
+                  <div class="text-muted small">
+                    Low/zero added sugar • 3–6L water • prioritize protein + whole foods •
+                    20–30 min steady cardio optional • form first • consistency wins.
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="text-end">
+            {% if is_hub %}
+              <span class="badge text-bg-dark">Start program</span>
+            {% else %}
+              <span class="badge text-bg-dark">Weeks</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ===================================================================== #}
+    {# HUB VIEW: Pick Level (goes to your program_level page)                #}
+    {# ===================================================================== #}
+    {% if is_hub %}
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <div class="fw-semibold mb-1">Start here</div>
+          <div class="text-muted small">
+            Pick your level. Next page you’ll choose your environment (Home / Gym / Hybrid).
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h5 class="mb-0">Choose your level</h5>
+        <span class="text-muted small">Beginner • Intermediate • Advanced</span>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12">
+          {# NOTE:
+             These links assume your level route is:
+             /programs/8-week-challenge/level/<level>
+             If your route name is different, update these hrefs.
+           #}
+
+          <a class="card shadow-sm text-decoration-none mb-3"
+             href="/programs/8-week-challenge/level/beginner">
+            <div class="card-body">
+              <div class="fw-semibold text-dark d-flex justify-content-between">
+                <span>Beginner</span>
+                <span class="badge text-bg-light border">Recommended start</span>
+              </div>
+              <div class="text-muted small mt-1">
+                Build consistency + form. 3 days/week base.
+              </div>
+            </div>
+          </a>
+
+          <a class="card shadow-sm text-decoration-none mb-3"
+             href="/programs/8-week-challenge/level/intermediate">
+            <div class="card-body">
+              <div class="fw-semibold text-dark d-flex justify-content-between">
+                <span>Intermediate</span>
+                <span class="badge text-bg-light border">Good base built</span>
+              </div>
+              <div class="text-muted small mt-1">
+                More volume + progression. 4 days/week base.
+              </div>
+            </div>
+          </a>
+
+          <a class="card shadow-sm text-decoration-none"
+             href="/programs/8-week-challenge/level/advanced">
+            <div class="card-body">
+              <div class="fw-semibold text-dark d-flex justify-content-between">
+                <span>Advanced</span>
+                <span class="badge text-bg-light border">High commitment</span>
+              </div>
+              <div class="text-muted small mt-1">
+                Higher workload + intensity options. 5–6 days/week base.
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+    {# ===================================================================== #}
+    {# TRACK VIEW: Weeks page + discrete toggles                             #}
+    {# ===================================================================== #}
+    {% else %}
+
+      {# Discrete toggles (Level + Environment) #}
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+              <div class="fw-semibold">Track options</div>
+              <div class="text-muted small">
+                Switch level/environment anytime (routes to a different track slug).
+              </div>
+            </div>
+
+            <div class="text-end">
+              <div class="pill-toggle mb-2">
+                {% for lvl in levels %}
+                  <a class="{% if lvl == current_level %}active{% endif %}"
+                     href="{{ url_for('program_detail', slug=track_slug(lvl, current_env or 'home')) }}">
+                    {{ lvl|capitalize }}
+                  </a>
+                {% endfor %}
+              </div>
+
+              <div class="pill-toggle">
+                {% for e in envs %}
+                  <a class="{% if e == current_env %}active{% endif %}"
+                     href="{{ url_for('program_detail', slug=track_slug(current_level or 'beginner', e)) }}">
+                    {{ e|capitalize }}
+                  </a>
+                {% endfor %}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {# Weeks grid #}
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h5 class="mb-0">Weeks</h5>
+        <span class="text-muted small">Tap a week to jump</span>
+      </div>
+
+      <div class="week-grid mb-4">
+        {% for i in range(1, 9) %}
+          <a class="week-chip" href="#week{{ i }}">
+            <div class="t">Week {{ i }}</div>
+            <div class="s">View workouts</div>
+          </a>
+        {% endfor %}
+      </div>
+
+      {% if not weeks or weeks|length == 0 %}
+        <div class="alert alert-secondary">
+          No weeks have been added yet.
+          <div class="small text-muted mt-1">
+            (Next: we’ll add Admin tools to create Weeks and add workouts into weeks.)
+          </div>
+        </div>
+      {% else %}
+
+        {# Render each week as a clean card (mobile friendly) #}
+        {% for w in weeks %}
+          {% set wid = w.get('_id') %}
+          {% set items = rows_by_week.get(wid, []) %}
+          {% set wn = w.get('week_number', loop.index) %}
+
+          <div id="week{{ wn }}" class="card shadow-sm mb-3 week-card">
+            <div class="card-body">
+              <div class="d-flex align-items-start justify-content-between gap-2">
+                <div>
+                  <div class="fw-semibold">
+                    Week {{ wn }}
+                    {% if w.get('title') %}
+                      <span class="text-muted fw-normal">— {{ w.get('title') }}</span>
+                    {% endif %}
+                  </div>
+                  <div class="small text-muted">
+                    {{ items|length }} workout{% if items|length != 1 %}s{% endif %}
+                  </div>
+                </div>
+
+                {# optional collapse button for tiny screens #}
+                <button class="btn btn-sm btn-outline-secondary"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#wkBody{{ loop.index }}"
+                        aria-expanded="true"
+                        aria-controls="wkBody{{ loop.index }}">
+                  Toggle
+                </button>
+              </div>
+
+              <div class="collapse show mt-3" id="wkBody{{ loop.index }}">
+                {% if items|length == 0 %}
+                  <div class="text-muted small">No workouts added for this week yet.</div>
+                {% else %}
+                  <div class="list-group">
+                    {% for it in items %}
+                      {% set workout_id = it.get('workout_id') %}
+                      {% set linked = workout_id and workout_map.get(workout_id) %}
+
+                      <div class="list-group-item">
+                        <div class="d-flex align-items-start justify-content-between gap-3">
+                          <div class="me-2">
+
+                            {% if linked %}
+                              <div class="fw-semibold">
+                                <a class="text-decoration-none"
+                                   href="{{ url_for('workout_detail', slug=linked.get('slug')) }}">
+                                  {{ linked.get('name', 'Workout') }}
+                                </a>
+                              </div>
+                            {% else %}
+                              <div class="fw-semibold">{{ it.get('custom_name') or 'Workout' }}</div>
+                            {% endif %}
+
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                              {% if it.get('sets') %}<span class="badge text-bg-light border">Sets: {{ it.get('sets') }}</span>{% endif %}
+                              {% if it.get('reps') %}<span class="badge text-bg-light border">Reps: {{ it.get('reps') }}</span>{% endif %}
+                              {% if it.get('rest') %}<span class="badge text-bg-light border">Rest: {{ it.get('rest') }}</span>{% endif %}
+                            </div>
+
+                            {% if it.get('notes') %}
+                              <div class="small text-muted mt-2">{{ it.get('notes') }}</div>
+                            {% endif %}
+                          </div>
+
+                          <div class="text-end">
+                            {% if linked %}
+                              <span class="badge text-bg-dark">Open</span>
+                            {% else %}
+                              <span class="badge text-bg-secondary">Placeholder</span>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+            </div>
+          </div>
+        {% endfor %}
+
+      {% endif %}
+    {% endif %}
+
+  </div>
+{% endblock %}
