@@ -202,11 +202,7 @@ def _collect_ordered_images_from_form(req) -> List[str]:
                 ordered.append(saved)
                 continue
 
-        url = (
-            req.form.get(f"img{i}_url")
-            or req.form.get(f"image_url_{i}")
-            or ""
-        ).strip()
+        url = (req.form.get(f"img{i}_url") or req.form.get(f"image_url_{i}") or "").strip()
         if url:
             ordered.append(url)
 
@@ -223,11 +219,7 @@ def _collect_muscle_image_from_form(req) -> Optional[str]:
         if saved:
             return saved
 
-    url = (
-        req.form.get("muscle_image_url")
-        or req.form.get("muscle_image")
-        or ""
-    ).strip()
+    url = (req.form.get("muscle_image_url") or req.form.get("muscle_image") or "").strip()
     return url or None
 
 
@@ -438,9 +430,7 @@ def _envs_for_hub_level(hub_slug: str, level: str) -> List[str]:
         if lvl and lvl != level:
             continue
 
-        env = _infer_env_from_slug(t.get("slug", "")) or _infer_env_from_slug(
-            t.get("category", "")
-        )
+        env = _infer_env_from_slug(t.get("slug", "")) or _infer_env_from_slug(t.get("category", ""))
         if env and env not in seen:
             seen.add(env)
             envs.append(env)
@@ -810,9 +800,7 @@ def program_hub_weeks(hub_slug):
 
     envs = _envs_for_hub_level(hub_slug, level)
     if env not in envs:
-        return redirect(
-            url_for("program_hub_environment", hub_slug=hub_slug, level=level)
-        )
+        return redirect(url_for("program_hub_environment", hub_slug=hub_slug, level=level))
 
     track = _pick_track_for(hub_slug, level, env)
     if not track:
@@ -820,14 +808,10 @@ def program_hub_weeks(hub_slug):
             "That track isn't set up yet. Create a Track program in Admin for this Hub.",
             "warning",
         )
-        return redirect(
-            url_for("program_hub_environment", hub_slug=hub_slug, level=level)
-        )
+        return redirect(url_for("program_hub_environment", hub_slug=hub_slug, level=level))
 
     weeks = list(
-        db.program_weeks.find({"program_id": track["_id"]}).sort(
-            [("week_number", 1), ("order", 1)]
-        )
+        db.program_weeks.find({"program_id": track["_id"]}).sort([("week_number", 1), ("order", 1)])
     )
     if not weeks:
         n = _week_count_from_duration_label(
@@ -863,17 +847,13 @@ def program_hub_week_detail(hub_slug, week_number: int):
     if not track:
         abort(404)
 
-    week = db.program_weeks.find_one(
-        {"program_id": track["_id"], "week_number": week_number}
-    )
+    week = db.program_weeks.find_one({"program_id": track["_id"], "week_number": week_number})
 
     items = []
     workout_map = {}
     if week:
         items = list(
-            db.program_items.find({"week_id": week["_id"]}).sort(
-                [("order", 1), ("created_at", 1)]
-            )
+            db.program_items.find({"week_id": week["_id"]}).sort([("order", 1), ("created_at", 1)])
         )
         workout_ids = [it.get("workout_id") for it in items if it.get("workout_id")]
         if workout_ids:
@@ -912,10 +892,9 @@ def workouts():
     parts_multi = set(db.workouts.distinct("body_parts"))
     parts_in_db = parts_single | parts_multi
 
-    body_parts_featured = (
-        [p for p in FEATURED_BODY_PARTS if p in parts_in_db]
-        or FEATURED_BODY_PARTS[:]
-    )
+    body_parts_featured = [
+        p for p in FEATURED_BODY_PARTS if p in parts_in_db
+    ] or FEATURED_BODY_PARTS[:]
 
     all_ws = list(db.workouts.find({}).sort([("name", ASCENDING)]).limit(3))
 
@@ -995,12 +974,7 @@ def workouts_browse():
 
     total = db.workouts.count_documents(query)
 
-    cursor = (
-        db.workouts.find(query)
-        .sort(sort)
-        .skip((page - 1) * per_page)
-        .limit(per_page)
-    )
+    cursor = db.workouts.find(query).sort(sort).skip((page - 1) * per_page).limit(per_page)
     items = list(cursor)
 
     return render_template(
@@ -1039,9 +1013,7 @@ def workout_detail(slug):
         rel_q = {"slug": {"$ne": w["slug"]}}
 
     related = list(
-        db.workouts.find(rel_q)
-        .sort([("rating", -1), ("created_at", -1), ("name", 1)])
-        .limit(6)
+        db.workouts.find(rel_q).sort([("rating", -1), ("created_at", -1), ("name", 1)]).limit(6)
     )
     return render_template("workout_detail.html", w=w, related=related)
 
@@ -1153,7 +1125,9 @@ def admin_workout_new():
         level = request.form.get("level", "").strip()
         style = request.form.get("style", "").strip()
         body_parts = _split_list(request.form.get("body_parts", ""))
-        body_part = body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
+        body_part = (
+            body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
+        )
         tags = _split_list(request.form.get("tags", ""))
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
@@ -1233,7 +1207,9 @@ def admin_workout_edit(id):
         level = request.form.get("level", "").strip()
         style = request.form.get("style", "").strip()
         body_parts = _split_list(request.form.get("body_parts", ""))
-        body_part = body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
+        body_part = (
+            body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
+        )
         tags = _split_list(request.form.get("tags", ""))
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
@@ -1377,9 +1353,7 @@ def admin_style_delete(id):
 @app.route("/admin/home-plans")
 @login_required
 def admin_home_plans():
-    plans = list(
-        db.home_plans.find().sort([("active", -1), ("order", 1), ("created_at", -1)])
-    )
+    plans = list(db.home_plans.find().sort([("active", -1), ("order", 1), ("created_at", -1)]))
     return render_template("admin_home_plans.html", plans=plans)
 
 
@@ -1731,9 +1705,7 @@ def admin_program_week_new(program_id):
         flash("Week number must be at least 1.", "danger")
         return redirect(url_for("admin_program_weeks", program_id=program_id))
 
-    existing = db.program_weeks.find_one(
-        {"program_id": program["_id"], "week_number": week_number}
-    )
+    existing = db.program_weeks.find_one({"program_id": program["_id"], "week_number": week_number})
     if existing:
         flash(f"Week {week_number} already exists.", "danger")
         return redirect(url_for("admin_program_weeks", program_id=program_id))
