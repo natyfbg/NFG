@@ -22,18 +22,17 @@ from flask import (
     g,
     redirect,
     render_template,
+    render_template_string,
     request,
     send_from_directory,
     url_for,
 )
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user
 from flask_wtf.csrf import CSRFProtect, generate_csrf
+from jinja2 import TemplateNotFound
 from pymongo import ASCENDING, MongoClient
 from werkzeug.security import check_password_hash
 from werkzeug.utils import secure_filename
-
-from flask import render_template_string
-from jinja2 import TemplateNotFound
 
 # -----------------------------------------------------------------------------
 # Config / DB
@@ -60,11 +59,24 @@ if os.getenv("RENDER"):
     )
 
 client = MongoClient(MONGO_URI)
-if MONGO_DB:
-    db = client[MONGO_DB]
-else:
-    # If URI includes a default db name, use it; otherwise fallback to "NFG"
-    db = client.get_default_database() if "/" in MONGO_URI.split("://", 1)[-1] else client["NFG"]
+
+
+def _resolve_db():
+    """Pick DB name from override, URI default, or fallback to NFG."""
+    if MONGO_DB:
+        return client[MONGO_DB]
+
+    uri_tail = MONGO_URI.split("://", 1)[-1]
+    has_db_in_uri = "/" in uri_tail
+    if has_db_in_uri:
+        try:
+            return client.get_default_database()
+        except Exception:
+            return client["NFG"]
+    return client["NFG"]
+
+
+db = _resolve_db()
 
 # -----------------------------------------------------------------------------
 # Logging
@@ -84,10 +96,10 @@ app.logger.setLevel(logging.INFO)
 app.logger.info("App startup")
 app.logger.info("Using Mongo at: %s (db=%s)", MONGO_URI, db.name)
 
-
 # -----------------------------------------------------------------------------
 # Helpers (general)
 # -----------------------------------------------------------------------------
+
 
 def slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
@@ -114,6 +126,8 @@ def _extract_youtube_id(val: Optional[str]) -> Optional[str]:
 # -----------------------------------------------------------------------------
 # Upload helpers
 # -----------------------------------------------------------------------------
+
+
 def _abs_upload_root() -> str:
     """
     Resolve the absolute folder where we write files.
@@ -172,7 +186,10 @@ def _save_one_file(file_storage) -> Optional[str]:
     file_storage.save(abs_path)
 
     # Public URL
-    return f"{PUBLIC_BASE}{day}/{fname}".replace("//", "/").replace("//", "/")
+    url = f"{PUBLIC_BASE}{day}/{fname}"
+    while "//" in url:
+        url = url.replace("//", "/")
+    return url
 
 
 def _collect_ordered_images_from_form(req) -> List[str]:
@@ -185,7 +202,11 @@ def _collect_ordered_images_from_form(req) -> List[str]:
                 ordered.append(saved)
                 continue
 
-        url = (req.form.get(f"img{i}_url") or req.form.get(f"image_url_{i}") or "").strip()
+        url = (
+            req.form.get(f"img{i}_url")
+            or req.form.get(f"image_url_{i}")
+            or ""
+        ).strip()
         if url:
             ordered.append(url)
 
@@ -201,7 +222,12 @@ def _collect_muscle_image_from_form(req) -> Optional[str]:
         saved = _save_one_file(up)
         if saved:
             return saved
-    url = (req.form.get("muscle_image_url") or req.form.get("muscle_image") or "").strip()
+
+    url = (
+        req.form.get("muscle_image_url")
+        or req.form.get("muscle_image")
+        or ""
+    ).strip()
     return url or None
 
 
@@ -220,7 +246,10 @@ def _log_request(resp):
 
         # Long caching for media routes
         if MEDIA_ROOT and request.path.startswith(MEDIA_URL.rstrip("/") + "/"):
-            resp.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
+            resp.headers.setdefault(
+                "Cache-Control",
+                "public, max-age=31536000, immutable",
+            )
 
         app.logger.info(
             "REQ %s %s %s %s %.1fms UA=%s",
@@ -382,11 +411,10 @@ def _get_hub_or_404(hub_slug: str) -> dict:
 
 
 def _tracks_for_hub(hub_slug: str) -> List[dict]:
-    return list(
-        db.programs.find({"kind": "track", "hub_slug": hub_slug, "active": {"$ne": False}}).sort(
-            [("order", 1), ("created_at", -1)]
-        )
-    )
+    cursor = db.programs.find(
+        {"kind": "track", "hub_slug": hub_slug, "active": {"$ne": False}}
+    ).sort([("order", 1), ("created_at", -1)])
+    return list(cursor)
 
 
 def _levels_for_hub(hub_slug: str) -> List[str]:
@@ -409,7 +437,10 @@ def _envs_for_hub_level(hub_slug: str, level: str) -> List[str]:
         lvl = _norm_choice(t.get("track_level"))
         if lvl and lvl != level:
             continue
-        env = _infer_env_from_slug(t.get("slug", "")) or _infer_env_from_slug(t.get("category", ""))
+
+        env = _infer_env_from_slug(t.get("slug", "")) or _infer_env_from_slug(
+            t.get("category", "")
+        )
         if env and env not in seen:
             seen.add(env)
             envs.append(env)
@@ -473,10 +504,7 @@ db.program_items.create_index([("workout_id", 1)])
 
 
 def get_styles() -> List[str]:
-    cursor = (
-        db.styles.find({"active": {"$ne": False}})
-        .sort([("order", 1), ("name", 1)])
-    )
+    cursor = db.styles.find({"active": {"$ne": False}}).sort([("order", 1), ("name", 1)])
     styles = list(cursor)
 
     if styles:
@@ -536,7 +564,10 @@ def _ensure_8_week_programs_seed_once() -> None:
                     "kind": "hub",
                     "category": "Challenge",
                     "duration_label": "8 weeks",
-                    "summary": "Pick your level and training environment. Follow the weekly plan and build momentum.",
+                    "summary": (
+                        "Pick your level and training environment. "
+                        "Follow the weekly plan and build momentum."
+                    ),
                     "cover_image": None,
                     "order": 0,
                     "active": True,
@@ -585,7 +616,10 @@ def _ensure_8_week_programs_seed_once() -> None:
                     "track_level": level,
                     "category": f"{level} • {env}",
                     "duration_label": "8 weeks",
-                    "summary": "Week-by-week plan with exercise options. Add weeks/workouts next in Admin.",
+                    "summary": (
+                        "Week-by-week plan with exercise options. "
+                        "Add weeks/workouts next in Admin."
+                    ),
                     "cover_image": None,
                     "order": order,
                     "active": True,
@@ -594,7 +628,6 @@ def _ensure_8_week_programs_seed_once() -> None:
                     "created_at": now,
                 }
             )
-
     except Exception as e:
         app.logger.warning("8-week seed skipped/failed: %s", e)
 
@@ -644,27 +677,31 @@ def render_or_fallback(template_name: str, **ctx):
         return render_template(template_name, **ctx)
     except TemplateNotFound:
         app.logger.exception("Template missing: %s", template_name)
-        html = f"""
-        <div style="max-width:820px;margin:40px auto;font-family:Arial,sans-serif;">
-          <h1>Template missing</h1>
-          <p><b>{template_name}</b> was not found in your templates folder.</p>
-          <p>Fix: create <code>backend/templates/{template_name}</code> (or update the filename in app.py).</p>
-          <hr/>
-          <p><a href="/programs">Back to programs</a></p>
-        </div>
-        """
+
+        # Keep lines short for flake8
+        html = (
+            '<div style="max-width:820px;margin:40px auto;font-family:Arial,sans-serif;">'
+            "<h1>Template missing</h1>"
+            f"<p><b>{template_name}</b> was not found in your templates folder.</p>"
+            "<p>Fix: create <code>backend/templates/"
+            f"{template_name}"
+            "</code> (or update the filename in app.py).</p>"
+            "<hr/>"
+            '<p><a href="/programs">Back to programs</a></p>'
+            "</div>"
+        )
         return render_template_string(html), 500
     except Exception:
         app.logger.exception("Template error while rendering: %s", template_name)
-        html = f"""
-        <div style="max-width:820px;margin:40px auto;font-family:Arial,sans-serif;">
-          <h1>Template error</h1>
-          <p>There is a rendering error in <b>{template_name}</b>.</p>
-          <p>Check <code>instance/logs/app.log</code> for the exact traceback.</p>
-          <hr/>
-          <p><a href="/programs">Back to programs</a></p>
-        </div>
-        """
+        html = (
+            '<div style="max-width:820px;margin:40px auto;font-family:Arial,sans-serif;">'
+            "<h1>Template error</h1>"
+            f"<p>There is a rendering error in <b>{template_name}</b>.</p>"
+            "<p>Check <code>instance/logs/app.log</code> for the exact traceback.</p>"
+            "<hr/>"
+            '<p><a href="/programs">Back to programs</a></p>'
+            "</div>"
+        )
         return render_template_string(html), 500
 
 
@@ -739,7 +776,6 @@ def program_detail(slug):
 
 # -----------------------------------------------------------------------------
 # Public: Dynamic Hub -> Tracks flow
-# (MINIMUM FIX: use render_or_fallback so you see the real missing template)
 # -----------------------------------------------------------------------------
 @app.route("/programs/<hub_slug>/level")
 def program_hub_level(hub_slug):
@@ -774,17 +810,24 @@ def program_hub_weeks(hub_slug):
 
     envs = _envs_for_hub_level(hub_slug, level)
     if env not in envs:
-        return redirect(url_for("program_hub_environment", hub_slug=hub_slug, level=level))
+        return redirect(
+            url_for("program_hub_environment", hub_slug=hub_slug, level=level)
+        )
 
     track = _pick_track_for(hub_slug, level, env)
     if not track:
         flash(
-            "That track isn't set up yet. Create a Track program in Admin for this Hub.", "warning"
+            "That track isn't set up yet. Create a Track program in Admin for this Hub.",
+            "warning",
         )
-        return redirect(url_for("program_hub_environment", hub_slug=hub_slug, level=level))
+        return redirect(
+            url_for("program_hub_environment", hub_slug=hub_slug, level=level)
+        )
 
     weeks = list(
-        db.program_weeks.find({"program_id": track["_id"]}).sort([("week_number", 1), ("order", 1)])
+        db.program_weeks.find({"program_id": track["_id"]}).sort(
+            [("week_number", 1), ("order", 1)]
+        )
     )
     if not weeks:
         n = _week_count_from_duration_label(
@@ -792,7 +835,13 @@ def program_hub_weeks(hub_slug):
         )
         weeks = [{"week_number": i, "title": None} for i in range(1, n + 1)]
 
-    return render_or_fallback("program_weeks.html", track=track, level=level, env=env, weeks=weeks)
+    return render_or_fallback(
+        "program_weeks.html",
+        track=track,
+        level=level,
+        env=env,
+        weeks=weeks,
+    )
 
 
 @app.route("/programs/<hub_slug>/week/<int:week_number>")
@@ -814,13 +863,17 @@ def program_hub_week_detail(hub_slug, week_number: int):
     if not track:
         abort(404)
 
-    week = db.program_weeks.find_one({"program_id": track["_id"], "week_number": week_number})
+    week = db.program_weeks.find_one(
+        {"program_id": track["_id"], "week_number": week_number}
+    )
 
     items = []
     workout_map = {}
     if week:
         items = list(
-            db.program_items.find({"week_id": week["_id"]}).sort([("order", 1), ("created_at", 1)])
+            db.program_items.find({"week_id": week["_id"]}).sort(
+                [("order", 1), ("created_at", 1)]
+            )
         )
         workout_ids = [it.get("workout_id") for it in items if it.get("workout_id")]
         if workout_ids:
@@ -853,15 +906,16 @@ def eight_week_hub_redirect():
 # -----------------------------------------------------------------------------
 # Workouts
 # -----------------------------------------------------------------------------
-
 @app.route("/workouts")
 def workouts():
     parts_single = set(db.workouts.distinct("body_part"))
     parts_multi = set(db.workouts.distinct("body_parts"))
     parts_in_db = parts_single | parts_multi
-    body_parts_featured = [
-        p for p in FEATURED_BODY_PARTS if p in parts_in_db
-    ] or FEATURED_BODY_PARTS[:]
+
+    body_parts_featured = (
+        [p for p in FEATURED_BODY_PARTS if p in parts_in_db]
+        or FEATURED_BODY_PARTS[:]
+    )
 
     all_ws = list(db.workouts.find({}).sort([("name", ASCENDING)]).limit(3))
 
@@ -940,13 +994,13 @@ def workouts_browse():
         sort = [("rating", -1), ("name", ASCENDING)]
 
     total = db.workouts.count_documents(query)
+
     cursor = (
         db.workouts.find(query)
         .sort(sort)
         .skip((page - 1) * per_page)
         .limit(per_page)
     )
-
     items = list(cursor)
 
     return render_template(
@@ -973,20 +1027,21 @@ def workout_detail(slug):
         abort(404)
 
     parts = w.get("body_parts") or ([w.get("body_part")] if w.get("body_part") else [])
-    rel_q = {
-        "$and": [
-            {"slug": {"$ne": w["slug"]}},
-            {
-                "$or": ([{"body_parts": {"$in": parts}}] if parts else [])
-                + ([{"style": w.get("style")}] if w.get("style") else [])
-            },
-        ]
-    }
-    if not rel_q["$and"][1]["$or"]:
+    rel_or = []
+    if parts:
+        rel_or.append({"body_parts": {"$in": parts}})
+    if w.get("style"):
+        rel_or.append({"style": w.get("style")})
+
+    if rel_or:
+        rel_q = {"$and": [{"slug": {"$ne": w["slug"]}}, {"$or": rel_or}]}
+    else:
         rel_q = {"slug": {"$ne": w["slug"]}}
 
     related = list(
-        db.workouts.find(rel_q).sort([("rating", -1), ("created_at", -1), ("name", 1)]).limit(6)
+        db.workouts.find(rel_q)
+        .sort([("rating", -1), ("created_at", -1), ("name", 1)])
+        .limit(6)
     )
     return render_template("workout_detail.html", w=w, related=related)
 
@@ -1098,9 +1153,7 @@ def admin_workout_new():
         level = request.form.get("level", "").strip()
         style = request.form.get("style", "").strip()
         body_parts = _split_list(request.form.get("body_parts", ""))
-        body_part = (
-            body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
-        )
+        body_part = body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
         tags = _split_list(request.form.get("tags", ""))
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
@@ -1180,9 +1233,7 @@ def admin_workout_edit(id):
         level = request.form.get("level", "").strip()
         style = request.form.get("style", "").strip()
         body_parts = _split_list(request.form.get("body_parts", ""))
-        body_part = (
-            body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
-        )
+        body_part = body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
         tags = _split_list(request.form.get("tags", ""))
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
@@ -1307,7 +1358,8 @@ def admin_style_toggle(id):
     if not s:
         abort(404)
     db.styles.update_one({"_id": s["_id"]}, {"$set": {"active": not s.get("active", True)}})
-    flash(f"Style {'activated' if not s.get('active', True) else 'deactivated'}.", "success")
+    state = "activated" if not s.get("active", True) else "deactivated"
+    flash(f"Style {state}.", "success")
     return redirect(url_for("admin_styles"))
 
 
@@ -1325,7 +1377,9 @@ def admin_style_delete(id):
 @app.route("/admin/home-plans")
 @login_required
 def admin_home_plans():
-    plans = list(db.home_plans.find().sort([("active", -1), ("order", 1), ("created_at", -1)]))
+    plans = list(
+        db.home_plans.find().sort([("active", -1), ("order", 1), ("created_at", -1)])
+    )
     return render_template("admin_home_plans.html", plans=plans)
 
 
@@ -1677,7 +1731,9 @@ def admin_program_week_new(program_id):
         flash("Week number must be at least 1.", "danger")
         return redirect(url_for("admin_program_weeks", program_id=program_id))
 
-    existing = db.program_weeks.find_one({"program_id": program["_id"], "week_number": week_number})
+    existing = db.program_weeks.find_one(
+        {"program_id": program["_id"], "week_number": week_number}
+    )
     if existing:
         flash(f"Week {week_number} already exists.", "danger")
         return redirect(url_for("admin_program_weeks", program_id=program_id))
