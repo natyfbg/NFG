@@ -19,7 +19,11 @@
   {% set ep = request.endpoint or '' %}
   {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
   {# include admin_program_weeks so sidebar stays active when you're on weeks page #}
-  {% set admin_program_eps = ['admin_programs','admin_program_new','admin_program_edit','admin_program_weeks'] %}
+  {% set admin_program_eps = [
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_weeks',
+    'admin_program_week_items','admin_program_week_item_new',
+    'admin_program_week_item_edit','admin_program_week_item_delete'
+  ] %}
 
   <div class="list-group list-group-flush">
     <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}"
@@ -45,7 +49,8 @@
     <ul class="mb-0">
       <li><strong>Hub</strong> programs (ex: “8 Week Challenge”) show on <code>/programs</code>.</li>
       <li><strong>Track</strong> programs are the weekly plans (Beginner / Intermediate / Advanced).</li>
-      <li>Next step: add Admin tools to create <strong>Weeks</strong> + add <strong>workouts inside weeks</strong>.</li>
+      <li>Use <strong>Manage Weeks</strong> to create week containers for each track.</li>
+      <li>Use <strong>Manage Items</strong> inside each week to build Push/Pull/Legs and link exercises.</li>
     </ul>
   </div>
 </div>
@@ -175,7 +180,6 @@
 
           <!-- Right: actions -->
           <div class="d-flex flex-wrap gap-2 justify-content-end">
-            {# Use this ONLY if admin_program_weeks exists in app.py #}
             <a class="btn btn-sm btn-outline-primary"
                href="{{ url_for('admin_program_weeks', program_id=p._id|string) }}">
               Manage Weeks

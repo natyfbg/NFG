@@ -3,7 +3,7 @@
 
 {% block content %}
   {% set slug = program.get('slug','') %}
-  {% set is_hub = (slug == '8-week-challenge') %}
+  {% set is_hub = (program.get('kind') == 'hub' or slug == '8-week-challenge') %}
 
   {# ----------------------------
      Helpers for TRACK slugs
@@ -182,14 +182,8 @@
 
       <div class="row g-3">
         <div class="col-12">
-          {# NOTE:
-             These links assume your level route is:
-             /programs/8-week-challenge/level/<level>
-             If your route name is different, update these hrefs.
-           #}
-
           <a class="card shadow-sm text-decoration-none mb-3"
-             href="/programs/8-week-challenge/level/beginner">
+             href="{{ url_for('program_hub_environment', hub_slug=program.get('slug', '8-week-challenge'), level='beginner') }}">
             <div class="card-body">
               <div class="fw-semibold text-dark d-flex justify-content-between">
                 <span>Beginner</span>
@@ -202,7 +196,7 @@
           </a>
 
           <a class="card shadow-sm text-decoration-none mb-3"
-             href="/programs/8-week-challenge/level/intermediate">
+             href="{{ url_for('program_hub_environment', hub_slug=program.get('slug', '8-week-challenge'), level='intermediate') }}">
             <div class="card-body">
               <div class="fw-semibold text-dark d-flex justify-content-between">
                 <span>Intermediate</span>
@@ -215,7 +209,7 @@
           </a>
 
           <a class="card shadow-sm text-decoration-none"
-             href="/programs/8-week-challenge/level/advanced">
+             href="{{ url_for('program_hub_environment', hub_slug=program.get('slug', '8-week-challenge'), level='advanced') }}">
             <div class="card-body">
               <div class="fw-semibold text-dark d-flex justify-content-between">
                 <span>Advanced</span>

@@ -7,7 +7,11 @@
 
   {% set ep = request.endpoint or '' %}
   {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
-  {% set admin_program_eps = ['admin_programs','admin_program_new','admin_program_edit'] %}
+  {% set admin_program_eps = [
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_weeks',
+    'admin_program_week_items','admin_program_week_item_new',
+    'admin_program_week_item_edit','admin_program_week_item_delete'
+  ] %}
 
   <div class="list-group list-group-flush">
     <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}"
@@ -74,7 +78,7 @@
   <div>
     <h1 class="mb-0">{% if edit %}Edit{% else %}New{% endif %} Program</h1>
     <div class="text-muted small mt-1">
-      Programs are the cards users see. (Weeks + workouts are the next step.)
+      Programs are user-facing cards. Manage Weeks from the Programs list.
     </div>
   </div>
 
@@ -252,8 +256,7 @@
 
 {% if edit %}
   <div class="alert alert-info mt-3 mb-0">
-    Next step: we’ll add an Admin screen to create <strong>Weeks</strong> under this program,
-    and then add <strong>Workouts</strong> (linked or placeholder) inside each week.
+    Next: use Programs → Manage Weeks → Manage Items to build each week/day flow for this program.
   </div>
 {% endif %}
 

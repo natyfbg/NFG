@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Admin – Program Weeks{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Content Management</div>
+
+  {% set ep = request.endpoint or '' %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
+  {% set admin_program_eps = [
+    'admin_programs','admin_program_new','admin_program_edit',
+    'admin_program_weeks',
+    'admin_program_week_items','admin_program_week_item_new',
+    'admin_program_week_item_edit','admin_program_week_item_delete'
+  ] %}
+
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}"
+       href="{{ url_for('admin_index') }}">Workouts</a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_styles'] %}active{% endif %}"
+       href="{{ url_for('admin_styles') }}">Styles</a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_home_plans','admin_home_plan_new','admin_home_plan_edit'] %}active{% endif %}"
+       href="{{ url_for('admin_home_plans') }}">Home Plans</a>
+
+    <a class="list-group-item list-group-item-action {% if ep in admin_program_eps %}active{% endif %}"
+       href="{{ url_for('admin_programs') }}">Programs</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Program</div>
+  <div class="card-body small">
+    <div><strong>{{ program.title }}</strong></div>
+    <div class="text-muted">/{{ program.slug }}</div>
+    <div class="mt-2 text-muted">
+      Kind: {{ (program.kind or 'hub')|capitalize }}
+      {% if program.kind == 'track' and program.hub_slug %}
+        <br>Hub: <code>{{ program.hub_slug }}</code>
+      {% endif %}
+      {% if program.kind == 'track' and program.track_level %}
+        <br>Level: {{ program.track_level }}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h1 class="mb-1">Manage Weeks</h1>
+    <p class="text-muted mb-0">
+      Add or remove week containers for this program.
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">Back to Programs</a>
+    <a class="btn btn-outline-dark" href="{{ url_for('program_detail', slug=program.slug) }}">View Public</a>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white">Add Week</div>
+  <div class="card-body">
+    <form method="post" action="{{ url_for('admin_program_week_new', program_id=program._id|string) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-3">
+          <label class="form-label">Week Number *</label>
+          <input class="form-control" type="number" min="1" step="1" name="week_number" required>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Title (optional)</label>
+          <input class="form-control" name="title" placeholder="Week theme (ex: Foundation / Deload)">
+        </div>
+
+        <div class="col-12 col-md-3">
+          <label class="form-label">Order (optional)</label>
+          <input class="form-control" type="number" min="0" step="1" name="order" placeholder="Defaults to week #">
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-primary" type="submit">Create Week</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if weeks and weeks|length > 0 %}
+  <div class="list-group">
+    {% for w in weeks %}
+      {% set wn = w.week_number if w.week_number is defined else w.get('week_number') %}
+      {% set wt = w.title if w.title is defined else w.get('title') %}
+      {% set wo = w.order if w.order is defined else w.get('order') %}
+      {% set env = 'home' %}
+      {% if program.slug and program.slug.endswith('-gym') %}
+        {% set env = 'gym' %}
+      {% elif program.slug and program.slug.endswith('-hybrid') %}
+        {% set env = 'hybrid' %}
+      {% endif %}
+
+      <div class="list-group-item">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+          <div>
+            <div class="fw-semibold">
+              Week {{ wn }}
+              {% if wt %}
+                <span class="text-muted fw-normal">— {{ wt }}</span>
+              {% endif %}
+            </div>
+            <div class="small text-muted">order: {{ wo if wo is not none else wn }}</div>
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-sm btn-outline-primary"
+               href="{{ url_for('admin_program_week_items', program_id=program._id|string, week_id=w._id|string) }}">
+              Manage Items
+            </a>
+            {% if program.kind == 'track' and program.hub_slug and program.track_level %}
+              <a class="btn btn-sm btn-outline-secondary"
+                 href="{{ url_for('program_hub_week_detail', hub_slug=program.hub_slug, week_number=wn, level=(program.track_level|string|lower), env=env) }}">
+                Open Week
+              </a>
+            {% else %}
+              <a class="btn btn-sm btn-outline-secondary"
+                 href="{{ url_for('program_detail', slug=program.slug) }}">
+                Open Program
+              </a>
+            {% endif %}
+
+            <form method="post"
+                  action="{{ url_for('admin_program_week_delete', program_id=program._id|string, week_id=w._id|string) }}"
+                  onsubmit="return confirm('Delete this week? This will also delete its program items.');"
+                  class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-secondary mb-0">
+    No weeks yet for this program.
+  </div>
+{% endif %}
+
+<div class="alert alert-info mt-3 mb-0">
+  Week containers are managed here. Click <strong>Manage Items</strong> to build each day's workouts and link exercises.
+</div>
+{% endblock %}

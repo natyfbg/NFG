@@ -25,7 +25,12 @@
 
         {# Public endpoints #}
         {% set workouts_eps = ['workouts','workouts_browse','workouts_all','styles_index','body_parts_index','workout_detail'] %}
-        {% set programs_eps = ['programs_index','program_detail'] %}
+        {% set programs_eps = [
+          'programs_index','program_detail',
+          'program_hub_level','program_hub_environment','program_hub_weeks','program_hub_week_detail',
+          'eight_week_hub_redirect'
+        ] %}
+        {% set account_eps = ['account_login','account_register','account_profile'] %}
         {% set recipes_eps = ['recipes'] %}
 
         {# Admin endpoints (expand to cover all admin pages) #}
@@ -35,7 +40,10 @@
           'admin_styles','admin_style_toggle','admin_style_delete',
           'admin_home_plans','admin_home_plan_new','admin_home_plan_edit','admin_home_plan_toggle','admin_home_plan_delete',
           'admin_programs','admin_program_new','admin_program_edit',
-          'admin_program_toggle_active','admin_program_toggle_home','admin_program_delete'
+          'admin_program_toggle_active','admin_program_toggle_home','admin_program_delete',
+          'admin_program_weeks','admin_program_week_new','admin_program_week_delete',
+          'admin_program_week_items','admin_program_week_item_new',
+          'admin_program_week_item_edit','admin_program_week_item_delete'
         ] %}
 
         <div class="collapse navbar-collapse" id="navMain">
@@ -87,15 +95,28 @@
           <!-- Auth buttons -->
           <div class="d-flex align-items-center gap-2">
             {% if current_user.is_authenticated %}
-              <a class="btn btn-sm btn-outline-secondary {% if ep in admin_eps %}active{% endif %}"
-                 href="{{ url_for('admin_index') }}">Admin</a>
-              <form action="{{ url_for('logout') }}" method="post" class="d-inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-sm btn-outline-light" type="submit">Logout</button>
-              </form>
+              {% if current_user.is_admin %}
+                <a class="btn btn-sm btn-outline-secondary {% if ep in admin_eps %}active{% endif %}"
+                   href="{{ url_for('admin_index') }}">Admin</a>
+                <form action="{{ url_for('logout') }}" method="post" class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-outline-light" type="submit">Logout</button>
+                </form>
+              {% else %}
+                <a class="btn btn-sm btn-outline-light {% if ep in account_eps %}active{% endif %}"
+                   href="{{ url_for('account_profile') }}">Account</a>
+                <form action="{{ url_for('account_logout') }}" method="post" class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-outline-light" type="submit">Sign out</button>
+                </form>
+              {% endif %}
             {% else %}
-              <a class="btn btn-sm btn-outline-light {% if ep == 'login' %}active{% endif %}"
-                 href="{{ url_for('login') }}">Login</a>
+              <a class="btn btn-sm btn-outline-light {% if ep == 'account_login' %}active{% endif %}"
+                 href="{{ url_for('account_login') }}">Sign in</a>
+              <a class="btn btn-sm btn-light {% if ep == 'account_register' %}active{% endif %}"
+                 href="{{ url_for('account_register') }}">Join</a>
+              <a class="btn btn-sm btn-outline-secondary {% if ep == 'login' %}active{% endif %}"
+                 href="{{ url_for('login') }}">Admin</a>
             {% endif %}
           </div>
         </div>
@@ -247,7 +268,7 @@
 
         const isInteractive = (el) => {
           if (!el) return false;
-          return !!el.closest('a,button,input,textarea,select,label,[role="button"],.dropdown-menu,.navbar');
+          return !!el.closest('a,button,input,textarea,select,label,[role="button"],.dropdown-menu,.navbar,.carousel,.swipe-block');
         };
 
         const animateAndGo = (dir, url) => {

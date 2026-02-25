@@ -95,6 +95,58 @@
       </div>
     </div>
   {% endif %}
+
+  <div class="d-flex align-items-center justify-content-between mt-4 mb-2">
+    <h5 class="mb-0">Your favorite programs</h5>
+    <a class="small text-muted text-decoration-none" href="{{ url_for('programs_index') }}">Manage</a>
+  </div>
+
+  {% if favorite_programs and favorite_programs|length > 0 %}
+    <div class="row g-3">
+      {% for p in favorite_programs %}
+        <div class="col-12">
+          <a href="{{ url_for('program_detail', slug=p.slug) }}" class="text-decoration-none">
+            <div class="card shadow-sm border-warning-subtle">
+              <div class="card-body">
+                <div class="d-flex align-items-start justify-content-between gap-3">
+                  <div class="me-2">
+                    <div class="fw-semibold text-dark">{{ p.title }}</div>
+                    {% if p.summary %}
+                      <div class="text-muted small mt-1">{{ p.summary }}</div>
+                    {% endif %}
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                      {% if p.category %}
+                        <span class="badge text-bg-dark">{{ p.category }}</span>
+                      {% endif %}
+                      {% if p.duration_label %}
+                        <span class="badge text-bg-light border text-dark">{{ p.duration_label }}</span>
+                      {% endif %}
+                      <span class="badge text-bg-warning">Favorite</span>
+                    </div>
+                  </div>
+
+                  {% if p.cover_image %}
+                    <img src="{{ p.cover_image }}" alt=""
+                         style="width:120px;height:68px;object-fit:cover;border-radius:.75rem;">
+                  {% else %}
+                    <div class="bg-body-secondary"
+                         style="width:120px;height:68px;border-radius:.75rem;"></div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-light border mb-0">
+      You have no favorite programs yet.
+      <div class="small text-muted mt-1">
+        Tap <strong>Favorite</strong> on the Programs page and they will appear here.
+      </div>
+    </div>
+  {% endif %}
 {% endblock %}
 
 {% block sidebar %}

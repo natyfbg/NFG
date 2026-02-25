@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Admin – Week Items{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Content Management</div>
+
+  {% set ep = request.endpoint or '' %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
+  {% set admin_program_eps = [
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_weeks',
+    'admin_program_week_items','admin_program_week_item_new',
+    'admin_program_week_item_edit','admin_program_week_item_delete'
+  ] %}
+
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}"
+       href="{{ url_for('admin_index') }}">Workouts</a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_styles'] %}active{% endif %}"
+       href="{{ url_for('admin_styles') }}">Styles</a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_home_plans','admin_home_plan_new','admin_home_plan_edit'] %}active{% endif %}"
+       href="{{ url_for('admin_home_plans') }}">Home Plans</a>
+
+    <a class="list-group-item list-group-item-action {% if ep in admin_program_eps %}active{% endif %}"
+       href="{{ url_for('admin_programs') }}">Programs</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Context</div>
+  <div class="card-body small">
+    <div><strong>{{ program.title }}</strong></div>
+    <div class="text-muted">/{{ program.slug }}</div>
+    <div class="mt-2">
+      <strong>Week {{ week.week_number }}</strong>
+      {% if week.title %}
+        <span class="text-muted">— {{ week.title }}</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h1 class="mb-1">Week Items</h1>
+    <p class="text-muted mb-0">
+      Build your day flow (Push, Pull, Legs, Upper, Lower). Link each item to a workout from your exercise database.
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary"
+       href="{{ url_for('admin_program_weeks', program_id=program._id|string) }}">
+      Back to Weeks
+    </a>
+    <a class="btn btn-outline-dark"
+       href="{{ url_for('program_detail', slug=program.slug) }}">
+      View Public
+    </a>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white">Add Item</div>
+  <div class="card-body">
+    <form method="post"
+          action="{{ url_for('admin_program_week_item_new', program_id=program._id|string, week_id=week._id|string) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="row g-3">
+        <div class="col-12 col-md-3">
+          <label class="form-label">Day *</label>
+          <input class="form-control" name="day" required placeholder="Push / Pull / Legs / Upper / Lower">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Workout (from DB)</label>
+          <select class="form-select" name="workout_id">
+            <option value="">— Select workout —</option>
+            {% for w in workouts %}
+              <option value="{{ w._id|string }}">{{ w.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-md-5">
+          <label class="form-label">Custom Item Name (optional)</label>
+          <input class="form-control" name="custom_name" placeholder="Ex: Warmup Circuit A">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label">Sets</label>
+          <input class="form-control" name="sets" placeholder="3">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label">Reps</label>
+          <input class="form-control" name="reps" placeholder="8-12">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label">Rest</label>
+          <input class="form-control" name="rest" placeholder="60s">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label">Order</label>
+          <input class="form-control" type="number" min="0" step="1" name="order" value="0">
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label">Notes</label>
+          <input class="form-control" name="notes" placeholder="Tempo, cues, modifications...">
+        </div>
+
+        <div class="col-12">
+          <button class="btn btn-primary" type="submit">Add Item</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if items and items|length > 0 %}
+  <div class="list-group">
+    {% for it in items %}
+      {% set linked = (workout_map.get(it.workout_id) if it.workout_id else None) %}
+      {% set current_wid = (it.workout_id|string if it.workout_id else '') %}
+      <div class="list-group-item">
+        <form method="post"
+              action="{{ url_for('admin_program_week_item_edit', program_id=program._id|string, week_id=week._id|string, item_id=it._id|string) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-2">
+              <label class="form-label small">Day</label>
+              <input class="form-control form-control-sm" name="day" required value="{{ it.day or '' }}">
+            </div>
+
+            <div class="col-12 col-md-3">
+              <label class="form-label small">Workout</label>
+              <select class="form-select form-select-sm" name="workout_id">
+                <option value="">— None —</option>
+                {% for w in workouts %}
+                  <option value="{{ w._id|string }}" {% if (w._id|string) == current_wid %}selected{% endif %}>
+                    {{ w.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-12 col-md-3">
+              <label class="form-label small">Custom Name</label>
+              <input class="form-control form-control-sm" name="custom_name" value="{{ it.custom_name or '' }}">
+            </div>
+
+            <div class="col-4 col-md-1">
+              <label class="form-label small">Sets</label>
+              <input class="form-control form-control-sm" name="sets" value="{{ it.sets or '' }}">
+            </div>
+
+            <div class="col-4 col-md-1">
+              <label class="form-label small">Reps</label>
+              <input class="form-control form-control-sm" name="reps" value="{{ it.reps or '' }}">
+            </div>
+
+            <div class="col-4 col-md-1">
+              <label class="form-label small">Rest</label>
+              <input class="form-control form-control-sm" name="rest" value="{{ it.rest or '' }}">
+            </div>
+
+            <div class="col-6 col-md-1">
+              <label class="form-label small">Order</label>
+              <input class="form-control form-control-sm" type="number" min="0" step="1" name="order" value="{{ it.order if it.order is not none else 0 }}">
+            </div>
+
+            <div class="col-12 col-md-5">
+              <label class="form-label small">Notes</label>
+              <input class="form-control form-control-sm" name="notes" value="{{ it.notes or '' }}">
+            </div>
+
+            <div class="col-12 col-md-7 d-flex flex-wrap gap-2">
+              <button class="btn btn-sm btn-outline-primary" type="submit">Save</button>
+              <button class="btn btn-sm btn-outline-danger"
+                      type="submit"
+                      formaction="{{ url_for('admin_program_week_item_delete', program_id=program._id|string, week_id=week._id|string, item_id=it._id|string) }}"
+                      onclick="return confirm('Delete this week item?');">
+                Delete
+              </button>
+
+              {% if linked %}
+                <a class="btn btn-sm btn-outline-secondary"
+                   href="{{ url_for('workout_detail', slug=linked.slug) }}">
+                  Open Workout
+                </a>
+              {% endif %}
+            </div>
+
+            <div class="col-12">
+              <div class="small text-muted">
+                {% if linked %}
+                  Linked: <strong>{{ linked.name }}</strong>
+                {% elif it.custom_name %}
+                  Custom item: <strong>{{ it.custom_name }}</strong>
+                {% else %}
+                  Add a workout link or a custom name for this item.
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-secondary mb-0">
+    No items yet for this week.
+  </div>
+{% endif %}
+{% endblock %}

@@ -18,7 +18,11 @@
 
   {% set ep = request.endpoint or '' %}
   {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
-  {% set admin_program_eps = ['admin_programs','admin_program_new','admin_program_edit'] %}
+  {% set admin_program_eps = [
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_weeks',
+    'admin_program_week_items','admin_program_week_item_new',
+    'admin_program_week_item_edit','admin_program_week_item_delete'
+  ] %}
 
   <div class="list-group list-group-flush">
     <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}"

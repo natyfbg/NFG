@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Access denied – NFG{% endblock %}
+
+{% block sidebar %}
+  {% include "quick_options.html" %}
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-2">Access denied</h1>
+<p class="text-muted">You don’t have permission to view that page.</p>
+
+<div class="d-flex gap-2 mt-3">
+  <a class="btn btn-primary" href="{{ url_for('home') }}">Home</a>
+  <a class="btn btn-outline-secondary" href="{{ url_for('programs_index') }}">Programs</a>
+</div>
+{% endblock %}

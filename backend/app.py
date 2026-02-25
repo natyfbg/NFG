@@ -28,10 +28,11 @@ from flask import (
     url_for,
 )
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user
+from flask_login import current_user
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from jinja2 import TemplateNotFound
 from pymongo import ASCENDING, MongoClient
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
 # -----------------------------------------------------------------------------
@@ -231,6 +232,28 @@ def _start_timer():
     g._t0 = perf_counter()
 
 
+@app.before_request
+def _ensure_viewer_id():
+    viewer_id = (request.cookies.get("nfg_vid") or "").strip()
+    if not viewer_id:
+        viewer_id = uuid.uuid4().hex
+        g._set_viewer_id = viewer_id
+    g.viewer_id = viewer_id
+
+
+@app.before_request
+def _guard_admin_pages():
+    if not request.path.startswith("/admin"):
+        return None
+
+    if not getattr(current_user, "is_authenticated", False):
+        return login_manager.unauthorized()
+
+    if not getattr(current_user, "is_admin", False):
+        abort(403)
+    return None
+
+
 @app.after_request
 def _log_request(resp):
     try:
@@ -254,13 +277,24 @@ def _log_request(resp):
         )
     except Exception:
         pass
+
+    viewer_to_set = getattr(g, "_set_viewer_id", None)
+    if viewer_to_set:
+        resp.set_cookie(
+            "nfg_vid",
+            viewer_to_set,
+            max_age=60 * 60 * 24 * 365 * 2,  # 2 years
+            samesite="Lax",
+            secure=bool(os.getenv("RENDER")),
+            httponly=True,
+        )
     return resp
 
 
 csrf = CSRFProtect(app)
 
 # -----------------------------------------------------------------------------
-# Auth (single admin)
+# Auth (admin + members)
 # -----------------------------------------------------------------------------
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
@@ -273,14 +307,45 @@ login_manager.login_message_category = "warning"
 
 
 class User(UserMixin):
-    def __init__(self, user_id: str):
+    def __init__(
+        self,
+        user_id: str,
+        role: str = "member",
+        user_oid: Optional[str] = None,
+        username: Optional[str] = None,
+    ):
         self.id = user_id
+        self.role = role
+        self.user_oid = user_oid
+        self.username = username
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role == "admin"
+
+    @property
+    def is_member(self) -> bool:
+        return self.role == "member"
 
 
 @login_manager.user_loader
 def load_user(user_id):
     if user_id == "admin":
-        return User("admin")
+        return User("admin", role="admin")
+
+    if (user_id or "").startswith("member:"):
+        oid = user_id.split(":", 1)[1]
+        try:
+            doc = db.users.find_one({"_id": ObjectId(oid), "active": {"$ne": False}})
+        except Exception:
+            doc = None
+        if doc:
+            return User(
+                user_id,
+                role="member",
+                user_oid=str(doc.get("_id")),
+                username=doc.get("username"),
+            )
     return None
 
 
@@ -290,6 +355,66 @@ def _check_admin_credentials(username: str, password: str) -> bool:
     if ADMIN_PASSWORD_HASH:
         return check_password_hash(ADMIN_PASSWORD_HASH, password)
     return password == ADMIN_PASSWORD
+
+
+def _member_owner_key() -> Optional[str]:
+    if not getattr(current_user, "is_authenticated", False):
+        return None
+    if getattr(current_user, "is_admin", False):
+        return None
+    oid = getattr(current_user, "user_oid", None)
+    if not oid:
+        return None
+    return f"user:{oid}"
+
+
+def _progress_owner_key() -> str:
+    return _member_owner_key() or _viewer_id()
+
+
+def _safe_next_url(default_endpoint: str = "home") -> str:
+    nxt = (request.args.get("next") or request.form.get("next") or "").strip()
+    if nxt.startswith("/"):
+        return nxt
+    return url_for(default_endpoint)
+
+
+def _migrate_guest_state_to_member(guest_viewer_id: str, member_key: str) -> None:
+    guest = (guest_viewer_id or "").strip()
+    if not guest or guest == member_key:
+        return
+
+    guest_favs = list(db.program_favorites.find({"viewer_id": guest}))
+    for row in guest_favs:
+        slug = (row.get("program_slug") or "").strip()
+        if not slug:
+            continue
+        db.program_favorites.update_one(
+            {"viewer_id": member_key, "program_slug": slug},
+            {"$setOnInsert": {"created_at": row.get("created_at") or datetime.datetime.utcnow()}},
+            upsert=True,
+        )
+    db.program_favorites.delete_many({"viewer_id": guest})
+
+    guest_progress = list(db.program_day_progress.find({"viewer_id": guest}))
+    for row in guest_progress:
+        track_slug = (row.get("track_slug") or "").strip()
+        week_number = row.get("week_number")
+        day_key = (row.get("day_key") or "").strip()
+        if not track_slug or not day_key or not week_number:
+            continue
+
+        db.program_day_progress.update_one(
+            {
+                "viewer_id": member_key,
+                "track_slug": track_slug,
+                "week_number": week_number,
+                "day_key": day_key,
+            },
+            {"$set": {"completed_at": row.get("completed_at") or datetime.datetime.utcnow()}},
+            upsert=True,
+        )
+    db.program_day_progress.delete_many({"viewer_id": guest})
 
 
 FAILED_LOGINS: Dict[str, deque] = {}
@@ -369,6 +494,17 @@ FEATURED_STYLES = ["BodyWeight", "Barbell", "Machines"]
 # -----------------------------------------------------------------------------
 DEFAULT_LEVELS = ["beginner", "intermediate", "advanced"]
 DEFAULT_ENVS = ["home", "gym", "hybrid"]
+DEFAULT_WEEK_DAY_ORDER = [
+    "push",
+    "pull",
+    "legs",
+    "upper",
+    "lower",
+    "full body",
+    "cardio",
+    "mobility",
+    "rest",
+]
 
 
 def _norm_choice(val: Optional[str]) -> str:
@@ -456,6 +592,65 @@ def _pick_track_for(hub_slug: str, level: str, env: str) -> Optional[dict]:
     return None
 
 
+def _normalize_week_day_label(val: Optional[str]) -> str:
+    day = (val or "").strip()
+    if not day:
+        return ""
+
+    key = re.sub(r"\s+", " ", day.lower())
+    aliases = {
+        "upper body": "Upper",
+        "lower body": "Lower",
+        "full-body": "Full Body",
+        "hiit": "Cardio",
+    }
+    if key in aliases:
+        return aliases[key]
+    return " ".join(p.capitalize() for p in key.split(" "))
+
+
+def _viewer_id() -> str:
+    return (getattr(g, "viewer_id", "") or "").strip()
+
+
+def _program_favorite_slugs_for_viewer(viewer_id: str) -> List[str]:
+    if not viewer_id:
+        return []
+
+    rows = list(
+        db.program_favorites.find({"viewer_id": viewer_id}, {"program_slug": 1}).sort(
+            [("created_at", -1)]
+        )
+    )
+    return [r.get("program_slug") for r in rows if r.get("program_slug")]
+
+
+def _favorite_slug_set_for_request() -> set:
+    if hasattr(g, "_program_favorite_slugs"):
+        return g._program_favorite_slugs
+
+    favs = set(_program_favorite_slugs_for_viewer(_progress_owner_key()))
+    g._program_favorite_slugs = favs
+    return favs
+
+
+def _favorite_programs_for_viewer(viewer_id: str, limit: int = 6) -> List[dict]:
+    slugs = _program_favorite_slugs_for_viewer(viewer_id)
+    if not slugs:
+        return []
+
+    # Keep the user's favorite order (latest favorite first).
+    want = slugs[: max(1, limit * 3)]
+    found = list(
+        db.programs.find(
+            {"slug": {"$in": want}, "active": {"$ne": False}, "kind": "hub"}
+        )
+    )
+    by_slug = {p.get("slug"): p for p in found if p.get("slug")}
+    ordered = [by_slug[s] for s in want if s in by_slug]
+    return ordered[:limit]
+
+
 # -----------------------------------------------------------------------------
 # Indexes (safe to call repeatedly)
 # -----------------------------------------------------------------------------
@@ -491,6 +686,19 @@ db.program_items.create_index([("week_id", 1)])
 db.program_items.create_index([("order", 1)])
 db.program_items.create_index([("created_at", 1)])
 db.program_items.create_index([("workout_id", 1)])
+
+db.program_favorites.create_index([("viewer_id", 1), ("program_slug", 1)], unique=True)
+db.program_favorites.create_index([("viewer_id", 1), ("created_at", -1)])
+
+db.program_day_progress.create_index(
+    [("viewer_id", 1), ("track_slug", 1), ("week_number", 1), ("day_key", 1)],
+    unique=True,
+)
+db.program_day_progress.create_index([("viewer_id", 1), ("track_slug", 1), ("week_number", 1)])
+
+db.users.create_index([("username_lower", 1)], unique=True, sparse=True)
+db.users.create_index([("email_lower", 1)], unique=True, sparse=True)
+db.users.create_index([("created_at", -1)])
 
 
 def get_styles() -> List[str]:
@@ -628,10 +836,17 @@ _ensure_8_week_programs_seed_once()
 # Quick menu (sidebar)
 # -----------------------------------------------------------------------------
 QUICK_OPTIONS = [
-    {"label": "Favorites", "url": "/workouts?filter=favorites"},
-    {"label": "Recently Added", "url": "/workouts?filter=recent"},
-    {"label": "Top Rated", "url": "/workouts?filter=top"},
+    {"label": "Favorites", "url": "/workouts/browse?sort=favorites"},
+    {"label": "Recently Added", "url": "/workouts/browse?sort=recent"},
+    {"label": "Top Rated", "url": "/workouts/browse?sort=rating"},
 ]
+
+LEGACY_WORKOUT_FILTER_TO_SORT = {
+    "favorites": "favorites",
+    "recent": "recent",
+    "top": "rating",
+    "top-rated": "rating",
+}
 
 # -----------------------------------------------------------------------------
 # Static/media serving for Render Disk
@@ -652,7 +867,11 @@ if MEDIA_ROOT:
 # -----------------------------------------------------------------------------
 @app.context_processor
 def inject_globals():
-    return {"quick_options": QUICK_OPTIONS, "csrf_token": generate_csrf}
+    return {
+        "quick_options": QUICK_OPTIONS,
+        "csrf_token": generate_csrf,
+        "program_favorite_slugs": _favorite_slug_set_for_request(),
+    }
 
 
 # -----------------------------------------------------------------------------
@@ -705,7 +924,13 @@ def home():
         .sort([("order", 1), ("created_at", -1)])
         .limit(6)
     )
-    return render_template("home.html", name="NFG", featured_programs=featured_programs)
+    favorite_programs = _favorite_programs_for_viewer(_progress_owner_key(), limit=6)
+    return render_template(
+        "home.html",
+        name="NFG",
+        featured_programs=featured_programs,
+        favorite_programs=favorite_programs,
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -719,6 +944,34 @@ def programs_index():
         .limit(50)
     )
     return render_template("programs.html", programs=programs)
+
+
+@app.route("/programs/<slug>/favorite", methods=["POST"])
+def program_favorite_toggle(slug):
+    program = db.programs.find_one({"slug": slug, "active": {"$ne": False}})
+    if not program:
+        abort(404)
+
+    owner_key = _progress_owner_key()
+    if not owner_key:
+        return redirect(url_for("programs_index"))
+
+    existing = db.program_favorites.find_one({"viewer_id": owner_key, "program_slug": slug})
+    if existing:
+        db.program_favorites.delete_one({"_id": existing["_id"]})
+    else:
+        db.program_favorites.insert_one(
+            {
+                "viewer_id": owner_key,
+                "program_slug": slug,
+                "created_at": datetime.datetime.utcnow(),
+            }
+        )
+
+    next_url = (request.form.get("next") or "").strip()
+    if not next_url.startswith("/"):
+        next_url = url_for("programs_index")
+    return redirect(next_url)
 
 
 @app.route("/programs/<slug>")
@@ -831,6 +1084,7 @@ def program_hub_weeks(hub_slug):
 @app.route("/programs/<hub_slug>/week/<int:week_number>")
 def program_hub_week_detail(hub_slug, week_number: int):
     hub = _get_hub_or_404(hub_slug)
+    requested_day_key = slugify(request.args.get("day") or "")
 
     level = _norm_choice(request.args.get("level")) or "beginner"
     env = _norm_choice(request.args.get("env")) or "home"
@@ -851,6 +1105,7 @@ def program_hub_week_detail(hub_slug, week_number: int):
 
     items = []
     workout_map = {}
+    day_groups = []
     if week:
         items = list(
             db.program_items.find({"week_id": week["_id"]}).sort([("order", 1), ("created_at", 1)])
@@ -860,6 +1115,67 @@ def program_hub_week_detail(hub_slug, week_number: int):
             ws = list(db.workouts.find({"_id": {"$in": workout_ids}}, {"name": 1, "slug": 1}))
             workout_map = {w["_id"]: w for w in ws}
 
+        by_day = {}
+        day_index = {}
+        for i, it in enumerate(items):
+            raw_day = (
+                it.get("day")
+                or it.get("day_label")
+                or it.get("label")
+                or it.get("title")
+                or it.get("custom_name")
+                or f"Day {i + 1}"
+            )
+            label = _normalize_week_day_label(raw_day) or f"Day {i + 1}"
+            key = slugify(label) or f"day-{i + 1}"
+
+            if key not in by_day:
+                by_day[key] = {"key": key, "label": label, "items": []}
+                day_index[key] = i
+            by_day[key]["items"].append(it)
+
+        # Keep first-seen order, but nudge common day labels into a predictable order.
+        def _day_sort_key(k):
+            label = (by_day[k]["label"] or "").lower()
+            if label in DEFAULT_WEEK_DAY_ORDER:
+                return (0, DEFAULT_WEEK_DAY_ORDER.index(label), day_index[k])
+            return (1, day_index[k], label)
+
+        day_groups = [by_day[k] for k in sorted(by_day.keys(), key=_day_sort_key)]
+
+    weeks_in_track = list(
+        db.program_weeks.find({"program_id": track["_id"]}, {"week_number": 1}).sort([("week_number", 1)])
+    )
+    week_numbers = [w.get("week_number") for w in weeks_in_track if w.get("week_number")]
+    next_week_number = next((n for n in week_numbers if n > week_number), None)
+    if not next_week_number:
+        max_weeks = _week_count_from_duration_label(track.get("duration_label") or hub.get("duration_label"))
+        if week_number < max_weeks:
+            next_week_number = week_number + 1
+
+    day_keys = [g.get("key") for g in day_groups if g.get("key")]
+    viewer_id = _progress_owner_key()
+    completed_day_keys = set()
+    if viewer_id and track.get("slug") and day_keys:
+        rows = list(
+            db.program_day_progress.find(
+                {
+                    "viewer_id": viewer_id,
+                    "track_slug": track.get("slug"),
+                    "week_number": week_number,
+                    "day_key": {"$in": day_keys},
+                },
+                {"day_key": 1},
+            )
+        )
+        completed_day_keys = {r.get("day_key") for r in rows if r.get("day_key")}
+
+    completed_days_count = len([k for k in day_keys if k in completed_day_keys])
+    all_days_completed = bool(day_keys) and completed_days_count == len(day_keys)
+    initial_day_key = (
+        requested_day_key if requested_day_key in day_keys else (day_keys[0] if day_keys else "")
+    )
+
     return render_or_fallback(
         "program_week_detail.html",
         track=track,
@@ -868,11 +1184,70 @@ def program_hub_week_detail(hub_slug, week_number: int):
         week_number=week_number,
         week=week,
         items=items,
+        day_groups=day_groups,
+        total_days=len(day_groups),
         workout_map=workout_map,
+        completed_day_keys=completed_day_keys,
+        completed_days_count=completed_days_count,
+        all_days_completed=all_days_completed,
+        initial_day_key=initial_day_key,
         levels=levels or DEFAULT_LEVELS,
         envs=envs or DEFAULT_ENVS,
+        next_week_number=next_week_number,
         hub=hub,
     )
+
+
+@app.route("/programs/<hub_slug>/week/<int:week_number>/day-status", methods=["POST"])
+def program_hub_week_day_status(hub_slug, week_number: int):
+    hub = _get_hub_or_404(hub_slug)
+
+    level = _norm_choice(request.form.get("level")) or "beginner"
+    env = _norm_choice(request.form.get("env")) or "home"
+
+    levels = _levels_for_hub(hub_slug)
+    if level not in levels:
+        level = levels[0] if levels else "beginner"
+
+    envs = _envs_for_hub_level(hub_slug, level)
+    if env not in envs:
+        env = envs[0] if envs else "home"
+
+    track = _pick_track_for(hub_slug, level, env)
+    if not track:
+        abort(404)
+
+    day_key = slugify(request.form.get("day_key") or "")
+    action = _norm_choice(request.form.get("action")) or "done"
+    next_day_key = slugify(request.form.get("next_day_key") or "")
+
+    owner_key = _progress_owner_key()
+    if day_key and owner_key:
+        query = {
+            "viewer_id": owner_key,
+            "track_slug": track.get("slug"),
+            "week_number": week_number,
+            "day_key": day_key,
+        }
+        if action == "undo":
+            db.program_day_progress.delete_one(query)
+        else:
+            db.program_day_progress.update_one(
+                query,
+                {"$set": {"completed_at": datetime.datetime.utcnow()}},
+                upsert=True,
+            )
+
+    target_day = next_day_key or day_key
+    args = {
+        "hub_slug": hub_slug,
+        "week_number": week_number,
+        "level": level,
+        "env": env,
+    }
+    if target_day:
+        args["day"] = target_day
+    return redirect(url_for("program_hub_week_detail", **args))
 
 
 # -----------------------------------------------------------------------------
@@ -888,6 +1263,11 @@ def eight_week_hub_redirect():
 # -----------------------------------------------------------------------------
 @app.route("/workouts")
 def workouts():
+    # Backwards compatibility for old /workouts?filter=... links.
+    legacy_filter = _norm_choice(request.args.get("filter"))
+    if legacy_filter in LEGACY_WORKOUT_FILTER_TO_SORT:
+        return redirect(url_for("workouts_browse", sort=LEGACY_WORKOUT_FILTER_TO_SORT[legacy_filter]))
+
     parts_single = set(db.workouts.distinct("body_part"))
     parts_multi = set(db.workouts.distinct("body_parts"))
     parts_in_db = parts_single | parts_multi
@@ -1031,7 +1411,7 @@ def recipes():
 def search():
     q = (request.args.get("q") or "").strip()
     if not q:
-        return render_template("home.html", name="NFG", featured_programs=[])
+        return redirect(url_for("home"))
 
     page = max(int(request.args.get("page", 1)), 1)
     per_page = min(max(int(request.args.get("per_page", 24)), 1), 100)
@@ -1084,9 +1464,9 @@ def login():
 
         if _check_admin_credentials(username, password):
             _clear_failed_logins(ip)
-            login_user(User("admin"))
+            login_user(User("admin", role="admin"))
             flash("Logged in.", "success")
-            return redirect(request.args.get("next") or url_for("admin_index"))
+            return redirect(_safe_next_url(default_endpoint="admin_index"))
 
         _record_failed_login(ip)
         flash("Invalid credentials.", "danger")
@@ -1097,9 +1477,156 @@ def login():
 @app.route("/logout", methods=["POST"])
 @login_required
 def logout():
+    if not getattr(current_user, "is_admin", False):
+        abort(403)
     logout_user()
     flash("Logged out.", "success")
     return redirect(url_for("home"))
+
+
+@app.route("/account/register", methods=["GET", "POST"])
+def account_register():
+    if getattr(current_user, "is_authenticated", False) and not getattr(current_user, "is_admin", False):
+        return redirect(url_for("account_profile"))
+    if getattr(current_user, "is_authenticated", False) and getattr(current_user, "is_admin", False):
+        return redirect(url_for("admin_index"))
+
+    if request.method == "POST":
+        username = (request.form.get("username") or "").strip()
+        email = (request.form.get("email") or "").strip()
+        password = (request.form.get("password") or "").strip()
+        confirm = (request.form.get("confirm_password") or "").strip()
+
+        if not username or not email or not password:
+            flash("Username, email, and password are required.", "danger")
+            return render_template("account_register.html")
+        if password != confirm:
+            flash("Passwords do not match.", "danger")
+            return render_template("account_register.html")
+        if len(password) < 8:
+            flash("Password must be at least 8 characters.", "danger")
+            return render_template("account_register.html")
+        if not re.match(r"^[a-zA-Z0-9_]{3,30}$", username):
+            flash("Username must be 3-30 characters and only letters, numbers, underscore.", "danger")
+            return render_template("account_register.html")
+
+        username_lower = username.lower()
+        email_lower = email.lower()
+        if db.users.find_one({"username_lower": username_lower}):
+            flash("That username is already taken.", "danger")
+            return render_template("account_register.html")
+        if db.users.find_one({"email_lower": email_lower}):
+            flash("An account with that email already exists.", "danger")
+            return render_template("account_register.html")
+
+        doc = {
+            "username": username,
+            "username_lower": username_lower,
+            "email": email,
+            "email_lower": email_lower,
+            "password_hash": generate_password_hash(password),
+            "active": True,
+            "created_at": datetime.datetime.utcnow(),
+        }
+        res = db.users.insert_one(doc)
+
+        member_user = User(
+            f"member:{res.inserted_id}",
+            role="member",
+            user_oid=str(res.inserted_id),
+            username=username,
+        )
+        login_user(member_user)
+        _migrate_guest_state_to_member(_viewer_id(), f"user:{res.inserted_id}")
+        flash("Account created.", "success")
+        return redirect(url_for("home"))
+
+    return render_template("account_register.html")
+
+
+@app.route("/account/login", methods=["GET", "POST"])
+def account_login():
+    if getattr(current_user, "is_authenticated", False) and not getattr(current_user, "is_admin", False):
+        return redirect(url_for("account_profile"))
+    if getattr(current_user, "is_authenticated", False) and getattr(current_user, "is_admin", False):
+        return redirect(url_for("admin_index"))
+
+    if request.method == "POST":
+        identity = (request.form.get("identity") or "").strip().lower()
+        password = (request.form.get("password") or "").strip()
+
+        if not identity or not password:
+            flash("Email/username and password are required.", "danger")
+            return render_template("account_login.html")
+
+        doc = db.users.find_one({"$or": [{"email_lower": identity}, {"username_lower": identity}]})
+        if not doc or not doc.get("password_hash") or not check_password_hash(doc["password_hash"], password):
+            flash("Invalid login.", "danger")
+            return render_template("account_login.html")
+        if doc.get("active") is False:
+            flash("This account is inactive.", "danger")
+            return render_template("account_login.html")
+
+        member_key = f"user:{doc['_id']}"
+        _migrate_guest_state_to_member(_viewer_id(), member_key)
+        login_user(
+            User(
+                f"member:{doc['_id']}",
+                role="member",
+                user_oid=str(doc["_id"]),
+                username=doc.get("username"),
+            )
+        )
+        db.users.update_one(
+            {"_id": doc["_id"]},
+            {"$set": {"last_login_at": datetime.datetime.utcnow()}},
+        )
+        flash("Signed in.", "success")
+        return redirect(_safe_next_url(default_endpoint="home"))
+
+    return render_template("account_login.html")
+
+
+@app.route("/account/logout", methods=["POST"])
+def account_logout():
+    if not getattr(current_user, "is_authenticated", False):
+        return redirect(url_for("account_login"))
+    if getattr(current_user, "is_admin", False):
+        return redirect(url_for("admin_index"))
+    logout_user()
+    flash("Signed out.", "success")
+    return redirect(url_for("home"))
+
+
+@app.route("/account")
+def account_profile():
+    if not getattr(current_user, "is_authenticated", False):
+        return redirect(url_for("account_login", next=request.path))
+
+    if getattr(current_user, "is_admin", False):
+        return redirect(url_for("admin_index"))
+
+    owner_key = _member_owner_key()
+    if not owner_key:
+        return redirect(url_for("account_login"))
+
+    favorites_count = db.program_favorites.count_documents({"viewer_id": owner_key})
+    completed_days = db.program_day_progress.count_documents({"viewer_id": owner_key})
+    recent_days = list(
+        db.program_day_progress.find({"viewer_id": owner_key}).sort([("completed_at", -1)]).limit(8)
+    )
+
+    track_slugs = [r.get("track_slug") for r in recent_days if r.get("track_slug")]
+    tracks = list(db.programs.find({"slug": {"$in": track_slugs}}, {"slug": 1, "title": 1}))
+    track_map = {t.get("slug"): t.get("title") for t in tracks if t.get("slug")}
+
+    return render_template(
+        "account_profile.html",
+        favorites_count=favorites_count,
+        completed_days=completed_days,
+        recent_days=recent_days,
+        track_map=track_map,
+    )
 
 
 @app.route("/health")
@@ -1687,7 +2214,7 @@ def admin_program_weeks(program_id):
             [("week_number", 1), ("order", 1)]
         )
     )
-    return render_template("admin_program_weeks.html", program=program, weeks=weeks)
+    return render_or_fallback("admin_program_weeks.html", program=program, weeks=weeks)
 
 
 @app.route("/admin/programs/<program_id>/weeks/new", methods=["POST"])
@@ -1739,8 +2266,165 @@ def admin_program_week_delete(program_id, week_id):
 
 
 # -----------------------------------------------------------------------------
+# Admin: Program Week Items
+# -----------------------------------------------------------------------------
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/items")
+@login_required
+def admin_program_week_items(program_id, week_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not week:
+        abort(404)
+
+    items = list(
+        db.program_items.find({"week_id": week["_id"]}).sort([("order", 1), ("created_at", 1)])
+    )
+    workouts = list(db.workouts.find({}, {"name": 1, "slug": 1}).sort([("name", 1)]))
+    workout_map = {w["_id"]: w for w in workouts}
+
+    return render_or_fallback(
+        "admin_program_week_items.html",
+        program=program,
+        week=week,
+        items=items,
+        workouts=workouts,
+        workout_map=workout_map,
+    )
+
+
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/new", methods=["POST"])
+@login_required
+def admin_program_week_item_new(program_id, week_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not week:
+        abort(404)
+
+    day = _normalize_week_day_label(request.form.get("day"))
+    custom_name = (request.form.get("custom_name") or "").strip() or None
+    workout_id_raw = (request.form.get("workout_id") or "").strip()
+    sets = (request.form.get("sets") or "").strip() or None
+    reps = (request.form.get("reps") or "").strip() or None
+    rest = (request.form.get("rest") or "").strip() or None
+    notes = (request.form.get("notes") or "").strip() or None
+    order = int(request.form.get("order") or 0)
+
+    if not day:
+        flash("Day is required (ex: Push, Pull, Legs, Upper, Lower).", "danger")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    workout_id = None
+    if workout_id_raw:
+        try:
+            workout_id = ObjectId(workout_id_raw)
+        except Exception:
+            flash("Invalid workout selection.", "danger")
+            return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    db.program_items.insert_one(
+        {
+            "week_id": week["_id"],
+            "day": day,
+            "custom_name": custom_name,
+            "workout_id": workout_id,
+            "sets": sets,
+            "reps": reps,
+            "rest": rest,
+            "notes": notes,
+            "order": order,
+            "created_at": datetime.datetime.utcnow(),
+        }
+    )
+    flash("Week item added.", "success")
+    return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/<item_id>/edit", methods=["POST"])
+@login_required
+def admin_program_week_item_edit(program_id, week_id, item_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not week:
+        abort(404)
+
+    item = db.program_items.find_one({"_id": ObjectId(item_id), "week_id": week["_id"]})
+    if not item:
+        abort(404)
+
+    day = _normalize_week_day_label(request.form.get("day"))
+    custom_name = (request.form.get("custom_name") or "").strip() or None
+    workout_id_raw = (request.form.get("workout_id") or "").strip()
+    sets = (request.form.get("sets") or "").strip() or None
+    reps = (request.form.get("reps") or "").strip() or None
+    rest = (request.form.get("rest") or "").strip() or None
+    notes = (request.form.get("notes") or "").strip() or None
+    order = int(request.form.get("order") or item.get("order") or 0)
+
+    if not day:
+        flash("Day is required.", "danger")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    workout_id = None
+    if workout_id_raw:
+        try:
+            workout_id = ObjectId(workout_id_raw)
+        except Exception:
+            flash("Invalid workout selection.", "danger")
+            return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    db.program_items.update_one(
+        {"_id": item["_id"]},
+        {
+            "$set": {
+                "day": day,
+                "custom_name": custom_name,
+                "workout_id": workout_id,
+                "sets": sets,
+                "reps": reps,
+                "rest": rest,
+                "notes": notes,
+                "order": order,
+            }
+        },
+    )
+    flash("Week item updated.", "success")
+    return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/<item_id>/delete", methods=["POST"])
+@login_required
+def admin_program_week_item_delete(program_id, week_id, item_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not week:
+        abort(404)
+
+    db.program_items.delete_one({"_id": ObjectId(item_id), "week_id": week["_id"]})
+    flash("Week item deleted.", "success")
+    return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+
+# -----------------------------------------------------------------------------
 # Errors & health
 # -----------------------------------------------------------------------------
+@app.errorhandler(403)
+def forbidden(e):
+    app.logger.warning("403: %s %s", request.method, request.path)
+    return render_template("403.html"), 403
+
+
 @app.errorhandler(404)
 def not_found(e):
     app.logger.warning("404: %s %s", request.method, request.path)
