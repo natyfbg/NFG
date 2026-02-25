@@ -81,7 +81,9 @@
           <select class="form-select" name="workout_id">
             <option value="">— Select workout —</option>
             {% for w in workouts %}
-              <option value="{{ w._id|string }}">{{ w.name }}</option>
+              <option value="{{ w._id|string }}">
+                {{ w.name }}{% if w.movement_pattern %} · {{ w.movement_pattern }}{% endif %}{% if w.primary_muscle %} · {{ w.primary_muscle }}{% endif %}{% if w.equipment %} · {{ w.equipment }}{% endif %}
+              </option>
             {% endfor %}
           </select>
         </div>
@@ -146,7 +148,7 @@
                 <option value="">— None —</option>
                 {% for w in workouts %}
                   <option value="{{ w._id|string }}" {% if (w._id|string) == current_wid %}selected{% endif %}>
-                    {{ w.name }}
+                    {{ w.name }}{% if w.movement_pattern %} · {{ w.movement_pattern }}{% endif %}{% if w.primary_muscle %} · {{ w.primary_muscle }}{% endif %}{% if w.equipment %} · {{ w.equipment }}{% endif %}
                   </option>
                 {% endfor %}
               </select>
@@ -203,6 +205,9 @@
               <div class="small text-muted">
                 {% if linked %}
                   Linked: <strong>{{ linked.name }}</strong>
+                  {% if linked.movement_pattern %} • {{ linked.movement_pattern }}{% endif %}
+                  {% if linked.primary_muscle %} • {{ linked.primary_muscle }}{% endif %}
+                  {% if linked.equipment %} • {{ linked.equipment }}{% endif %}
                 {% elif it.custom_name %}
                   Custom item: <strong>{{ it.custom_name }}</strong>
                 {% else %}

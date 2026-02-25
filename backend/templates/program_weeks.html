@@ -23,6 +23,10 @@ Weeks – {{ track.title if track and track.title else "Program" }}
       padding: 1rem;
     }
     .week-card:active{ transform: scale(.995); }
+    .week-card.week-card-locked{
+      opacity: .72;
+      background: rgba(0,0,0,.02);
+    }
     .pill{
       display:inline-flex; align-items:center; gap:.35rem;
       border: 1px solid rgba(0,0,0,.15);
@@ -46,6 +50,10 @@ Weeks – {{ track.title if track and track.title else "Program" }}
       {% if track and track.summary %}
         <p class="text-muted mt-2 mb-0">{{ track.summary }}</p>
       {% endif %}
+      <div class="small text-muted mt-2">
+        {{ completed_days or 0 }} / {{ total_days or 0 }} days complete
+        {% if completed_weeks %} • {{ completed_weeks }} week{{ '' if completed_weeks == 1 else 's' }} completed{% endif %}
+      </div>
     </div>
 
     <div class="d-flex gap-2">
@@ -90,9 +98,20 @@ Weeks – {{ track.title if track and track.title else "Program" }}
       {% for w in weeks %}
         {% set wn = w.week_number if w.week_number is defined else w.get('week_number') %}
         {% set wtitle = (w.title if w.title is defined else w.get('title')) %}
+        {% set pg = week_progress.get(wn, {'done': 0, 'total': 0, 'all_done': false}) %}
+        {% set is_unlocked = week_unlock_map.get(wn, true) %}
+        {% if is_unlocked and resume_week_number == wn and resume_day_key %}
+          {% set week_url = url_for('program_hub_week_detail', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'), week_number=wn, level=lvl, env=envv, day=resume_day_key) %}
+        {% else %}
+          {% set week_url = url_for('program_hub_week_detail', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'), week_number=wn, level=lvl, env=envv) %}
+        {% endif %}
         <div class="col-12">
+          {% if is_unlocked %}
           <a class="week-card"
-             href="{{ url_for('program_hub_week_detail', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'), week_number=wn, level=lvl, env=envv) }}">
+             href="{{ week_url }}">
+          {% else %}
+          <div class="week-card week-card-locked" aria-disabled="true">
+          {% endif %}
             <div class="d-flex align-items-start justify-content-between gap-3">
               <div>
                 <div class="fw-semibold">Week {{ wn }}</div>
@@ -102,17 +121,49 @@ Weeks – {{ track.title if track and track.title else "Program" }}
                   <div class="muted small mt-1">View workouts and guidance for this week.</div>
                 {% endif %}
 
+                {% if pg.total > 0 %}
+                  <div class="small muted mt-2">
+                    Progress: {{ pg.done }} / {{ pg.total }} day{{ '' if pg.total == 1 else 's' }}
+                  </div>
+                  <div class="progress mt-1" role="progressbar" aria-valuenow="{{ pg.done }}" aria-valuemin="0" aria-valuemax="{{ pg.total }}" style="height:6px;max-width:220px;">
+                    <div class="progress-bar {% if pg.all_done %}bg-success{% endif %}" style="width: {{ (100 * pg.done / pg.total)|round(0, 'floor') }}%;"></div>
+                  </div>
+                {% endif %}
+
                 <div class="mt-3">
-                  <span class="btn btn-sm btn-dark">Open</span>
-                  <span class="text-muted small ms-2">See week details</span>
+                  {% if pg.all_done %}
+                    <span class="btn btn-sm btn-success">Completed</span>
+                  {% elif not is_unlocked %}
+                    <span class="btn btn-sm btn-outline-secondary disabled">Locked</span>
+                  {% elif resume_week_number == wn %}
+                    <span class="btn btn-sm btn-dark">Continue</span>
+                  {% else %}
+                    <span class="btn btn-sm btn-dark">Open</span>
+                  {% endif %}
+                  <span class="text-muted small ms-2">
+                    {% if not is_unlocked %}
+                      Complete prior week first
+                    {% elif resume_week_number == wn and resume_day_key %}
+                      Resume {{ resume_day_key|replace('-', ' ')|title }}
+                    {% else %}
+                      See week details
+                    {% endif %}
+                  </span>
                 </div>
               </div>
 
               <div class="text-end">
                 <span class="badge text-bg-light border text-dark">Week</span>
+                {% if is_unlocked and resume_week_number == wn %}
+                  <div class="small text-dark mt-1">Last active</div>
+                {% endif %}
               </div>
             </div>
+          {% if is_unlocked %}
           </a>
+          {% else %}
+          </div>
+          {% endif %}
         </div>
       {% endfor %}
     </div>

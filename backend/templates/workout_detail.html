@@ -90,6 +90,12 @@
           <a href="{{ url_for('workouts_browse', level=w.level) }}">{{ w.level }}</a>
         </li>
       {% endif %}
+      {% if w.difficulty_tier %}
+        <li class="list-group-item">
+          <strong>Difficulty Tier:</strong>
+          <a href="{{ url_for('workouts_browse', difficulty=w.difficulty_tier) }}">{{ w.difficulty_tier }}</a>
+        </li>
+      {% endif %}
       {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
       {% if parts %}
         <li class="list-group-item">
@@ -97,6 +103,24 @@
           {% for p in parts %}
             <a class="badge rounded-pill text-bg-secondary text-decoration-none me-1" href="{{ url_for('workouts_browse', body=p) }}">{{ p }}</a>
           {% endfor %}
+        </li>
+      {% endif %}
+      {% if w.primary_muscle %}
+        <li class="list-group-item">
+          <strong>Primary Muscle:</strong>
+          <a href="{{ url_for('workouts_browse', body=w.primary_muscle) }}">{{ w.primary_muscle }}</a>
+        </li>
+      {% endif %}
+      {% if w.movement_pattern %}
+        <li class="list-group-item">
+          <strong>Movement Pattern:</strong>
+          <a href="{{ url_for('workouts_browse', movement=w.movement_pattern) }}">{{ w.movement_pattern }}</a>
+        </li>
+      {% endif %}
+      {% if w.equipment %}
+        <li class="list-group-item">
+          <strong>Equipment:</strong>
+          <a href="{{ url_for('workouts_browse', equipment=w.equipment) }}">{{ w.equipment }}</a>
         </li>
       {% endif %}
       {% if w.style %}
@@ -155,7 +179,11 @@
 
             <div class="card-caption">
               <h6 class="mb-1"><a class="stretched-link text-white text-decoration-none" href="{{ url_for('workout_detail', slug=r.slug) }}">{{ r.name }}</a></h6>
-              <div class="small opacity-75">{{ r.level or '—' }}{% if r.body_parts %} • {{ r.body_parts|join(', ') }}{% endif %}</div>
+              <div class="small opacity-75">
+                {{ r.level or '—' }}
+                {% if r.movement_pattern %} • {{ r.movement_pattern }}{% endif %}
+                {% if r.equipment %} • {{ r.equipment }}{% endif %}
+              </div>
             </div>
           </div>
         </div>

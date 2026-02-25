@@ -411,7 +411,14 @@ def _migrate_guest_state_to_member(guest_viewer_id: str, member_key: str) -> Non
                 "week_number": week_number,
                 "day_key": day_key,
             },
-            {"$set": {"completed_at": row.get("completed_at") or datetime.datetime.utcnow()}},
+            {
+                "$set": {
+                    "completed_at": row.get("completed_at") or datetime.datetime.utcnow(),
+                    "hub_slug": row.get("hub_slug"),
+                    "level": row.get("level"),
+                    "env": row.get("env"),
+                }
+            },
             upsert=True,
         )
     db.program_day_progress.delete_many({"viewer_id": guest})
@@ -488,6 +495,32 @@ BODY_PARTS_MASTER = [
 
 FEATURED_BODY_PARTS = ["Chest", "Back", "Legs"]
 FEATURED_STYLES = ["BodyWeight", "Barbell", "Machines"]
+WORKOUT_MOVEMENT_PATTERNS = [
+    "Push",
+    "Pull",
+    "Squat",
+    "Hinge",
+    "Lunge",
+    "Core",
+    "Carry",
+    "Cardio",
+    "Mobility",
+    "Full Body",
+    "Accessory",
+]
+WORKOUT_EQUIPMENT_TYPES = [
+    "Bodyweight",
+    "Dumbbell",
+    "Barbell",
+    "Kettlebell",
+    "Machines",
+    "Cable",
+    "Bands",
+    "TRX",
+    "Cardio Machine",
+    "Mixed",
+]
+WORKOUT_DIFFICULTY_TIERS = ["Easy", "Moderate", "Hard"]
 
 # -----------------------------------------------------------------------------
 # Program helpers (dynamic Hub -> Tracks)
@@ -509,6 +542,128 @@ DEFAULT_WEEK_DAY_ORDER = [
 
 def _norm_choice(val: Optional[str]) -> str:
     return (val or "").strip().lower()
+
+
+def _canonical_choice(raw: Optional[str], options: List[str]) -> str:
+    v = _norm_choice(raw)
+    if not v:
+        return ""
+    for opt in options:
+        if _norm_choice(opt) == v:
+            return opt
+    return ""
+
+
+def _primary_muscle_from_doc(w: dict) -> str:
+    primary = _canonical_choice(w.get("primary_muscle"), BODY_PARTS_MASTER)
+    if primary:
+        return primary
+    parts = w.get("body_parts") or ([w.get("body_part")] if w.get("body_part") else [])
+    if parts:
+        return _canonical_choice(parts[0], BODY_PARTS_MASTER)
+    return ""
+
+
+def _infer_movement_from_primary_muscle(primary_muscle: str) -> str:
+    pm = _norm_choice(primary_muscle)
+    if not pm:
+        return ""
+    push = {"chest", "shoulders", "triceps"}
+    pull = {"back", "lats", "biceps", "forearms", "upper back"}
+    squat = {"legs", "quads", "glutes", "calves", "hips"}
+    hinge = {"hamstrings", "lower back"}
+    core = {"core", "abs", "obliques"}
+    if pm in push:
+        return "Push"
+    if pm in pull:
+        return "Pull"
+    if pm in squat:
+        return "Squat"
+    if pm in hinge:
+        return "Hinge"
+    if pm in core:
+        return "Core"
+    if pm == "full body":
+        return "Full Body"
+    return "Accessory"
+
+
+def _infer_equipment_from_style(style: str) -> str:
+    sty = _norm_choice(style)
+    if sty in {"bodyweight", "calisthenics", "yoga/mobility", "plyometric/explosive"}:
+        return "Bodyweight"
+    if sty == "barbell":
+        return "Barbell"
+    if sty == "dumbbell":
+        return "Dumbbell"
+    if sty == "kettlebell":
+        return "Kettlebell"
+    if sty == "machines":
+        return "Machines"
+    if sty == "resistance bands":
+        return "Bands"
+    if sty == "cardio/endurance":
+        return "Cardio Machine"
+    if sty:
+        return "Mixed"
+    return ""
+
+
+def _infer_difficulty_tier_from_level(level: str) -> str:
+    lv = _norm_choice(level)
+    if lv == "beginner":
+        return "Easy"
+    if lv == "intermediate":
+        return "Moderate"
+    if lv == "advanced":
+        return "Hard"
+    return ""
+
+
+def _workout_metadata_from_form(form, fallback_doc: Optional[dict] = None) -> tuple:
+    fallback_doc = fallback_doc or {}
+
+    fallback_primary = _primary_muscle_from_doc(fallback_doc)
+    fallback_movement = _infer_movement_from_primary_muscle(fallback_primary)
+    fallback_equipment = _infer_equipment_from_style(fallback_doc.get("style"))
+    fallback_tier = _infer_difficulty_tier_from_level(fallback_doc.get("level"))
+
+    primary_muscle = _canonical_choice(
+        form.get("primary_muscle") or fallback_primary,
+        BODY_PARTS_MASTER,
+    )
+    movement_pattern = _canonical_choice(
+        form.get("movement_pattern") or fallback_movement,
+        WORKOUT_MOVEMENT_PATTERNS,
+    )
+    equipment = _canonical_choice(
+        form.get("equipment") or fallback_equipment,
+        WORKOUT_EQUIPMENT_TYPES,
+    )
+    difficulty_tier = _canonical_choice(
+        form.get("difficulty_tier") or fallback_tier,
+        WORKOUT_DIFFICULTY_TIERS,
+    )
+
+    errors = []
+    if not primary_muscle:
+        errors.append("Primary muscle is required.")
+    if not movement_pattern:
+        errors.append("Movement pattern is required.")
+    if not equipment:
+        errors.append("Equipment is required.")
+    if not difficulty_tier:
+        errors.append("Difficulty tier is required.")
+
+    return (
+        {
+            "primary_muscle": primary_muscle,
+            "movement_pattern": movement_pattern,
+            "equipment": equipment,
+            "difficulty_tier": difficulty_tier,
+        },
+        errors,
+    )
 
 
 def _infer_env_from_slug(slug: str) -> Optional[str]:
@@ -651,6 +806,251 @@ def _favorite_programs_for_viewer(viewer_id: str, limit: int = 6) -> List[dict]:
     return ordered[:limit]
 
 
+def _track_level_for_url(track: dict) -> str:
+    return _norm_choice(track.get("track_level")) or "beginner"
+
+
+def _track_env_for_url(track: dict) -> str:
+    return (
+        _infer_env_from_slug(track.get("slug", ""))
+        or _infer_env_from_slug(track.get("category", ""))
+        or "home"
+    )
+
+
+def _ordered_week_numbers(weeks: List[dict]) -> List[int]:
+    def _as_int(val) -> int:
+        try:
+            return int(val)
+        except Exception:
+            return 0
+
+    ordered: List[int] = []
+    seen = set()
+    for w in sorted(
+        weeks,
+        key=lambda row: (_as_int(row.get("week_number")), _as_int(row.get("order"))),
+    ):
+        wn = _as_int(w.get("week_number"))
+        if wn < 1 or wn in seen:
+            continue
+        seen.add(wn)
+        ordered.append(wn)
+    return ordered
+
+
+def _day_key_from_program_item(item: dict, fallback_num: int) -> str:
+    raw_day = (
+        item.get("day")
+        or item.get("day_label")
+        or item.get("label")
+        or item.get("title")
+        or item.get("custom_name")
+        or f"Day {fallback_num}"
+    )
+    return slugify(_normalize_week_day_label(raw_day) or f"Day {fallback_num}") or f"day-{fallback_num}"
+
+
+def _week_day_keys_by_week(weeks: List[dict]) -> dict:
+    week_numbers = _ordered_week_numbers(weeks)
+    day_keys_by_week = {wn: [] for wn in week_numbers}
+
+    week_id_to_number = {
+        w.get("_id"): w.get("week_number")
+        for w in weeks
+        if w.get("_id") is not None and w.get("week_number") is not None
+    }
+    if not week_id_to_number:
+        return day_keys_by_week
+
+    items = list(
+        db.program_items.find(
+            {"week_id": {"$in": list(week_id_to_number.keys())}},
+            {"week_id": 1, "day": 1, "day_label": 1, "label": 1, "title": 1, "custom_name": 1},
+        ).sort([("order", 1), ("created_at", 1)])
+    )
+
+    seen_by_week = {wn: set() for wn in week_numbers}
+    for i, it in enumerate(items):
+        wn = week_id_to_number.get(it.get("week_id"))
+        if wn is None:
+            continue
+
+        day_key = _day_key_from_program_item(it, i + 1)
+        if day_key in seen_by_week.setdefault(wn, set()):
+            continue
+        seen_by_week[wn].add(day_key)
+        day_keys_by_week.setdefault(wn, []).append(day_key)
+
+    return day_keys_by_week
+
+
+def _done_day_keys_by_week(owner_key: str, track_slug: str, week_numbers: List[int]) -> dict:
+    done_by_week = {wn: set() for wn in week_numbers}
+    if not owner_key or not track_slug or not week_numbers:
+        return done_by_week
+
+    done_rows = list(
+        db.program_day_progress.find(
+            {
+                "viewer_id": owner_key,
+                "track_slug": track_slug,
+                "week_number": {"$in": week_numbers},
+            },
+            {"week_number": 1, "day_key": 1},
+        )
+    )
+    for row in done_rows:
+        wn = row.get("week_number")
+        dk = row.get("day_key")
+        if wn is None or not dk:
+            continue
+        done_by_week.setdefault(wn, set()).add(dk)
+    return done_by_week
+
+
+def _week_progress_for_track(owner_key: str, track: dict, weeks: List[dict]) -> dict:
+    week_numbers = _ordered_week_numbers(weeks)
+    progress_map = {
+        wn: {"done": 0, "total": 0, "all_done": False}
+        for wn in week_numbers
+        if wn is not None
+    }
+    if not week_numbers:
+        return progress_map
+
+    day_keys_by_week = _week_day_keys_by_week(weeks)
+    done_by_week = _done_day_keys_by_week(owner_key, track.get("slug"), week_numbers)
+
+    for wn in week_numbers:
+        day_keys = day_keys_by_week.get(wn, [])
+        total = len(day_keys)
+        done = len(set(day_keys) & done_by_week.get(wn, set()))
+        progress_map[wn] = {
+            "done": done,
+            "total": total,
+            "all_done": bool(total) and done >= total,
+        }
+
+    return progress_map
+
+
+def _week_unlock_map(weeks: List[dict], week_progress: dict) -> dict:
+    week_numbers = _ordered_week_numbers(weeks)
+    unlock_map = {}
+    all_previous_complete = True
+
+    for idx, wn in enumerate(week_numbers):
+        unlock_map[wn] = idx == 0 or all_previous_complete
+
+        pg = week_progress.get(wn) or {}
+        total = int(pg.get("total") or 0)
+        done = int(pg.get("done") or 0)
+        complete_for_unlock = (total == 0) or (done >= total)
+        all_previous_complete = all_previous_complete and complete_for_unlock
+
+    return unlock_map
+
+
+def _resume_target_for_track(owner_key: str, track: dict, weeks: List[dict], week_progress: dict) -> tuple:
+    week_numbers = _ordered_week_numbers(weeks)
+    if not owner_key or not track.get("slug") or not week_numbers:
+        return None, ""
+
+    unlock_map = _week_unlock_map(weeks, week_progress)
+    day_keys_by_week = _week_day_keys_by_week(weeks)
+    done_by_week = _done_day_keys_by_week(owner_key, track.get("slug"), week_numbers)
+
+    # Preferred target: first incomplete day in the earliest unlocked week.
+    for wn in week_numbers:
+        if not unlock_map.get(wn, True):
+            continue
+        day_keys = day_keys_by_week.get(wn, [])
+        if not day_keys:
+            continue
+        done_for_week = done_by_week.get(wn, set())
+        for day_key in day_keys:
+            if day_key not in done_for_week:
+                return wn, day_key
+
+    # Fallback target: most recent completed day in this track.
+    last_row = db.program_day_progress.find_one(
+        {"viewer_id": owner_key, "track_slug": track.get("slug")},
+        sort=[("completed_at", -1)],
+    )
+    if last_row:
+        wn = last_row.get("week_number")
+        day_key = (last_row.get("day_key") or "").strip()
+        if wn in week_numbers and unlock_map.get(wn, True):
+            return wn, day_key
+
+    # Last resort: first day of first unlocked week (or just first week).
+    for wn in week_numbers:
+        if not unlock_map.get(wn, True):
+            continue
+        day_keys = day_keys_by_week.get(wn, [])
+        return wn, (day_keys[0] if day_keys else "")
+
+    return week_numbers[0], ""
+
+
+def _continue_plan_for_owner(owner_key: str) -> Optional[dict]:
+    if not owner_key:
+        return None
+
+    row = db.program_day_progress.find_one(
+        {"viewer_id": owner_key},
+        sort=[("completed_at", -1)],
+    )
+    if not row:
+        return None
+
+    track_slug = (row.get("track_slug") or "").strip()
+    week_number = row.get("week_number")
+    day_key = (row.get("day_key") or "").strip()
+    if not track_slug or not week_number:
+        return None
+
+    track = db.programs.find_one({"slug": track_slug, "active": {"$ne": False}})
+    if not track or track.get("kind") != "track":
+        return None
+
+    hub_slug = track.get("hub_slug")
+    if not hub_slug:
+        return None
+
+    weeks = list(
+        db.program_weeks.find({"program_id": track["_id"]}).sort([("week_number", 1), ("order", 1)])
+    )
+    week_progress = _week_progress_for_track(owner_key, track, weeks)
+    resume_week_number, resume_day_key = _resume_target_for_track(
+        owner_key, track, weeks, week_progress
+    )
+    if not resume_week_number:
+        resume_week_number = week_number
+    if not resume_day_key:
+        resume_day_key = day_key
+
+    level = _track_level_for_url(track)
+    env = _track_env_for_url(track)
+    args = {
+        "hub_slug": hub_slug,
+        "week_number": resume_week_number,
+        "level": level,
+        "env": env,
+    }
+    if resume_day_key:
+        args["day"] = resume_day_key
+
+    return {
+        "track_title": track.get("title") or "Program",
+        "week_number": resume_week_number,
+        "day_label": resume_day_key.replace("-", " ").title() if resume_day_key else None,
+        "url": url_for("program_hub_week_detail", **args),
+        "completed_at": row.get("completed_at"),
+    }
+
+
 # -----------------------------------------------------------------------------
 # Indexes (safe to call repeatedly)
 # -----------------------------------------------------------------------------
@@ -659,6 +1059,10 @@ db.workouts.create_index([("name", 1)])
 db.workouts.create_index([("level", 1)])
 db.workouts.create_index([("body_part", 1)])
 db.workouts.create_index([("style", 1)])
+db.workouts.create_index([("primary_muscle", 1)])
+db.workouts.create_index([("movement_pattern", 1)])
+db.workouts.create_index([("equipment", 1)])
+db.workouts.create_index([("difficulty_tier", 1)])
 db.workouts.create_index([("created_at", -1)])
 db.workouts.create_index([("rating", -1)])
 
@@ -924,12 +1328,15 @@ def home():
         .sort([("order", 1), ("created_at", -1)])
         .limit(6)
     )
-    favorite_programs = _favorite_programs_for_viewer(_progress_owner_key(), limit=6)
+    owner_key = _progress_owner_key()
+    favorite_programs = _favorite_programs_for_viewer(owner_key, limit=6)
+    continue_plan = _continue_plan_for_owner(owner_key)
     return render_template(
         "home.html",
         name="NFG",
         featured_programs=featured_programs,
         favorite_programs=favorite_programs,
+        continue_plan=continue_plan,
     )
 
 
@@ -1072,12 +1479,30 @@ def program_hub_weeks(hub_slug):
         )
         weeks = [{"week_number": i, "title": None} for i in range(1, n + 1)]
 
+    owner_key = _progress_owner_key()
+    week_progress = _week_progress_for_track(owner_key, track, weeks)
+    week_unlock_map = _week_unlock_map(weeks, week_progress)
+    resume_week_number, resume_day_key = _resume_target_for_track(
+        owner_key, track, weeks, week_progress
+    )
+
+    total_days = sum(v.get("total", 0) for v in week_progress.values())
+    completed_days = sum(v.get("done", 0) for v in week_progress.values())
+    completed_weeks = sum(1 for v in week_progress.values() if v.get("all_done"))
+
     return render_or_fallback(
         "program_weeks.html",
         track=track,
         level=level,
         env=env,
         weeks=weeks,
+        week_progress=week_progress,
+        week_unlock_map=week_unlock_map,
+        resume_week_number=resume_week_number,
+        resume_day_key=resume_day_key,
+        total_days=total_days,
+        completed_days=completed_days,
+        completed_weeks=completed_weeks,
     )
 
 
@@ -1147,6 +1572,13 @@ def program_hub_week_detail(hub_slug, week_number: int):
         db.program_weeks.find({"program_id": track["_id"]}, {"week_number": 1}).sort([("week_number", 1)])
     )
     week_numbers = [w.get("week_number") for w in weeks_in_track if w.get("week_number")]
+    owner_key = _progress_owner_key()
+    week_progress = _week_progress_for_track(owner_key, track, weeks_in_track)
+    week_unlock_map = _week_unlock_map(weeks_in_track, week_progress)
+    if week_unlock_map and not week_unlock_map.get(week_number, True):
+        flash("Finish previous weeks before opening this week.", "warning")
+        return redirect(url_for("program_hub_weeks", hub_slug=hub_slug, level=level, env=env))
+
     next_week_number = next((n for n in week_numbers if n > week_number), None)
     if not next_week_number:
         max_weeks = _week_count_from_duration_label(track.get("duration_label") or hub.get("duration_label"))
@@ -1154,7 +1586,7 @@ def program_hub_week_detail(hub_slug, week_number: int):
             next_week_number = week_number + 1
 
     day_keys = [g.get("key") for g in day_groups if g.get("key")]
-    viewer_id = _progress_owner_key()
+    viewer_id = owner_key
     completed_day_keys = set()
     if viewer_id and track.get("slug") and day_keys:
         rows = list(
@@ -1234,7 +1666,14 @@ def program_hub_week_day_status(hub_slug, week_number: int):
         else:
             db.program_day_progress.update_one(
                 query,
-                {"$set": {"completed_at": datetime.datetime.utcnow()}},
+                {
+                    "$set": {
+                        "completed_at": datetime.datetime.utcnow(),
+                        "hub_slug": hub_slug,
+                        "level": level,
+                        "env": env,
+                    }
+                },
                 upsert=True,
             )
 
@@ -1270,7 +1709,8 @@ def workouts():
 
     parts_single = set(db.workouts.distinct("body_part"))
     parts_multi = set(db.workouts.distinct("body_parts"))
-    parts_in_db = parts_single | parts_multi
+    parts_primary = set(db.workouts.distinct("primary_muscle"))
+    parts_in_db = parts_single | parts_multi | parts_primary
 
     body_parts_featured = [
         p for p in FEATURED_BODY_PARTS if p in parts_in_db
@@ -1304,7 +1744,9 @@ def styles_index():
 @app.route("/workouts/body-parts")
 def body_parts_index():
     counts = {
-        bp: db.workouts.count_documents({"$or": [{"body_part": bp}, {"body_parts": bp}]})
+        bp: db.workouts.count_documents(
+            {"$or": [{"body_part": bp}, {"body_parts": bp}, {"primary_muscle": bp}]}
+        )
         for bp in BODY_PARTS_MASTER
     }
     return render_template("body_parts_index.html", body_parts=BODY_PARTS_MASTER, counts=counts)
@@ -1315,6 +1757,9 @@ def workouts_browse():
     level = request.args.get("level") or ""
     body = request.args.get("body") or ""
     style = request.args.get("style") or ""
+    movement = request.args.get("movement") or ""
+    equipment = request.args.get("equipment") or ""
+    difficulty = request.args.get("difficulty") or ""
     q = (request.args.get("q") or "").strip()
     sort_key = request.args.get("sort", "name")
     page = max(int(request.args.get("page", 1)), 1)
@@ -1325,8 +1770,14 @@ def workouts_browse():
         and_clauses.append({"level": level})
     if style:
         and_clauses.append({"style": style})
+    if movement:
+        and_clauses.append({"movement_pattern": movement})
+    if equipment:
+        and_clauses.append({"equipment": equipment})
+    if difficulty:
+        and_clauses.append({"difficulty_tier": difficulty})
     if body:
-        and_clauses.append({"$or": [{"body_part": body}, {"body_parts": body}]})
+        and_clauses.append({"$or": [{"body_part": body}, {"body_parts": body}, {"primary_muscle": body}]})
     if sort_key == "favorites":
         and_clauses.append({"is_favorite": True})
     if q:
@@ -1339,6 +1790,10 @@ def workouts_browse():
                     {"body_part": rx},
                     {"body_parts": rx},
                     {"style": rx},
+                    {"primary_muscle": rx},
+                    {"movement_pattern": rx},
+                    {"equipment": rx},
+                    {"difficulty_tier": rx},
                     {"tags": rx},
                 ]
             }
@@ -1356,6 +1811,15 @@ def workouts_browse():
 
     cursor = db.workouts.find(query).sort(sort).skip((page - 1) * per_page).limit(per_page)
     items = list(cursor)
+    for w in items:
+        w["primary_muscle"] = w.get("primary_muscle") or _primary_muscle_from_doc(w)
+        w["movement_pattern"] = w.get("movement_pattern") or _infer_movement_from_primary_muscle(
+            w.get("primary_muscle")
+        )
+        w["equipment"] = w.get("equipment") or _infer_equipment_from_style(w.get("style"))
+        w["difficulty_tier"] = w.get("difficulty_tier") or _infer_difficulty_tier_from_level(
+            w.get("level")
+        )
 
     return render_template(
         "browse_workouts.html",
@@ -1367,10 +1831,16 @@ def workouts_browse():
         level=level,
         body=body,
         style=style,
+        movement=movement,
+        equipment=equipment,
+        difficulty=difficulty,
         q=q,
         workout_levels=WORKOUT_LEVELS,
         body_parts=BODY_PARTS_MASTER,
         workout_styles=get_styles(),
+        movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
+        equipment_types=WORKOUT_EQUIPMENT_TYPES,
+        difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
     )
 
 
@@ -1380,12 +1850,21 @@ def workout_detail(slug):
     if not w:
         abort(404)
 
+    w["primary_muscle"] = w.get("primary_muscle") or _primary_muscle_from_doc(w)
+    w["movement_pattern"] = w.get("movement_pattern") or _infer_movement_from_primary_muscle(
+        w.get("primary_muscle")
+    )
+    w["equipment"] = w.get("equipment") or _infer_equipment_from_style(w.get("style"))
+    w["difficulty_tier"] = w.get("difficulty_tier") or _infer_difficulty_tier_from_level(w.get("level"))
+
     parts = w.get("body_parts") or ([w.get("body_part")] if w.get("body_part") else [])
     rel_or = []
     if parts:
         rel_or.append({"body_parts": {"$in": parts}})
     if w.get("style"):
         rel_or.append({"style": w.get("style")})
+    if w.get("movement_pattern"):
+        rel_or.append({"movement_pattern": w.get("movement_pattern")})
 
     if rel_or:
         rel_q = {"$and": [{"slug": {"$ne": w["slug"]}}, {"$or": rel_or}]}
@@ -1395,6 +1874,15 @@ def workout_detail(slug):
     related = list(
         db.workouts.find(rel_q).sort([("rating", -1), ("created_at", -1), ("name", 1)]).limit(6)
     )
+    for r in related:
+        r["primary_muscle"] = r.get("primary_muscle") or _primary_muscle_from_doc(r)
+        r["movement_pattern"] = r.get("movement_pattern") or _infer_movement_from_primary_muscle(
+            r.get("primary_muscle")
+        )
+        r["equipment"] = r.get("equipment") or _infer_equipment_from_style(r.get("style"))
+        r["difficulty_tier"] = r.get("difficulty_tier") or _infer_difficulty_tier_from_level(
+            r.get("level")
+        )
     return render_template("workout_detail.html", w=w, related=related)
 
 
@@ -1424,6 +1912,10 @@ def search():
             {"body_part": rx},
             {"body_parts": rx},
             {"style": rx},
+            {"primary_muscle": rx},
+            {"movement_pattern": rx},
+            {"equipment": rx},
+            {"difficulty_tier": rx},
             {"tags": rx},
         ]
     }
@@ -1641,7 +2133,59 @@ def health():
 @login_required
 def admin_index():
     items = list(db.workouts.find().sort([("created_at", -1)]))
+    for w in items:
+        w["_quality_missing"] = not (
+            w.get("primary_muscle")
+            and w.get("movement_pattern")
+            and w.get("equipment")
+            and w.get("difficulty_tier")
+        )
+        w["primary_muscle"] = w.get("primary_muscle") or _primary_muscle_from_doc(w)
+        w["movement_pattern"] = w.get("movement_pattern") or _infer_movement_from_primary_muscle(
+            w.get("primary_muscle")
+        )
+        w["equipment"] = w.get("equipment") or _infer_equipment_from_style(w.get("style"))
+        w["difficulty_tier"] = w.get("difficulty_tier") or _infer_difficulty_tier_from_level(
+            w.get("level")
+        )
     return render_template("admin_index.html", items=items)
+
+
+@app.route("/admin/workouts/backfill-metadata", methods=["POST"])
+@login_required
+def admin_workout_backfill_metadata():
+    target_query = {
+        "$or": [
+            {"primary_muscle": {"$in": [None, ""]}},
+            {"movement_pattern": {"$in": [None, ""]}},
+            {"equipment": {"$in": [None, ""]}},
+            {"difficulty_tier": {"$in": [None, ""]}},
+        ]
+    }
+
+    updated = 0
+    for w in db.workouts.find(target_query):
+        patch = {}
+        primary = w.get("primary_muscle") or _primary_muscle_from_doc(w)
+        movement = w.get("movement_pattern") or _infer_movement_from_primary_muscle(primary)
+        equipment = w.get("equipment") or _infer_equipment_from_style(w.get("style"))
+        tier = w.get("difficulty_tier") or _infer_difficulty_tier_from_level(w.get("level"))
+
+        if primary and not w.get("primary_muscle"):
+            patch["primary_muscle"] = primary
+        if movement and not w.get("movement_pattern"):
+            patch["movement_pattern"] = movement
+        if equipment and not w.get("equipment"):
+            patch["equipment"] = equipment
+        if tier and not w.get("difficulty_tier"):
+            patch["difficulty_tier"] = tier
+
+        if patch:
+            db.workouts.update_one({"_id": w["_id"]}, {"$set": patch})
+            updated += 1
+
+    flash(f"Metadata backfill complete. Updated {updated} workout(s).", "success")
+    return redirect(url_for("admin_index"))
 
 
 @app.route("/admin/workouts/new", methods=["GET", "POST"])
@@ -1664,6 +2208,7 @@ def admin_workout_new():
         is_favorite = request.form.get("is_favorite") == "on"
         rating = float(request.form.get("rating") or 0)
         slug = (request.form.get("slug") or slugify(name)).strip()
+        metadata, meta_errors = _workout_metadata_from_form(request.form)
 
         if not name:
             flash("Name is required.", "danger")
@@ -1672,6 +2217,23 @@ def admin_workout_new():
                 levels=WORKOUT_LEVELS,
                 parts=BODY_PARTS_MASTER,
                 styles=get_styles(),
+                movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
+                equipment_types=WORKOUT_EQUIPMENT_TYPES,
+                difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
+                data=request.form,
+            )
+
+        if meta_errors:
+            for msg in meta_errors:
+                flash(msg, "danger")
+            return render_template(
+                "admin_workout_form.html",
+                levels=WORKOUT_LEVELS,
+                parts=BODY_PARTS_MASTER,
+                styles=get_styles(),
+                movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
+                equipment_types=WORKOUT_EQUIPMENT_TYPES,
+                difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
                 data=request.form,
             )
 
@@ -1685,6 +2247,9 @@ def admin_workout_new():
                 levels=WORKOUT_LEVELS,
                 parts=BODY_PARTS_MASTER,
                 styles=get_styles(),
+                movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
+                equipment_types=WORKOUT_EQUIPMENT_TYPES,
+                difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
                 data=request.form,
             )
 
@@ -1703,6 +2268,10 @@ def admin_workout_new():
             "youtube_id": youtube_id,
             "is_favorite": is_favorite,
             "rating": rating,
+            "primary_muscle": metadata.get("primary_muscle"),
+            "movement_pattern": metadata.get("movement_pattern"),
+            "equipment": metadata.get("equipment"),
+            "difficulty_tier": metadata.get("difficulty_tier"),
             "created_at": datetime.datetime.utcnow(),
         }
 
@@ -1718,6 +2287,9 @@ def admin_workout_new():
         levels=WORKOUT_LEVELS,
         parts=BODY_PARTS_MASTER,
         styles=get_styles(),
+        movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
+        equipment_types=WORKOUT_EQUIPMENT_TYPES,
+        difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
         data={},
     )
 
@@ -1746,6 +2318,7 @@ def admin_workout_edit(id):
         is_favorite = request.form.get("is_favorite") == "on"
         rating = float(request.form.get("rating") or 0)
         slug = (request.form.get("slug") or slugify(name)).strip()
+        metadata, meta_errors = _workout_metadata_from_form(request.form, fallback_doc=w)
 
         if not name:
             flash("Name is required.", "danger")
@@ -1754,6 +2327,25 @@ def admin_workout_edit(id):
                 levels=WORKOUT_LEVELS,
                 parts=BODY_PARTS_MASTER,
                 styles=get_styles(),
+                movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
+                equipment_types=WORKOUT_EQUIPMENT_TYPES,
+                difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
+                data=request.form,
+                edit=True,
+                _id=id,
+            )
+
+        if meta_errors:
+            for msg in meta_errors:
+                flash(msg, "danger")
+            return render_template(
+                "admin_workout_form.html",
+                levels=WORKOUT_LEVELS,
+                parts=BODY_PARTS_MASTER,
+                styles=get_styles(),
+                movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
+                equipment_types=WORKOUT_EQUIPMENT_TYPES,
+                difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
                 data=request.form,
                 edit=True,
                 _id=id,
@@ -1770,6 +2362,9 @@ def admin_workout_edit(id):
                 levels=WORKOUT_LEVELS,
                 parts=BODY_PARTS_MASTER,
                 styles=get_styles(),
+                movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
+                equipment_types=WORKOUT_EQUIPMENT_TYPES,
+                difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
                 data=request.form,
                 edit=True,
                 _id=id,
@@ -1790,6 +2385,10 @@ def admin_workout_edit(id):
             "youtube_id": youtube_id,
             "is_favorite": is_favorite,
             "rating": rating,
+            "primary_muscle": metadata.get("primary_muscle"),
+            "movement_pattern": metadata.get("movement_pattern"),
+            "equipment": metadata.get("equipment"),
+            "difficulty_tier": metadata.get("difficulty_tier"),
         }
 
         try:
@@ -1800,6 +2399,14 @@ def admin_workout_edit(id):
             flash(f"Error: {e}", "danger")
 
     data = dict(w)
+    data["primary_muscle"] = data.get("primary_muscle") or _primary_muscle_from_doc(data)
+    data["movement_pattern"] = data.get("movement_pattern") or _infer_movement_from_primary_muscle(
+        data.get("primary_muscle")
+    )
+    data["equipment"] = data.get("equipment") or _infer_equipment_from_style(data.get("style"))
+    data["difficulty_tier"] = data.get("difficulty_tier") or _infer_difficulty_tier_from_level(
+        data.get("level")
+    )
     data["tags"] = ", ".join(data.get("tags", []))
     data["images"] = "\n".join(data.get("images", []))
     data["tips"] = "\n".join(data.get("tips", []))
@@ -1813,6 +2420,9 @@ def admin_workout_edit(id):
         levels=WORKOUT_LEVELS,
         parts=BODY_PARTS_MASTER,
         styles=get_styles(),
+        movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
+        equipment_types=WORKOUT_EQUIPMENT_TYPES,
+        difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
         data=data,
         edit=True,
         _id=id,
@@ -2282,7 +2892,19 @@ def admin_program_week_items(program_id, week_id):
     items = list(
         db.program_items.find({"week_id": week["_id"]}).sort([("order", 1), ("created_at", 1)])
     )
-    workouts = list(db.workouts.find({}, {"name": 1, "slug": 1}).sort([("name", 1)]))
+    workouts = list(
+        db.workouts.find(
+            {},
+            {
+                "name": 1,
+                "slug": 1,
+                "primary_muscle": 1,
+                "movement_pattern": 1,
+                "equipment": 1,
+                "difficulty_tier": 1,
+            },
+        ).sort([("name", 1)])
+    )
     workout_map = {w["_id"]: w for w in workouts}
 
     return render_or_fallback(

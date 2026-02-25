@@ -33,6 +33,24 @@
     </div>
   </div>
 
+  {% if continue_plan %}
+    <div class="card shadow-sm border-primary-subtle mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-start justify-content-between gap-2">
+          <div class="me-2">
+            <div class="small text-muted">Continue where you left off</div>
+            <div class="fw-semibold">{{ continue_plan.track_title }}</div>
+            <div class="small text-muted mt-1">
+              Week {{ continue_plan.week_number }}
+              {% if continue_plan.day_label %} • {{ continue_plan.day_label }}{% endif %}
+            </div>
+          </div>
+          <a class="btn btn-sm btn-primary" href="{{ continue_plan.url }}">Resume</a>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
   <!-- Featured Programs -->
   <div class="d-flex align-items-center justify-content-between mb-2">
     <h5 class="mb-0">Featured programs</h5>

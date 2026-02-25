@@ -56,6 +56,11 @@
     + New Workout
   </a>
 
+  <form method="post" action="{{ url_for('admin_workout_backfill_metadata') }}" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-outline-dark" type="submit">Backfill Metadata</button>
+  </form>
+
   <a class="btn btn-outline-secondary" href="{{ url_for('admin_styles') }}">
     Manage Styles
   </a>
@@ -97,11 +102,17 @@
               <div class="fw-semibold">
                 {{ w.name }}
                 <small class="text-muted">/{{ w.slug }}</small>
+                {% if w.get('_quality_missing') %}
+                  <span class="badge text-bg-warning ms-2">Metadata Needed</span>
+                {% endif %}
               </div>
               <div class="small text-muted">
                 {{ w.level or '—' }}
                 • {{ parts|join(', ') or '—' }}
                 • {{ w.style or '—' }}
+                • {{ w.movement_pattern or 'Movement ?' }}
+                • {{ w.equipment or 'Equipment ?' }}
+                • {{ w.difficulty_tier or 'Tier ?' }}
                 {% if w.rating is not none %}
                   • ★ {{ '%.1f'|format(w.rating) }}
                 {% endif %}

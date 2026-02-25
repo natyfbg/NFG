@@ -47,31 +47,9 @@
         ] %}
 
         <div class="collapse navbar-collapse" id="navMain">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <!-- Workouts: text navigates; small caret is the only dropdown trigger -->
-            <li class="nav-item dropdown d-flex align-items-center" id="nav-workouts">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0 d-none d-lg-flex">
+            <li class="nav-item">
               <a class="nav-link {% if ep in workouts_eps %}active{% endif %}" href="{{ url_for('workouts') }}">Workouts</a>
-
-              <a class="nav-link p-0 ms-1 d-flex align-items-center"
-                 href="#"
-                 id="workoutsMenu"
-                 role="button"
-                 data-bs-toggle="dropdown"
-                 aria-expanded="false"
-                 aria-haspopup="true">
-                <span class="caret" aria-hidden="true"></span>
-                <span class="visually-hidden">Toggle workouts menu</span>
-              </a>
-
-              <div class="dropdown-menu dropdown-menu-dark workout-menu shadow-lg" aria-labelledby="workoutsMenu">
-                <a class="dropdown-item" href="{{ url_for('workouts_all') }}">All Workouts (A–Z)</a>
-                <a class="dropdown-item" href="{{ url_for('workouts_browse', sort='recent') }}">Recently Added</a>
-                <a class="dropdown-item" href="{{ url_for('workouts_browse', sort='rating') }}">Top Rated</a>
-                <div class="dropdown-divider my-2"></div>
-                <a class="dropdown-item" href="{{ url_for('styles_index') }}">All Styles</a>
-                <a class="dropdown-item" href="{{ url_for('body_parts_index') }}">All Body Parts</a>
-                <a class="dropdown-item" href="{{ url_for('workouts_browse') }}">Browse (filters &amp; search)</a>
-              </div>
             </li>
 
             <li class="nav-item">
@@ -84,7 +62,7 @@
           </ul>
 
           <!-- Search -->
-          <form class="d-flex me-2" action="{{ url_for('search') }}" method="get" role="search">
+          <form class="d-none d-lg-flex me-2" action="{{ url_for('search') }}" method="get" role="search">
             <div class="input-group input-group-sm">
               <input class="form-control" type="search" placeholder="Search…" name="q"
                      value="{{ request.args.get('q','') }}">
@@ -94,6 +72,8 @@
 
           <!-- Auth buttons -->
           <div class="d-flex align-items-center gap-2">
+            <a class="btn btn-sm btn-outline-light d-lg-none"
+               href="{{ url_for('workouts_browse') }}">Search</a>
             {% if current_user.is_authenticated %}
               {% if current_user.is_admin %}
                 <a class="btn btn-sm btn-outline-secondary {% if ep in admin_eps %}active{% endif %}"
@@ -115,7 +95,7 @@
                  href="{{ url_for('account_login') }}">Sign in</a>
               <a class="btn btn-sm btn-light {% if ep == 'account_register' %}active{% endif %}"
                  href="{{ url_for('account_register') }}">Join</a>
-              <a class="btn btn-sm btn-outline-secondary {% if ep == 'login' %}active{% endif %}"
+              <a class="btn btn-sm btn-outline-secondary d-none d-lg-inline-block {% if ep == 'login' %}active{% endif %}"
                  href="{{ url_for('login') }}">Admin</a>
             {% endif %}
           </div>
@@ -186,53 +166,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-      /* Workouts dropdown behavior: only caret toggles; on desktop allow hover on caret to open.
-         Debounced close prevents flicker. */
-      (function(){
-        const li = document.getElementById('nav-workouts');
-        if (!li) return;
-
-        const toggle = document.getElementById('workoutsMenu');
-        const menu = li.querySelector('.dropdown-menu');
-        if (!toggle || !menu) return;
-
-        const dd = bootstrap.Dropdown.getOrCreateInstance(toggle, {
-          autoClose: 'outside',
-          popperConfig: {
-            placement: 'bottom-start',
-            modifiers: [
-              { name: 'offset', options: { offset: [0, 6] } },
-              { name: 'flip', options: { fallbackPlacements: [] } },
-              { name: 'preventOverflow', options: { boundary: 'viewport' } }
-            ]
-          }
-        });
-
-        const observer = new MutationObserver(() => {
-          const open = menu.classList.contains('show');
-          li.classList.toggle('workouts-caret-open', open);
-        });
-        observer.observe(menu, { attributes: true, attributeFilter: ['class'] });
-
-        const mqHover = window.matchMedia('(hover:hover) and (pointer:fine)');
-        let closeTimer = null;
-        const open = ()=> { clearTimeout(closeTimer); dd.show(); };
-        const scheduleClose = ()=> { clearTimeout(closeTimer); closeTimer = setTimeout(()=> dd.hide(), 160); };
-
-        if (mqHover.matches){
-          toggle.addEventListener('mouseenter', open);
-          toggle.addEventListener('mouseleave', scheduleClose);
-          menu.addEventListener('mouseenter', open);
-          menu.addEventListener('mouseleave', scheduleClose);
-        }
-
-        document.addEventListener('click', (e)=>{
-          if (!li.contains(e.target)) dd.hide();
-        });
-      })();
-    </script>
-
-    <script>
       /* Swipe navigation with a slide animation (mobile-first) */
       (function(){
         const zone = document.getElementById('swipe-zone');
@@ -268,7 +201,7 @@
 
         const isInteractive = (el) => {
           if (!el) return false;
-          return !!el.closest('a,button,input,textarea,select,label,[role="button"],.dropdown-menu,.navbar,.carousel,.swipe-block');
+          return !!el.closest('a,button,input,textarea,select,label,[role="button"],.navbar,.carousel,.swipe-block');
         };
 
         const animateAndGo = (dir, url) => {

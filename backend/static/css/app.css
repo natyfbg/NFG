@@ -1,16 +1,6 @@
 /* ===== Global knobs ===== */
 :root{
   --media9x16-h: clamp(360px, 52vw, 520px);
-  --nav-dd-radius: 14px;
-  --nav-dd-backdrop: rgba(20,20,20,.55);
-
-  /* dropdown sizing */
-  --dd-min-w: 220px;
-  --dd-max-w: 320px;
-
-  /* animation timing */
-  --dd-duration: .12s;
-
   /* bottom nav (floating pill) */
   --bottom-nav-h: 54px;
   --bottom-nav-gap: 12px;
@@ -27,68 +17,18 @@ html, body{ overflow-x: hidden; }
   line-height: 1.35;
 }
 
-/* ===== Workouts dropdown styling (compact & roll-down) ===== */
-.navbar .workout-menu{
-  min-width: var(--dd-min-w);
-  max-width: var(--dd-max-w);
-  border-radius: var(--nav-dd-radius);
-  backdrop-filter: blur(6px);
-  background-color: rgba(0,0,0,.9);
-  z-index: 1080;
-  padding:.35rem;
-  font-size: .94rem;
-
-  transform-origin: top center;
-  transform: translateY(-6px) scale(.995);
-  opacity: 0;
-  transition: transform var(--dd-duration) ease, opacity var(--dd-duration) ease;
-}
-.navbar .workout-menu.show{
-  transform: translateY(0) scale(1);
-  opacity: 1;
-}
-
-.navbar .dropdown-item{
-  padding:.36rem .6rem;
-  border-radius:.375rem;
-}
-.navbar .dropdown-item:hover,
-.navbar .dropdown-item:focus{ background: rgba(255,255,255,.06); }
-
-/* hide default caret */
-.dropdown-toggle::after{ display:none !important; }
-
-.caret{
-  display:inline-block; width:.5rem; height:.5rem;
-  border-right:2px solid currentColor; border-bottom:2px solid currentColor;
-  transform: rotate(45deg);
-  transition: transform var(--dd-duration) ease;
-  margin-left:.25rem;
-}
-.workouts-caret-open .caret{ transform: rotate(225deg); }
-
-/* Mobile sheet: fixed & centered */
-@media (max-width:575.98px){
-  .navbar .dropdown-menu.workout-menu{
-    position: fixed !important;
-    left: 50% !important;
-    transform: translate(-50%, 0) !important;
-
-    /* slightly safer offset under your navbar */
-    top: calc(56px + 12px) !important;
-
-    width: min(94vw, 420px);
-    max-height: 70svh; overflow:auto;
-    border-radius: 12px;
-    background: var(--nav-dd-backdrop);
-    padding:.5rem;
-    opacity:1;
-  }
-  .navbar .dropdown-item{ padding:.65rem .9rem; }
-}
-
-/* Keep dropdown above alerts */
+/* Keep alerts above surrounding content */
 .alert { z-index: 1; position: relative; }
+
+@media (max-width: 991.98px){
+  .navbar .navbar-nav{
+    row-gap: .15rem;
+  }
+  .navbar .nav-link{
+    padding-top: .45rem;
+    padding-bottom: .45rem;
+  }
+}
 
 /* ===== Floating bottom navigation (mobile) ===== */
 body{

@@ -21,7 +21,7 @@
 
     <div class="col-md-4">
       <label class="form-label">Level</label>
-      <select class="form-select" name="level">
+      <select class="form-select" id="level" name="level">
         <option value=""></option>
         {% for lv in levels %}
           <option value="{{ lv }}" {{ 'selected' if data.get('level')==lv else '' }}>{{ lv }}</option>
@@ -41,7 +41,7 @@
         <label class="form-label mb-0">Style</label>
         <a class="small text-decoration-none" href="{{ url_for('admin_styles') }}">Manage styles</a>
       </div>
-      <select class="form-select" name="style">
+      <select class="form-select" id="style" name="style">
         <option value="">— Select a style —</option>
         {% for st in styles %}
           <option value="{{ st }}" {{ 'selected' if data.get('style')==st else '' }}>{{ st }}</option>
@@ -50,6 +50,48 @@
       {% if not styles %}
         <div class="form-text text-warning">No styles yet. Add one via <em>Manage styles</em>.</div>
       {% endif %}
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Primary Muscle</label>
+      <select class="form-select" name="primary_muscle" required>
+        <option value="">— Select primary muscle —</option>
+        {% for bp in parts %}
+          <option value="{{ bp }}" {{ 'selected' if data.get('primary_muscle')==bp else '' }}>{{ bp }}</option>
+        {% endfor %}
+      </select>
+      <div class="form-text">Primary target for this exercise page.</div>
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Movement Pattern</label>
+      <select class="form-select" id="movement_pattern" name="movement_pattern" required>
+        <option value="">— Select movement pattern —</option>
+        {% for mp in movement_patterns %}
+          <option value="{{ mp }}" {{ 'selected' if data.get('movement_pattern')==mp else '' }}>{{ mp }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Equipment</label>
+      <select class="form-select" id="equipment" name="equipment" required>
+        <option value="">— Select equipment —</option>
+        {% for eq in equipment_types %}
+          <option value="{{ eq }}" {{ 'selected' if data.get('equipment')==eq else '' }}>{{ eq }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Difficulty Tier</label>
+      <select class="form-select" id="difficulty_tier" name="difficulty_tier" required>
+        <option value="">— Select difficulty tier —</option>
+        {% for dt in difficulty_tiers %}
+          <option value="{{ dt }}" {{ 'selected' if data.get('difficulty_tier')==dt else '' }}>{{ dt }}</option>
+        {% endfor %}
+      </select>
+      <div class="form-text">Easy / Moderate / Hard for exercise complexity or intensity.</div>
     </div>
 
     <div class="col-md-6">
@@ -326,6 +368,74 @@
       syncTagsFromBodyParts();
     }
   }
+
+  // --- Metadata suggestions (only when target select is empty) ---
+  const levelEl = document.getElementById('level');
+  const styleEl = document.getElementById('style');
+  const movementEl = document.getElementById('movement_pattern');
+  const equipmentEl = document.getElementById('equipment');
+  const tierEl = document.getElementById('difficulty_tier');
+
+  function firstBodyPart(raw) {
+    const parts = parseParts(raw || '');
+    return parts.length ? parts[0].toLowerCase() : '';
+  }
+
+  function suggestMovementByBodyPart(part) {
+    const push = ['chest', 'shoulders', 'triceps'];
+    const pull = ['back', 'lats', 'biceps', 'forearms', 'upper back'];
+    const squat = ['legs', 'quads', 'glutes', 'calves', 'hips'];
+    const hinge = ['hamstrings', 'lower back'];
+    const core = ['core', 'abs', 'obliques'];
+    if (push.includes(part)) return 'Push';
+    if (pull.includes(part)) return 'Pull';
+    if (squat.includes(part)) return 'Squat';
+    if (hinge.includes(part)) return 'Hinge';
+    if (core.includes(part)) return 'Core';
+    if (part === 'full body') return 'Full Body';
+    if (part) return 'Accessory';
+    return '';
+  }
+
+  function suggestEquipmentByStyle(style) {
+    const s = (style || '').toLowerCase().trim();
+    if (['bodyweight', 'calisthenics', 'yoga/mobility', 'plyometric/explosive'].includes(s)) return 'Bodyweight';
+    if (s === 'barbell') return 'Barbell';
+    if (s === 'dumbbell') return 'Dumbbell';
+    if (s === 'kettlebell') return 'Kettlebell';
+    if (s === 'machines') return 'Machines';
+    if (s === 'resistance bands') return 'Bands';
+    if (s === 'cardio/endurance') return 'Cardio Machine';
+    if (s) return 'Mixed';
+    return '';
+  }
+
+  function suggestTierByLevel(level) {
+    const l = (level || '').toLowerCase().trim();
+    if (l === 'beginner') return 'Easy';
+    if (l === 'intermediate') return 'Moderate';
+    if (l === 'advanced') return 'Hard';
+    return '';
+  }
+
+  function setIfEmpty(selectEl, value) {
+    if (!selectEl || !value) return;
+    if ((selectEl.value || '').trim()) return;
+    const target = Array.from(selectEl.options).find(o => o.value === value);
+    if (target) selectEl.value = value;
+  }
+
+  function runSuggestions() {
+    const bp = firstBodyPart(bodyPartsEl ? bodyPartsEl.value : '');
+    setIfEmpty(movementEl, suggestMovementByBodyPart(bp));
+    setIfEmpty(equipmentEl, suggestEquipmentByStyle(styleEl ? styleEl.value : ''));
+    setIfEmpty(tierEl, suggestTierByLevel(levelEl ? levelEl.value : ''));
+  }
+
+  if (bodyPartsEl) bodyPartsEl.addEventListener('input', runSuggestions);
+  if (styleEl) styleEl.addEventListener('change', runSuggestions);
+  if (levelEl) levelEl.addEventListener('change', runSuggestions);
+  runSuggestions();
 })();
 </script>
 {% endblock %}
