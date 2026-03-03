@@ -1,0 +1,4 @@
+[2026-02-25 19:41:44,407] INFO in app: App startup
+[2026-02-25 19:41:44,411] INFO in app: Using Mongo at: mongodb://mongo:27017/NFG (db=NFG)
+[2026-02-25 19:41:44,412] WARNING in app: Mongo ping failed on startup: localhost:27017: [Errno 1] Operation not permitted (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms), Timeout: 1.5s, Topology Description: <TopologyDescription id: 699fc0f65a0f1da17e6ecf26, topology_type: Unknown, servers: [<ServerDescription ('localhost', 27017) server_type: Unknown, rtt: None, error=AutoReconnect('localhost:27017: [Errno 1] Operation not permitted (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms)')>]>
+[2026-02-25 19:41:44,415] INFO in app: Uploads: saving to /Users/natyf/Documents/Github Projects/NFG/static/uploads ; public at /static/uploads/

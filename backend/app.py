@@ -10,7 +10,7 @@ import uuid
 from collections import deque
 from logging.handlers import RotatingFileHandler
 from time import perf_counter
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from bson.objectid import ObjectId
 from bson.regex import Regex
@@ -40,8 +40,15 @@ from werkzeug.utils import secure_filename
 # -----------------------------------------------------------------------------
 load_dotenv(override=False)
 
+from pathlib import Path
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
+
 MONGO_URI = os.environ.get("MONGO_URI") or "mongodb://localhost:27017/NFG"
 MONGO_DB = os.environ.get("MONGO_DB")  # optional override to align with seed.py
+MONGO_URI_LOCAL = os.environ.get("MONGO_URI_LOCAL") or "mongodb://localhost:27017/NFG"
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret")
 
 # Upload/media configuration (Render Disk ready)
@@ -59,25 +66,47 @@ if os.getenv("RENDER"):
         SESSION_COOKIE_SAMESITE="Lax",
     )
 
-client = MongoClient(MONGO_URI)
-
-
-def _resolve_db():
+def _resolve_db_for_client(mongo_client: MongoClient, mongo_uri: str):
     """Pick DB name from override, URI default, or fallback to NFG."""
     if MONGO_DB:
-        return client[MONGO_DB]
+        return mongo_client[MONGO_DB]
 
-    uri_tail = MONGO_URI.split("://", 1)[-1]
+    uri_tail = mongo_uri.split("://", 1)[-1]
     has_db_in_uri = "/" in uri_tail
     if has_db_in_uri:
         try:
-            return client.get_default_database()
+            return mongo_client.get_default_database()
         except Exception:
-            return client["NFG"]
-    return client["NFG"]
+            return mongo_client["NFG"]
+    return mongo_client["NFG"]
 
 
-db = _resolve_db()
+def _resolve_client_and_db() -> Tuple[MongoClient, object, str, Optional[Exception]]:
+    candidates = [MONGO_URI]
+    if "://mongo" in MONGO_URI and MONGO_URI_LOCAL not in candidates:
+        candidates.append(MONGO_URI_LOCAL)
+
+    last_error: Optional[Exception] = None
+    for uri in candidates:
+        c = MongoClient(uri, serverSelectionTimeoutMS=1500)
+        try:
+            c.admin.command("ping")
+            return c, _resolve_db_for_client(c, uri), uri, None
+        except Exception as e:
+            last_error = e
+
+    # Keep the primary URI as final client even if ping failed; routes can still
+    # return useful errors and health checks will surface DB status.
+    fallback_client = MongoClient(MONGO_URI)
+    return (
+        fallback_client,
+        _resolve_db_for_client(fallback_client, MONGO_URI),
+        MONGO_URI,
+        last_error,
+    )
+
+
+client, db, ACTIVE_MONGO_URI, MONGO_CONNECT_ERROR = _resolve_client_and_db()
 
 # -----------------------------------------------------------------------------
 # Logging
@@ -95,7 +124,9 @@ file_handler.setLevel(logging.INFO)
 app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info("App startup")
-app.logger.info("Using Mongo at: %s (db=%s)", MONGO_URI, db.name)
+app.logger.info("Using Mongo at: %s (db=%s)", ACTIVE_MONGO_URI, db.name)
+if MONGO_CONNECT_ERROR:
+    app.logger.warning("Mongo ping failed on startup: %s", MONGO_CONNECT_ERROR)
 
 # -----------------------------------------------------------------------------
 # Helpers (general)
@@ -296,9 +327,9 @@ csrf = CSRFProtect(app)
 # -----------------------------------------------------------------------------
 # Auth (admin + members)
 # -----------------------------------------------------------------------------
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "changeme")
-ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
+ADMIN_USERNAME = (os.getenv("ADMIN_USERNAME", "admin") or "admin").strip()
+ADMIN_PASSWORD = (os.getenv("ADMIN_PASSWORD", "changeme") or "").strip()
+ADMIN_PASSWORD_HASH = (os.getenv("ADMIN_PASSWORD_HASH", "") or "").strip().strip('"').strip("'")
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
@@ -350,11 +381,25 @@ def load_user(user_id):
 
 
 def _check_admin_credentials(username: str, password: str) -> bool:
-    if username != ADMIN_USERNAME:
+    submitted_username = (username or "").strip()
+    submitted_password = password or ""
+
+    if not submitted_username or not submitted_password:
         return False
+
+    if submitted_username.lower() != ADMIN_USERNAME.lower():
+        return False
+
     if ADMIN_PASSWORD_HASH:
-        return check_password_hash(ADMIN_PASSWORD_HASH, password)
-    return password == ADMIN_PASSWORD
+        try:
+            if check_password_hash(ADMIN_PASSWORD_HASH, submitted_password):
+                return True
+        except Exception:
+            app.logger.warning("Invalid ADMIN_PASSWORD_HASH format. Falling back to plaintext admin password.")
+
+    if ADMIN_PASSWORD:
+        return submitted_password == ADMIN_PASSWORD
+    return False
 
 
 def _member_owner_key() -> Optional[str]:
@@ -1763,7 +1808,7 @@ def workouts_browse():
     q = (request.args.get("q") or "").strip()
     sort_key = request.args.get("sort", "name")
     page = max(int(request.args.get("page", 1)), 1)
-    per_page = min(max(int(request.args.get("per_page", 6)), 1), 100)
+    per_page = min(max(int(request.args.get("per_page", 12)), 1), 100)
 
     and_clauses = []
     if level:
@@ -1927,6 +1972,15 @@ def search():
         .skip((page - 1) * per_page)
         .limit(per_page)
     )
+    for w in items:
+        w["primary_muscle"] = w.get("primary_muscle") or _primary_muscle_from_doc(w)
+        w["movement_pattern"] = w.get("movement_pattern") or _infer_movement_from_primary_muscle(
+            w.get("primary_muscle")
+        )
+        w["equipment"] = w.get("equipment") or _infer_equipment_from_style(w.get("style"))
+        w["difficulty_tier"] = w.get("difficulty_tier") or _infer_difficulty_tier_from_level(
+            w.get("level")
+        )
     rs = list(db.recipes.find({"name": rx}).sort([("name", ASCENDING)]))
 
     return render_template(
@@ -2132,7 +2186,16 @@ def health():
 @app.route("/admin")
 @login_required
 def admin_index():
-    items = list(db.workouts.find().sort([("created_at", -1)]))
+    try:
+        items = list(db.workouts.find().sort([("created_at", -1)]))
+    except Exception as e:
+        app.logger.warning("Admin index DB read failed: %s", e)
+        flash(
+            "Signed in, but database is unreachable. Check MONGO_URI/MONGO_URI_LOCAL for local setup.",
+            "warning",
+        )
+        items = []
+
     for w in items:
         w["_quality_missing"] = not (
             w.get("primary_muscle")

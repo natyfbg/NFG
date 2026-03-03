@@ -32,7 +32,7 @@ services:
 
     # This compose file lives in backend/, but .env is at repo root.
     # If you move .env into backend/, change this to ".env".
-    env_file: ../.env
+    env_file: .env
 
     environment:
       # Force the app to use the Docker mongo service in local dev.
@@ -58,7 +58,7 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
-    env_file: ../.env
+    env_file: .env
     environment:
       MONGO_URI: mongodb://mongo:27017/NFG
     command: python seed.py

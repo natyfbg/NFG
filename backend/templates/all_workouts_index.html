@@ -19,11 +19,14 @@
     {% for w in items %}
       {% set parts  = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
       {% set thumbs = (w.images if w.images else []) %}
-      {% if (not thumbs or thumbs|length == 0) and w.muscle_image %}
-        {% set thumbs = [w.muscle_image] %}
+      {% if w.muscle_image and (w.muscle_image not in thumbs) %}
+        {% set thumbs = thumbs + [w.muscle_image] %}
       {% endif %}
       {% if not thumbs or thumbs|length == 0 %}
         {% set thumbs = ['https://via.placeholder.com/800x450?text=Image+Coming+Soon'] %}
+      {% endif %}
+      {% if thumbs|length == 1 %}
+        {% set thumbs = thumbs + [thumbs[0]] %}
       {% endif %}
       {% set cid = 'car-all-' ~ w.slug %}
 

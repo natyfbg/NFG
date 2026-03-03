@@ -7,82 +7,74 @@
 
 {% block content %}
 <h1 class="mb-1">Search results</h1>
-<p class="text-muted mb-3">
-  “{{ q }}” • {{ total }} workout{{ '' if total==1 else 's' }}
-</p>
+<p class="text-muted mb-3">"{{ q }}" • {{ total }} workout{{ '' if total==1 else 's' }}</p>
+
+<form method="get" action="{{ url_for('search') }}" class="filter-toolbar mb-3">
+  <div class="toolbar-top">
+    <input name="q" class="form-control toolbar-search" placeholder="Search workouts..." value="{{ q }}">
+    <button class="btn btn-sm btn-dark" type="submit">Search</button>
+    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('workouts_browse', q=q) }}">Filters</a>
+  </div>
+</form>
 
 {% if total == 0 %}
   <div class="alert alert-secondary">
-    No workouts matched “{{ q }}”.
-    Try <a href="{{ url_for('workouts_browse', q=q) }}">Browse</a> with filters.
+    No workouts matched "{{ q }}".
+    Try <a href="{{ url_for('workouts_browse', q=q) }}">Browse with filters</a>.
   </div>
 {% else %}
-  {# --- Pills: allow clearing the search --- #}
-  <div class="mb-3 d-flex flex-wrap align-items-center gap-2">
-    <a class="badge rounded-pill text-bg-primary text-decoration-none"
-       href="{{ url_for('search', q='') }}">
-      Search: “{{ q }}” ✕
-    </a>
-    <a class="badge rounded-pill text-bg-danger text-decoration-none"
-       href="{{ url_for('workouts_browse') }}">Clear all</a>
-  </div>
-
-  {# ===== Thumbnail grid with in-card image carousel (16:9 like Browse) ===== #}
-  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+  <div class="row row-cols-2 row-cols-md-3 g-3 g-md-4">
     {% for w in items %}
-      {% set parts  = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
-      {% set thumbs = (w.images if w.images else ([])) %}
-      {% if (not thumbs or thumbs|length == 0) and w.muscle_image %}
-        {% set thumbs = [w.muscle_image] %}
+      {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
+      {% set thumbs = (w.images if w.images else []) %}
+      {% if w.muscle_image and (w.muscle_image not in thumbs) %}
+        {% set thumbs = thumbs + [w.muscle_image] %}
       {% endif %}
       {% if not thumbs or thumbs|length == 0 %}
-        {% set thumbs = ['https://via.placeholder.com/800x450?text=Image+Coming+Soon'] %}
+        {% set thumbs = ['https://via.placeholder.com/900x1600?text=Workout'] %}
+      {% endif %}
+      {% if thumbs|length == 1 %}
+        {% set thumbs = thumbs + [thumbs[0]] %}
       {% endif %}
       {% set cid = 'car-s-' ~ w.slug %}
 
       <div class="col">
-        <div class="card h-100 shadow-sm">
-          <div id="{{ cid }}" class="carousel slide" data-bs-ride="false">
-            <div class="carousel-inner ratio ratio-16x9">
-                  {% for img in thumbs %}
-                    <div class="carousel-item {% if loop.first %}active{% endif %}">
-                      <img
-                        src="{{ img }}"
-                        class="d-block w-100 h-100"
-                        style="object-fit: cover;"
-                        alt="{{ w.name }} image {{ loop.index }}"
-                        {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
-                        decoding="async">
-                    </div>
-                  {% endfor %}
-                </div>
+        <article class="card portrait-card shadow overflow-hidden js-workout-card" data-href="{{ url_for('workout_detail', slug=w.slug) }}">
+          <div class="card-media position-relative h-100">
+            <div id="{{ cid }}" class="carousel slide fast-carousel h-100" data-bs-ride="false" data-bs-touch="true" aria-label="Images for {{ w.name }}">
+              <div class="carousel-inner h-100">
+                {% for img in thumbs %}
+                  <div class="carousel-item {% if loop.first %}active{% endif %} h-100">
+                    <img src="{{ img }}" class="d-block w-100 h-100" style="object-fit:cover;" alt="{{ w.name }} image {{ loop.index }}" {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async">
+                  </div>
+                {% endfor %}
+              </div>
 
-            {% if thumbs|length > 1 %}
-              <button class="carousel-control-prev" type="button" data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous image">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-              </button>
-              <button class="carousel-control-next" type="button" data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next image">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-              </button>
-            {% endif %}
-          </div>
+              {% if thumbs|length > 1 %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous image">
+                  <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next image">
+                  <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                </button>
+              {% endif %}
+            </div>
 
-          <div class="card-body">
-            <h5 class="card-title mb-1">
-              <a href="{{ url_for('workout_detail', slug=w.slug) }}" class="stretched-link text-decoration-none">
-                {{ w.name }}
-              </a>
-            </h5>
-            <div class="small text-muted">
-              {{ w.level }}{% if parts %} • {{ parts|join(', ') }}{% endif %}{% if w.style %} • {{ w.style }}{% endif %}
+            <div class="card-caption">
+              <h6 class="mb-1"><a href="{{ url_for('workout_detail', slug=w.slug) }}" class="text-white text-decoration-none">{{ w.name }}</a></h6>
+              <div class="small opacity-75">
+                {{ w.level or '—' }}
+                {% if w.movement_pattern %} • {{ w.movement_pattern }}{% endif %}
+                {% if w.equipment %} • {{ w.equipment }}{% endif %}
+                {% if parts %} • {{ parts[0] }}{% endif %}
+              </div>
             </div>
           </div>
-        </div>
+        </article>
       </div>
     {% endfor %}
   </div>
 
-  {# Pagination #}
   <nav class="mt-3">
     <ul class="pagination">
       <li class="page-item {% if page<=1 %}disabled{% endif %}">
@@ -96,7 +88,6 @@
   </nav>
 {% endif %}
 
-{# Optional: show matched recipes quickly below #}
 {% if recipes and recipes|length > 0 %}
   <hr class="my-4">
   <h2 class="h5">Recipes (by name)</h2>
@@ -108,4 +99,41 @@
     {% endfor %}
   </ul>
 {% endif %}
+
+<style>
+  .portrait-card{ aspect-ratio: 9 / 16; width:100%; }
+  .portrait-card .card-media{ width:100%; height:100%; }
+  .portrait-card img{ width:100%; height:100%; object-fit:cover; }
+  .card-caption{ position:absolute; left:0; right:0; bottom:0; padding:.6rem .75rem; color:#fff; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.55) 60%, rgba(0,0,0,.78) 100%); }
+  .carousel.locked .carousel-control-prev,
+  .carousel.locked .carousel-control-next { display:none !important; pointer-events:none; }
+</style>
+
+<script>
+  (function(){
+    const LOCK_W = 380;
+    function updateLock(){
+      const lock = window.innerWidth <= LOCK_W;
+      document.querySelectorAll('.carousel').forEach(carEl => {
+        const inst = bootstrap.Carousel.getOrCreateInstance(carEl, { ride:false });
+        if (lock){
+          carEl.classList.add('locked');
+          try { inst.to(0); } catch(e){}
+          inst.pause();
+          carEl.dataset.bsTouch = "false";
+        } else {
+          carEl.classList.remove('locked');
+          carEl.dataset.bsTouch = "true";
+          const slides = carEl.querySelectorAll('.carousel-item').length;
+          if (slides > 1) { try { inst.pause(); } catch(e){} }
+        }
+      });
+    }
+
+    let t;
+    window.addEventListener('resize', ()=>{ clearTimeout(t); t = setTimeout(updateLock, 120); }, { passive:true });
+    document.addEventListener('DOMContentLoaded', updateLock);
+    if (document.readyState !== 'loading') updateLock();
+  })();
+</script>
 {% endblock %}

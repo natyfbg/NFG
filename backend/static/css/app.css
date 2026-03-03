@@ -30,6 +30,59 @@ html, body{ overflow-x: hidden; }
   }
 }
 
+.nav-mobile-search{
+  min-width: 0;
+  flex: 1 1 auto;
+  max-width: 320px;
+  gap: .35rem;
+}
+.nav-mobile-search .form-control{
+  min-width: 0;
+}
+
+.filter-toolbar{
+  border: 1px solid rgba(0,0,0,.1);
+  border-radius: .9rem;
+  background: #fff;
+  padding: .7rem;
+}
+.filter-toolbar .toolbar-top{
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: .5rem;
+}
+.filter-toolbar .toolbar-top .form-control,
+.filter-toolbar .toolbar-top .form-select{
+  min-height: 2.1rem;
+}
+.compact-pills{
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+.compact-pills .badge{
+  font-weight: 500;
+}
+
+@media (max-width: 767.98px){
+  .filter-toolbar{
+    padding: .6rem;
+  }
+  .filter-toolbar .toolbar-top{
+    grid-template-columns: 1fr 1fr;
+  }
+  .filter-toolbar .toolbar-top .toolbar-search{
+    grid-column: 1 / -1;
+  }
+}
+
+.js-workout-card{
+  cursor: pointer;
+}
+.carousel.fast-carousel{
+  --bs-carousel-transition-duration: .28s;
+}
+
 /* ===== Floating bottom navigation (mobile) ===== */
 body{
   padding-bottom: env(safe-area-inset-bottom);

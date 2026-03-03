@@ -62,18 +62,22 @@
           </ul>
 
           <!-- Search -->
-          <form class="d-none d-lg-flex me-2" action="{{ url_for('search') }}" method="get" role="search">
+          <form class="d-none d-lg-flex me-2" action="{{ url_for('workouts_browse') }}" method="get" role="search">
             <div class="input-group input-group-sm">
-              <input class="form-control" type="search" placeholder="Search…" name="q"
+              <input class="form-control" type="search" placeholder="Search workouts…" name="q"
                      value="{{ request.args.get('q','') }}">
               <button class="btn btn-outline-light" type="submit">Search</button>
             </div>
           </form>
 
+          <form class="d-flex d-lg-none nav-mobile-search me-2" action="{{ url_for('workouts_browse') }}" method="get" role="search">
+            <input class="form-control form-control-sm" type="search" name="q"
+                   placeholder="Search workouts…" value="{{ request.args.get('q','') }}">
+            <button class="btn btn-sm btn-outline-light" type="submit">Go</button>
+          </form>
+
           <!-- Auth buttons -->
-          <div class="d-flex align-items-center gap-2">
-            <a class="btn btn-sm btn-outline-light d-lg-none"
-               href="{{ url_for('workouts_browse') }}">Search</a>
+          <div class="d-flex flex-wrap align-items-center gap-2">
             {% if current_user.is_authenticated %}
               {% if current_user.is_admin %}
                 <a class="btn btn-sm btn-outline-secondary {% if ep in admin_eps %}active{% endif %}"
@@ -260,6 +264,53 @@
           const dir = dx < 0 ? -1 : 1;
           animateAndGo(dir, routes[nextIdx].url);
         }, { passive: true });
+      })();
+    </script>
+
+    <script>
+      /* Make cards fully tappable while preserving carousel controls and links */
+      (function(){
+        const INTERACTIVE_SELECTOR = [
+          'a',
+          'button',
+          'input',
+          'textarea',
+          'select',
+          'label',
+          '[role="button"]',
+          '.carousel-control-prev',
+          '.carousel-control-next',
+          '.carousel-indicators',
+          '.page-link'
+        ].join(',');
+
+        let startX = 0;
+        let startY = 0;
+        let moved = false;
+
+        document.addEventListener('pointerdown', (e) => {
+          const card = e.target.closest('.js-workout-card[data-href]');
+          if (!card) return;
+          startX = e.clientX || 0;
+          startY = e.clientY || 0;
+          moved = false;
+        }, { passive: true });
+
+        document.addEventListener('pointermove', (e) => {
+          const dx = Math.abs((e.clientX || 0) - startX);
+          const dy = Math.abs((e.clientY || 0) - startY);
+          if (dx > 10 || dy > 10) moved = true;
+        }, { passive: true });
+
+        document.addEventListener('click', (e) => {
+          const card = e.target.closest('.js-workout-card[data-href]');
+          if (!card) return;
+          if (moved) return;
+          if (e.target.closest(INTERACTIVE_SELECTOR)) return;
+          const href = card.dataset.href || '';
+          if (!href) return;
+          window.location.href = href;
+        });
       })();
     </script>
   </body>

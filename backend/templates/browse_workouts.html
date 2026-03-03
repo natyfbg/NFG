@@ -15,140 +15,130 @@
 {% block content %}
 <h1 class="mb-3">Browse Workouts</h1>
 
-<form class="row g-2 mb-3" method="get">
-  <div class="col-md-3">
-    <select name="level" class="form-select">
-      <option value="">All Levels</option>
-      {% for lv in workout_levels %}
-        <option value="{{ lv }}" {{ 'selected' if level==lv else '' }}>{{ lv }}</option>
-      {% endfor %}
-    </select>
-  </div>
+{% set show_pills = (level or body or style or movement or equipment or difficulty or q or sort in ['recent','rating','favorites']) %}
 
-  <div class="col-md-3">
-    <select name="body" class="form-select">
-      <option value="">All Body Parts</option>
-      {% for bp in body_parts %}
-        <option value="{{ bp }}" {{ 'selected' if body==bp else '' }}>{{ bp }}</option>
-      {% endfor %}
-    </select>
-  </div>
+<form method="get" class="filter-toolbar mb-3">
+  <input type="hidden" name="per_page" value="{{ per_page }}">
+  <input type="hidden" name="page" value="1">
 
-  <div class="col-md-3">
-    <select name="style" class="form-select">
-      <option value="">All Styles</option>
-      {% for st in workout_styles %}
-        <option value="{{ st }}" {{ 'selected' if style==st else '' }}>{{ st }}</option>
-      {% endfor %}
-    </select>
-  </div>
+  <div class="toolbar-top">
+    <input name="q" class="form-control toolbar-search" placeholder="Search workouts..." value="{{ q }}">
 
-  <div class="col-md-3">
-    <select name="sort" class="form-select">
+    <select name="sort" class="form-select form-select-sm">
       <option value="name" {{ 'selected' if sort=='name' else '' }}>A–Z</option>
-      <option value="recent" {{ 'selected' if sort=='recent' else '' }}>Recently Added</option>
+      <option value="recent" {{ 'selected' if sort=='recent' else '' }}>Recent</option>
       <option value="rating" {{ 'selected' if sort=='rating' else '' }}>Top Rated</option>
       <option value="favorites" {{ 'selected' if sort=='favorites' else '' }}>Favorites</option>
     </select>
+
+    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#browseFilters" aria-expanded="false" aria-controls="browseFilters">
+      Filters
+    </button>
   </div>
 
-  <div class="col-md-4">
-    <select name="movement" class="form-select">
-      <option value="">All Movement Patterns</option>
-      {% for mp in movement_patterns %}
-        <option value="{{ mp }}" {{ 'selected' if movement==mp else '' }}>{{ mp }}</option>
-      {% endfor %}
-    </select>
+  <div class="collapse mt-2 {% if level or body or style or movement or equipment or difficulty %}show{% endif %}" id="browseFilters">
+    <div class="row g-2">
+      <div class="col-6 col-md-4">
+        <select name="level" class="form-select form-select-sm">
+          <option value="">All Levels</option>
+          {% for lv in workout_levels %}
+            <option value="{{ lv }}" {{ 'selected' if level==lv else '' }}>{{ lv }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-4">
+        <select name="body" class="form-select form-select-sm">
+          <option value="">All Body Parts</option>
+          {% for bp in body_parts %}
+            <option value="{{ bp }}" {{ 'selected' if body==bp else '' }}>{{ bp }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-4">
+        <select name="style" class="form-select form-select-sm">
+          <option value="">All Styles</option>
+          {% for st in workout_styles %}
+            <option value="{{ st }}" {{ 'selected' if style==st else '' }}>{{ st }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-4">
+        <select name="movement" class="form-select form-select-sm">
+          <option value="">All Movements</option>
+          {% for mp in movement_patterns %}
+            <option value="{{ mp }}" {{ 'selected' if movement==mp else '' }}>{{ mp }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-4">
+        <select name="equipment" class="form-select form-select-sm">
+          <option value="">All Equipment</option>
+          {% for eq in equipment_types %}
+            <option value="{{ eq }}" {{ 'selected' if equipment==eq else '' }}>{{ eq }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-4">
+        <select name="difficulty" class="form-select form-select-sm">
+          <option value="">All Difficulty Tiers</option>
+          {% for dt in difficulty_tiers %}
+            <option value="{{ dt }}" {{ 'selected' if difficulty==dt else '' }}>{{ dt }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
   </div>
 
-  <div class="col-md-4">
-    <select name="equipment" class="form-select">
-      <option value="">All Equipment</option>
-      {% for eq in equipment_types %}
-        <option value="{{ eq }}" {{ 'selected' if equipment==eq else '' }}>{{ eq }}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div class="col-md-4">
-    <select name="difficulty" class="form-select">
-      <option value="">All Difficulty Tiers</option>
-      {% for dt in difficulty_tiers %}
-        <option value="{{ dt }}" {{ 'selected' if difficulty==dt else '' }}>{{ dt }}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div class="col-md-6">
-    <input name="q" class="form-control" placeholder="Search…" value="{{ q }}">
-  </div>
-  <div class="col-md-3">
-    <input name="per_page" class="form-control" type="number" min="1" max="100" value="{{ per_page }}">
-  </div>
-  <div class="col-md-3 d-grid">
-    <button class="btn btn-primary">Apply</button>
+  <div class="mt-2 d-flex align-items-center justify-content-between gap-2">
+    <button class="btn btn-sm btn-dark" type="submit">Apply</button>
+    {% if show_pills %}
+      <a class="btn btn-sm btn-link text-decoration-none" href="{{ url_for('workouts_browse') }}">Clear</a>
+    {% endif %}
   </div>
 </form>
 
-<p class="text-muted mb-2">{{ total }} result{{ '' if total==1 else 's' }}</p>
+<div class="d-flex align-items-center justify-content-between mb-2">
+  <p class="text-muted mb-0">{{ total }} result{{ '' if total==1 else 's' }}</p>
+</div>
 
-{# Active filter pills #}
-{% set show_pills = (level or body or style or movement or equipment or difficulty or q or sort in ['recent','rating','favorites']) %}
 {% if show_pills %}
-  <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
-    {% if level %}<a class="badge rounded-pill text-bg-primary" href="{{ url_for('workouts_browse', level='', body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">Level: {{ level }} ✕</a>{% endif %}
-    {% if body %}<a class="badge rounded-pill text-bg-primary" href="{{ url_for('workouts_browse', level=level, body='', style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">Body: {{ body }} ✕</a>{% endif %}
-    {% if style %}<a class="badge rounded-pill text-bg-primary" href="{{ url_for('workouts_browse', level=level, body=body, style='', movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">Style: {{ style }} ✕</a>{% endif %}
-    {% if movement %}<a class="badge rounded-pill text-bg-primary" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement='', equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">Movement: {{ movement }} ✕</a>{% endif %}
-    {% if equipment %}<a class="badge rounded-pill text-bg-primary" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment='', difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">Equipment: {{ equipment }} ✕</a>{% endif %}
-    {% if difficulty %}<a class="badge rounded-pill text-bg-primary" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty='', q=q, sort=sort, per_page=per_page) }}">Tier: {{ difficulty }} ✕</a>{% endif %}
-    {% if q %}<a class="badge rounded-pill text-bg-primary" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q='', sort=sort, per_page=per_page) }}">Search: “{{ q }}” ✕</a>{% endif %}
-    {% if sort in ['recent','rating','favorites'] %}<a class="badge rounded-pill text-bg-primary" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort='name', per_page=per_page) }}">Sort: {{ 'Recent' if sort=='recent' else ('Top Rated' if sort=='rating' else 'Favorites') }} ✕</a>{% endif %}
-    <a class="badge rounded-pill text-bg-danger" href="{{ url_for('workouts_browse') }}">Clear all</a>
+  <div class="compact-pills mb-3">
+    {% if level %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level='', body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ level }} ✕</a>{% endif %}
+    {% if body %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body='', style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ body }} ✕</a>{% endif %}
+    {% if style %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style='', movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ style }} ✕</a>{% endif %}
+    {% if movement %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement='', equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ movement }} ✕</a>{% endif %}
+    {% if equipment %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment='', difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ equipment }} ✕</a>{% endif %}
+    {% if difficulty %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty='', q=q, sort=sort, per_page=per_page) }}">{{ difficulty }} ✕</a>{% endif %}
+    {% if q %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q='', sort=sort, per_page=per_page) }}">"{{ q }}" ✕</a>{% endif %}
+    {% if sort in ['recent','rating','favorites'] %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort='name', per_page=per_page) }}">{{ 'Recent' if sort=='recent' else ('Top Rated' if sort=='rating' else 'Favorites') }} ✕</a>{% endif %}
   </div>
 {% endif %}
 
-<div class="list-group">
-  {% for w in items %}
-    {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
-    <a class="list-group-item list-group-item-action" href="{{ url_for('workout_detail', slug=w.slug) }}">
-      <div class="d-flex justify-content-between">
-        <div>
-          <strong>{{ w.name }}</strong>
-          <span class="badge text-bg-secondary ms-2">{{ w.level }}</span>
-          <span class="badge text-bg-secondary ms-1">{{ parts|join(', ') }}</span>
-          <span class="badge text-bg-secondary ms-1">{{ w.style }}</span>
-          {% if w.movement_pattern %}<span class="badge text-bg-light border text-dark ms-1">{{ w.movement_pattern }}</span>{% endif %}
-          {% if w.equipment %}<span class="badge text-bg-light border text-dark ms-1">{{ w.equipment }}</span>{% endif %}
-          {% if w.difficulty_tier %}<span class="badge text-bg-light border text-dark ms-1">{{ w.difficulty_tier }}</span>{% endif %}
-        </div>
-        <small class="text-muted">{% if w.rating %}★ {{ '%.1f'|format(w.rating) }}{% endif %}</small>
-      </div>
-    </a>
-  {% else %}
-    <div class="alert alert-secondary">No workouts match that filter.</div>
-  {% endfor %}
-</div>
-
 {% if items %}
-  <h2 class="mt-4 mb-2">Exercises</h2>
-
   <div class="row row-cols-2 row-cols-md-3 g-3 g-md-4">
     {% for w in items %}
-      {% set parts  = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
+      {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
       {% set thumbs = (w.images if w.images else []) %}
-      {% if (not thumbs or thumbs|length == 0) and w.muscle_image %}
-        {% set thumbs = [w.muscle_image] %}
+      {% if w.muscle_image and (w.muscle_image not in thumbs) %}
+        {% set thumbs = thumbs + [w.muscle_image] %}
       {% endif %}
       {% if not thumbs or thumbs|length == 0 %}
         {% set thumbs = ['https://via.placeholder.com/900x1600?text=Workout'] %}
       {% endif %}
+      {% if thumbs|length == 1 %}
+        {% set thumbs = thumbs + [thumbs[0]] %}
+      {% endif %}
       {% set cid = 'car-browse-' ~ (w._id|string if w._id else w.slug) %}
 
       <div class="col">
-        <div class="card portrait-card shadow overflow-hidden">
+        <article class="card portrait-card shadow overflow-hidden js-workout-card" data-href="{{ url_for('workout_detail', slug=w.slug) }}">
           <div class="card-media position-relative h-100">
-            <div id="{{ cid }}" class="carousel slide h-100" data-bs-ride="false" data-bs-touch="true" aria-label="Images for {{ w.name }}">
+            <div id="{{ cid }}" class="carousel slide fast-carousel h-100" data-bs-ride="false" data-bs-touch="true" aria-label="Images for {{ w.name }}">
               <div class="carousel-inner h-100">
                 {% for img in thumbs %}
                   <div class="carousel-item {% if loop.first %}active{% endif %} h-100">
@@ -168,24 +158,21 @@
             </div>
 
             <div class="card-caption">
-              <h6 class="mb-1"><a class="stretched-link text-white text-decoration-none" href="{{ url_for('workout_detail', slug=w.slug) }}">{{ w.name }}</a></h6>
+              <h6 class="mb-1"><a class="text-white text-decoration-none" href="{{ url_for('workout_detail', slug=w.slug) }}">{{ w.name }}</a></h6>
               <div class="small opacity-75">
                 {{ w.level or '—' }}
                 {% if w.movement_pattern %} • {{ w.movement_pattern }}{% endif %}
                 {% if w.equipment %} • {{ w.equipment }}{% endif %}
+                {% if w.difficulty_tier %} • {{ w.difficulty_tier }}{% endif %}
               </div>
             </div>
           </div>
-        </div>
+        </article>
       </div>
     {% endfor %}
   </div>
-
-  <script>
-    // stop carousel arrow clicks from activating stretched links
-    document.querySelectorAll('.carousel-control-prev, .carousel-control-next')
-      .forEach(btn => btn.addEventListener('click', e => e.stopPropagation()));
-  </script>
+{% else %}
+  <div class="alert alert-secondary">No workouts match that filter.</div>
 {% endif %}
 
 <nav class="mt-3">
@@ -206,16 +193,13 @@
   .portrait-card img{ width:100%; height:100%; object-fit:cover; }
   .card-caption{ position:absolute; left:0; right:0; bottom:0; padding:.6rem .75rem; color:#fff; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.55) 60%, rgba(0,0,0,.78) 100%); }
 
-  /* Locked carousel hiding controls (small screens) */
   .carousel.locked .carousel-control-prev,
   .carousel.locked .carousel-control-next { display:none !important; pointer-events:none; }
 
-  /* Make controls slightly narrower on tall cards */
   .card .carousel-control-prev, .card .carousel-control-next { width:14%; }
 </style>
 
 <script>
-  // Lock behavior reused for browse page carousels
   (function(){
     const LOCK_W = 380;
     function updateLock(){
