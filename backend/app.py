@@ -38,13 +38,15 @@ from werkzeug.utils import secure_filename
 # -----------------------------------------------------------------------------
 # Config / DB
 # -----------------------------------------------------------------------------
-load_dotenv(override=False)
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+BACKEND_DIR = os.path.dirname(__file__)
 
-from pathlib import Path
-from dotenv import load_dotenv
-
-BASE_DIR = Path(__file__).resolve().parent
-load_dotenv(BASE_DIR / ".env")
+# In local development, prefer values from checked-in/local dotenv files.
+# In hosted envs, keep platform-provided environment vars as source of truth.
+DOTENV_OVERRIDE = not bool(os.getenv("RENDER"))
+for _dotenv_path in (os.path.join(ROOT_DIR, ".env"), os.path.join(BACKEND_DIR, ".env")):
+    if os.path.exists(_dotenv_path):
+        load_dotenv(_dotenv_path, override=DOTENV_OVERRIDE)
 
 MONGO_URI = os.environ.get("MONGO_URI") or "mongodb://localhost:27017/NFG"
 MONGO_DB = os.environ.get("MONGO_DB")  # optional override to align with seed.py
@@ -330,6 +332,19 @@ csrf = CSRFProtect(app)
 ADMIN_USERNAME = (os.getenv("ADMIN_USERNAME", "admin") or "admin").strip()
 ADMIN_PASSWORD = (os.getenv("ADMIN_PASSWORD", "changeme") or "").strip()
 ADMIN_PASSWORD_HASH = (os.getenv("ADMIN_PASSWORD_HASH", "") or "").strip().strip('"').strip("'")
+
+# Support Docker env_file escaping styles:
+# - raw hash: scrypt:...$salt$digest
+# - escaped hash for Compose files: scrypt:...$$salt$$digest
+if "$$" in ADMIN_PASSWORD_HASH:
+    ADMIN_PASSWORD_HASH = ADMIN_PASSWORD_HASH.replace("$$", "$")
+
+if ADMIN_PASSWORD_HASH and ADMIN_PASSWORD_HASH.count("$") < 2:
+    app.logger.warning(
+        "ADMIN_PASSWORD_HASH appears malformed/truncated (contains %s '$'). "
+        "If using Docker env_file, quote the hash value in .env to avoid interpolation issues.",
+        ADMIN_PASSWORD_HASH.count("$"),
+    )
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
@@ -2001,14 +2016,17 @@ def search():
 def login():
     if request.method == "POST":
         ip = _client_ip()
-        if not _allowed_login_attempt(ip):
+        username = (request.form.get("username") or "").strip()
+        password = (request.form.get("password") or "").strip()
+        is_valid = _check_admin_credentials(username, password)
+
+        # Allow successful sign-ins even if the IP is currently rate-limited due
+        # to earlier failures.
+        if not is_valid and not _allowed_login_attempt(ip):
             flash("Too many failed login attempts. Try again in ~15 minutes.", "danger")
             return render_template("login.html")
 
-        username = (request.form.get("username") or "").strip()
-        password = (request.form.get("password") or "").strip()
-
-        if _check_admin_credentials(username, password):
+        if is_valid:
             _clear_failed_logins(ip)
             login_user(User("admin", role="admin"))
             flash("Logged in.", "success")
