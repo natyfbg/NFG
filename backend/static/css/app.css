@@ -40,6 +40,34 @@ html, body{ overflow-x: hidden; }
   min-width: 0;
 }
 
+.nav-mobile-auth .btn{
+  white-space: nowrap;
+}
+
+@media (max-width: 991.98px){
+  .nav-top-row{
+    gap: .35rem;
+    width: 100%;
+  }
+  .nav-mobile-auth{
+    max-width: calc(100% - 170px);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .nav-top-row .navbar-toggler{
+    margin-left: auto;
+    flex: 0 0 auto;
+  }
+  .nav-mobile-persist{
+    align-items: center;
+    justify-content: flex-start;
+  }
+  .nav-mobile-persist .nav-mobile-search{
+    width: clamp(160px, 50vw, 220px);
+    max-width: 50%;
+  }
+}
+
 .filter-toolbar{
   border: 1px solid rgba(0,0,0,.1);
   border-radius: .9rem;

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Admin – Workout Quality{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Content Management</div>
+  {% set ep = request.endpoint or '' %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality'] %}
+  {% set admin_program_eps = [
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health',
+    'admin_program_weeks','admin_program_weeks_scaffold',
+    'admin_program_week_items','admin_program_week_item_new',
+    'admin_program_week_item_edit','admin_program_week_item_delete'
+  ] %}
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}" href="{{ url_for('admin_index') }}">Workouts</a>
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_styles'] %}active{% endif %}" href="{{ url_for('admin_styles') }}">Styles</a>
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_home_plans','admin_home_plan_new','admin_home_plan_edit'] %}active{% endif %}" href="{{ url_for('admin_home_plans') }}">Home Plans</a>
+    <a class="list-group-item list-group-item-action {% if ep in admin_program_eps %}active{% endif %}" href="{{ url_for('admin_programs') }}">Programs</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h1 class="mb-1">Workout Quality</h1>
+    <p class="text-muted mb-0">Fix metadata and media gaps before they affect programs and search quality.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_index') }}">Back to Workouts</a>
+    <form method="post" action="{{ url_for('admin_workout_backfill_metadata') }}" class="d-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-dark" type="submit">Backfill Metadata</button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-12 col-md-3">
+    <div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Total</div><div class="h4 mb-0">{{ summary.total }}</div></div></div>
+  </div>
+  <div class="col-12 col-md-3">
+    <div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Quality OK</div><div class="h4 mb-0">{{ summary.quality_ok }}</div></div></div>
+  </div>
+  <div class="col-12 col-md-3">
+    <div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Missing Metadata</div><div class="h4 mb-0">{{ summary.missing_metadata }}</div></div></div>
+  </div>
+  <div class="col-12 col-md-3">
+    <div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Missing Images</div><div class="h4 mb-0">{{ summary.missing_images }}</div></div></div>
+  </div>
+</div>
+
+{% if rows and rows|length > 0 %}
+  <div class="list-group">
+    {% for row in rows %}
+      {% set w = row.workout %}
+      <div class="list-group-item">
+        <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+          <div>
+            <div class="fw-semibold">{{ w.name or 'Untitled' }} <small class="text-muted">/{{ w.slug or 'no-slug' }}</small></div>
+            <div class="mt-1 d-flex flex-wrap gap-2">
+              {% for issue in row.issues %}
+                <span class="badge text-bg-warning">{{ issue }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin_workout_edit', id=w._id) }}">Fix</a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-success mb-0">All workouts pass current quality checks.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Admin – Program Link Health{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Content Management</div>
+  {% set ep = request.endpoint or '' %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality'] %}
+  {% set admin_program_eps = [
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health',
+    'admin_program_weeks','admin_program_weeks_scaffold',
+    'admin_program_week_items','admin_program_week_item_new',
+    'admin_program_week_item_edit','admin_program_week_item_delete'
+  ] %}
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}" href="{{ url_for('admin_index') }}">Workouts</a>
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_styles'] %}active{% endif %}" href="{{ url_for('admin_styles') }}">Styles</a>
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_home_plans','admin_home_plan_new','admin_home_plan_edit'] %}active{% endif %}" href="{{ url_for('admin_home_plans') }}">Home Plans</a>
+    <a class="list-group-item list-group-item-action {% if ep in admin_program_eps %}active{% endif %}" href="{{ url_for('admin_programs') }}">Programs</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h1 class="mb-1">Program Link Health</h1>
+    <p class="text-muted mb-0">Make sure every program item that should open an exercise still points to a valid workout.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">Back to Programs</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-12 col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Total Items</div><div class="h4 mb-0">{{ report.total_items }}</div></div></div></div>
+  <div class="col-12 col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Linked OK</div><div class="h4 mb-0">{{ report.linked_ok }}</div></div></div></div>
+  <div class="col-12 col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Broken Links</div><div class="h4 mb-0">{{ report.broken_count }}</div></div></div></div>
+  <div class="col-12 col-md-3"><div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Unresolved</div><div class="h4 mb-0">{{ report.unresolved_count }}</div></div></div></div>
+</div>
+
+{% if report.broken_items and report.broken_items|length > 0 %}
+  <h2 class="h6 mb-2">Broken Links</h2>
+  <div class="list-group mb-3">
+    {% for row in report.broken_items %}
+      {% set p = row.program %}
+      {% set w = row.week %}
+      {% set it = row.item %}
+      <div class="list-group-item">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+          <div>
+            <div class="fw-semibold">{{ p.title if p else 'Unknown Program' }} • Week {{ w.week_number if w else '?' }}</div>
+            <div class="small text-muted">
+              Day: {{ it.day or '—' }}
+              {% if it.custom_name %} • {{ it.custom_name }}{% endif %}
+              {% if it.workout_slug %} • Last slug: <code>{{ it.workout_slug }}</code>{% endif %}
+            </div>
+          </div>
+          {% if p and w %}
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin_program_week_items', program_id=p._id|string, week_id=w._id|string) }}">Fix Item</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if report.unresolved_items and report.unresolved_items|length > 0 %}
+  <h2 class="h6 mb-2">Unresolved Items (No workout link + no custom name)</h2>
+  <div class="list-group mb-3">
+    {% for row in report.unresolved_items %}
+      {% set p = row.program %}
+      {% set w = row.week %}
+      {% set it = row.item %}
+      <div class="list-group-item">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+          <div>
+            <div class="fw-semibold">{{ p.title if p else 'Unknown Program' }} • Week {{ w.week_number if w else '?' }}</div>
+            <div class="small text-muted">Day: {{ it.day or '—' }} • Order: {{ it.order if it.order is not none else '—' }}</div>
+          </div>
+          {% if p and w %}
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin_program_week_items', program_id=p._id|string, week_id=w._id|string) }}">Fix Item</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if report.broken_count == 0 and report.unresolved_count == 0 %}
+  <div class="alert alert-success mb-0">
+    Program links look healthy. No broken or unresolved items found.
+  </div>
+{% endif %}
+{% endblock %}

@@ -6,9 +6,9 @@
   <div class="card-header">Content Management</div>
 
   {% set ep = request.endpoint or '' %}
-  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality'] %}
   {% set admin_program_eps = [
-    'admin_programs','admin_program_new','admin_program_edit','admin_program_weeks',
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_weeks','admin_program_weeks_scaffold',
     'admin_program_week_items','admin_program_week_item_new',
     'admin_program_week_item_edit','admin_program_week_item_delete'
   ] %}
@@ -67,11 +67,18 @@
 {# Track-only fields #}
 {% set hub_slug_val = (data.hub_slug if data and data.hub_slug is defined else (request.form.get('hub_slug') or '')) %}
 {% set track_level_val = (data.track_level if data and data.track_level is defined else (request.form.get('track_level') or '')) %}
+{% set track_env_val = (data.track_env if data and data.track_env is defined else (request.form.get('track_env') or '')) %}
+{% set track_env_val = (track_env_val|string|lower) %}
+{% set default_week_split_val = (request.form.get('default_week_split') or '') %}
+{% if not default_week_split_val and data and data.default_week_split %}
+  {% set default_week_split_val = (data.default_week_split|join(', ')) %}
+{% endif %}
 
 {# If not track, keep UI inputs empty (backend will null them anyway) #}
 {% if kind_val != 'track' %}
   {% set hub_slug_val = '' %}
   {% set track_level_val = '' %}
+  {% set track_env_val = '' %}
 {% endif %}
 
 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
@@ -155,6 +162,16 @@
         </div>
 
         <div class="col-12">
+          <label class="form-label">Default week split (optional)</label>
+          <input class="form-control" name="default_week_split"
+                 value="{{ default_week_split_val }}"
+                 placeholder="Push, Pull, Legs, Upper, Lower">
+          <div class="form-text">
+            Used as placeholder day pages and by Auto Build. Comma-separated.
+          </div>
+        </div>
+
+        <div class="col-12">
           <label class="form-label">Summary</label>
           <textarea class="form-control" name="summary" rows="2"
                     placeholder="Short 1–2 line description shown on Programs and (optionally) Home.">{{ (data.summary if data and data.summary is defined else (request.form.get('summary') or '')) }}</textarea>
@@ -180,7 +197,7 @@
               </div>
 
               <div class="row g-3">
-                <div class="col-12 col-md-6">
+                <div class="col-12 col-md-4">
                   <label class="form-label">Hub slug (for Track programs)</label>
                   <input class="form-control" name="hub_slug"
                          value="{{ hub_slug_val }}"
@@ -191,7 +208,7 @@
                   </div>
                 </div>
 
-                <div class="col-12 col-md-6">
+                <div class="col-12 col-md-4">
                   <label class="form-label">Track level (for Track programs)</label>
                   <select class="form-select" name="track_level" {% if kind_val != 'track' %}disabled{% endif %}>
                     <option value="" {% if not track_level_val %}selected{% endif %}>—</option>
@@ -201,6 +218,19 @@
                   </select>
                   <div class="form-text">
                     Optional: helps group tracks under the hub (Beginner/Intermediate/Advanced).
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label">Track environment</label>
+                  <select class="form-select" name="track_env" {% if kind_val != 'track' %}disabled{% endif %}>
+                    <option value="" {% if not track_env_val %}selected{% endif %}>—</option>
+                    <option value="home" {% if track_env_val == 'home' %}selected{% endif %}>Home</option>
+                    <option value="gym" {% if track_env_val == 'gym' %}selected{% endif %}>Gym</option>
+                    <option value="hybrid" {% if track_env_val == 'hybrid' %}selected{% endif %}>Hybrid</option>
+                  </select>
+                  <div class="form-text">
+                    Used for route selection and week links (not just slug parsing).
                   </div>
                 </div>
 
@@ -265,21 +295,61 @@
   (function () {
     const hubRadio = document.getElementById('kindHub');
     const trackRadio = document.getElementById('kindTrack');
+    const titleInput = document.querySelector('input[name="title"]');
+    const slugInput = document.querySelector('input[name="slug"]');
     const hubSlug = document.querySelector('input[name="hub_slug"]');
     const trackLevel = document.querySelector('select[name="track_level"]');
+    const trackEnv = document.querySelector('select[name="track_env"]');
+    let slugTouched = !!(slugInput && (slugInput.value || '').trim());
+
+    const slugify = (val) =>
+      (val || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    function maybeAutoSlug() {
+      if (!slugInput || slugTouched) return;
+      const isTrack = trackRadio && trackRadio.checked;
+      const titleSlug = slugify(titleInput ? titleInput.value : '');
+      const hub = slugify(hubSlug ? hubSlug.value : '');
+      const lvl = slugify(trackLevel ? trackLevel.value : '');
+      const env = slugify(trackEnv ? trackEnv.value : '');
+
+      if (isTrack && hub && lvl && env) {
+        slugInput.value = `${hub}-${lvl}-${env}`;
+        return;
+      }
+      if (!slugInput.value.trim()) {
+        slugInput.value = titleSlug;
+      }
+    }
 
     function sync() {
       const isTrack = trackRadio && trackRadio.checked;
       if (hubSlug) hubSlug.disabled = !isTrack;
       if (trackLevel) trackLevel.disabled = !isTrack;
+      if (trackEnv) trackEnv.disabled = !isTrack;
       if (!isTrack) {
         if (hubSlug) hubSlug.value = '';
         if (trackLevel) trackLevel.value = '';
+        if (trackEnv) trackEnv.value = '';
       }
+      maybeAutoSlug();
     }
 
     if (hubRadio) hubRadio.addEventListener('change', sync);
     if (trackRadio) trackRadio.addEventListener('change', sync);
+    if (titleInput) titleInput.addEventListener('input', maybeAutoSlug);
+    if (hubSlug) hubSlug.addEventListener('input', maybeAutoSlug);
+    if (trackLevel) trackLevel.addEventListener('change', maybeAutoSlug);
+    if (trackEnv) trackEnv.addEventListener('change', maybeAutoSlug);
+    if (slugInput) {
+      slugInput.addEventListener('input', () => {
+        slugTouched = (slugInput.value || '').trim().length > 0;
+      });
+    }
     sync();
   })();
 </script>

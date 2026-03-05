@@ -163,6 +163,12 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
           </span>
         </div>
 
+        {% if is_template_preview %}
+          <div class="alert alert-warning py-2 px-3 small">
+            This week is showing a sample template. Update it in Admin to publish your final exercises.
+          </div>
+        {% endif %}
+
         <div class="day-chip-row mb-3">
           {% for group in day_groups %}
             {% set is_done = group.key in completed_day_keys %}
@@ -191,7 +197,7 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
                   <div class="d-flex align-items-start justify-content-between gap-2">
                     <div>
                       <div class="fw-semibold">{{ group.label }} Day</div>
-                      <div class="small muted">{{ group.items|length }} item{{ '' if group.items|length == 1 else 's' }}</div>
+                      <div class="small muted">{{ group['items']|length }} item{{ '' if group['items']|length == 1 else 's' }}</div>
                     </div>
                     <span class="badge text-bg-light border text-dark">
                       {{ loop.index }} / {{ total_days }}
@@ -203,10 +209,11 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
                   {% endif %}
 
                   <div class="d-grid gap-2">
-                    {% for it in group.items %}
+                    {% for it in group['items'] %}
                       {% set wid = it.get('workout_id') %}
-                      {% set w = workout_map.get(wid) if workout_map else None %}
-                      {% set label = it.get('custom_name') or it.get('label') or it.get('title') or it.get('name') or (w.get('name') if w else 'Workout') %}
+                      {% set wslug = it.get('workout_slug') %}
+                      {% set w = (workout_map.get(wid) if workout_map else None) or (workout_map.get(wslug) if workout_map and wslug else None) %}
+                      {% set label = it.get('custom_name') or it.get('label') or it.get('title') or it.get('name') or it.get('workout_name') or (w.get('name') if w else 'Workout') %}
                       {% set note = it.get('notes') or it.get('note') or it.get('description') or it.get('instructions') %}
 
                       <div class="item-row">
@@ -229,6 +236,8 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
                                  href="{{ url_for('workout_detail', slug=w.get('slug')) }}">
                                 Open exercise
                               </a>
+                            {% elif wslug %}
+                              <span class="badge text-bg-warning">Exercise missing</span>
                             {% else %}
                               <span class="badge text-bg-secondary">Custom</span>
                             {% endif %}

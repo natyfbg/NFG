@@ -17,10 +17,10 @@
   <div class="card-header">Content Management</div>
 
   {% set ep = request.endpoint or '' %}
-  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality'] %}
   {# include admin_program_weeks so sidebar stays active when you're on weeks page #}
   {% set admin_program_eps = [
-    'admin_programs','admin_program_new','admin_program_edit','admin_program_weeks',
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_weeks','admin_program_weeks_scaffold',
     'admin_program_week_items','admin_program_week_item_new',
     'admin_program_week_item_edit','admin_program_week_item_delete'
   ] %}
@@ -64,6 +64,7 @@
   </div>
   <div class="d-flex gap-2">
     <a class="btn btn-primary" href="{{ url_for('admin_program_new') }}">+ New Program</a>
+    <a class="btn btn-outline-dark" href="{{ url_for('admin_program_link_health') }}">Link Health</a>
     <a class="btn btn-outline-secondary" href="{{ url_for('programs_index') }}">View Public</a>
   </div>
 </div>
@@ -150,7 +151,8 @@
               {% if kind == 'track' %}
                 <div class="small text-muted mt-1">
                   <span class="me-2">Hub: <code>{{ hub_slug or '—' }}</code></span>
-                  <span>Level: <strong>{{ track_level or '—' }}</strong></span>
+                  <span class="me-2">Level: <strong>{{ track_level or '—' }}</strong></span>
+                  <span>Env: <strong>{{ (p.track_env or '—')|capitalize }}</strong></span>
                 </div>
               {% endif %}
 

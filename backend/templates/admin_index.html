@@ -17,9 +17,9 @@
   <div class="card-header">Content Management</div>
 
   {% set ep = request.endpoint or '' %}
-  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality'] %}
   {% set admin_program_eps = [
-    'admin_programs','admin_program_new','admin_program_edit','admin_program_weeks',
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_weeks','admin_program_weeks_scaffold',
     'admin_program_week_items','admin_program_week_item_new',
     'admin_program_week_item_edit','admin_program_week_item_delete'
   ] %}
@@ -72,6 +72,48 @@
   <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">
     Manage Programs
   </a>
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin_workout_quality') }}">
+    Workout Quality
+  </a>
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin_program_link_health') }}">
+    Program Link Health
+  </a>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-12 col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="small text-muted">Workout Quality</div>
+        <div class="h5 mb-1">{{ quality_summary.quality_ok }} / {{ quality_summary.total }}</div>
+        <div class="small text-muted">
+          {{ quality_summary.with_issues }} with issues
+          • {{ quality_summary.missing_images }} missing images
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="small text-muted">Program Links</div>
+        <div class="h5 mb-1">{{ link_health.linked_ok }} / {{ link_health.total_items }}</div>
+        <div class="small text-muted">
+          {{ link_health.broken_count }} broken
+          • {{ link_health.unresolved_count }} unresolved
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="small text-muted">Custom Program Items</div>
+        <div class="h5 mb-1">{{ link_health.custom_only }}</div>
+        <div class="small text-muted">Valid custom entries without exercise links</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 {% if items|length == 0 %}

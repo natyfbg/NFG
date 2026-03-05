@@ -6,9 +6,9 @@
   <div class="card-header">Content Management</div>
 
   {% set ep = request.endpoint or '' %}
-  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality'] %}
   {% set admin_program_eps = [
-    'admin_programs','admin_program_new','admin_program_edit','admin_program_weeks',
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_weeks','admin_program_weeks_scaffold',
     'admin_program_week_items','admin_program_week_item_new',
     'admin_program_week_item_edit','admin_program_week_item_delete'
   ] %}
@@ -56,6 +56,22 @@
        href="{{ url_for('admin_program_weeks', program_id=program._id|string) }}">
       Back to Weeks
     </a>
+    {% if program.kind == 'track' and program.hub_slug and program.track_level %}
+      {% set env = (program.track_env|string|lower if program.track_env else '') %}
+      {% if not env %}
+        {% if program.slug and program.slug.endswith('-gym') %}
+          {% set env = 'gym' %}
+        {% elif program.slug and program.slug.endswith('-hybrid') %}
+          {% set env = 'hybrid' %}
+        {% else %}
+          {% set env = 'home' %}
+        {% endif %}
+      {% endif %}
+      <a class="btn btn-outline-secondary"
+         href="{{ url_for('program_hub_week_detail', hub_slug=program.hub_slug, week_number=week.week_number, level=(program.track_level|string|lower), env=env) }}">
+        Open Week Experience
+      </a>
+    {% endif %}
     <a class="btn btn-outline-dark"
        href="{{ url_for('program_detail', slug=program.slug) }}">
       View Public
@@ -73,7 +89,17 @@
       <div class="row g-3">
         <div class="col-12 col-md-3">
           <label class="form-label">Day *</label>
-          <input class="form-control" name="day" required placeholder="Push / Pull / Legs / Upper / Lower">
+          <input class="form-control" name="day" list="dayNameList" required placeholder="Push / Pull / Legs / Upper / Lower">
+          <datalist id="dayNameList">
+            <option value="Push"></option>
+            <option value="Pull"></option>
+            <option value="Legs"></option>
+            <option value="Upper"></option>
+            <option value="Lower"></option>
+            <option value="Full Body"></option>
+            <option value="Cardio"></option>
+            <option value="Mobility"></option>
+          </datalist>
         </div>
 
         <div class="col-12 col-md-4">
@@ -139,7 +165,7 @@
           <div class="row g-2 align-items-end">
             <div class="col-12 col-md-2">
               <label class="form-label small">Day</label>
-              <input class="form-control form-control-sm" name="day" required value="{{ it.day or '' }}">
+              <input class="form-control form-control-sm" name="day" list="dayNameList" required value="{{ it.day or '' }}">
             </div>
 
             <div class="col-12 col-md-3">
@@ -208,6 +234,12 @@
                   {% if linked.movement_pattern %} • {{ linked.movement_pattern }}{% endif %}
                   {% if linked.primary_muscle %} • {{ linked.primary_muscle }}{% endif %}
                   {% if linked.equipment %} • {{ linked.equipment }}{% endif %}
+                {% elif it.workout_id %}
+                  <span class="text-warning">Broken link:</span>
+                  workout reference no longer exists.
+                  {% if it.workout_slug %}
+                    Last known slug: <code>{{ it.workout_slug }}</code>
+                  {% endif %}
                 {% elif it.custom_name %}
                   Custom item: <strong>{{ it.custom_name }}</strong>
                 {% else %}

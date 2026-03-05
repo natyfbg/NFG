@@ -598,6 +598,18 @@ DEFAULT_WEEK_DAY_ORDER = [
     "mobility",
     "rest",
 ]
+DEFAULT_TRACK_DAY_SPLIT = ["Push", "Pull", "Legs", "Upper", "Lower"]
+
+SAMPLE_DAY_WORKOUT_QUERIES = {
+    "push": ["push up", "bench press", "shoulder press"],
+    "pull": ["row", "pull up", "lat pulldown"],
+    "legs": ["squat", "lunge", "romanian deadlift"],
+    "upper": ["incline press", "row", "lateral raise"],
+    "lower": ["squat", "deadlift", "leg press"],
+    "full body": ["burpee", "thruster", "clean"],
+    "cardio": ["run", "bike", "jump rope"],
+    "mobility": ["mobility", "stretch", "flow"],
+}
 
 
 def _norm_choice(val: Optional[str]) -> str:
@@ -781,7 +793,7 @@ def _envs_for_hub_level(hub_slug: str, level: str) -> List[str]:
         if lvl and lvl != level:
             continue
 
-        env = _infer_env_from_slug(t.get("slug", "")) or _infer_env_from_slug(t.get("category", ""))
+        env = _track_env_value(t)
         if env and env not in seen:
             seen.add(env)
             envs.append(env)
@@ -796,7 +808,7 @@ def _pick_track_for(hub_slug: str, level: str, env: str) -> Optional[dict]:
     for t in tracks:
         if (
             _norm_choice(t.get("track_level")) == level
-            and _infer_env_from_slug(t.get("slug", "")) == env
+            and _track_env_value(t) == env
         ):
             return t
 
@@ -822,6 +834,247 @@ def _normalize_week_day_label(val: Optional[str]) -> str:
     if key in aliases:
         return aliases[key]
     return " ".join(p.capitalize() for p in key.split(" "))
+
+
+def _safe_int(raw, default: int = 0, min_value: Optional[int] = None, max_value: Optional[int] = None) -> int:
+    try:
+        val = int(str(raw).strip())
+    except Exception:
+        val = default
+    if min_value is not None and val < min_value:
+        val = min_value
+    if max_value is not None and val > max_value:
+        val = max_value
+    return val
+
+
+def _parse_day_split(raw: Optional[str]) -> List[str]:
+    base = (raw or "").strip()
+    if not base:
+        return list(DEFAULT_TRACK_DAY_SPLIT)
+
+    parts = re.split(r"[,|\n]+", base)
+    out: List[str] = []
+    seen = set()
+    for p in parts:
+        label = _normalize_week_day_label(p)
+        if not label:
+            continue
+        key = _norm_choice(label)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(label)
+    return out or list(DEFAULT_TRACK_DAY_SPLIT)
+
+
+def _track_env_value(track: dict) -> str:
+    return (
+        _norm_choice(track.get("track_env"))
+        or _infer_env_from_slug(track.get("slug", ""))
+        or _infer_env_from_slug(track.get("category", ""))
+        or ""
+    )
+
+
+def _sample_workout_for_day(day_label: str) -> Optional[dict]:
+    key = _norm_choice(day_label)
+    queries = SAMPLE_DAY_WORKOUT_QUERIES.get(key, [])
+
+    for q in queries:
+        rx = Regex(q, "i")
+        doc = db.workouts.find_one(
+            {"$or": [{"name": rx}, {"slug": rx}]},
+            {"name": 1, "slug": 1, "movement_pattern": 1, "primary_muscle": 1, "equipment": 1},
+            sort=[("rating", -1), ("name", 1)],
+        )
+        if doc:
+            return doc
+
+    movement_map = {
+        "push": "Push",
+        "pull": "Pull",
+        "legs": "Squat",
+        "lower": "Squat",
+        "upper": "Push",
+        "full body": "Full Body",
+        "cardio": "Cardio",
+        "mobility": "Mobility",
+    }
+    fallback_movement = movement_map.get(key)
+    if fallback_movement:
+        return db.workouts.find_one(
+            {"movement_pattern": fallback_movement},
+            {"name": 1, "slug": 1, "movement_pattern": 1, "primary_muscle": 1, "equipment": 1},
+            sort=[("rating", -1), ("name", 1)],
+        )
+    return None
+
+
+def _placeholder_day_groups_for_track(track: dict) -> tuple:
+    split_raw = track.get("default_week_split")
+    split = (
+        _parse_day_split(", ".join(split_raw))
+        if isinstance(split_raw, list)
+        else _parse_day_split(split_raw if isinstance(split_raw, str) else "")
+    )
+    day_groups = []
+    workout_map = {}
+
+    for idx, label in enumerate(split):
+        key = slugify(label) or f"day-{idx + 1}"
+        sample = _sample_workout_for_day(label)
+
+        item = {
+            "day": label,
+            "order": idx + 1,
+            "sets": "3",
+            "reps": "8-12",
+            "rest": "60-90s",
+            "notes": "Sample placeholder. Replace with your exact exercise flow in Admin.",
+        }
+        if sample:
+            item["workout_id"] = sample.get("_id")
+            workout_map[sample["_id"]] = sample
+        else:
+            item["custom_name"] = f"{label} Starter Movement"
+
+        day_groups.append({"key": key, "label": label, "items": [item]})
+
+    return day_groups, workout_map
+
+
+def _workout_quality_issues(doc: dict) -> List[str]:
+    issues: List[str] = []
+    if not (doc.get("name") or "").strip():
+        issues.append("Missing name")
+    if not (doc.get("slug") or "").strip():
+        issues.append("Missing slug")
+    if not (doc.get("primary_muscle") or "").strip():
+        issues.append("Missing primary muscle")
+    if not (doc.get("movement_pattern") or "").strip():
+        issues.append("Missing movement pattern")
+    if not (doc.get("equipment") or "").strip():
+        issues.append("Missing equipment")
+    if not (doc.get("difficulty_tier") or "").strip():
+        issues.append("Missing difficulty tier")
+    if not doc.get("images"):
+        issues.append("Missing exercise image")
+    if not (doc.get("info") or "").strip():
+        issues.append("Missing exercise info")
+    if not doc.get("tips"):
+        issues.append("Missing tips")
+    return issues
+
+
+def _workout_quality_summary(workouts: List[dict]) -> dict:
+    total = len(workouts)
+    with_issues = 0
+    missing_images = 0
+    missing_metadata = 0
+    for w in workouts:
+        issues = _workout_quality_issues(w)
+        if issues:
+            with_issues += 1
+        if "Missing exercise image" in issues:
+            missing_images += 1
+        if any(
+            i in issues
+            for i in (
+                "Missing primary muscle",
+                "Missing movement pattern",
+                "Missing equipment",
+                "Missing difficulty tier",
+            )
+        ):
+            missing_metadata += 1
+    return {
+        "total": total,
+        "with_issues": with_issues,
+        "quality_ok": max(0, total - with_issues),
+        "missing_images": missing_images,
+        "missing_metadata": missing_metadata,
+    }
+
+
+def _program_link_health_report(include_rows: bool = False) -> dict:
+    programs = []
+    weeks = []
+    program_by_id = {}
+    week_by_id = {}
+    if include_rows:
+        programs = list(db.programs.find({}, {"title": 1, "slug": 1}))
+        weeks = list(db.program_weeks.find({}, {"program_id": 1, "week_number": 1, "title": 1}))
+        program_by_id = {p["_id"]: p for p in programs if p.get("_id") is not None}
+        week_by_id = {w["_id"]: w for w in weeks if w.get("_id") is not None}
+
+    items = list(
+        db.program_items.find(
+            {},
+            {
+                "week_id": 1,
+                "day": 1,
+                "custom_name": 1,
+                "workout_id": 1,
+                "workout_slug": 1,
+                "order": 1,
+                "notes": 1,
+            },
+        )
+    )
+
+    workout_ids = [it.get("workout_id") for it in items if it.get("workout_id")]
+    workouts = list(db.workouts.find({"_id": {"$in": workout_ids}}, {"_id": 1, "name": 1, "slug": 1}))
+    workout_by_id = {w["_id"]: w for w in workouts if w.get("_id") is not None}
+
+    broken_items = []
+    unresolved_items = []
+    linked_ok = 0
+    custom_only = 0
+    broken_count = 0
+    unresolved_count = 0
+
+    for it in items:
+        week = week_by_id.get(it.get("week_id")) if include_rows else None
+        program = program_by_id.get((week or {}).get("program_id")) if (include_rows and week) else None
+
+        has_custom_text = bool(
+            (it.get("custom_name") or "").strip()
+            or (it.get("workout_name") or "").strip()
+            or (it.get("notes") or "").strip()
+        )
+        wid = it.get("workout_id")
+        linked_doc = workout_by_id.get(wid) if wid else None
+
+        row = {
+            "program": program,
+            "week": week,
+            "item": it,
+            "workout": linked_doc,
+        }
+
+        if wid and linked_doc:
+            linked_ok += 1
+        elif wid and not linked_doc:
+            broken_count += 1
+            if include_rows:
+                broken_items.append(row)
+        elif has_custom_text:
+            custom_only += 1
+        else:
+            unresolved_count += 1
+            if include_rows:
+                unresolved_items.append(row)
+
+    return {
+        "total_items": len(items),
+        "linked_ok": linked_ok,
+        "custom_only": custom_only,
+        "broken_count": broken_count,
+        "unresolved_count": unresolved_count,
+        "broken_items": broken_items,
+        "unresolved_items": unresolved_items,
+    }
 
 
 def _viewer_id() -> str:
@@ -871,11 +1124,7 @@ def _track_level_for_url(track: dict) -> str:
 
 
 def _track_env_for_url(track: dict) -> str:
-    return (
-        _infer_env_from_slug(track.get("slug", ""))
-        or _infer_env_from_slug(track.get("category", ""))
-        or "home"
-    )
+    return _track_env_value(track) or "home"
 
 
 def _ordered_week_numbers(weeks: List[dict]) -> List[int]:
@@ -1141,6 +1390,7 @@ db.programs.create_index([("show_on_home", 1)])
 db.programs.create_index([("kind", 1)])
 db.programs.create_index([("hub_slug", 1)])
 db.programs.create_index([("track_level", 1)])
+db.programs.create_index([("track_env", 1)])
 
 db.program_weeks.create_index([("program_id", 1)])
 db.program_weeks.create_index([("week_number", 1)])
@@ -1150,6 +1400,8 @@ db.program_items.create_index([("week_id", 1)])
 db.program_items.create_index([("order", 1)])
 db.program_items.create_index([("created_at", 1)])
 db.program_items.create_index([("workout_id", 1)])
+db.program_items.create_index([("workout_slug", 1)])
+db.program_items.create_index([("week_id", 1), ("day", 1), ("order", 1)])
 
 db.program_favorites.create_index([("viewer_id", 1), ("program_slug", 1)], unique=True)
 db.program_favorites.create_index([("viewer_id", 1), ("created_at", -1)])
@@ -1265,6 +1517,8 @@ def _ensure_8_week_programs_seed_once() -> None:
                     updates["hub_slug"] = EIGHT_WEEK_HUB_SLUG
                 if not existing.get("track_level"):
                     updates["track_level"] = level
+                if not existing.get("track_env"):
+                    updates["track_env"] = _norm_choice(env)
                 if updates:
                     db.programs.update_one({"_id": existing["_id"]}, {"$set": updates})
                 continue
@@ -1276,6 +1530,7 @@ def _ensure_8_week_programs_seed_once() -> None:
                     "kind": "track",
                     "hub_slug": EIGHT_WEEK_HUB_SLUG,
                     "track_level": level,
+                    "track_env": _norm_choice(env),
                     "category": f"{level} • {env}",
                     "duration_label": "8 weeks",
                     "summary": (
@@ -1591,14 +1846,33 @@ def program_hub_week_detail(hub_slug, week_number: int):
     items = []
     workout_map = {}
     day_groups = []
+    is_template_preview = False
     if week:
         items = list(
             db.program_items.find({"week_id": week["_id"]}).sort([("order", 1), ("created_at", 1)])
         )
         workout_ids = [it.get("workout_id") for it in items if it.get("workout_id")]
-        if workout_ids:
-            ws = list(db.workouts.find({"_id": {"$in": workout_ids}}, {"name": 1, "slug": 1}))
-            workout_map = {w["_id"]: w for w in ws}
+        workout_slugs = [it.get("workout_slug") for it in items if (it.get("workout_slug") or "").strip()]
+        ws = []
+        if workout_ids or workout_slugs:
+            ws = list(
+                db.workouts.find(
+                    {
+                        "$or": [
+                            {"_id": {"$in": workout_ids}},
+                            {"slug": {"$in": workout_slugs}},
+                        ]
+                    },
+                    {"name": 1, "slug": 1},
+                )
+            )
+        if ws:
+            workout_map = {}
+            for w in ws:
+                if w.get("_id") is not None:
+                    workout_map[w["_id"]] = w
+                if w.get("slug"):
+                    workout_map[w["slug"]] = w
 
         by_day = {}
         day_index = {}
@@ -1627,6 +1901,11 @@ def program_hub_week_detail(hub_slug, week_number: int):
             return (1, day_index[k], label)
 
         day_groups = [by_day[k] for k in sorted(by_day.keys(), key=_day_sort_key)]
+
+    if not day_groups:
+        day_groups, preview_workout_map = _placeholder_day_groups_for_track(track)
+        workout_map.update(preview_workout_map)
+        is_template_preview = True
 
     weeks_in_track = list(
         db.program_weeks.find({"program_id": track["_id"]}, {"week_number": 1}).sort([("week_number", 1)])
@@ -1677,6 +1956,7 @@ def program_hub_week_detail(hub_slug, week_number: int):
         week=week,
         items=items,
         day_groups=day_groups,
+        is_template_preview=is_template_preview,
         total_days=len(day_groups),
         workout_map=workout_map,
         completed_day_keys=completed_day_keys,
@@ -2229,7 +2509,14 @@ def admin_index():
         w["difficulty_tier"] = w.get("difficulty_tier") or _infer_difficulty_tier_from_level(
             w.get("level")
         )
-    return render_template("admin_index.html", items=items)
+    quality_summary = _workout_quality_summary(items)
+    link_health = _program_link_health_report()
+    return render_template(
+        "admin_index.html",
+        items=items,
+        quality_summary=quality_summary,
+        link_health=link_health,
+    )
 
 
 @app.route("/admin/workouts/backfill-metadata", methods=["POST"])
@@ -2267,6 +2554,30 @@ def admin_workout_backfill_metadata():
 
     flash(f"Metadata backfill complete. Updated {updated} workout(s).", "success")
     return redirect(url_for("admin_index"))
+
+
+@app.route("/admin/workouts/quality")
+@login_required
+def admin_workout_quality():
+    workouts = list(db.workouts.find().sort([("name", 1)]))
+    rows = []
+    for w in workouts:
+        issues = _workout_quality_issues(w)
+        if not issues:
+            continue
+        rows.append(
+            {
+                "workout": w,
+                "issues": issues,
+            }
+        )
+
+    summary = _workout_quality_summary(workouts)
+    return render_or_fallback(
+        "admin_workout_quality.html",
+        rows=rows,
+        summary=summary,
+    )
 
 
 @app.route("/admin/workouts/new", methods=["GET", "POST"])
@@ -2709,6 +3020,13 @@ def admin_home_plan_delete(id):
 # -----------------------------------------------------------------------------
 # Admin: Programs (CRUD)
 # -----------------------------------------------------------------------------
+@app.route("/admin/programs/link-health")
+@login_required
+def admin_program_link_health():
+    report = _program_link_health_report(include_rows=True)
+    return render_or_fallback("admin_program_link_health.html", report=report)
+
+
 @app.route("/admin/programs")
 @login_required
 def admin_programs():
@@ -2729,10 +3047,12 @@ def admin_program_new():
 
         category = (request.form.get("category") or "").strip() or None
         duration_label = (request.form.get("duration_label") or "").strip() or None
+        default_week_split_raw = (request.form.get("default_week_split") or "").strip()
+        default_week_split = _parse_day_split(default_week_split_raw) if default_week_split_raw else None
         summary = (request.form.get("summary") or "").strip() or None
         cover_image = (request.form.get("cover_image") or "").strip() or None
 
-        order = int(request.form.get("order") or 0)
+        order = _safe_int(request.form.get("order"), default=0)
         active = request.form.get("active") == "on"
         show_on_home = request.form.get("show_on_home") == "on"
 
@@ -2742,10 +3062,14 @@ def admin_program_new():
 
         hub_slug = (request.form.get("hub_slug") or "").strip() or None
         track_level = (request.form.get("track_level") or "").strip() or None
+        track_env = _norm_choice(request.form.get("track_env")) or None
+        if track_env and track_env not in DEFAULT_ENVS:
+            track_env = None
 
         if kind != "track":
             hub_slug = None
             track_level = None
+            track_env = None
 
         if not title:
             flash("Title is required.", "danger")
@@ -2761,8 +3085,10 @@ def admin_program_new():
             "kind": kind,
             "hub_slug": hub_slug,
             "track_level": track_level,
+            "track_env": track_env,
             "category": category,
             "duration_label": duration_label,
+            "default_week_split": default_week_split,
             "summary": summary,
             "cover_image": cover_image,
             "order": order,
@@ -2772,9 +3098,11 @@ def admin_program_new():
         }
 
         try:
-            db.programs.insert_one(doc)
-            flash("Program created.", "success")
-            return redirect(url_for("admin_programs"))
+            new_program = db.programs.insert_one(doc)
+            flash("Program created. Next: build its weeks.", "success")
+            return redirect(
+                url_for("admin_program_weeks", program_id=str(new_program.inserted_id))
+            )
         except Exception as e:
             flash(f"Error: {e}", "danger")
 
@@ -2794,10 +3122,12 @@ def admin_program_edit(id):
 
         category = (request.form.get("category") or "").strip() or None
         duration_label = (request.form.get("duration_label") or "").strip() or None
+        default_week_split_raw = (request.form.get("default_week_split") or "").strip()
+        default_week_split = _parse_day_split(default_week_split_raw) if default_week_split_raw else None
         summary = (request.form.get("summary") or "").strip() or None
         cover_image = (request.form.get("cover_image") or "").strip() or None
 
-        order = int(request.form.get("order") or 0)
+        order = _safe_int(request.form.get("order"), default=0)
         active = request.form.get("active") == "on"
         show_on_home = request.form.get("show_on_home") == "on"
 
@@ -2807,10 +3137,14 @@ def admin_program_edit(id):
 
         hub_slug = (request.form.get("hub_slug") or "").strip() or None
         track_level = (request.form.get("track_level") or "").strip() or None
+        track_env = _norm_choice(request.form.get("track_env")) or None
+        if track_env and track_env not in DEFAULT_ENVS:
+            track_env = None
 
         if kind != "track":
             hub_slug = None
             track_level = None
+            track_env = None
 
         if not title:
             flash("Title is required.", "danger")
@@ -2827,8 +3161,10 @@ def admin_program_edit(id):
             "kind": kind,
             "hub_slug": hub_slug,
             "track_level": track_level,
+            "track_env": track_env,
             "category": category,
             "duration_label": duration_label,
+            "default_week_split": default_week_split,
             "summary": summary,
             "cover_image": cover_image,
             "order": order,
@@ -2905,7 +3241,94 @@ def admin_program_weeks(program_id):
             [("week_number", 1), ("order", 1)]
         )
     )
-    return render_or_fallback("admin_program_weeks.html", program=program, weeks=weeks)
+    return render_or_fallback(
+        "admin_program_weeks.html",
+        program=program,
+        weeks=weeks,
+        suggested_weeks=_week_count_from_duration_label(program.get("duration_label")),
+        default_day_split=", ".join(DEFAULT_TRACK_DAY_SPLIT),
+    )
+
+
+@app.route("/admin/programs/<program_id>/weeks/scaffold", methods=["POST"])
+@login_required
+def admin_program_weeks_scaffold(program_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week_count = _safe_int(
+        request.form.get("week_count"),
+        default=_week_count_from_duration_label(program.get("duration_label")),
+        min_value=1,
+        max_value=52,
+    )
+    day_split = _parse_day_split(request.form.get("day_split"))
+    add_sample_items = request.form.get("add_sample_items") == "on"
+
+    # Keep the selected split as program default for future placeholder week pages.
+    db.programs.update_one(
+        {"_id": program["_id"]},
+        {"$set": {"default_week_split": day_split}},
+    )
+
+    weeks_created = 0
+    items_created = 0
+    weeks_skipped_for_items = 0
+
+    for week_number in range(1, week_count + 1):
+        week = db.program_weeks.find_one(
+            {"program_id": program["_id"], "week_number": week_number}
+        )
+        if not week:
+            db.program_weeks.insert_one(
+                {
+                    "program_id": program["_id"],
+                    "week_number": week_number,
+                    "title": f"Week {week_number}",
+                    "order": week_number,
+                    "created_at": datetime.datetime.utcnow(),
+                }
+            )
+            week = db.program_weeks.find_one(
+                {"program_id": program["_id"], "week_number": week_number}
+            )
+            weeks_created += 1
+
+        if not add_sample_items or not week:
+            continue
+
+        existing_count = db.program_items.count_documents({"week_id": week["_id"]})
+        if existing_count > 0:
+            weeks_skipped_for_items += 1
+            continue
+
+        for idx, day in enumerate(day_split):
+            sample = _sample_workout_for_day(day)
+            item_doc = {
+                "week_id": week["_id"],
+                "day": day,
+                "custom_name": None if sample else f"{day} Starter Movement",
+                "workout_id": sample.get("_id") if sample else None,
+                "sets": "3",
+                "reps": "8-12",
+                "rest": "60-90s",
+                "notes": "Sample placeholder. Update this item with your exact plan.",
+                "order": idx + 1,
+                "created_at": datetime.datetime.utcnow(),
+            }
+            db.program_items.insert_one(item_doc)
+            items_created += 1
+
+    flash(
+        (
+            f"Scaffold complete: {weeks_created} week(s) created, "
+            f"{items_created} sample item(s) added. "
+            f"{weeks_skipped_for_items} existing week(s) kept unchanged."
+        ),
+        "success",
+    )
+    return redirect(url_for("admin_program_weeks", program_id=program_id))
 
 
 @app.route("/admin/programs/<program_id>/weeks/new", methods=["POST"])
@@ -2915,9 +3338,9 @@ def admin_program_week_new(program_id):
     if not program:
         abort(404)
 
-    week_number = int(request.form.get("week_number") or 0)
+    week_number = _safe_int(request.form.get("week_number"), default=0)
     title = (request.form.get("title") or "").strip() or None
-    order = int(request.form.get("order") or week_number)
+    order = _safe_int(request.form.get("order"), default=week_number)
 
     if week_number < 1:
         flash("Week number must be at least 1.", "danger")
@@ -3016,19 +3439,27 @@ def admin_program_week_item_new(program_id, week_id):
     reps = (request.form.get("reps") or "").strip() or None
     rest = (request.form.get("rest") or "").strip() or None
     notes = (request.form.get("notes") or "").strip() or None
-    order = int(request.form.get("order") or 0)
+    order = _safe_int(request.form.get("order"), default=0)
 
     if not day:
         flash("Day is required (ex: Push, Pull, Legs, Upper, Lower).", "danger")
         return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
 
     workout_id = None
+    workout_slug = None
+    workout_name = None
     if workout_id_raw:
         try:
             workout_id = ObjectId(workout_id_raw)
         except Exception:
             flash("Invalid workout selection.", "danger")
             return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+        workout_doc = db.workouts.find_one({"_id": workout_id}, {"slug": 1, "name": 1})
+        if not workout_doc:
+            flash("Selected workout no longer exists. Pick another workout.", "danger")
+            return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+        workout_slug = workout_doc.get("slug")
+        workout_name = workout_doc.get("name")
 
     db.program_items.insert_one(
         {
@@ -3036,6 +3467,8 @@ def admin_program_week_item_new(program_id, week_id):
             "day": day,
             "custom_name": custom_name,
             "workout_id": workout_id,
+            "workout_slug": workout_slug,
+            "workout_name": workout_name,
             "sets": sets,
             "reps": reps,
             "rest": rest,
@@ -3070,19 +3503,27 @@ def admin_program_week_item_edit(program_id, week_id, item_id):
     reps = (request.form.get("reps") or "").strip() or None
     rest = (request.form.get("rest") or "").strip() or None
     notes = (request.form.get("notes") or "").strip() or None
-    order = int(request.form.get("order") or item.get("order") or 0)
+    order = _safe_int(request.form.get("order"), default=(item.get("order") or 0))
 
     if not day:
         flash("Day is required.", "danger")
         return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
 
     workout_id = None
+    workout_slug = None
+    workout_name = None
     if workout_id_raw:
         try:
             workout_id = ObjectId(workout_id_raw)
         except Exception:
             flash("Invalid workout selection.", "danger")
             return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+        workout_doc = db.workouts.find_one({"_id": workout_id}, {"slug": 1, "name": 1})
+        if not workout_doc:
+            flash("Selected workout no longer exists. Pick another workout.", "danger")
+            return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+        workout_slug = workout_doc.get("slug")
+        workout_name = workout_doc.get("name")
 
     db.program_items.update_one(
         {"_id": item["_id"]},
@@ -3091,6 +3532,8 @@ def admin_program_week_item_edit(program_id, week_id, item_id):
                 "day": day,
                 "custom_name": custom_name,
                 "workout_id": workout_id,
+                "workout_slug": workout_slug,
+                "workout_name": workout_name,
                 "sets": sets,
                 "reps": reps,
                 "rest": rest,
