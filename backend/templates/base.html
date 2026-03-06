@@ -26,6 +26,7 @@
         ] %}
         {% set account_eps = ['account_login','account_register','account_profile'] %}
         {% set recipes_eps = ['recipes'] %}
+        {% set about_eps = ['about_page'] %}
 
         {# Admin endpoints (expand to cover all admin pages) #}
         {% set admin_eps = [
@@ -33,7 +34,7 @@
           'admin_workout_new','admin_workout_edit','admin_workout_quality',
           'admin_styles','admin_style_toggle','admin_style_delete',
           'admin_home_plans','admin_home_plan_new','admin_home_plan_edit','admin_home_plan_toggle','admin_home_plan_delete',
-          'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health',
+          'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_link_health_backfill',
           'admin_program_toggle_active','admin_program_toggle_home','admin_program_delete',
           'admin_program_weeks','admin_program_week_new','admin_program_week_delete','admin_program_weeks_scaffold',
           'admin_program_week_items','admin_program_week_item_new',
@@ -64,6 +65,8 @@
                  href="{{ url_for('account_login') }}">Sign in</a>
               <a class="btn btn-sm btn-light {% if ep == 'account_register' %}active{% endif %}"
                  href="{{ url_for('account_register') }}">Join</a>
+              <a class="btn btn-sm btn-outline-secondary {% if ep == 'login' %}active{% endif %}"
+                 href="{{ url_for('login') }}">Admin Sign In</a>
             {% endif %}
           </div>
           <button class="navbar-toggler ms-1" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
@@ -81,7 +84,7 @@
         </div>
 
         <div class="collapse navbar-collapse mt-2 mt-lg-0" id="navMain">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0 d-none d-lg-flex">
             <li class="nav-item">
               <a class="nav-link {% if ep in workouts_eps %}active{% endif %}" href="{{ url_for('workouts') }}">Workouts</a>
             </li>
@@ -92,6 +95,12 @@
 
             <li class="nav-item">
               <a class="nav-link {% if ep in recipes_eps %}active{% endif %}" href="{{ url_for('recipes') }}">Recipes</a>
+            </li>
+          </ul>
+
+          <ul class="navbar-nav d-lg-none mb-2">
+            <li class="nav-item">
+              <a class="nav-link {% if ep in about_eps %}active{% endif %}" href="{{ url_for('about_page') }}">About</a>
             </li>
           </ul>
 
@@ -128,7 +137,7 @@
               <a class="btn btn-sm btn-light {% if ep == 'account_register' %}active{% endif %}"
                  href="{{ url_for('account_register') }}">Join</a>
               <a class="btn btn-sm btn-outline-secondary {% if ep == 'login' %}active{% endif %}"
-                 href="{{ url_for('login') }}">Admin</a>
+                 href="{{ url_for('login') }}">Admin Sign In</a>
             {% endif %}
           </div>
         </div>

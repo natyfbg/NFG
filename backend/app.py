@@ -598,7 +598,7 @@ DEFAULT_WEEK_DAY_ORDER = [
     "mobility",
     "rest",
 ]
-DEFAULT_TRACK_DAY_SPLIT = ["Push", "Pull", "Legs", "Upper", "Lower"]
+DEFAULT_TRACK_DAY_SPLIT = ["Push", "Pull", "Legs", "Upper", "Lower", "Core"]
 
 SAMPLE_DAY_WORKOUT_QUERIES = {
     "push": ["push up", "bench press", "shoulder press"],
@@ -606,6 +606,7 @@ SAMPLE_DAY_WORKOUT_QUERIES = {
     "legs": ["squat", "lunge", "romanian deadlift"],
     "upper": ["incline press", "row", "lateral raise"],
     "lower": ["squat", "deadlift", "leg press"],
+    "core": ["plank", "dead bug", "hollow hold"],
     "full body": ["burpee", "thruster", "clean"],
     "cardio": ["run", "bike", "jump rope"],
     "mobility": ["mobility", "stretch", "flow"],
@@ -897,6 +898,7 @@ def _sample_workout_for_day(day_label: str) -> Optional[dict]:
         "legs": "Squat",
         "lower": "Squat",
         "upper": "Push",
+        "core": "Core",
         "full body": "Full Body",
         "cardio": "Cardio",
         "mobility": "Mobility",
@@ -1653,6 +1655,11 @@ def home():
         favorite_programs=favorite_programs,
         continue_plan=continue_plan,
     )
+
+
+@app.route("/about")
+def about_page():
+    return render_template("about.html")
 
 
 # -----------------------------------------------------------------------------
@@ -3027,6 +3034,55 @@ def admin_program_link_health():
     return render_or_fallback("admin_program_link_health.html", report=report)
 
 
+@app.route("/admin/programs/link-health/backfill", methods=["POST"])
+@login_required
+def admin_program_link_health_backfill():
+    items = list(
+        db.program_items.find(
+            {},
+            {"_id": 1, "workout_id": 1, "workout_slug": 1, "workout_name": 1},
+        )
+    )
+    workout_ids = [it.get("workout_id") for it in items if it.get("workout_id")]
+    workouts = list(db.workouts.find({"_id": {"$in": workout_ids}}, {"_id": 1, "slug": 1, "name": 1}))
+    by_id = {w["_id"]: w for w in workouts if w.get("_id") is not None}
+
+    slugs_needed = [it.get("workout_slug") for it in items if (it.get("workout_slug") or "").strip()]
+    by_slug = {}
+    if slugs_needed:
+        slug_docs = list(db.workouts.find({"slug": {"$in": slugs_needed}}, {"_id": 1, "slug": 1, "name": 1}))
+        by_slug = {w.get("slug"): w for w in slug_docs if (w.get("slug") or "").strip()}
+
+    updated = 0
+    repaired = 0
+    for it in items:
+        patch = {}
+        wid = it.get("workout_id")
+        wslug = (it.get("workout_slug") or "").strip()
+        linked = by_id.get(wid) if wid else None
+
+        if linked:
+            if it.get("workout_slug") != linked.get("slug"):
+                patch["workout_slug"] = linked.get("slug")
+            if it.get("workout_name") != linked.get("name"):
+                patch["workout_name"] = linked.get("name")
+        elif wslug and wslug in by_slug:
+            resolved = by_slug[wslug]
+            patch["workout_id"] = resolved.get("_id")
+            patch["workout_name"] = resolved.get("name")
+            repaired += 1
+
+        if patch:
+            db.program_items.update_one({"_id": it["_id"]}, {"$set": patch})
+            updated += 1
+
+    flash(
+        f"Link backfill complete: {updated} item(s) updated, {repaired} broken link(s) repaired.",
+        "success",
+    )
+    return redirect(url_for("admin_program_link_health"))
+
+
 @app.route("/admin/programs")
 @login_required
 def admin_programs():
@@ -3442,7 +3498,7 @@ def admin_program_week_item_new(program_id, week_id):
     order = _safe_int(request.form.get("order"), default=0)
 
     if not day:
-        flash("Day is required (ex: Push, Pull, Legs, Upper, Lower).", "danger")
+        flash("Day is required (ex: Push, Pull, Legs, Upper, Lower, Core).", "danger")
         return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
 
     workout_id = None

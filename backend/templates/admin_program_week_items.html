@@ -8,7 +8,7 @@
   {% set ep = request.endpoint or '' %}
   {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality'] %}
   {% set admin_program_eps = [
-    'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_weeks','admin_program_weeks_scaffold',
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_link_health_backfill','admin_program_weeks','admin_program_weeks_scaffold',
     'admin_program_week_items','admin_program_week_item_new',
     'admin_program_week_item_edit','admin_program_week_item_delete'
   ] %}
@@ -48,7 +48,7 @@
   <div>
     <h1 class="mb-1">Week Items</h1>
     <p class="text-muted mb-0">
-      Build your day flow (Push, Pull, Legs, Upper, Lower). Link each item to a workout from your exercise database.
+      Build your day flow (Push, Pull, Legs, Upper, Lower, Core). Link each item to a workout from your exercise database.
     </p>
   </div>
   <div class="d-flex gap-2">
@@ -89,13 +89,14 @@
       <div class="row g-3">
         <div class="col-12 col-md-3">
           <label class="form-label">Day *</label>
-          <input class="form-control" name="day" list="dayNameList" required placeholder="Push / Pull / Legs / Upper / Lower">
+          <input class="form-control" name="day" list="dayNameList" required placeholder="Push / Pull / Legs / Upper / Lower / Core">
           <datalist id="dayNameList">
             <option value="Push"></option>
             <option value="Pull"></option>
             <option value="Legs"></option>
             <option value="Upper"></option>
             <option value="Lower"></option>
+            <option value="Core"></option>
             <option value="Full Body"></option>
             <option value="Cardio"></option>
             <option value="Mobility"></option>

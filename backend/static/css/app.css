@@ -63,8 +63,9 @@ html, body{ overflow-x: hidden; }
     justify-content: flex-start;
   }
   .nav-mobile-persist .nav-mobile-search{
-    width: clamp(160px, 50vw, 220px);
-    max-width: 50%;
+    width: 50%;
+    min-width: 150px;
+    max-width: 220px;
   }
 }
 
