@@ -99,6 +99,7 @@ Weeks – {{ track.title if track and track.title else "Program" }}
         {% set wn = w.week_number if w.week_number is defined else w.get('week_number') %}
         {% set wtitle = (w.title if w.title is defined else w.get('title')) %}
         {% set pg = week_progress.get(wn, {'done': 0, 'total': 0, 'all_done': false}) %}
+        {% set wk_completed_at = week_completed_at_map.get(wn) if week_completed_at_map else None %}
         {% set is_unlocked = week_unlock_map.get(wn, true) %}
         {% if is_unlocked and resume_week_number == wn and resume_day_key %}
           {% set week_url = url_for('program_hub_week_detail', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'), week_number=wn, level=lvl, env=envv, day=resume_day_key) %}
@@ -125,6 +126,11 @@ Weeks – {{ track.title if track and track.title else "Program" }}
                   <div class="small muted mt-2">
                     Progress: {{ pg.done }} / {{ pg.total }} day{{ '' if pg.total == 1 else 's' }}
                   </div>
+                  {% if wk_completed_at %}
+                    <div class="small text-success mt-1">
+                      Completed {{ wk_completed_at.strftime('%b %d, %Y') if wk_completed_at else '' }}
+                    </div>
+                  {% endif %}
                   <div class="progress mt-1" role="progressbar" aria-valuenow="{{ pg.done }}" aria-valuemin="0" aria-valuemax="{{ pg.total }}" style="height:6px;max-width:220px;">
                     <div class="progress-bar {% if pg.all_done %}bg-success{% endif %}" style="width: {{ (100 * pg.done / pg.total)|round(0, 'floor') }}%;"></div>
                   </div>

@@ -483,6 +483,31 @@ def _migrate_guest_state_to_member(guest_viewer_id: str, member_key: str) -> Non
         )
     db.program_day_progress.delete_many({"viewer_id": guest})
 
+    guest_week_progress = list(db.program_week_progress.find({"viewer_id": guest}))
+    for row in guest_week_progress:
+        track_slug = (row.get("track_slug") or "").strip()
+        week_number = row.get("week_number")
+        if not track_slug or not week_number:
+            continue
+
+        db.program_week_progress.update_one(
+            {
+                "viewer_id": member_key,
+                "track_slug": track_slug,
+                "week_number": week_number,
+            },
+            {
+                "$set": {
+                    "completed_at": row.get("completed_at") or datetime.datetime.utcnow(),
+                    "hub_slug": row.get("hub_slug"),
+                    "level": row.get("level"),
+                    "env": row.get("env"),
+                }
+            },
+            upsert=True,
+        )
+    db.program_week_progress.delete_many({"viewer_id": guest})
+
 
 FAILED_LOGINS: Dict[str, deque] = {}
 
@@ -1220,6 +1245,28 @@ def _done_day_keys_by_week(owner_key: str, track_slug: str, week_numbers: List[i
     return done_by_week
 
 
+def _week_completion_map(owner_key: str, track_slug: str, week_numbers: List[int]) -> dict:
+    completed_map = {wn: None for wn in week_numbers}
+    if not owner_key or not track_slug or not week_numbers:
+        return completed_map
+
+    rows = list(
+        db.program_week_progress.find(
+            {
+                "viewer_id": owner_key,
+                "track_slug": track_slug,
+                "week_number": {"$in": week_numbers},
+            },
+            {"week_number": 1, "completed_at": 1},
+        )
+    )
+    for row in rows:
+        wn = row.get("week_number")
+        if wn in completed_map:
+            completed_map[wn] = row.get("completed_at")
+    return completed_map
+
+
 def _week_progress_for_track(owner_key: str, track: dict, weeks: List[dict]) -> dict:
     week_numbers = _ordered_week_numbers(weeks)
     progress_map = {
@@ -1413,6 +1460,12 @@ db.program_day_progress.create_index(
     unique=True,
 )
 db.program_day_progress.create_index([("viewer_id", 1), ("track_slug", 1), ("week_number", 1)])
+
+db.program_week_progress.create_index(
+    [("viewer_id", 1), ("track_slug", 1), ("week_number", 1)],
+    unique=True,
+)
+db.program_week_progress.create_index([("viewer_id", 1), ("track_slug", 1), ("completed_at", -1)])
 
 db.users.create_index([("username_lower", 1)], unique=True, sparse=True)
 db.users.create_index([("email_lower", 1)], unique=True, sparse=True)
@@ -1804,6 +1857,8 @@ def program_hub_weeks(hub_slug):
     owner_key = _progress_owner_key()
     week_progress = _week_progress_for_track(owner_key, track, weeks)
     week_unlock_map = _week_unlock_map(weeks, week_progress)
+    week_numbers = _ordered_week_numbers(weeks)
+    week_completed_at_map = _week_completion_map(owner_key, track.get("slug"), week_numbers)
     resume_week_number, resume_day_key = _resume_target_for_track(
         owner_key, track, weeks, week_progress
     )
@@ -1820,6 +1875,7 @@ def program_hub_weeks(hub_slug):
         weeks=weeks,
         week_progress=week_progress,
         week_unlock_map=week_unlock_map,
+        week_completed_at_map=week_completed_at_map,
         resume_week_number=resume_week_number,
         resume_day_key=resume_day_key,
         total_days=total_days,
@@ -2023,6 +2079,61 @@ def program_hub_week_day_status(hub_slug, week_number: int):
                 },
                 upsert=True,
             )
+
+        week_doc = db.program_weeks.find_one(
+            {"program_id": track.get("_id"), "week_number": week_number},
+            {"_id": 1},
+        )
+        if week_doc:
+            week_items = list(
+                db.program_items.find(
+                    {"week_id": week_doc["_id"]},
+                    {"day": 1, "day_label": 1, "label": 1, "title": 1, "custom_name": 1},
+                ).sort([("order", 1), ("created_at", 1)])
+            )
+            day_keys = []
+            seen_day_keys = set()
+            for i, it in enumerate(week_items):
+                dk = _day_key_from_program_item(it, i + 1)
+                if dk in seen_day_keys:
+                    continue
+                seen_day_keys.add(dk)
+                day_keys.append(dk)
+
+            if day_keys:
+                done_count = db.program_day_progress.count_documents(
+                    {
+                        "viewer_id": owner_key,
+                        "track_slug": track.get("slug"),
+                        "week_number": week_number,
+                        "day_key": {"$in": day_keys},
+                    }
+                )
+                if done_count >= len(day_keys):
+                    db.program_week_progress.update_one(
+                        {
+                            "viewer_id": owner_key,
+                            "track_slug": track.get("slug"),
+                            "week_number": week_number,
+                        },
+                        {
+                            "$set": {
+                                "completed_at": datetime.datetime.utcnow(),
+                                "hub_slug": hub_slug,
+                                "level": level,
+                                "env": env,
+                            }
+                        },
+                        upsert=True,
+                    )
+                else:
+                    db.program_week_progress.delete_one(
+                        {
+                            "viewer_id": owner_key,
+                            "track_slug": track.get("slug"),
+                            "week_number": week_number,
+                        }
+                    )
 
     target_day = next_day_key or day_key
     args = {

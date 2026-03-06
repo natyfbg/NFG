@@ -65,8 +65,6 @@
                  href="{{ url_for('account_login') }}">Sign in</a>
               <a class="btn btn-sm btn-light {% if ep == 'account_register' %}active{% endif %}"
                  href="{{ url_for('account_register') }}">Join</a>
-              <a class="btn btn-sm btn-outline-secondary {% if ep == 'login' %}active{% endif %}"
-                 href="{{ url_for('login') }}">Admin Sign In</a>
             {% endif %}
           </div>
           <button class="navbar-toggler ms-1" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
@@ -136,8 +134,6 @@
                  href="{{ url_for('account_login') }}">Sign in</a>
               <a class="btn btn-sm btn-light {% if ep == 'account_register' %}active{% endif %}"
                  href="{{ url_for('account_register') }}">Join</a>
-              <a class="btn btn-sm btn-outline-secondary {% if ep == 'login' %}active{% endif %}"
-                 href="{{ url_for('login') }}">Admin Sign In</a>
             {% endif %}
           </div>
         </div>

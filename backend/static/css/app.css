@@ -48,14 +48,19 @@ html, body{ overflow-x: hidden; }
   .nav-top-row{
     gap: .35rem;
     width: 100%;
+    justify-content: flex-end;
+  }
+  .nav-top-row .navbar-brand{
+    margin-right: auto;
   }
   .nav-mobile-auth{
     max-width: calc(100% - 170px);
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    margin-right: .15rem;
   }
   .nav-top-row .navbar-toggler{
-    margin-left: auto;
+    margin-left: 0 !important;
     flex: 0 0 auto;
   }
   .nav-mobile-persist{

@@ -49,8 +49,14 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
       padding: .3rem .75rem;
       font-size: .84rem;
       white-space: nowrap;
+      transition: background .16s ease, color .16s ease, border-color .16s ease;
     }
     .day-chip.active{
+      background:#111;
+      color:#fff;
+      border-color:#111;
+    }
+    .day-chip.active.done{
       background:#111;
       color:#fff;
       border-color:#111;
@@ -320,6 +326,7 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
 
         const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl, { interval: false, ride: false, wrap: false });
         const chips = Array.from(document.querySelectorAll('.day-chip'));
+        const slides = Array.from(carouselEl.querySelectorAll('.carousel-item'));
         const progressEl = document.getElementById('dayProgress');
         const initialDayKey = "{{ initial_day_key }}";
         const completedCount = {{ completed_days_count|default(0) }};
@@ -337,6 +344,15 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
           if (progressEl) progressEl.textContent = `Day ${idx + 1} of ${chips.length} • ${completedCount} done`;
         }
 
+        function activeIndexFromDom() {
+          const idx = slides.findIndex((el) => el.classList.contains('active'));
+          return idx >= 0 ? idx : 0;
+        }
+
+        function syncFromDom() {
+          updateUI(activeIndexFromDom());
+        }
+
         chips.forEach((chip) => {
           chip.addEventListener('click', () => {
             const idx = parseInt(chip.dataset.dayIndex || chip.dataset.bsSlideTo || '0', 10) || 0;
@@ -348,9 +364,16 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
         carouselEl.addEventListener('slide.bs.carousel', (ev) => {
           updateUI(ev.to || 0);
         });
-        carouselEl.addEventListener('slid.bs.carousel', (ev) => {
-          updateUI(ev.to || 0);
+        carouselEl.addEventListener('slid.bs.carousel', () => {
+          syncFromDom();
         });
+
+        carouselEl.addEventListener('touchend', () => {
+          window.setTimeout(syncFromDom, 30);
+        }, { passive: true });
+
+        const observer = new MutationObserver(() => syncFromDom());
+        slides.forEach((slide) => observer.observe(slide, { attributes: true, attributeFilter: ['class'] }));
 
         document.querySelectorAll('.js-next-day').forEach((btn) => {
           btn.addEventListener('click', () => carousel.next());
@@ -362,7 +385,7 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
           if (idx >= 0) startIdx = idx;
         }
         if (startIdx > 0) carousel.to(startIdx);
-        updateUI(startIdx);
+        syncFromDom();
       })();
     </script>
 
