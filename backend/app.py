@@ -1884,6 +1884,37 @@ def program_hub_weeks(hub_slug):
     )
 
 
+@app.route("/programs/<hub_slug>/progress/reset", methods=["POST"])
+def program_hub_reset_progress(hub_slug):
+    _get_hub_or_404(hub_slug)
+
+    level = _norm_choice(request.form.get("level")) or "beginner"
+    env = _norm_choice(request.form.get("env")) or "home"
+
+    levels = _levels_for_hub(hub_slug)
+    if level not in levels:
+        level = levels[0] if levels else "beginner"
+
+    envs = _envs_for_hub_level(hub_slug, level)
+    if env not in envs:
+        env = envs[0] if envs else "home"
+
+    track = _pick_track_for(hub_slug, level, env)
+    if not track:
+        abort(404)
+
+    owner_key = _progress_owner_key()
+    track_slug = track.get("slug")
+    if owner_key and track_slug:
+        db.program_day_progress.delete_many({"viewer_id": owner_key, "track_slug": track_slug})
+        db.program_week_progress.delete_many({"viewer_id": owner_key, "track_slug": track_slug})
+        flash("Progress reset for this program.", "success")
+    else:
+        flash("No progress found to reset.", "warning")
+
+    return redirect(url_for("program_hub_weeks", hub_slug=hub_slug, level=level, env=env))
+
+
 @app.route("/programs/<hub_slug>/week/<int:week_number>")
 def program_hub_week_detail(hub_slug, week_number: int):
     hub = _get_hub_or_404(hub_slug)

@@ -116,7 +116,7 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
       </div>
     </div>
 
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
       <a class="btn btn-outline-secondary btn-sm"
          href="{{ url_for('program_hub_weeks', hub_slug=hub_slug, level=lvl, env=envv) }}">
         Back to weeks
@@ -125,6 +125,15 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
          href="{{ url_for('program_detail', slug=hub_slug) }}">
         Program home
       </a>
+      <form method="post"
+            action="{{ url_for('program_hub_reset_progress', hub_slug=hub_slug) }}"
+            onsubmit="return confirm('Reset all saved progress for this program? This cannot be undone.');"
+            class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="level" value="{{ lvl }}">
+        <input type="hidden" name="env" value="{{ envv }}">
+        <button class="btn btn-outline-danger btn-sm" type="submit">Reset progress</button>
+      </form>
     </div>
   </div>
 
@@ -293,7 +302,12 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
                       </form>
 
                       {% if not loop.last %}
-                        <button class="btn btn-sm btn-outline-dark js-next-day" type="button">Next day</button>
+                        <button class="btn btn-sm btn-outline-dark js-next-day"
+                                type="button"
+                                data-bs-target="#weekDayCarousel"
+                                data-bs-slide="next">
+                          Next day
+                        </button>
                       {% elif all_days_completed and next_week_number %}
                         <a class="btn btn-sm btn-dark"
                            href="{{ url_for('program_hub_week_detail', hub_slug=hub_slug, week_number=next_week_number, level=lvl, env=envv) }}">
@@ -321,71 +335,93 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
 
     <script>
       (function () {
-        const carouselEl = document.getElementById('weekDayCarousel');
-        if (!carouselEl) return;
+        function initWeekCarousel() {
+          const carouselEl = document.getElementById('weekDayCarousel');
+          if (!carouselEl || !window.bootstrap || !window.bootstrap.Carousel) return;
 
-        const carousel = bootstrap.Carousel.getOrCreateInstance(carouselEl, { interval: false, ride: false, wrap: false });
-        const chips = Array.from(document.querySelectorAll('.day-chip'));
-        const slides = Array.from(carouselEl.querySelectorAll('.carousel-item'));
-        const progressEl = document.getElementById('dayProgress');
-        const initialDayKey = "{{ initial_day_key }}";
-        const completedCount = {{ completed_days_count|default(0) }};
-
-        function updateUI(activeIdx) {
-          const idx = Number.isFinite(activeIdx) ? activeIdx : parseInt(activeIdx || '0', 10) || 0;
-          chips.forEach((chip, i) => {
-            const isActive = i === idx;
-            chip.classList.toggle('active', isActive);
-            chip.setAttribute('aria-current', isActive ? 'true' : 'false');
-            if (isActive) {
-              chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-            }
+          const carousel = window.bootstrap.Carousel.getOrCreateInstance(carouselEl, {
+            interval: false,
+            ride: false,
+            wrap: false,
+            touch: true
           });
-          if (progressEl) progressEl.textContent = `Day ${idx + 1} of ${chips.length} • ${completedCount} done`;
-        }
+          const chips = Array.from(document.querySelectorAll('.day-chip'));
+          const slides = Array.from(carouselEl.querySelectorAll('.carousel-item'));
+          const progressEl = document.getElementById('dayProgress');
+          const initialDayKey = "{{ initial_day_key }}";
+          const completedCount = {{ completed_days_count|default(0) }};
 
-        function activeIndexFromDom() {
-          const idx = slides.findIndex((el) => el.classList.contains('active'));
-          return idx >= 0 ? idx : 0;
-        }
+          function clampIdx(value) {
+            const parsed = parseInt(value, 10);
+            if (!Number.isFinite(parsed) || parsed < 0) return 0;
+            if (parsed >= chips.length) return Math.max(chips.length - 1, 0);
+            return parsed;
+          }
 
-        function syncFromDom() {
-          updateUI(activeIndexFromDom());
-        }
+          function updateUI(activeIdx, shouldScrollChip) {
+            const idx = clampIdx(activeIdx);
+            chips.forEach((chip, i) => {
+              const isActive = i === idx;
+              chip.classList.toggle('active', isActive);
+              chip.setAttribute('aria-current', isActive ? 'true' : 'false');
+              if (isActive && shouldScrollChip) {
+                chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+              }
+            });
+            if (progressEl) progressEl.textContent = `Day ${idx + 1} of ${chips.length} • ${completedCount} done`;
+            return idx;
+          }
 
-        chips.forEach((chip) => {
-          chip.addEventListener('click', () => {
-            const idx = parseInt(chip.dataset.dayIndex || chip.dataset.bsSlideTo || '0', 10) || 0;
-            carousel.to(idx);
-            updateUI(idx);
+          function activeIndexFromDom() {
+            const activeSlide = carouselEl.querySelector('.carousel-item.active');
+            if (!activeSlide) return 0;
+            const idx = slides.indexOf(activeSlide);
+            return idx >= 0 ? idx : 0;
+          }
+
+          function syncFromDom() {
+            updateUI(activeIndexFromDom(), false);
+          }
+
+          chips.forEach((chip) => {
+            chip.addEventListener('click', () => {
+              const idx = clampIdx(chip.dataset.dayIndex || chip.dataset.bsSlideTo || '0');
+              carousel.to(idx);
+              updateUI(idx, true);
+            });
           });
-        });
 
-        carouselEl.addEventListener('slide.bs.carousel', (ev) => {
-          updateUI(ev.to || 0);
-        });
-        carouselEl.addEventListener('slid.bs.carousel', () => {
+          carouselEl.addEventListener('slide.bs.carousel', (ev) => {
+            const toIdx = (typeof ev.to === 'number') ? ev.to : activeIndexFromDom();
+            updateUI(toIdx, true);
+          });
+          carouselEl.addEventListener('slid.bs.carousel', (ev) => {
+            const toIdx = (typeof ev.to === 'number') ? ev.to : activeIndexFromDom();
+            updateUI(toIdx, false);
+          });
+          carouselEl.addEventListener('touchend', () => {
+            window.setTimeout(syncFromDom, 30);
+          }, { passive: true });
+
+          const observer = new MutationObserver(() => syncFromDom());
+          slides.forEach((slide) => {
+            observer.observe(slide, { attributes: true, attributeFilter: ['class'] });
+          });
+
+          let startIdx = 0;
+          if (initialDayKey) {
+            const idx = chips.findIndex((c) => c.dataset.dayKey === initialDayKey);
+            if (idx >= 0) startIdx = idx;
+          }
+          if (startIdx > 0) carousel.to(startIdx);
           syncFromDom();
-        });
-
-        carouselEl.addEventListener('touchend', () => {
-          window.setTimeout(syncFromDom, 30);
-        }, { passive: true });
-
-        const observer = new MutationObserver(() => syncFromDom());
-        slides.forEach((slide) => observer.observe(slide, { attributes: true, attributeFilter: ['class'] }));
-
-        document.querySelectorAll('.js-next-day').forEach((btn) => {
-          btn.addEventListener('click', () => carousel.next());
-        });
-
-        let startIdx = 0;
-        if (initialDayKey) {
-          const idx = chips.findIndex((c) => c.dataset.dayKey === initialDayKey);
-          if (idx >= 0) startIdx = idx;
         }
-        if (startIdx > 0) carousel.to(startIdx);
-        syncFromDom();
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initWeekCarousel, { once: true });
+        } else {
+          initWeekCarousel();
+        }
       })();
     </script>
 

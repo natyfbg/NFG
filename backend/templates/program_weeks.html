@@ -56,7 +56,7 @@ Weeks – {{ track.title if track and track.title else "Program" }}
       </div>
     </div>
 
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
       <!-- Back goes to environment step -->
       <a class="btn btn-outline-secondary btn-sm"
          href="{{ url_for('program_hub_environment', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'), level=lvl) }}">
@@ -67,6 +67,18 @@ Weeks – {{ track.title if track and track.title else "Program" }}
          href="{{ url_for('programs_index') }}">
         All programs
       </a>
+
+      <form method="post"
+            action="{{ url_for('program_hub_reset_progress', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge')) }}"
+            onsubmit="return confirm('Reset all saved progress for this program? This cannot be undone.');"
+            class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="level" value="{{ lvl }}">
+        <input type="hidden" name="env" value="{{ envv }}">
+        <button class="btn btn-outline-danger btn-sm" type="submit">
+          Reset progress
+        </button>
+      </form>
     </div>
   </div>
 
