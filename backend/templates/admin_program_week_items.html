@@ -9,8 +9,9 @@
   {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality'] %}
   {% set admin_program_eps = [
     'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_link_health_backfill','admin_program_weeks','admin_program_weeks_scaffold',
+    'admin_program_week_update','admin_program_week_clone',
     'admin_program_week_items','admin_program_week_item_new',
-    'admin_program_week_item_edit','admin_program_week_item_delete'
+    'admin_program_week_item_edit','admin_program_week_item_delete','admin_program_week_items_copy','admin_program_week_items_reindex'
   ] %}
 
   <div class="list-group list-group-flush">
@@ -76,6 +77,58 @@
        href="{{ url_for('program_detail', slug=program.slug) }}">
       View Public
     </a>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-header bg-white">Speed Tools</div>
+  <div class="card-body">
+    <form method="post"
+          action="{{ url_for('admin_program_week_items_copy', program_id=program._id|string, week_id=week._id|string) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-md-6">
+          <label class="form-label">Copy items from another week</label>
+          <select class="form-select" name="source_week_id" required>
+            <option value="">— Select source week —</option>
+            {% for w in other_weeks %}
+              <option value="{{ w._id|string }}">
+                Week {{ w.week_number }}{% if w.title %} — {{ w.title }}{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-3">
+          <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" id="overwriteWeekItems" name="overwrite_items">
+            <label class="form-check-label" for="overwriteWeekItems">
+              Overwrite current week items
+            </label>
+          </div>
+        </div>
+        <div class="col-12 col-md-3 d-grid">
+          <button class="btn btn-outline-dark" type="submit" {% if not other_weeks %}disabled{% endif %}>
+            Copy Items
+          </button>
+        </div>
+      </div>
+      <div class="small text-muted mt-2">
+        If overwrite is off, copied items are appended to the bottom of the current week.
+      </div>
+    </form>
+
+    <hr class="my-3">
+
+    <form method="post"
+          action="{{ url_for('admin_program_week_items_reindex', program_id=program._id|string, week_id=week._id|string) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="small text-muted">
+          Normalize item order to 1..N (based on current order).
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" type="submit">Reindex Order</button>
+      </div>
+    </form>
   </div>
 </div>
 

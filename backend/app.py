@@ -3563,10 +3563,152 @@ def admin_program_week_new(program_id):
     return redirect(url_for("admin_program_weeks", program_id=program_id))
 
 
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/update", methods=["POST"])
+@login_required
+def admin_program_week_update(program_id, week_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not week:
+        abort(404)
+
+    week_number = _safe_int(
+        request.form.get("week_number"),
+        default=(week.get("week_number") or 0),
+        min_value=1,
+        max_value=52,
+    )
+    title = (request.form.get("title") or "").strip() or None
+    order = _safe_int(
+        request.form.get("order"),
+        default=(week.get("order") if week.get("order") is not None else week_number),
+        min_value=0,
+        max_value=999,
+    )
+
+    conflicting = db.program_weeks.find_one(
+        {
+            "program_id": program["_id"],
+            "week_number": week_number,
+            "_id": {"$ne": week["_id"]},
+        },
+        {"_id": 1},
+    )
+    if conflicting:
+        flash(f"Week {week_number} already exists for this program.", "danger")
+        return redirect(url_for("admin_program_weeks", program_id=program_id))
+
+    db.program_weeks.update_one(
+        {"_id": week["_id"]},
+        {"$set": {"week_number": week_number, "title": title, "order": order}},
+    )
+    flash(f"Week {week_number} updated.", "success")
+    return redirect(url_for("admin_program_weeks", program_id=program_id))
+
+
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/clone", methods=["POST"])
+@login_required
+def admin_program_week_clone(program_id, week_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    source_week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not source_week:
+        abort(404)
+
+    target_week_number = _safe_int(
+        request.form.get("target_week_number"),
+        default=0,
+        min_value=1,
+        max_value=52,
+    )
+    if target_week_number < 1:
+        flash("Target week number must be at least 1.", "danger")
+        return redirect(url_for("admin_program_weeks", program_id=program_id))
+
+    source_week_number = _safe_int(source_week.get("week_number"), default=0)
+    if target_week_number == source_week_number:
+        flash("Choose a different target week number.", "danger")
+        return redirect(url_for("admin_program_weeks", program_id=program_id))
+
+    target_title = (request.form.get("target_title") or "").strip() or None
+    include_items = request.form.get("include_items") == "on"
+    overwrite_items = request.form.get("overwrite_items") == "on"
+
+    target_week = db.program_weeks.find_one(
+        {"program_id": program["_id"], "week_number": target_week_number}
+    )
+    target_created = False
+    if not target_week:
+        db.program_weeks.insert_one(
+            {
+                "program_id": program["_id"],
+                "week_number": target_week_number,
+                "title": target_title or f"Week {target_week_number}",
+                "order": target_week_number,
+                "created_at": datetime.datetime.utcnow(),
+            }
+        )
+        target_week = db.program_weeks.find_one(
+            {"program_id": program["_id"], "week_number": target_week_number}
+        )
+        target_created = True
+    elif target_title:
+        db.program_weeks.update_one({"_id": target_week["_id"]}, {"$set": {"title": target_title}})
+
+    copied_count = 0
+    if include_items and target_week:
+        source_items = list(
+            db.program_items.find({"week_id": source_week["_id"]}).sort([("order", 1), ("created_at", 1)])
+        )
+        if source_items:
+            target_existing_count = db.program_items.count_documents({"week_id": target_week["_id"]})
+            if target_existing_count > 0 and not overwrite_items:
+                flash(
+                    (
+                        f"Target Week {target_week_number} already has {target_existing_count} item(s). "
+                        "Enable overwrite to replace them."
+                    ),
+                    "warning",
+                )
+                return redirect(url_for("admin_program_weeks", program_id=program_id))
+            if overwrite_items and target_existing_count > 0:
+                db.program_items.delete_many({"week_id": target_week["_id"]})
+
+            now = datetime.datetime.utcnow()
+            for source in source_items:
+                clone_doc = dict(source)
+                clone_doc.pop("_id", None)
+                clone_doc["week_id"] = target_week["_id"]
+                clone_doc["created_at"] = now
+                db.program_items.insert_one(clone_doc)
+                copied_count += 1
+
+    week_msg = "created" if target_created else "updated"
+    if include_items:
+        flash(
+            (
+                f"Week {target_week_number} {week_msg}. "
+                f"Copied {copied_count} item(s) from Week {source_week_number}."
+            ),
+            "success",
+        )
+    else:
+        flash(f"Week {target_week_number} {week_msg}.", "success")
+    return redirect(url_for("admin_program_weeks", program_id=program_id))
+
+
 @app.route("/admin/programs/<program_id>/weeks/<week_id>/delete", methods=["POST"])
 @login_required
 def admin_program_week_delete(program_id, week_id):
-    week = db.program_weeks.find_one({"_id": ObjectId(week_id)})
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
     if not week:
         abort(404)
 
@@ -3594,6 +3736,12 @@ def admin_program_week_items(program_id, week_id):
     items = list(
         db.program_items.find({"week_id": week["_id"]}).sort([("order", 1), ("created_at", 1)])
     )
+    weeks_in_program = list(
+        db.program_weeks.find({"program_id": program["_id"]}, {"week_number": 1, "title": 1}).sort(
+            [("week_number", 1), ("order", 1)]
+        )
+    )
+    other_weeks = [w for w in weeks_in_program if w.get("_id") != week.get("_id")]
     workouts = list(
         db.workouts.find(
             {},
@@ -3615,6 +3763,7 @@ def admin_program_week_items(program_id, week_id):
         week=week,
         items=items,
         workouts=workouts,
+        other_weeks=other_weeks,
         workout_map=workout_map,
     )
 
@@ -3757,6 +3906,101 @@ def admin_program_week_item_delete(program_id, week_id, item_id):
 
     db.program_items.delete_one({"_id": ObjectId(item_id), "week_id": week["_id"]})
     flash("Week item deleted.", "success")
+    return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/copy", methods=["POST"])
+@login_required
+def admin_program_week_items_copy(program_id, week_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not week:
+        abort(404)
+
+    source_week_id_raw = (request.form.get("source_week_id") or "").strip()
+    overwrite_items = request.form.get("overwrite_items") == "on"
+    if not source_week_id_raw:
+        flash("Choose a source week to copy from.", "danger")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    try:
+        source_week_id = ObjectId(source_week_id_raw)
+    except Exception:
+        flash("Invalid source week.", "danger")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    source_week = db.program_weeks.find_one({"_id": source_week_id, "program_id": program["_id"]})
+    if not source_week:
+        flash("Source week not found.", "danger")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    if source_week["_id"] == week["_id"]:
+        flash("Choose a different source week.", "danger")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    source_items = list(
+        db.program_items.find({"week_id": source_week["_id"]}).sort([("order", 1), ("created_at", 1)])
+    )
+    if not source_items:
+        flash("Source week has no items to copy.", "warning")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    existing_count = db.program_items.count_documents({"week_id": week["_id"]})
+    if existing_count > 0 and overwrite_items:
+        db.program_items.delete_many({"week_id": week["_id"]})
+        base_order = 0
+    elif existing_count > 0:
+        last_item = db.program_items.find_one(
+            {"week_id": week["_id"]},
+            sort=[("order", -1), ("created_at", -1)],
+        )
+        base_order = _safe_int(last_item.get("order") if last_item else 0, default=0)
+    else:
+        base_order = 0
+
+    copied = 0
+    now = datetime.datetime.utcnow()
+    for idx, source in enumerate(source_items, start=1):
+        clone_doc = dict(source)
+        clone_doc.pop("_id", None)
+        clone_doc["week_id"] = week["_id"]
+        clone_doc["created_at"] = now
+        if existing_count > 0 and not overwrite_items:
+            clone_doc["order"] = base_order + idx
+        db.program_items.insert_one(clone_doc)
+        copied += 1
+
+    flash(
+        (
+            f"Copied {copied} item(s) from Week {source_week.get('week_number')} "
+            f"to Week {week.get('week_number')}."
+        ),
+        "success",
+    )
+    return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/reindex", methods=["POST"])
+@login_required
+def admin_program_week_items_reindex(program_id, week_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not week:
+        abort(404)
+
+    items = list(
+        db.program_items.find({"week_id": week["_id"]}, {"_id": 1}).sort([("order", 1), ("created_at", 1)])
+    )
+    for idx, item in enumerate(items, start=1):
+        db.program_items.update_one({"_id": item["_id"]}, {"$set": {"order": idx}})
+
+    flash(f"Reindexed {len(items)} item(s) in Week {week.get('week_number')}.", "success")
     return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
 
 

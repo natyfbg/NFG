@@ -9,9 +9,9 @@
   {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality'] %}
   {% set admin_program_eps = [
     'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_link_health_backfill',
-    'admin_program_weeks','admin_program_weeks_scaffold',
+    'admin_program_weeks','admin_program_weeks_scaffold','admin_program_week_update','admin_program_week_clone',
     'admin_program_week_items','admin_program_week_item_new',
-    'admin_program_week_item_edit','admin_program_week_item_delete'
+    'admin_program_week_item_edit','admin_program_week_item_delete','admin_program_week_items_copy','admin_program_week_items_reindex'
   ] %}
 
   <div class="list-group list-group-flush">
@@ -179,6 +179,74 @@
             </form>
           </div>
         </div>
+
+        <details class="mt-2">
+          <summary class="small text-muted">Edit / Clone week</summary>
+          <div class="border rounded p-3 mt-2 bg-body-tertiary">
+            <form method="post"
+                  action="{{ url_for('admin_program_week_update', program_id=program._id|string, week_id=w._id|string) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-2">
+                  <label class="form-label small mb-1">Week #</label>
+                  <input class="form-control form-control-sm" type="number" min="1" max="52" step="1"
+                         name="week_number" value="{{ wn }}" required>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label small mb-1">Title</label>
+                  <input class="form-control form-control-sm" name="title" value="{{ wt or '' }}">
+                </div>
+                <div class="col-12 col-md-2">
+                  <label class="form-label small mb-1">Order</label>
+                  <input class="form-control form-control-sm" type="number" min="0" max="999" step="1"
+                         name="order" value="{{ wo if wo is not none else wn }}">
+                </div>
+                <div class="col-12 col-md-2 d-grid">
+                  <button class="btn btn-sm btn-outline-primary" type="submit">Save Week</button>
+                </div>
+              </div>
+            </form>
+
+            <hr class="my-3">
+
+            <form method="post"
+                  action="{{ url_for('admin_program_week_clone', program_id=program._id|string, week_id=w._id|string) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-2">
+                  <label class="form-label small mb-1">Clone to week #</label>
+                  <input class="form-control form-control-sm" type="number" min="1" max="52" step="1"
+                         name="target_week_number" value="{{ (wn|int) + 1 }}" required>
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label small mb-1">Target title (optional)</label>
+                  <input class="form-control form-control-sm" name="target_title" placeholder="Week title">
+                </div>
+                <div class="col-6 col-md-2">
+                  <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" id="cloneItems{{ w._id|string }}"
+                           name="include_items" checked>
+                    <label class="form-check-label small" for="cloneItems{{ w._id|string }}">
+                      Copy items
+                    </label>
+                  </div>
+                </div>
+                <div class="col-6 col-md-2">
+                  <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" id="overwriteItems{{ w._id|string }}"
+                           name="overwrite_items">
+                    <label class="form-check-label small" for="overwriteItems{{ w._id|string }}">
+                      Overwrite target
+                    </label>
+                  </div>
+                </div>
+                <div class="col-12 col-md-2 d-grid">
+                  <button class="btn btn-sm btn-dark" type="submit">Clone Week</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </details>
       </div>
     {% endfor %}
   </div>
