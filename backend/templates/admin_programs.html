@@ -20,9 +20,11 @@
   {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality'] %}
   {# include admin_program_weeks so sidebar stays active when you're on weeks page #}
   {% set admin_program_eps = [
-    'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_link_health_backfill','admin_program_weeks','admin_program_weeks_scaffold',
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_link_health_backfill',
+    'admin_program_clone','admin_program_build_tracks','admin_program_set_status',
+    'admin_program_weeks','admin_program_weeks_scaffold','admin_program_week_update','admin_program_week_clone',
     'admin_program_week_items','admin_program_week_item_new',
-    'admin_program_week_item_edit','admin_program_week_item_delete'
+    'admin_program_week_item_edit','admin_program_week_item_delete','admin_program_week_items_copy','admin_program_week_items_reindex'
   ] %}
 
   <div class="list-group list-group-flush">
@@ -83,6 +85,10 @@
           <button class="btn btn-sm btn-outline-dark" type="button" data-filter="all">All</button>
           <button class="btn btn-sm btn-outline-success" type="button" data-filter="active">Active</button>
           <button class="btn btn-sm btn-outline-secondary" type="button" data-filter="inactive">Inactive</button>
+          <button class="btn btn-sm btn-outline-danger" type="button" data-filter="critical">Has Critical</button>
+          <button class="btn btn-sm btn-outline-warning" type="button" data-filter="draft">Draft</button>
+          <button class="btn btn-sm btn-outline-info" type="button" data-filter="ready">Ready</button>
+          <button class="btn btn-sm btn-outline-success" type="button" data-filter="published">Published</button>
           <button class="btn btn-sm btn-outline-dark" type="button" data-filter="home">Shown on Home</button>
           <button class="btn btn-sm btn-outline-primary" type="button" data-filter="hub">Hub</button>
           <button class="btn btn-sm btn-outline-primary" type="button" data-filter="track">Track</button>
@@ -91,7 +97,7 @@
     </div>
 
     <div class="small text-muted mt-2">
-      Tip: Use <strong>Show on Home</strong> to feature a program card on the Home page.
+      Tip: only <strong>Published + Active</strong> programs are visible to members/public.
     </div>
   </div>
 </div>
@@ -108,6 +114,12 @@
 
       {% set hub_slug = (p.hub_slug if p.hub_slug is defined else '') %}
       {% set track_level = (p.track_level if p.track_level is defined else '') %}
+      {% set hub_tracks = (tracks_by_hub.get(p.slug) if (tracks_by_hub and p.slug) else []) %}
+      {% set readiness = (readiness_by_program.get(p._id|string) if readiness_by_program else None) %}
+      {% set critical_count = (readiness.get('critical_count', 0) if readiness else 0) %}
+      {% set warning_count = (readiness.get('warning_count', 0) if readiness else 0) %}
+      {% set publish_status = (p._publish_status if p._publish_status is defined else ((p.publish_status if p.publish_status is defined else 'published')|lower)) %}
+      {% if publish_status not in ['draft','ready','published'] %}{% set publish_status = 'published' %}{% endif %}
 
       <div class="list-group-item program-row"
            data-title="{{ title|lower }}"
@@ -117,6 +129,8 @@
            data-tracklevel="{{ (track_level or '')|lower }}"
            data-active="{{ '1' if (p.active is not defined or p.active) else '0' }}"
            data-home="{{ '1' if p.show_on_home else '0' }}"
+           data-publish="{{ publish_status }}"
+           data-critical="{{ '1' if critical_count > 0 else '0' }}"
            data-kind="{{ kind }}">
 
         <div class="d-flex align-items-start justify-content-between gap-3">
@@ -154,6 +168,10 @@
                   <span class="me-2">Level: <strong>{{ track_level or '—' }}</strong></span>
                   <span>Env: <strong>{{ (p.track_env or '—')|capitalize }}</strong></span>
                 </div>
+              {% elif kind == 'hub' %}
+                <div class="small text-muted mt-1">
+                  Tracks linked: <strong>{{ hub_tracks|length }}</strong>
+                </div>
               {% endif %}
 
               <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
@@ -174,9 +192,38 @@
                 {% else %}
                   <span class="badge text-bg-primary bg-opacity-75">Track</span>
                 {% endif %}
+                {% if publish_status == 'published' %}
+                  <span class="badge text-bg-success">Published</span>
+                {% elif publish_status == 'ready' %}
+                  <span class="badge text-bg-info">Ready</span>
+                {% else %}
+                  <span class="badge text-bg-warning text-dark">Draft</span>
+                {% endif %}
+                {% if critical_count > 0 %}
+                  <span class="badge text-bg-danger">{{ critical_count }} critical</span>
+                {% elif warning_count > 0 %}
+                  <span class="badge text-bg-secondary">{{ warning_count }} warning{{ '' if warning_count == 1 else 's' }}</span>
+                {% else %}
+                  <span class="badge text-bg-light border text-dark">Checks clear</span>
+                {% endif %}
 
-                <a class="small" href="{{ url_for('program_detail', slug=p.slug) }}">Open public</a>
+                {% if (p.active is not defined or p.active) and publish_status == 'published' %}
+                  <a class="small" href="{{ url_for('program_detail', slug=p.slug) }}">Open public</a>
+                {% else %}
+                  <span class="small text-muted">Not public yet</span>
+                {% endif %}
               </div>
+              {% if readiness %}
+                <div class="small text-muted mt-1">
+                  {% if critical_count > 0 %}
+                    {{ readiness.get('critical', [])[0] }}
+                  {% elif warning_count > 0 %}
+                    {{ readiness.get('warnings', [])[0] }}
+                  {% else %}
+                    Ready for publish checks.
+                  {% endif %}
+                </div>
+              {% endif %}
             </div>
           </div>
 
@@ -191,6 +238,28 @@
                href="{{ url_for('admin_program_edit', id=p._id|string) }}">
               Edit
             </a>
+
+            <form method="post"
+                  action="{{ url_for('admin_program_set_status', id=p._id|string) }}"
+                  class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="status" value="draft">
+              <button class="btn btn-sm btn-outline-warning" type="submit" {% if publish_status == 'draft' %}disabled{% endif %}>Set Draft</button>
+            </form>
+            <form method="post"
+                  action="{{ url_for('admin_program_set_status', id=p._id|string) }}"
+                  class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="status" value="ready">
+              <button class="btn btn-sm btn-outline-info" type="submit" {% if publish_status == 'ready' %}disabled{% endif %}>Set Ready</button>
+            </form>
+            <form method="post"
+                  action="{{ url_for('admin_program_set_status', id=p._id|string) }}"
+                  class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="status" value="published">
+              <button class="btn btn-sm btn-success" type="submit" {% if publish_status == 'published' %}disabled{% endif %}>Publish</button>
+            </form>
 
             <form method="post"
                   action="{{ url_for('admin_program_toggle_active', id=p._id|string) }}"
@@ -224,6 +293,121 @@
           </div>
 
         </div>
+
+        <details class="mt-2">
+          <summary class="small text-muted">Automation tools</summary>
+          <div class="border rounded p-3 mt-2 bg-body-tertiary">
+            <div class="fw-semibold small mb-2">Clone this program</div>
+            <form method="post" action="{{ url_for('admin_program_clone', id=p._id|string) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-4">
+                  <label class="form-label small mb-1">New title</label>
+                  <input class="form-control form-control-sm" name="title" value="{{ p.title }} Copy" required>
+                </div>
+                <div class="col-12 col-md-3">
+                  <label class="form-label small mb-1">New slug (optional)</label>
+                  <input class="form-control form-control-sm" name="slug" placeholder="{{ p.slug }}-copy">
+                </div>
+                <div class="col-6 col-md-2">
+                  <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" id="cloneWeeks{{ p._id|string }}" name="copy_weeks" checked>
+                    <label class="form-check-label small" for="cloneWeeks{{ p._id|string }}">Copy weeks</label>
+                  </div>
+                </div>
+                <div class="col-6 col-md-2">
+                  <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" id="cloneItems{{ p._id|string }}" name="copy_items" checked>
+                    <label class="form-check-label small" for="cloneItems{{ p._id|string }}">Copy items</label>
+                  </div>
+                </div>
+                <div class="col-6 col-md-1 d-grid">
+                  <button class="btn btn-sm btn-dark" type="submit">Clone</button>
+                </div>
+              </div>
+              <div class="row g-2 mt-1">
+                <div class="col-6 col-md-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="cloneActive{{ p._id|string }}" name="active">
+                    <label class="form-check-label small" for="cloneActive{{ p._id|string }}">Active clone</label>
+                  </div>
+                </div>
+                <div class="col-6 col-md-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="cloneHome{{ p._id|string }}" name="show_on_home">
+                    <label class="form-check-label small" for="cloneHome{{ p._id|string }}">Show on Home</label>
+                  </div>
+                </div>
+                <div class="col-12 col-md-3">
+                  <label class="form-label small mb-1">Clone status</label>
+                  <select class="form-select form-select-sm" name="publish_status">
+                    <option value="draft" selected>Draft</option>
+                    <option value="ready">Ready</option>
+                    <option value="published">Published</option>
+                  </select>
+                </div>
+              </div>
+            </form>
+
+            {% if kind == 'hub' %}
+              <hr class="my-3">
+              <div class="fw-semibold small mb-2">Build tracks for this hub</div>
+              <form method="post" action="{{ url_for('admin_program_build_tracks', id=p._id|string) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row g-2 align-items-end">
+                  <div class="col-12 col-md-3">
+                    <label class="form-label small mb-1">Levels</label>
+                    <input class="form-control form-control-sm" name="levels" value="{{ default_levels_csv }}">
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label class="form-label small mb-1">Environments</label>
+                    <input class="form-control form-control-sm" name="envs" value="{{ default_envs_csv }}">
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label class="form-label small mb-1">Template track (optional)</label>
+                    <select class="form-select form-select-sm" name="template_track_id">
+                      <option value="">— No template —</option>
+                      {% for t in hub_tracks %}
+                        <option value="{{ t._id|string }}">
+                          {{ t.track_level or 'Level' }} • {{ (t.track_env or 'home')|capitalize }} — {{ t.title }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-6 col-md-1">
+                    <div class="form-check mt-4">
+                      <input class="form-check-input" type="checkbox" id="copyTrackWeeks{{ p._id|string }}" name="copy_weeks" checked>
+                      <label class="form-check-label small" for="copyTrackWeeks{{ p._id|string }}">Weeks</label>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-1">
+                    <div class="form-check mt-4">
+                      <input class="form-check-input" type="checkbox" id="copyTrackItems{{ p._id|string }}" name="copy_items" checked>
+                      <label class="form-check-label small" for="copyTrackItems{{ p._id|string }}">Items</label>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-1">
+                    <div class="form-check mt-4">
+                      <input class="form-check-input" type="checkbox" id="activeTracks{{ p._id|string }}" name="active" checked>
+                      <label class="form-check-label small" for="activeTracks{{ p._id|string }}">Active</label>
+                    </div>
+                  </div>
+                  <div class="col-12 col-md-2">
+                    <label class="form-label small mb-1">Track status</label>
+                    <select class="form-select form-select-sm" name="publish_status">
+                      <option value="draft" selected>Draft</option>
+                      <option value="ready">Ready</option>
+                      <option value="published">Published</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-end mt-2">
+                  <button class="btn btn-sm btn-primary" type="submit">Build Missing Tracks</button>
+                </div>
+              </form>
+            {% endif %}
+          </div>
+        </details>
       </div>
     {% endfor %}
   </div>
@@ -251,10 +435,16 @@
         const isActive = row.dataset.active === '1';
         const isHome = row.dataset.home === '1';
         const kind = row.dataset.kind;
+        const publish = row.dataset.publish || 'published';
+        const hasCritical = row.dataset.critical === '1';
 
         switch (activeFilter) {
           case 'active': return isActive;
           case 'inactive': return !isActive;
+          case 'critical': return hasCritical;
+          case 'draft': return publish === 'draft';
+          case 'ready': return publish === 'ready';
+          case 'published': return publish === 'published';
           case 'home': return isHome;
           case 'hub': return kind === 'hub';
           case 'track': return kind === 'track';

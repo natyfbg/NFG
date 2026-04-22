@@ -612,6 +612,7 @@ WORKOUT_DIFFICULTY_TIERS = ["Easy", "Moderate", "Hard"]
 # -----------------------------------------------------------------------------
 DEFAULT_LEVELS = ["beginner", "intermediate", "advanced"]
 DEFAULT_ENVS = ["home", "gym", "hybrid"]
+PROGRAM_PUBLISH_STATUSES = ["draft", "ready", "published"]
 DEFAULT_WEEK_DAY_ORDER = [
     "push",
     "pull",
@@ -640,6 +641,29 @@ SAMPLE_DAY_WORKOUT_QUERIES = {
 
 def _norm_choice(val: Optional[str]) -> str:
     return (val or "").strip().lower()
+
+
+def _norm_publish_status(raw: Optional[str], fallback: str = "draft") -> str:
+    val = _norm_choice(raw)
+    if val in PROGRAM_PUBLISH_STATUSES:
+        return val
+    return fallback if fallback in PROGRAM_PUBLISH_STATUSES else "draft"
+
+
+def _program_publish_status(program: Optional[dict], fallback: str = "published") -> str:
+    if not program:
+        return _norm_publish_status(None, fallback=fallback)
+    return _norm_publish_status(program.get("publish_status"), fallback=fallback)
+
+
+def _public_program_query(extra: Optional[dict] = None) -> dict:
+    filters = [{"active": {"$ne": False}}]
+    include_unpublished_for_admin = bool(getattr(current_user, "is_admin", False))
+    if not include_unpublished_for_admin:
+        filters.append({"$or": [{"publish_status": {"$exists": False}}, {"publish_status": "published"}]})
+    if extra:
+        filters.append(extra)
+    return {"$and": filters}
 
 
 def _canonical_choice(raw: Optional[str], options: List[str]) -> str:
@@ -783,7 +807,7 @@ def _week_count_from_duration_label(duration_label: Optional[str]) -> int:
 
 
 def _get_hub_or_404(hub_slug: str) -> dict:
-    hub = db.programs.find_one({"slug": hub_slug, "active": {"$ne": False}})
+    hub = db.programs.find_one(_public_program_query({"slug": hub_slug}))
     if not hub:
         abort(404)
     if hub.get("kind") and hub.get("kind") != "hub":
@@ -793,7 +817,7 @@ def _get_hub_or_404(hub_slug: str) -> dict:
 
 def _tracks_for_hub(hub_slug: str) -> List[dict]:
     cursor = db.programs.find(
-        {"kind": "track", "hub_slug": hub_slug, "active": {"$ne": False}}
+        _public_program_query({"kind": "track", "hub_slug": hub_slug})
     ).sort([("order", 1), ("created_at", -1)])
     return list(cursor)
 
@@ -1104,6 +1128,152 @@ def _program_link_health_report(include_rows: bool = False) -> dict:
     }
 
 
+def _program_readiness_report(program: dict) -> dict:
+    critical: List[str] = []
+    warnings: List[str] = []
+
+    kind = _norm_choice(program.get("kind")) or "hub"
+    slug = (program.get("slug") or "").strip()
+    title = (program.get("title") or "").strip()
+
+    if not title:
+        critical.append("Missing title.")
+    if not slug:
+        critical.append("Missing slug.")
+
+    week_count = 0
+    item_count = 0
+    broken_links = 0
+    unresolved_items = 0
+    published_tracks = 0
+    active_tracks = 0
+
+    if kind == "track":
+        hub_slug = (program.get("hub_slug") or "").strip()
+        track_level = (program.get("track_level") or "").strip()
+        track_env = _track_env_value(program)
+
+        if not hub_slug:
+            critical.append("Track is missing hub slug.")
+        if not track_level:
+            critical.append("Track is missing level.")
+        if not track_env:
+            critical.append("Track is missing environment.")
+
+        weeks = list(
+            db.program_weeks.find({"program_id": program["_id"]}, {"_id": 1, "week_number": 1}).sort(
+                [("week_number", 1), ("order", 1)]
+            )
+        )
+        week_count = len(weeks)
+        if week_count == 0:
+            critical.append("Track has no weeks.")
+        else:
+            week_ids = [w["_id"] for w in weeks]
+            week_num_by_id = {w["_id"]: _safe_int(w.get("week_number"), default=0) for w in weeks}
+
+            items = list(
+                db.program_items.find(
+                    {"week_id": {"$in": week_ids}},
+                    {"week_id": 1, "workout_id": 1, "custom_name": 1, "workout_name": 1, "notes": 1},
+                )
+            )
+            item_count = len(items)
+
+            items_by_week = {wid: 0 for wid in week_ids}
+            workout_ids = []
+            for it in items:
+                wid = it.get("week_id")
+                if wid in items_by_week:
+                    items_by_week[wid] += 1
+                if it.get("workout_id"):
+                    workout_ids.append(it.get("workout_id"))
+
+            empty_weeks = [week_num_by_id[wid] for wid, count in items_by_week.items() if count == 0]
+            if empty_weeks:
+                empty_weeks = sorted([n for n in empty_weeks if n > 0])
+                label = ", ".join([str(n) for n in empty_weeks[:6]])
+                if len(empty_weeks) > 6:
+                    label += ", …"
+                critical.append(f"Week(s) with no items: {label}.")
+
+            workout_ids = [wid for wid in workout_ids if wid]
+            workout_by_id = {}
+            if workout_ids:
+                linked = list(db.workouts.find({"_id": {"$in": workout_ids}}, {"_id": 1}))
+                workout_by_id = {w["_id"]: True for w in linked if w.get("_id") is not None}
+
+            for it in items:
+                wid = it.get("workout_id")
+                has_custom = bool(
+                    (it.get("custom_name") or "").strip()
+                    or (it.get("workout_name") or "").strip()
+                    or (it.get("notes") or "").strip()
+                )
+                if wid:
+                    if wid not in workout_by_id:
+                        broken_links += 1
+                elif not has_custom:
+                    unresolved_items += 1
+
+            if broken_links > 0:
+                critical.append(f"Broken workout links: {broken_links}.")
+            if unresolved_items > 0:
+                warnings.append(f"Unresolved items (no workout/custom text): {unresolved_items}.")
+            if item_count == 0:
+                critical.append("Track has no week items.")
+
+    elif kind == "hub":
+        tracks = list(
+            db.programs.find(
+                {"kind": "track", "hub_slug": slug},
+                {"_id": 1, "track_level": 1, "track_env": 1, "active": 1, "publish_status": 1},
+            )
+        )
+        if not tracks:
+            critical.append("Hub has no tracks.")
+        else:
+            active_tracks = sum(1 for t in tracks if t.get("active") is not False)
+            published_tracks = sum(1 for t in tracks if _program_publish_status(t) == "published")
+            if active_tracks == 0:
+                warnings.append("Hub has no active tracks.")
+            if published_tracks == 0:
+                critical.append("Hub has no published tracks.")
+
+            combos = set()
+            for t in tracks:
+                level = _norm_choice(t.get("track_level"))
+                env = _track_env_value(t)
+                if level and env:
+                    combos.add((level, env))
+            missing = []
+            for lvl in DEFAULT_LEVELS:
+                for env in DEFAULT_ENVS:
+                    if (lvl, env) not in combos:
+                        missing.append(f"{lvl.capitalize()}-{env}")
+            if missing:
+                label = ", ".join(missing[:6])
+                if len(missing) > 6:
+                    label += ", …"
+                warnings.append(f"Missing track variants: {label}.")
+    else:
+        warnings.append("Unknown program kind; treated as Hub.")
+
+    return {
+        "critical": critical,
+        "warnings": warnings,
+        "critical_count": len(critical),
+        "warning_count": len(warnings),
+        "can_publish": len(critical) == 0,
+        "week_count": week_count,
+        "item_count": item_count,
+        "broken_links": broken_links,
+        "unresolved_items": unresolved_items,
+        "active_tracks": active_tracks,
+        "published_tracks": published_tracks,
+    }
+
+
 def _viewer_id() -> str:
     return (getattr(g, "viewer_id", "") or "").strip()
 
@@ -1137,9 +1307,7 @@ def _favorite_programs_for_viewer(viewer_id: str, limit: int = 6) -> List[dict]:
     # Keep the user's favorite order (latest favorite first).
     want = slugs[: max(1, limit * 3)]
     found = list(
-        db.programs.find(
-            {"slug": {"$in": want}, "active": {"$ne": False}, "kind": "hub"}
-        )
+        db.programs.find(_public_program_query({"slug": {"$in": want}, "kind": "hub"}))
     )
     by_slug = {p.get("slug"): p for p in found if p.get("slug")}
     ordered = [by_slug[s] for s in want if s in by_slug]
@@ -1369,7 +1537,7 @@ def _continue_plan_for_owner(owner_key: str) -> Optional[dict]:
     if not track_slug or not week_number:
         return None
 
-    track = db.programs.find_one({"slug": track_slug, "active": {"$ne": False}})
+    track = db.programs.find_one(_public_program_query({"slug": track_slug, "kind": "track"}))
     if not track or track.get("kind") != "track":
         return None
 
@@ -1437,6 +1605,7 @@ db.programs.create_index([("order", 1)])
 db.programs.create_index([("created_at", -1)])
 db.programs.create_index([("show_on_home", 1)])
 db.programs.create_index([("kind", 1)])
+db.programs.create_index([("publish_status", 1)])
 db.programs.create_index([("hub_slug", 1)])
 db.programs.create_index([("track_level", 1)])
 db.programs.create_index([("track_env", 1)])
@@ -1540,14 +1709,20 @@ def _ensure_8_week_programs_seed_once() -> None:
                     "cover_image": None,
                     "order": 0,
                     "active": True,
+                    "publish_status": "published",
                     "show_on_home": True,
                     "rules": DEFAULT_8W_RULES,
                     "created_at": now,
                 }
             )
         else:
+            updates = {}
             if hub.get("kind") != "hub":
-                db.programs.update_one({"_id": hub["_id"]}, {"$set": {"kind": "hub"}})
+                updates["kind"] = "hub"
+            if not hub.get("publish_status"):
+                updates["publish_status"] = "published"
+            if updates:
+                db.programs.update_one({"_id": hub["_id"]}, {"$set": updates})
 
         defaults = [
             ("Beginner • Home", "Beginner", "Home", 10),
@@ -1574,6 +1749,8 @@ def _ensure_8_week_programs_seed_once() -> None:
                     updates["track_level"] = level
                 if not existing.get("track_env"):
                     updates["track_env"] = _norm_choice(env)
+                if not existing.get("publish_status"):
+                    updates["publish_status"] = "published"
                 if updates:
                     db.programs.update_one({"_id": existing["_id"]}, {"$set": updates})
                 continue
@@ -1595,6 +1772,7 @@ def _ensure_8_week_programs_seed_once() -> None:
                     "cover_image": None,
                     "order": order,
                     "active": True,
+                    "publish_status": "published",
                     "show_on_home": False,
                     "rules": DEFAULT_8W_RULES,
                     "created_at": now,
@@ -1694,7 +1872,7 @@ def render_or_fallback(template_name: str, **ctx):
 @app.route("/")
 def home():
     featured_programs = list(
-        db.programs.find({"active": {"$ne": False}, "show_on_home": True})
+        db.programs.find(_public_program_query({"show_on_home": True}))
         .sort([("order", 1), ("created_at", -1)])
         .limit(6)
     )
@@ -1721,7 +1899,7 @@ def about_page():
 @app.route("/programs")
 def programs_index():
     programs = list(
-        db.programs.find({"active": {"$ne": False}, "kind": "hub"})
+        db.programs.find(_public_program_query({"kind": "hub"}))
         .sort([("order", 1), ("created_at", -1)])
         .limit(50)
     )
@@ -1730,7 +1908,7 @@ def programs_index():
 
 @app.route("/programs/<slug>/favorite", methods=["POST"])
 def program_favorite_toggle(slug):
-    program = db.programs.find_one({"slug": slug, "active": {"$ne": False}})
+    program = db.programs.find_one(_public_program_query({"slug": slug}))
     if not program:
         abort(404)
 
@@ -1758,7 +1936,7 @@ def program_favorite_toggle(slug):
 
 @app.route("/programs/<slug>")
 def program_detail(slug):
-    program = db.programs.find_one({"slug": slug, "active": {"$ne": False}})
+    program = db.programs.find_one(_public_program_query({"slug": slug}))
     if not program:
         abort(404)
 
@@ -3233,7 +3411,356 @@ def admin_programs():
             [("active", -1), ("show_on_home", -1), ("order", 1), ("created_at", -1)]
         )
     )
-    return render_template("admin_programs.html", programs=programs)
+    tracks = list(
+        db.programs.find(
+            {"kind": "track"},
+            {
+                "title": 1,
+                "slug": 1,
+                "hub_slug": 1,
+                "track_level": 1,
+                "track_env": 1,
+                "active": 1,
+                "publish_status": 1,
+            },
+        ).sort([("hub_slug", 1), ("track_level", 1), ("track_env", 1), ("title", 1)])
+    )
+    tracks_by_hub = {}
+    for t in tracks:
+        hub_slug = (t.get("hub_slug") or "").strip()
+        if not hub_slug:
+            continue
+        tracks_by_hub.setdefault(hub_slug, []).append(t)
+
+    readiness_by_program = {}
+    for p in programs:
+        pid = p.get("_id")
+        if pid is None:
+            continue
+        key = str(pid)
+        readiness_by_program[key] = _program_readiness_report(p)
+        p["_publish_status"] = _program_publish_status(p, fallback="published")
+
+    return render_template(
+        "admin_programs.html",
+        programs=programs,
+        tracks_by_hub=tracks_by_hub,
+        readiness_by_program=readiness_by_program,
+        default_levels_csv=", ".join([lvl.capitalize() for lvl in DEFAULT_LEVELS]),
+        default_envs_csv=", ".join(DEFAULT_ENVS),
+    )
+
+
+def _display_level_label(level: str) -> str:
+    return " ".join([(part or "").strip().capitalize() for part in (level or "").split() if part.strip()])
+
+
+def _unique_program_slug(base_slug: str, exclude_program_id: Optional[ObjectId] = None) -> str:
+    base = slugify(base_slug or "") or "program"
+    candidate = base
+    idx = 2
+    while True:
+        query = {"slug": candidate}
+        if exclude_program_id:
+            query["_id"] = {"$ne": exclude_program_id}
+        if not db.programs.find_one(query, {"_id": 1}):
+            return candidate
+        candidate = f"{base}-{idx}"
+        idx += 1
+
+
+def _clone_weeks_and_items_to_program(
+    source_program_id: ObjectId,
+    target_program_id: ObjectId,
+    include_items: bool = True,
+) -> tuple:
+    source_weeks = list(
+        db.program_weeks.find({"program_id": source_program_id}).sort([("week_number", 1), ("order", 1)])
+    )
+    if not source_weeks:
+        return 0, 0
+
+    week_id_map = {}
+    weeks_copied = 0
+    for sw in source_weeks:
+        wn = _safe_int(sw.get("week_number"), default=0)
+        order = _safe_int(sw.get("order"), default=(wn if wn > 0 else 0))
+        week_doc = {
+            "program_id": target_program_id,
+            "week_number": wn if wn > 0 else (weeks_copied + 1),
+            "title": (sw.get("title") or "").strip() or None,
+            "order": order,
+            "created_at": datetime.datetime.utcnow(),
+        }
+        inserted = db.program_weeks.insert_one(week_doc)
+        week_id_map[sw["_id"]] = inserted.inserted_id
+        weeks_copied += 1
+
+    if not include_items:
+        return weeks_copied, 0
+
+    source_week_ids = list(week_id_map.keys())
+    if not source_week_ids:
+        return weeks_copied, 0
+
+    source_items = list(
+        db.program_items.find({"week_id": {"$in": source_week_ids}}).sort(
+            [("week_id", 1), ("order", 1), ("created_at", 1)]
+        )
+    )
+
+    items_copied = 0
+    for it in source_items:
+        target_week_id = week_id_map.get(it.get("week_id"))
+        if not target_week_id:
+            continue
+        clone_doc = dict(it)
+        clone_doc.pop("_id", None)
+        clone_doc["week_id"] = target_week_id
+        clone_doc["created_at"] = datetime.datetime.utcnow()
+        db.program_items.insert_one(clone_doc)
+        items_copied += 1
+
+    return weeks_copied, items_copied
+
+
+@app.route("/admin/programs/<id>/clone", methods=["POST"])
+@login_required
+def admin_program_clone(id):
+    source = db.programs.find_one({"_id": ObjectId(id)})
+    if not source:
+        abort(404)
+
+    title = (request.form.get("title") or "").strip() or f"{source.get('title') or 'Program'} Copy"
+    raw_slug = (request.form.get("slug") or "").strip()
+    slug_base = raw_slug or title or f"{source.get('slug') or 'program'}-copy"
+    slug = _unique_program_slug(slug_base)
+
+    copy_weeks = request.form.get("copy_weeks") == "on"
+    copy_items = request.form.get("copy_items") == "on"
+    active = request.form.get("active") == "on"
+    show_on_home = request.form.get("show_on_home") == "on"
+    publish_status = _norm_publish_status(request.form.get("publish_status"), fallback="draft")
+
+    clone_doc = dict(source)
+    clone_doc.pop("_id", None)
+    clone_doc["title"] = title
+    clone_doc["slug"] = slug
+    clone_doc["active"] = active
+    clone_doc["show_on_home"] = show_on_home
+    clone_doc["publish_status"] = "draft"
+    clone_doc["created_at"] = datetime.datetime.utcnow()
+
+    inserted = db.programs.insert_one(clone_doc)
+
+    weeks_copied = 0
+    items_copied = 0
+    if copy_weeks:
+        weeks_copied, items_copied = _clone_weeks_and_items_to_program(
+            source["_id"],
+            inserted.inserted_id,
+            include_items=copy_items,
+        )
+
+    final_status = "draft"
+    status_note = ""
+    if publish_status in ("ready", "published"):
+        inserted_program = db.programs.find_one({"_id": inserted.inserted_id})
+        report = _program_readiness_report(inserted_program or clone_doc)
+        if report.get("critical_count", 0) == 0:
+            final_status = publish_status
+        else:
+            status_note = f" Status set to Draft due to {report.get('critical_count', 0)} critical issue(s)."
+    db.programs.update_one(
+        {"_id": inserted.inserted_id},
+        {"$set": {"publish_status": final_status, "publish_checked_at": datetime.datetime.utcnow()}},
+    )
+
+    flash(
+        (
+            f"Program cloned: {title} (/{slug}). "
+            f"Weeks copied: {weeks_copied}. Items copied: {items_copied}. "
+            f"Status: {final_status.capitalize()}."
+            f"{status_note}"
+        ),
+        "success",
+    )
+    return redirect(url_for("admin_program_weeks", program_id=str(inserted.inserted_id)))
+
+
+@app.route("/admin/programs/<id>/build-tracks", methods=["POST"])
+@login_required
+def admin_program_build_tracks(id):
+    hub = db.programs.find_one({"_id": ObjectId(id)})
+    if not hub:
+        abort(404)
+    if (hub.get("kind") or "hub") != "hub":
+        flash("Track builder is available only for Hub programs.", "danger")
+        return redirect(url_for("admin_programs"))
+
+    hub_slug = (hub.get("slug") or "").strip()
+    if not hub_slug:
+        flash("Hub slug is required before generating tracks.", "danger")
+        return redirect(url_for("admin_programs"))
+
+    levels_raw = _split_list(request.form.get("levels") or "")
+    envs_raw = _split_list(request.form.get("envs") or "")
+
+    levels = []
+    seen_levels = set()
+    for level in (levels_raw or DEFAULT_LEVELS):
+        normalized = _norm_choice(level)
+        if not normalized or normalized in seen_levels:
+            continue
+        seen_levels.add(normalized)
+        levels.append(normalized)
+    if not levels:
+        levels = list(DEFAULT_LEVELS)
+
+    envs = []
+    seen_envs = set()
+    for env in (envs_raw or DEFAULT_ENVS):
+        normalized = _norm_choice(env)
+        if not normalized or normalized not in DEFAULT_ENVS or normalized in seen_envs:
+            continue
+        seen_envs.add(normalized)
+        envs.append(normalized)
+    if not envs:
+        envs = list(DEFAULT_ENVS)
+
+    template_track_id_raw = (request.form.get("template_track_id") or "").strip()
+    copy_weeks = request.form.get("copy_weeks") == "on"
+    copy_items = request.form.get("copy_items") == "on"
+    activate_tracks = request.form.get("active") == "on"
+    publish_status = _norm_publish_status(request.form.get("publish_status"), fallback="draft")
+
+    template_track = None
+    if template_track_id_raw:
+        try:
+            template_track_id = ObjectId(template_track_id_raw)
+        except Exception:
+            flash("Invalid template track selected.", "danger")
+            return redirect(url_for("admin_programs"))
+        template_track = db.programs.find_one(
+            {"_id": template_track_id, "kind": "track", "hub_slug": hub_slug}
+        )
+        if not template_track:
+            flash("Template track must belong to this hub.", "danger")
+            return redirect(url_for("admin_programs"))
+
+    created = 0
+    skipped = 0
+    weeks_copied_total = 0
+    items_copied_total = 0
+    status_downgraded = 0
+
+    for level in levels:
+        level_label = _display_level_label(level) or level.capitalize()
+        for env in envs:
+            existing = db.programs.find_one(
+                {
+                    "kind": "track",
+                    "hub_slug": hub_slug,
+                    "track_env": env,
+                    "track_level": {"$regex": f"^{re.escape(level_label)}$", "$options": "i"},
+                },
+                {"_id": 1},
+            )
+            if existing:
+                skipped += 1
+                continue
+
+            slug = _unique_program_slug(f"{hub_slug}-{level}-{env}")
+            title = f"{hub.get('title') or 'Program'} — {level_label} ({env.capitalize()})"
+            track_doc = {
+                "title": title,
+                "slug": slug,
+                "kind": "track",
+                "hub_slug": hub_slug,
+                "track_level": level_label,
+                "track_env": env,
+                "category": hub.get("category") or "Track",
+                "duration_label": hub.get("duration_label"),
+                "default_week_split": hub.get("default_week_split"),
+                "summary": hub.get("summary"),
+                "cover_image": hub.get("cover_image"),
+                "order": _safe_int(hub.get("order"), default=0),
+                "active": activate_tracks,
+                "publish_status": "draft",
+                "show_on_home": False,
+                "created_at": datetime.datetime.utcnow(),
+            }
+            ins = db.programs.insert_one(track_doc)
+            created += 1
+
+            if template_track and copy_weeks:
+                wk_count, it_count = _clone_weeks_and_items_to_program(
+                    template_track["_id"],
+                    ins.inserted_id,
+                    include_items=copy_items,
+                )
+                weeks_copied_total += wk_count
+                items_copied_total += it_count
+
+            final_status = "draft"
+            if publish_status in ("ready", "published"):
+                inserted_track = db.programs.find_one({"_id": ins.inserted_id})
+                report = _program_readiness_report(inserted_track or track_doc)
+                if report.get("critical_count", 0) == 0:
+                    final_status = publish_status
+                else:
+                    status_downgraded += 1
+            db.programs.update_one(
+                {"_id": ins.inserted_id},
+                {
+                    "$set": {
+                        "publish_status": final_status,
+                        "publish_checked_at": datetime.datetime.utcnow(),
+                    }
+                },
+            )
+
+    flash(
+        (
+            f"Track builder complete: {created} created, {skipped} skipped. "
+            f"Weeks copied: {weeks_copied_total}, items copied: {items_copied_total}. "
+            f"{status_downgraded} track(s) kept as Draft due to readiness issues."
+        ),
+        "success",
+    )
+    return redirect(url_for("admin_programs"))
+
+
+@app.route("/admin/programs/<id>/status", methods=["POST"])
+@login_required
+def admin_program_set_status(id):
+    program = db.programs.find_one({"_id": ObjectId(id)})
+    if not program:
+        abort(404)
+
+    target_status = _norm_publish_status(request.form.get("status"), fallback="draft")
+    report = _program_readiness_report(program)
+    if target_status in ("ready", "published") and report.get("critical_count", 0) > 0:
+        flash(
+            (
+                f"Cannot set status to {target_status.capitalize()}. "
+                f"Fix {report.get('critical_count', 0)} critical issue(s) first."
+            ),
+            "danger",
+        )
+        return redirect(url_for("admin_programs"))
+
+    db.programs.update_one(
+        {"_id": program["_id"]},
+        {
+            "$set": {
+                "publish_status": target_status,
+                "publish_checked_at": datetime.datetime.utcnow(),
+            }
+        },
+    )
+    flash(f"Status updated to {target_status.capitalize()}.", "success")
+    return redirect(url_for("admin_programs"))
 
 
 @app.route("/admin/programs/new", methods=["GET", "POST"])
@@ -3253,6 +3780,10 @@ def admin_program_new():
         order = _safe_int(request.form.get("order"), default=0)
         active = request.form.get("active") == "on"
         show_on_home = request.form.get("show_on_home") == "on"
+        publish_status = _norm_publish_status(request.form.get("publish_status"), fallback="draft")
+        if publish_status in ("ready", "published"):
+            publish_status = "draft"
+            flash("New programs are created as Draft. Use Programs → status controls when checks are clear.", "info")
 
         kind = (request.form.get("kind") or "").strip().lower() or "hub"
         if kind not in ("hub", "track"):
@@ -3291,6 +3822,7 @@ def admin_program_new():
             "cover_image": cover_image,
             "order": order,
             "active": active,
+            "publish_status": publish_status,
             "show_on_home": show_on_home,
             "created_at": datetime.datetime.utcnow(),
         }
@@ -3328,6 +3860,13 @@ def admin_program_edit(id):
         order = _safe_int(request.form.get("order"), default=0)
         active = request.form.get("active") == "on"
         show_on_home = request.form.get("show_on_home") == "on"
+        publish_status = _norm_publish_status(
+            request.form.get("publish_status"),
+            fallback=_program_publish_status(p, fallback="published"),
+        )
+        if publish_status in ("ready", "published"):
+            publish_status = "draft"
+            flash("Program saved as Draft. Use Programs → status controls to set Ready/Published after checks.", "info")
 
         kind = (request.form.get("kind") or p.get("kind") or "hub").strip().lower()
         if kind not in ("hub", "track"):
@@ -3367,6 +3906,7 @@ def admin_program_edit(id):
             "cover_image": cover_image,
             "order": order,
             "active": active,
+            "publish_status": publish_status,
             "show_on_home": show_on_home,
         }
 
