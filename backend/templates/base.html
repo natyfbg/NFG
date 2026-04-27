@@ -11,7 +11,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   </head>
 
-  <body class="bg-light">
+  {% set page_ep = request.endpoint or '' %}
+  <body class="bg-light{% if page_ep in ['home','workouts','programs_index','recipes'] %} has-mobile-swipe-rail{% endif %}">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
 
@@ -27,6 +28,7 @@
         {% set account_eps = ['account_login','account_register','account_profile'] %}
         {% set recipes_eps = ['recipes'] %}
         {% set about_eps = ['about_page'] %}
+        {% set swipe_eps = ['home','workouts','programs_index','recipes'] %}
 
         {# Admin endpoints (expand to cover all admin pages) #}
         {% set admin_eps = [
@@ -174,25 +176,38 @@
       </div>
     </main>
 
+    {% if ep in swipe_eps %}
+      <div class="mobile-swipe-rail" id="mobile-swipe-rail" aria-hidden="true">
+        <div class="rail-hit">
+          <span class="rail-track">
+            <span class="rail-dot {% if ep == 'home' %}active{% endif %}"></span>
+            <span class="rail-dot {% if ep == 'workouts' %}active{% endif %}"></span>
+            <span class="rail-dot {% if ep == 'programs_index' %}active{% endif %}"></span>
+            <span class="rail-dot {% if ep == 'recipes' %}active{% endif %}"></span>
+          </span>
+        </div>
+      </div>
+    {% endif %}
+
     <!-- Bottom navigation (mobile floating pill) -->
     <nav class="bottom-nav" aria-label="Primary">
       <div class="nav-wrap">
-        <a href="{{ url_for('home') }}" class="{% if ep == 'home' %}active{% endif %}" data-nav="home" aria-label="Home">
+        <a href="{{ url_for('home') }}" class="{% if ep == 'home' %}active{% endif %}" data-nav="home" aria-label="Home"{% if ep == 'home' %} aria-current="page"{% endif %}>
           <span class="icon" aria-hidden="true"></span>
           <span class="label">Home</span>
         </a>
 
-        <a href="{{ url_for('workouts') }}" class="{% if ep in workouts_eps %}active{% endif %}" data-nav="workouts" aria-label="Workouts">
+        <a href="{{ url_for('workouts') }}" class="{% if ep in workouts_eps %}active{% endif %}" data-nav="workouts" aria-label="Workouts"{% if ep in workouts_eps %} aria-current="page"{% endif %}>
           <span class="icon" aria-hidden="true"></span>
           <span class="label">Workouts</span>
         </a>
 
-        <a href="{{ url_for('programs_index') }}" class="{% if ep in programs_eps %}active{% endif %}" data-nav="programs" aria-label="Programs">
+        <a href="{{ url_for('programs_index') }}" class="{% if ep in programs_eps %}active{% endif %}" data-nav="programs" aria-label="Programs"{% if ep in programs_eps %} aria-current="page"{% endif %}>
           <span class="icon" aria-hidden="true"></span>
           <span class="label">Programs</span>
         </a>
 
-        <a href="{{ url_for('recipes') }}" class="{% if ep in recipes_eps %}active{% endif %}" data-nav="recipes" aria-label="Recipes">
+        <a href="{{ url_for('recipes') }}" class="{% if ep in recipes_eps %}active{% endif %}" data-nav="recipes" aria-label="Recipes"{% if ep in recipes_eps %} aria-current="page"{% endif %}>
           <span class="icon" aria-hidden="true"></span>
           <span class="label">Recipes</span>
         </a>
@@ -203,100 +218,174 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-      /* Swipe navigation with a slide animation (mobile-first) */
+      /* Top-level mobile swipe navigation */
       (function(){
         const zone = document.getElementById('swipe-zone');
+        const rail = document.getElementById('mobile-swipe-rail');
         const shell = document.getElementById('page-shell');
         if (!zone || !shell) return;
 
         const isMobile = () => window.matchMedia('(max-width: 991.98px)').matches;
-        if (!isMobile()) return;
-
         const ep = "{{ ep }}";
         const routes = [
-          { key: 'home',     endpoints: ['home'],                      url: "{{ url_for('home') }}" },
-          { key: 'workouts', endpoints: {{ workouts_eps|tojson }},     url: "{{ url_for('workouts') }}" },
-          { key: 'programs', endpoints: {{ programs_eps|tojson }},     url: "{{ url_for('programs_index') }}" },
-          { key: 'recipes',  endpoints: {{ recipes_eps|tojson }},      url: "{{ url_for('recipes') }}" }
+          { key: 'home',     endpoint: 'home',           url: "{{ url_for('home') }}" },
+          { key: 'workouts', endpoint: 'workouts',       url: "{{ url_for('workouts') }}" },
+          { key: 'programs', endpoint: 'programs_index', url: "{{ url_for('programs_index') }}" },
+          { key: 'recipes',  endpoint: 'recipes',        url: "{{ url_for('recipes') }}" }
         ];
 
-        function currentIndex(){
-          for (let i=0; i<routes.length; i++){
-            if (routes[i].endpoints.includes(ep)) return i;
-          }
-          return 0;
-        }
+        const activeRouteIndex = routes.findIndex((route) => route.endpoint === ep);
+        if (activeRouteIndex < 0) return;
 
-        const SWIPE_MIN_X = 55;
+        const INTERACTIVE_SELECTOR = [
+          'a',
+          'button',
+          'input',
+          'textarea',
+          'select',
+          'label',
+          '[role="button"]',
+          '[contenteditable="true"]',
+          '.navbar',
+          '.bottom-nav',
+          '.carousel',
+          '.swipe-block',
+          '.overflow-auto',
+          '.day-chip-row',
+          '[data-no-page-swipe]'
+        ].join(',');
+
+        const EDGE_GUARD = 14;
+        const SWIPE_MIN_X = 48;
         const SWIPE_MAX_Y = 70;
-        const EDGE_GUARD  = 12;
-        const NAV_COOLDOWN = 700;
+        const SWIPE_RATIO = 1.18;
+        const FLICK_MAX_MS = 260;
+        const NAV_COOLDOWN = 420;
         let lastNavAt = 0;
+        let state = null;
 
-        let startX = 0, startY = 0;
-        let tracking = false;
+        const resetGesture = () => {
+          state = null;
+          shell.classList.remove('is-swiping');
+          shell.style.removeProperty('--swipe-x');
+          shell.style.removeProperty('--swipe-opacity');
+        };
 
         const isInteractive = (el) => {
           if (!el) return false;
-          return !!el.closest('a,button,input,textarea,select,label,[role="button"],.navbar,.carousel,.swipe-block');
+          return !!el.closest(INTERACTIVE_SELECTOR);
         };
 
-        const animateAndGo = (dir, url) => {
-          shell.classList.remove('slide-out-left', 'slide-out-right');
-          void shell.offsetWidth;
-          shell.classList.add(dir < 0 ? 'slide-out-left' : 'slide-out-right');
-          setTimeout(() => { window.location.href = url; }, 150);
-        };
-
-        zone.addEventListener('touchstart', (e) => {
+        const startGesture = (e) => {
           if (!isMobile()) return;
-          if (!e.touches || e.touches.length !== 1) return;
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          if (e.pointerType === 'touch' && !e.isPrimary) return;
 
-          const t = e.touches[0];
-          if (t.clientX < EDGE_GUARD || (window.innerWidth - t.clientX) < EDGE_GUARD) return;
-          if (isInteractive(e.target)) return;
+          const fromRail = e.currentTarget === rail;
+          if (!fromRail && isInteractive(e.target)) return;
+          if (e.clientX < EDGE_GUARD || (window.innerWidth - e.clientX) < EDGE_GUARD) return;
 
-          startX = t.clientX;
-          startY = t.clientY;
-          tracking = true;
-        }, { passive: true });
+          state = {
+            pointerId: e.pointerId,
+            startX: e.clientX,
+            startY: e.clientY,
+            lastX: e.clientX,
+            lastY: e.clientY,
+            startedAt: Date.now(),
+            locked: fromRail,
+            fromRail
+          };
+        };
 
-        zone.addEventListener('touchmove', (e) => {
-          if (!tracking) return;
-          const t = e.touches[0];
-          const dy = Math.abs(t.clientY - startY);
-          const dx = Math.abs(t.clientX - startX);
-          if (dy > dx && dy > 18) tracking = false;
-        }, { passive: true });
+        const moveGesture = (e) => {
+          if (!state || e.pointerId !== state.pointerId) return;
 
-        zone.addEventListener('touchend', (e) => {
-          if (!tracking) return;
-          tracking = false;
+          const dx = e.clientX - state.startX;
+          const dy = e.clientY - state.startY;
+          const absX = Math.abs(dx);
+          const absY = Math.abs(dy);
+
+          state.lastX = e.clientX;
+          state.lastY = e.clientY;
+
+          if (!state.locked) {
+            if (absY > 16 && absY > absX * .9) {
+              resetGesture();
+              return;
+            }
+            if (absX > 12 && absX > absY * 1.08) {
+              state.locked = true;
+            }
+          }
+
+          if (!state.locked) return;
+          if (e.cancelable) e.preventDefault();
+
+          const drag = Math.max(-92, Math.min(92, dx));
+          const opacity = Math.max(.82, 1 - Math.abs(drag) / 360);
+          shell.classList.add('is-swiping');
+          shell.style.setProperty('--swipe-x', `${drag * .22}px`);
+          shell.style.setProperty('--swipe-opacity', opacity.toFixed(3));
+        };
+
+        const navigateTo = (nextIdx, dx) => {
+          if (nextIdx === activeRouteIndex) return;
 
           const now = Date.now();
           if (now - lastNavAt < NAV_COOLDOWN) return;
-
-          const t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
-          if (!t) return;
-
-          const dx = t.clientX - startX;
-          const dy = t.clientY - startY;
-
-          if (Math.abs(dx) < SWIPE_MIN_X) return;
-          if (Math.abs(dy) > SWIPE_MAX_Y) return;
-
-          const idx = currentIndex();
-          let nextIdx = idx;
-
-          if (dx < 0) nextIdx = Math.min(routes.length - 1, idx + 1);
-          if (dx > 0) nextIdx = Math.max(0, idx - 1);
-          if (nextIdx === idx) return;
-
           lastNavAt = now;
 
-          const dir = dx < 0 ? -1 : 1;
-          animateAndGo(dir, routes[nextIdx].url);
-        }, { passive: true });
+          const route = routes[nextIdx];
+          const targetLink = document.querySelector(`.bottom-nav a[data-nav="${route.key}"]`);
+          document.querySelectorAll('.bottom-nav a').forEach((link) => link.classList.remove('is-pending'));
+          if (targetLink) targetLink.classList.add('is-pending');
+
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            window.location.href = route.url;
+            return;
+          }
+
+          shell.classList.remove('is-swiping', 'slide-out-left', 'slide-out-right');
+          shell.style.removeProperty('--swipe-x');
+          shell.style.removeProperty('--swipe-opacity');
+          void shell.offsetWidth;
+          shell.classList.add(dx < 0 ? 'slide-out-left' : 'slide-out-right');
+          setTimeout(() => { window.location.href = route.url; }, 95);
+        };
+
+        const endGesture = (e) => {
+          if (!state || e.pointerId !== state.pointerId) return;
+
+          const dx = state.lastX - state.startX;
+          const dy = state.lastY - state.startY;
+          const absX = Math.abs(dx);
+          const absY = Math.abs(dy);
+          const elapsed = Date.now() - state.startedAt;
+          const isFlick = elapsed <= FLICK_MAX_MS && absX >= 36 && absX > absY * 1.35;
+          const isSwipe = absX >= SWIPE_MIN_X && absY <= SWIPE_MAX_Y && absX > absY * SWIPE_RATIO;
+
+          let nextIdx = activeRouteIndex;
+          if (isFlick || isSwipe) {
+            if (dx < 0) nextIdx = Math.min(routes.length - 1, activeRouteIndex + 1);
+            if (dx > 0) nextIdx = Math.max(0, activeRouteIndex - 1);
+          }
+
+          if (nextIdx !== activeRouteIndex) {
+            navigateTo(nextIdx, dx);
+            state = null;
+            return;
+          }
+
+          resetGesture();
+        };
+
+        const targets = rail ? [zone, rail] : [zone];
+        targets.forEach((target) => {
+          target.addEventListener('pointerdown', startGesture, { passive: true });
+        });
+        window.addEventListener('pointermove', moveGesture, { passive: false });
+        window.addEventListener('pointerup', endGesture, { passive: true });
+        window.addEventListener('pointercancel', resetGesture, { passive: true });
       })();
     </script>
 
