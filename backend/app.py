@@ -1876,6 +1876,11 @@ def home():
         .sort([("order", 1), ("created_at", -1)])
         .limit(6)
     )
+    hub_programs = list(
+        db.programs.find(_public_program_query({"kind": "hub"}))
+        .sort([("order", 1), ("created_at", -1)])
+        .limit(6)
+    )
     owner_key = _progress_owner_key()
     favorite_programs = _favorite_programs_for_viewer(owner_key, limit=6)
     continue_plan = _continue_plan_for_owner(owner_key)
@@ -1883,6 +1888,7 @@ def home():
         "home.html",
         name="NFG",
         featured_programs=featured_programs,
+        home_programs=featured_programs or hub_programs,
         favorite_programs=favorite_programs,
         continue_plan=continue_plan,
     )

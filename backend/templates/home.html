@@ -3,196 +3,213 @@
 {% block title %}Home – NFG{% endblock %}
 
 {% block content %}
-  <!-- Header -->
-  <div class="d-flex align-items-start justify-content-between mb-3">
-    <div>
-      <h1 class="page-title mb-1">Welcome, {{ name }}!</h1>
-      <p class="text-muted mb-0">Build consistency with structured programs and clear workout guidance.</p>
+  <section class="home-hero mb-4">
+    <div class="home-kicker">Structured fitness system</div>
+    <h1 class="page-title home-hero-title mb-2">Choose a program and follow a plan built week by week.</h1>
+    <p class="text-muted home-hero-copy mb-3">
+      Start with a program, pick your level and training environment, then use the workout library for exercise guidance as you go.
+    </p>
+
+    <div class="d-grid d-sm-flex gap-2 home-hero-actions">
+      <a class="btn btn-dark btn-lg" href="{{ url_for('programs_index') }}">Start a Program</a>
+      <a class="btn btn-outline-dark" href="{{ url_for('workouts') }}">Browse Workouts</a>
     </div>
-  </div>
 
-  <!-- Bio / Welcome Note -->
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
-      <h5 class="mb-2">Your training hub</h5>
-
-      <p class="text-muted mb-2">
-        This is your home for structured workout plans, a visual exercise library, and guided recipes — all in one place.
-      </p>
-
-      <p class="text-muted mb-0">
-        Train with programs that break weeks into workouts, learn exercises with images and videos, and save recipes that
-        actually support your goals. No clutter. No guesswork. Just progress.
-      </p>
-
-      <div class="mt-3 d-flex flex-wrap gap-2">
-        <a class="btn btn-sm btn-dark" href="{{ url_for('programs_index') }}">Browse programs</a>
-        <a class="btn btn-sm btn-outline-dark" href="{{ url_for('workouts') }}">Explore workouts</a>
-        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('recipes') }}">Browse recipes</a>
+    <div class="home-path mt-4">
+      <div class="home-path-step">
+        <span class="home-path-number">1</span>
+        <div>
+          <div class="home-path-label">Choose a program</div>
+          <div class="home-path-copy">Pick the plan that matches your goal.</div>
+        </div>
+      </div>
+      <div class="home-path-step">
+        <span class="home-path-number">2</span>
+        <div>
+          <div class="home-path-label">Select level and environment</div>
+          <div class="home-path-copy">Beginner, intermediate, or advanced. Home, gym, or hybrid.</div>
+        </div>
+      </div>
+      <div class="home-path-step">
+        <span class="home-path-number">3</span>
+        <div>
+          <div class="home-path-label">Follow the weekly structure</div>
+          <div class="home-path-copy">Open each week and complete the programmed training days.</div>
+        </div>
+      </div>
+      <div class="home-path-step">
+        <span class="home-path-number">4</span>
+        <div>
+          <div class="home-path-label">Use workouts as guidance</div>
+          <div class="home-path-copy">Tap into the library anytime to learn the exercises.</div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
   {% if continue_plan %}
-    <div class="card shadow-sm border-primary-subtle mb-4">
+    <section class="card shadow-sm border-primary-subtle mb-4">
       <div class="card-body">
-        <div class="d-flex align-items-start justify-content-between gap-2">
-          <div class="me-2">
-            <div class="small text-muted">Continue where you left off</div>
+        <div class="d-flex align-items-start justify-content-between gap-3">
+          <div>
+            <div class="small text-muted text-uppercase">Resume program</div>
             <div class="fw-semibold">{{ continue_plan.track_title }}</div>
             <div class="small text-muted mt-1">
-              Week {{ continue_plan.week_number }}
-              {% if continue_plan.day_label %} • {{ continue_plan.day_label }}{% endif %}
+              Week {{ continue_plan.week_number }}{% if continue_plan.day_label %} • {{ continue_plan.day_label }}{% endif %}
             </div>
           </div>
-          <a class="btn btn-sm btn-primary" href="{{ continue_plan.url }}">Resume</a>
+          <a class="btn btn-sm btn-primary" href="{{ continue_plan.url }}">Continue</a>
         </div>
       </div>
-    </div>
+    </section>
   {% endif %}
 
-  <!-- Featured Programs -->
-  <div class="d-flex align-items-center justify-content-between mb-2">
-    <h5 class="mb-0">Featured programs</h5>
-    <a class="small text-muted text-decoration-none" href="{{ url_for('programs_index') }}">
-      View all
-    </a>
-  </div>
+  <section class="mb-4">
+    <div class="d-flex align-items-end justify-content-between gap-2 mb-3">
+      <div>
+        <h2 class="h5 mb-1">Featured Programs</h2>
+        <p class="text-muted small mb-0">Start with a guided plan and build consistency one week at a time.</p>
+      </div>
+      <a class="small text-decoration-none text-muted" href="{{ url_for('programs_index') }}">View all</a>
+    </div>
 
-  {% if featured_programs and featured_programs|length > 0 %}
-    <div class="row g-3">
-      {% for p in featured_programs %}
-        <div class="col-12">
-          <a href="{{ url_for('program_detail', slug=p.slug) }}" class="text-decoration-none">
-            <div class="card shadow-sm">
-              <div class="card-body">
-                <div class="d-flex align-items-start justify-content-between gap-3">
-                  <div class="me-2">
-                    <div class="d-flex align-items-start justify-content-between gap-2">
-                      <div class="fw-semibold text-dark">{{ p.title }}</div>
+    {% if home_programs and home_programs|length > 0 %}
+      <div class="row g-3">
+        {% for p in home_programs %}
+          {% set is_hub = (p.get('kind') == 'hub') or ((p.get('slug') or '') == '8-week-challenge') %}
+          {% set program_url = url_for('program_detail', slug=p.slug) %}
+          <div class="col-12">
+            <a href="{{ program_url }}" class="home-program-card text-decoration-none">
+              <div class="card shadow-sm h-100">
+                <div class="card-body">
+                  <div class="d-flex align-items-start justify-content-between gap-3">
+                    <div class="flex-grow-1">
+                      <div class="d-flex flex-wrap gap-2 mb-2">
+                        {% if p.get('category') %}
+                          <span class="badge text-bg-dark">{{ p.get('category') }}</span>
+                        {% endif %}
+                        {% if p.get('duration_label') %}
+                          <span class="badge text-bg-light border text-dark">{{ p.get('duration_label') }}</span>
+                        {% endif %}
+                        {% if p.get('show_on_home') %}
+                          <span class="badge text-bg-success">Featured</span>
+                        {% endif %}
+                      </div>
+
+                      <div class="fw-semibold text-dark home-program-title">{{ p.get('title') or 'Program' }}</div>
+                      <div class="text-muted small mt-1">
+                        {{ p.get('summary') or 'Choose your setup, follow the weekly structure, and keep training simple.' }}
+                      </div>
+
+                      <div class="home-program-meta mt-3">
+                        <span class="btn btn-sm btn-outline-dark">Open Program</span>
+                        <span class="text-muted small">
+                          {% if is_hub %}
+                            Start with level selection
+                          {% else %}
+                            View program details
+                          {% endif %}
+                        </span>
+                      </div>
                     </div>
 
-                    {% if p.summary %}
-                      <div class="text-muted small mt-1">{{ p.summary }}</div>
+                    {% if p.get('cover_image') %}
+                      <img src="{{ p.get('cover_image') }}" alt=""
+                           class="home-program-image">
+                    {% else %}
+                      <div class="home-program-image home-program-image-placeholder"></div>
                     {% endif %}
-
-                    <div class="d-flex flex-wrap gap-2 mt-2">
-                      {% if p.category %}
-                        <span class="badge text-bg-dark">{{ p.category }}</span>
-                      {% endif %}
-                      {% if p.duration_label %}
-                        <span class="badge text-bg-light border text-dark">{{ p.duration_label }}</span>
-                      {% endif %}
-                    </div>
-
-                    <div class="mt-3 d-flex align-items-center gap-2">
-                      <span class="btn btn-sm btn-outline-dark">Open</span>
-                      <span class="text-muted small">View weeks</span>
-                    </div>
                   </div>
-
-                  {% if p.cover_image %}
-                    <img src="{{ p.cover_image }}" alt=""
-                         style="width:120px;height:68px;object-fit:cover;border-radius:.75rem;">
-                  {% else %}
-                    <div class="bg-body-secondary"
-                         style="width:120px;height:68px;border-radius:.75rem;"></div>
-                  {% endif %}
                 </div>
               </div>
-            </div>
-          </a>
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div class="alert alert-secondary mb-0">
-      No featured programs yet.
-      <div class="small text-muted mt-1">
-        Create one in Admin → Programs, and enable “Show on Home”.
+            </a>
+          </div>
+        {% endfor %}
       </div>
-    </div>
-  {% endif %}
-
-  <div class="d-flex align-items-center justify-content-between mt-4 mb-2">
-    <h5 class="mb-0">Your favorite programs</h5>
-    <a class="small text-muted text-decoration-none" href="{{ url_for('programs_index') }}">Manage</a>
-  </div>
+    {% else %}
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="fw-semibold mb-1">No programs are featured yet.</div>
+          <p class="text-muted small mb-3">The Programs Hub is still the main place to begin.</p>
+          <a class="btn btn-dark btn-sm" href="{{ url_for('programs_index') }}">Open Programs Hub</a>
+        </div>
+      </div>
+    {% endif %}
+  </section>
 
   {% if favorite_programs and favorite_programs|length > 0 %}
-    <div class="row g-3">
-      {% for p in favorite_programs %}
-        <div class="col-12">
-          <a href="{{ url_for('program_detail', slug=p.slug) }}" class="text-decoration-none">
-            <div class="card shadow-sm border-warning-subtle">
-              <div class="card-body">
-                <div class="d-flex align-items-start justify-content-between gap-3">
-                  <div class="me-2">
-                    <div class="fw-semibold text-dark">{{ p.title }}</div>
-                    {% if p.summary %}
-                      <div class="text-muted small mt-1">{{ p.summary }}</div>
-                    {% endif %}
-                    <div class="d-flex flex-wrap gap-2 mt-2">
-                      {% if p.category %}
-                        <span class="badge text-bg-dark">{{ p.category }}</span>
-                      {% endif %}
-                      {% if p.duration_label %}
-                        <span class="badge text-bg-light border text-dark">{{ p.duration_label }}</span>
-                      {% endif %}
-                      <span class="badge text-bg-warning">Favorite</span>
-                    </div>
-                  </div>
+    <section class="mb-4">
+      <div class="d-flex align-items-end justify-content-between gap-2 mb-3">
+        <div>
+          <h2 class="h5 mb-1">Saved Programs</h2>
+          <p class="text-muted small mb-0">Quick access to the plans you want to keep close.</p>
+        </div>
+        <a class="small text-decoration-none text-muted" href="{{ url_for('programs_index') }}">Manage</a>
+      </div>
 
-                  {% if p.cover_image %}
-                    <img src="{{ p.cover_image }}" alt=""
-                         style="width:120px;height:68px;object-fit:cover;border-radius:.75rem;">
-                  {% else %}
-                    <div class="bg-body-secondary"
-                         style="width:120px;height:68px;border-radius:.75rem;"></div>
-                  {% endif %}
+      <div class="row g-3">
+        {% for p in favorite_programs %}
+          <div class="col-12">
+            <a href="{{ url_for('program_detail', slug=p.slug) }}" class="home-program-card text-decoration-none">
+              <div class="card shadow-sm border-warning-subtle h-100">
+                <div class="card-body">
+                  <div class="d-flex align-items-start justify-content-between gap-3">
+                    <div class="flex-grow-1">
+                      <div class="d-flex flex-wrap gap-2 mb-2">
+                        <span class="badge text-bg-warning">Saved</span>
+                        {% if p.get('duration_label') %}
+                          <span class="badge text-bg-light border text-dark">{{ p.get('duration_label') }}</span>
+                        {% endif %}
+                      </div>
+                      <div class="fw-semibold text-dark home-program-title">{{ p.get('title') or 'Program' }}</div>
+                      {% if p.get('summary') %}
+                        <div class="text-muted small mt-1">{{ p.get('summary') }}</div>
+                      {% endif %}
+                    </div>
+
+                    {% if p.get('cover_image') %}
+                      <img src="{{ p.get('cover_image') }}" alt=""
+                           class="home-program-image">
+                    {% else %}
+                      <div class="home-program-image home-program-image-placeholder"></div>
+                    {% endif %}
+                  </div>
                 </div>
               </div>
-            </div>
-          </a>
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div class="alert alert-light border mb-0">
-      You have no favorite programs yet.
-      <div class="small text-muted mt-1">
-        Tap <strong>Favorite</strong> on the Programs page and they will appear here.
+            </a>
+          </div>
+        {% endfor %}
       </div>
-    </div>
+    </section>
   {% endif %}
+
+  <section class="home-library card shadow-sm border-0">
+    <div class="card-body">
+      <div class="home-library-kicker">Workout Library</div>
+      <h2 class="h5 mb-1">Browse workouts and learn exercises.</h2>
+      <p class="text-muted small mb-3">
+        Use the library to see how an exercise looks, how to perform it, and what to reference while following your program.
+      </p>
+      <a class="btn btn-outline-dark" href="{{ url_for('workouts') }}">Open Workout Library</a>
+    </div>
+  </section>
 {% endblock %}
 
 {% block sidebar %}
   <div class="card shadow-sm">
-    <div class="card-header bg-white">
-      <strong>Today’s focus</strong>
-    </div>
     <div class="card-body">
-      <p class="mb-2 text-muted">
-        Keep it simple: pick a program, complete today’s work, and build momentum.
-      </p>
-
-      <ul class="mb-0">
-        <li>Choose a program</li>
-        <li>Complete one workout</li>
-        <li>Come back tomorrow</li>
+      <div class="small text-muted text-uppercase mb-2">How it works</div>
+      <div class="fw-semibold mb-2">Programs lead. Workouts support.</div>
+      <ul class="small text-muted ps-3 mb-3">
+        <li>Pick one program.</li>
+        <li>Choose your level and environment.</li>
+        <li>Complete the week in order.</li>
+        <li>Open workout pages when you need form guidance.</li>
       </ul>
-
-      <div class="mt-3 d-grid gap-2">
-        <a class="btn btn-dark" href="{{ url_for('programs_index') }}">Browse programs</a>
-        <a class="btn btn-outline-dark" href="{{ url_for('workouts') }}">Browse workouts</a>
+      <div class="d-grid gap-2">
+        <a class="btn btn-dark" href="{{ url_for('programs_index') }}">Start a Program</a>
+        <a class="btn btn-outline-dark" href="{{ url_for('workouts') }}">Workout Library</a>
       </div>
-    </div>
-  </div>
-
-  <div class="card shadow-sm mt-3">
-    <div class="card-body small text-muted">
-      Tip: If you’re not sure where to start, pick a featured program and just finish Week 1. Consistency beats perfection.
     </div>
   </div>
 {% endblock %}

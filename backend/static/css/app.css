@@ -374,3 +374,134 @@ body{
     animation: none;
   }
 }
+
+/* ===== Home page ===== */
+.home-hero{
+  padding: 1.15rem 1rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(244,247,241,.96));
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 .5rem 1.3rem rgba(0,0,0,.05);
+}
+
+.home-kicker,
+.home-library-kicker{
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: rgba(0,0,0,.55);
+  margin-bottom: .4rem;
+}
+
+.home-hero-title{
+  max-width: 14ch;
+}
+
+.home-hero-copy{
+  max-width: 42rem;
+}
+
+.home-path{
+  display: grid;
+  gap: .75rem;
+}
+
+.home-path-step{
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .75rem;
+  align-items: start;
+  padding: .75rem .85rem;
+  border-radius: .9rem;
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(0,0,0,.06);
+}
+
+.home-path-number{
+  width: 1.9rem;
+  height: 1.9rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.home-path-label{
+  font-weight: 600;
+  color: #111;
+  margin-bottom: .15rem;
+}
+
+.home-path-copy{
+  font-size: .86rem;
+  line-height: 1.35;
+  color: rgba(0,0,0,.62);
+}
+
+.home-program-card{
+  display: block;
+  color: inherit;
+}
+
+.home-program-card .card{
+  border: 1px solid rgba(0,0,0,.08);
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+
+.home-program-card:active .card{
+  transform: scale(.995);
+}
+
+.home-program-title{
+  font-size: 1.02rem;
+}
+
+.home-program-meta{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .55rem;
+}
+
+.home-program-image{
+  width: 104px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: .85rem;
+  flex: 0 0 auto;
+}
+
+.home-program-image-placeholder{
+  background: rgba(0,0,0,.06);
+}
+
+.home-library{
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(247,247,247,.96));
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+@media (min-width: 768px){
+  .home-hero{
+    padding: 1.4rem 1.35rem;
+  }
+  .home-path{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575.98px){
+  .home-hero{
+    padding: 1rem .9rem;
+  }
+  .home-hero-actions .btn{
+    width: 100%;
+  }
+  .home-program-image{
+    width: 88px;
+    height: 72px;
+  }
+}
