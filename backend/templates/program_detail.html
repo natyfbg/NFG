@@ -166,61 +166,72 @@
     {# ===================================================================== #}
     {% if is_hub %}
 
-      <div class="card shadow-sm mb-3">
+      <div class="flow-progress mb-3" aria-label="Program setup progress">
+        <span class="flow-progress-copy">Step 1 of 2</span>
+        <span class="flow-progress-track" aria-hidden="true">
+          <span class="flow-progress-step active"></span>
+          <span class="flow-progress-step"></span>
+        </span>
+        <span class="flow-progress-label">Level</span>
+      </div>
+
+      <div class="card flow-card mb-3">
         <div class="card-body">
           <div class="fw-semibold mb-1">Start here</div>
           <div class="text-muted small">
-            Pick your level. Next page you’ll choose your environment (Home / Gym / Hybrid).
+            Choose the level that matches your current training base. On the next screen you’ll choose Home, Gym, or Hybrid.
           </div>
         </div>
       </div>
 
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <h5 class="mb-0">Choose your level</h5>
-        <span class="text-muted small">Beginner • Intermediate • Advanced</span>
-      </div>
-
-      <div class="row g-3">
-        <div class="col-12">
-          <a class="card shadow-sm text-decoration-none mb-3"
-             href="{{ url_for('program_hub_environment', hub_slug=program.get('slug', '8-week-challenge'), level='beginner') }}">
-            <div class="card-body">
-              <div class="fw-semibold text-dark d-flex justify-content-between">
-                <span>Beginner</span>
-                <span class="badge text-bg-light border">Recommended start</span>
-              </div>
-              <div class="text-muted small mt-1">
-                Build consistency + form. 3 days/week base.
+      <div class="selection-stack mb-4">
+        <a class="selection-card is-emphasis"
+           href="{{ url_for('program_hub_environment', hub_slug=program.get('slug', '8-week-challenge'), level='beginner') }}">
+          <div class="selection-card-body">
+            <div class="selection-card-main">
+              <div class="selection-card-title">Beginner</div>
+              <div class="selection-card-copy mt-1">Build consistency, clean up form, and settle into the weekly rhythm.</div>
+              <div class="selection-card-meta">
+                <span class="flow-chip">Recommended start</span>
               </div>
             </div>
-          </a>
+            <div class="selection-card-side">
+              <span class="selection-card-action">Select Level</span>
+            </div>
+          </div>
+        </a>
 
-          <a class="card shadow-sm text-decoration-none mb-3"
-             href="{{ url_for('program_hub_environment', hub_slug=program.get('slug', '8-week-challenge'), level='intermediate') }}">
-            <div class="card-body">
-              <div class="fw-semibold text-dark d-flex justify-content-between">
-                <span>Intermediate</span>
-                <span class="badge text-bg-light border">Good base built</span>
-              </div>
-              <div class="text-muted small mt-1">
-                More volume + progression. 4 days/week base.
+        <a class="selection-card"
+           href="{{ url_for('program_hub_environment', hub_slug=program.get('slug', '8-week-challenge'), level='intermediate') }}">
+          <div class="selection-card-body">
+            <div class="selection-card-main">
+              <div class="selection-card-title">Intermediate</div>
+              <div class="selection-card-copy mt-1">Add more volume and progression once your baseline training is already consistent.</div>
+              <div class="selection-card-meta">
+                <span class="flow-chip">Solid base</span>
               </div>
             </div>
-          </a>
+            <div class="selection-card-side">
+              <span class="selection-card-action">Select Level</span>
+            </div>
+          </div>
+        </a>
 
-          <a class="card shadow-sm text-decoration-none"
-             href="{{ url_for('program_hub_environment', hub_slug=program.get('slug', '8-week-challenge'), level='advanced') }}">
-            <div class="card-body">
-              <div class="fw-semibold text-dark d-flex justify-content-between">
-                <span>Advanced</span>
-                <span class="badge text-bg-light border">High commitment</span>
-              </div>
-              <div class="text-muted small mt-1">
-                Higher workload + intensity options. 5–6 days/week base.
+        <a class="selection-card"
+           href="{{ url_for('program_hub_environment', hub_slug=program.get('slug', '8-week-challenge'), level='advanced') }}">
+          <div class="selection-card-body">
+            <div class="selection-card-main">
+              <div class="selection-card-title">Advanced</div>
+              <div class="selection-card-copy mt-1">Choose the higher workload option when recovery habits and weekly volume are already strong.</div>
+              <div class="selection-card-meta">
+                <span class="flow-chip">High commitment</span>
               </div>
             </div>
-          </a>
-        </div>
+            <div class="selection-card-side">
+              <span class="selection-card-action">Select Level</span>
+            </div>
+          </div>
+        </a>
       </div>
 
     {# ===================================================================== #}

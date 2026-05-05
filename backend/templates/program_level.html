@@ -3,120 +3,81 @@
 {% block title %}{{ hub.title if hub else "8 Week Challenge" }} – Pick Your Level{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 720px;">
-
-  <!-- Top bar (mobile-first) -->
-  <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
-    <div>
-      <div class="text-muted small">Program</div>
-      <h1 class="h4 mb-0">{{ hub.title if hub else "8 Week Challenge" }}</h1>
+<div class="flow-shell program-setup-screen">
+  <div class="flow-header mb-3">
+    <div class="me-2">
+      <div class="flow-kicker">Program setup</div>
+      <h1 class="h4 mb-1">{{ hub.title if hub else "8 Week Challenge" }}</h1>
+      <p class="flow-copy mb-0">Pick the level that fits you right now.</p>
     </div>
 
     <a class="btn btn-sm btn-outline-secondary"
-       href="{{ url_for('home') }}"
-       aria-label="Back to Home">
+       href="{{ url_for('programs_index') }}"
+       aria-label="Back to Programs">
       Back
     </a>
   </div>
 
-  <!-- Program card -->
-  <div class="card shadow-sm mb-3">
-    {% if hub and hub.cover_image %}
-      <img src="{{ hub.cover_image }}" alt=""
-           style="width:100%;height:180px;object-fit:cover;border-top-left-radius:.75rem;border-top-right-radius:.75rem;">
-    {% endif %}
-    <div class="card-body">
-      <div class="d-flex align-items-start justify-content-between gap-2">
-        <div>
-          <div class="fw-semibold">Featured Program</div>
-          <div class="text-muted small">
-            Pick your level and training environment. Then follow the weekly plan.
-          </div>
-        </div>
-        <span class="badge text-bg-dark">{{ hub.duration_label if hub and hub.duration_label else "8 Weeks" }}</span>
-      </div>
+  <div class="flow-progress" aria-label="Program setup progress">
+    <span class="flow-progress-copy">Step 1 of 2</span>
+    <span class="flow-progress-track" aria-hidden="true">
+      <span class="flow-progress-step active"></span>
+      <span class="flow-progress-step"></span>
+    </span>
+    <span class="flow-progress-label">Level</span>
+  </div>
+
+  <div class="setup-chip-row mb-3">
+    <span class="flow-chip">{{ hub.duration_label if hub and hub.duration_label else "8 weeks" }}</span>
+    <span class="flow-chip">Next: Environment</span>
+  </div>
+
+  <div class="flow-section mt-0">
+    <div class="flow-section-header">
+      <h2 class="h5 mb-1">Pick your level</h2>
+      <p class="text-muted small mb-0">Each option moves straight into step two.</p>
     </div>
-  </div>
 
-  <!-- Step header -->
-  <div class="mb-2">
-    <div class="text-muted small">Step 1 of 2</div>
-    <h2 class="h5 mb-1">Pick your level</h2>
-    <p class="text-muted mb-0">
-      Choose the level that matches your current strength and consistency.
-      You can change it later.
-    </p>
-  </div>
+    <div class="selection-stack">
+      {% set lvl_list = levels if levels else ["beginner","intermediate","advanced"] %}
+      {% for lvl in lvl_list %}
+        {% set lvl_norm = lvl|string|lower %}
+        {% set label =
+          "Beginner" if lvl_norm == "beginner"
+          else ("Intermediate" if lvl_norm == "intermediate" else "Advanced")
+        %}
+        {% set desc =
+          "New or returning. Build form and consistency."
+          if lvl_norm == "beginner" else
+          ("Training regularly. Add volume and progression."
+           if lvl_norm == "intermediate" else
+           "Experienced. Higher workload and tighter recovery.")
+        %}
+        {% set badge =
+          "Best start" if lvl_norm == "beginner"
+          else ("Steady base" if lvl_norm == "intermediate" else "High demand")
+        %}
 
-  <!-- Level options -->
-  <div class="row g-2 mb-3">
-    {% set lvl_list = levels if levels else ["beginner","intermediate","advanced"] %}
-
-    {% for lvl in lvl_list %}
-      {# normalize just in case DB stores "Beginner" vs "beginner" #}
-      {% set lvl_norm = lvl|string|lower %}
-
-      {% set label =
-        "Beginner" if lvl_norm == "beginner"
-        else ("Intermediate" if lvl_norm == "intermediate" else "Advanced")
-      %}
-
-      {% set desc =
-        "New or returning. Focus on form, consistency, and building the habit."
-        if lvl_norm == "beginner" else
-        ("Training consistently already. Build volume, strength, and work capacity."
-         if lvl_norm == "intermediate" else
-         "Experienced. Higher intensity, better recovery habits, and stronger baseline.")
-      %}
-
-      <div class="col-12">
-        <a class="text-decoration-none"
+        <a class="selection-card {% if lvl_norm == 'beginner' %}is-emphasis{% endif %}"
            href="{{ url_for('program_hub_environment',
                             hub_slug=(hub.slug if hub else '8-week-challenge'),
                             level=lvl_norm) }}">
-          <div class="card shadow-sm">
-            <div class="card-body d-flex align-items-start justify-content-between gap-3">
-              <div>
-                <div class="fw-semibold text-dark">{{ label }}</div>
-                <div class="text-muted small mt-1">{{ desc }}</div>
-
-                <div class="mt-3 d-flex align-items-center gap-2">
-                  <span class="btn btn-sm btn-outline-dark">Choose</span>
-                  <span class="text-muted small">Continue</span>
-                </div>
+          <div class="selection-card-body">
+            <div class="selection-card-main">
+              <div class="selection-card-title">{{ label }}</div>
+              <div class="selection-card-copy mt-1">{{ desc }}</div>
+              <div class="selection-card-meta">
+                <span class="flow-chip">{{ badge }}</span>
               </div>
+            </div>
 
-              <div class="text-end">
-                <span class="badge text-bg-light border text-dark">Level</span>
-              </div>
+            <div class="selection-card-side">
+              <span class="selection-card-action">Select</span>
             </div>
           </div>
         </a>
-      </div>
-    {% endfor %}
-  </div>
-
-  <!-- Rules -->
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
-      <div class="fw-semibold mb-2">Program rules</div>
-
-      {% set rules = (hub.rules if hub and hub.rules is defined else []) %}
-      {% if rules and rules|length > 0 %}
-        <ul class="mb-0 text-muted">
-          {% for r in rules %}
-            <li class="mb-1">{{ r }}</li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <ul class="mb-0 text-muted">
-          <li class="mb-1">Diet: low/zero added sugar • 3–6L water • prioritize protein + whole foods.</li>
-          <li class="mb-1">Cardio: 20–30 min steady pace • conversational breathing.</li>
-          <li class="mb-0">Consistency beats intensity. Keep form clean.</li>
-        </ul>
-      {% endif %}
+      {% endfor %}
     </div>
   </div>
-
 </div>
 {% endblock %}

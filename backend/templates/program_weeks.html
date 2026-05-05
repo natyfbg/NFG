@@ -6,68 +6,38 @@ Weeks – {{ track.title if track and track.title else "Program" }}
 {% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 840px;">
-
+<div class="flow-shell-wide">
   {% set lvl = (level or 'beginner')|lower %}
   {% set envv = (env or 'home')|lower %}
 
-  <style>
-    .week-card{
-      border: 1px solid rgba(0,0,0,.12);
-      border-radius: 1rem;
-      box-shadow: 0 .35rem .9rem rgba(0,0,0,.05);
-      background:#fff;
-      text-decoration:none;
-      display:block;
-      color: inherit;
-      padding: 1rem;
-    }
-    .week-card:active{ transform: scale(.995); }
-    .week-card.week-card-locked{
-      opacity: .72;
-      background: rgba(0,0,0,.02);
-    }
-    .pill{
-      display:inline-flex; align-items:center; gap:.35rem;
-      border: 1px solid rgba(0,0,0,.15);
-      background: rgba(0,0,0,.03);
-      border-radius: 999px;
-      padding: .2rem .6rem;
-      font-size:.78rem;
-    }
-    .muted{ color: rgba(0,0,0,.6); }
-  </style>
-
-  <!-- Header -->
-  <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+  <div class="flow-header mb-3">
     <div class="me-2">
-      <div class="text-muted small">Weeks</div>
+      <div class="flow-kicker">Program ready</div>
       <h1 class="h4 mb-1">{{ track.title if track and track.title else "Program Weeks" }}</h1>
-      <div class="d-flex flex-wrap gap-2">
-        <span class="pill">Level: <strong>{{ lvl|capitalize }}</strong></span>
-        <span class="pill">Env: <strong>{{ envv|capitalize }}</strong></span>
-      </div>
       {% if track and track.summary %}
-        <p class="text-muted mt-2 mb-0">{{ track.summary }}</p>
+        <p class="flow-copy mb-0">{{ track.summary }}</p>
+      {% else %}
+        <p class="flow-copy mb-0">Follow the weeks in order and open each day when you are ready to train.</p>
       {% endif %}
-      <div class="small text-muted mt-2">
-        {{ completed_days or 0 }} / {{ total_days or 0 }} days complete
-        {% if completed_weeks %} • {{ completed_weeks }} week{{ '' if completed_weeks == 1 else 's' }} completed{% endif %}
+      <div class="flow-inline-stats">
+        <span class="flow-chip">Level: {{ lvl|capitalize }}</span>
+        <span class="flow-chip">Environment: {{ envv|capitalize }}</span>
+        <span class="flow-chip">{{ completed_days or 0 }} / {{ total_days or 0 }} days complete</span>
+        {% if completed_weeks %}
+          <span class="flow-chip">{{ completed_weeks }} week{{ '' if completed_weeks == 1 else 's' }} completed</span>
+        {% endif %}
       </div>
     </div>
 
     <div class="d-flex gap-2 flex-wrap justify-content-end">
-      <!-- Back goes to environment step -->
       <a class="btn btn-outline-secondary btn-sm"
          href="{{ url_for('program_hub_environment', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'), level=lvl) }}">
         Back
       </a>
-
       <a class="btn btn-outline-dark btn-sm"
          href="{{ url_for('programs_index') }}">
         All programs
       </a>
-
       <form method="post"
             action="{{ url_for('program_hub_reset_progress', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge')) }}"
             onsubmit="return confirm('Reset all saved progress for this program? This cannot be undone.');"
@@ -75,17 +45,14 @@ Weeks – {{ track.title if track and track.title else "Program" }}
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="level" value="{{ lvl }}">
         <input type="hidden" name="env" value="{{ envv }}">
-        <button class="btn btn-outline-danger btn-sm" type="submit">
-          Reset progress
-        </button>
+        <button class="btn btn-outline-danger btn-sm" type="submit">Reset progress</button>
       </form>
     </div>
   </div>
 
-  <!-- Rules -->
-  <div class="card shadow-sm mb-3">
+  <div class="card flow-card mb-4">
     <div class="card-body">
-      <div class="fw-semibold mb-1">Program rules</div>
+      <div class="fw-semibold mb-2">Program rules</div>
       {% if track and track.rules %}
         {% if track.rules is string %}
           <div class="text-muted small">{{ track.rules }}</div>
@@ -98,15 +65,14 @@ Weeks – {{ track.title if track and track.title else "Program" }}
         {% endif %}
       {% else %}
         <div class="text-muted small">
-          Stay consistent. Keep form clean. Scale intensity so you can complete every week.
+          Stay consistent. Keep form clean. Scale intensity so you can complete every week without breaking recovery.
         </div>
       {% endif %}
     </div>
   </div>
 
-  <!-- Weeks list -->
   {% if weeks and weeks|length > 0 %}
-    <div class="row g-3">
+    <div class="flow-list">
       {% for w in weeks %}
         {% set wn = w.week_number if w.week_number is defined else w.get('week_number') %}
         {% set wtitle = (w.title if w.title is defined else w.get('title')) %}
@@ -118,83 +84,74 @@ Weeks – {{ track.title if track and track.title else "Program" }}
         {% else %}
           {% set week_url = url_for('program_hub_week_detail', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'), week_number=wn, level=lvl, env=envv) %}
         {% endif %}
-        <div class="col-12">
-          {% if is_unlocked %}
-          <a class="week-card"
-             href="{{ week_url }}">
-          {% else %}
-          <div class="week-card week-card-locked" aria-disabled="true">
-          {% endif %}
-            <div class="d-flex align-items-start justify-content-between gap-3">
-              <div>
-                <div class="fw-semibold">Week {{ wn }}</div>
+
+        {% if is_unlocked %}
+          <a class="selection-card {% if resume_week_number == wn %}is-emphasis{% endif %}" href="{{ week_url }}">
+        {% else %}
+          <div class="selection-card is-locked" aria-disabled="true">
+        {% endif %}
+          <div class="selection-card-body">
+            <div class="selection-card-main">
+              <div class="selection-card-title">Week {{ wn }}</div>
+              <div class="selection-card-copy mt-1">
                 {% if wtitle %}
-                  <div class="muted small mt-1">{{ wtitle }}</div>
+                  {{ wtitle }}
                 {% else %}
-                  <div class="muted small mt-1">View workouts and guidance for this week.</div>
+                  View workouts and guidance for this week.
                 {% endif %}
+              </div>
 
+              <div class="selection-card-meta">
                 {% if pg.total > 0 %}
-                  <div class="small muted mt-2">
-                    Progress: {{ pg.done }} / {{ pg.total }} day{{ '' if pg.total == 1 else 's' }}
-                  </div>
-                  {% if wk_completed_at %}
-                    <div class="small text-success mt-1">
-                      Completed {{ wk_completed_at.strftime('%b %d, %Y') if wk_completed_at else '' }}
-                    </div>
-                  {% endif %}
-                  <div class="progress mt-1" role="progressbar" aria-valuenow="{{ pg.done }}" aria-valuemin="0" aria-valuemax="{{ pg.total }}" style="height:6px;max-width:220px;">
-                    <div class="progress-bar {% if pg.all_done %}bg-success{% endif %}" style="width: {{ (100 * pg.done / pg.total)|round(0, 'floor') }}%;"></div>
-                  </div>
+                  <span class="flow-chip">Progress: {{ pg.done }} / {{ pg.total }}</span>
                 {% endif %}
+                {% if pg.all_done %}
+                  <span class="flow-chip flow-chip-accent">Completed</span>
+                {% elif not is_unlocked %}
+                  <span class="flow-chip">Locked</span>
+                {% elif resume_week_number == wn and resume_day_key %}
+                  <span class="flow-chip flow-chip-accent">Resume {{ resume_day_key|replace('-', ' ')|title }}</span>
+                {% endif %}
+                {% if wk_completed_at %}
+                  <span class="flow-chip">Done {{ wk_completed_at.strftime('%b %d, %Y') }}</span>
+                {% endif %}
+              </div>
 
-                <div class="mt-3">
-                  {% if pg.all_done %}
-                    <span class="btn btn-sm btn-success">Completed</span>
-                  {% elif not is_unlocked %}
-                    <span class="btn btn-sm btn-outline-secondary disabled">Locked</span>
-                  {% elif resume_week_number == wn %}
-                    <span class="btn btn-sm btn-dark">Continue</span>
-                  {% else %}
-                    <span class="btn btn-sm btn-dark">Open</span>
-                  {% endif %}
-                  <span class="text-muted small ms-2">
-                    {% if not is_unlocked %}
-                      Complete prior week first
-                    {% elif resume_week_number == wn and resume_day_key %}
-                      Resume {{ resume_day_key|replace('-', ' ')|title }}
-                    {% else %}
-                      See week details
-                    {% endif %}
-                  </span>
+              {% if pg.total > 0 %}
+                <div class="progress mt-3" role="progressbar" aria-valuenow="{{ pg.done }}" aria-valuemin="0" aria-valuemax="{{ pg.total }}" style="height:6px;max-width:220px;">
+                  <div class="progress-bar {% if pg.all_done %}bg-success{% endif %}" style="width: {{ (100 * pg.done / pg.total)|round(0, 'floor') }}%;"></div>
                 </div>
-              </div>
-
-              <div class="text-end">
-                <span class="badge text-bg-light border text-dark">Week</span>
-                {% if is_unlocked and resume_week_number == wn %}
-                  <div class="small text-dark mt-1">Last active</div>
-                {% endif %}
-              </div>
+              {% endif %}
             </div>
-          {% if is_unlocked %}
-          </a>
-          {% else %}
+
+            <div class="selection-card-side">
+              {% if pg.all_done %}
+                <span class="selection-card-action">Completed</span>
+              {% elif not is_unlocked %}
+                <span class="selection-card-action">Locked</span>
+              {% elif resume_week_number == wn %}
+                <span class="selection-card-action">Continue</span>
+              {% else %}
+                <span class="selection-card-action">Open Week</span>
+              {% endif %}
+            </div>
           </div>
-          {% endif %}
-        </div>
+        {% if is_unlocked %}
+          </a>
+        {% else %}
+          </div>
+        {% endif %}
       {% endfor %}
     </div>
   {% else %}
-    <div class="card shadow-sm">
+    <div class="card flow-card">
       <div class="card-body">
         <div class="fw-semibold mb-1">No weeks found</div>
-        <div class="text-muted">
-          This track doesn’t have weeks yet. Go to Admin → Programs → Weeks to add them.
+        <div class="text-muted small">
+          This track does not have any weeks yet. Add them in Admin when the program structure is ready.
         </div>
       </div>
     </div>
   {% endif %}
-
 </div>
 {% endblock %}

@@ -5,99 +5,14 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
 {% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 980px;">
-
+<div class="week-detail-shell">
   {% set lvl = (level or 'beginner')|lower %}
   {% set envv = (env or 'home')|lower %}
   {% set hub_slug = (hub.slug if hub and hub.slug else (track.hub_slug if track and track.hub_slug else '8-week-challenge')) %}
 
-  <style>
-    .pill{
-      display:inline-flex; align-items:center; gap:.35rem;
-      border: 1px solid rgba(0,0,0,.15);
-      background: rgba(0,0,0,.03);
-      border-radius: 999px;
-      padding: .2rem .6rem;
-      font-size:.78rem;
-      text-decoration:none;
-      color: inherit;
-    }
-    .pill.active{
-      background: rgba(0,0,0,.08);
-      border-color: rgba(0,0,0,.25);
-      font-weight: 600;
-    }
-    .card-soft{
-      border: 1px solid rgba(0,0,0,.12);
-      border-radius: 1rem;
-      box-shadow: 0 .35rem .9rem rgba(0,0,0,.05);
-    }
-    .muted{ color: rgba(0,0,0,.6); }
-
-    .day-chip-row{
-      display:flex;
-      gap:.5rem;
-      flex-wrap:nowrap;
-      overflow-x:auto;
-      padding-bottom:.2rem;
-      -webkit-overflow-scrolling: touch;
-    }
-    .day-chip{
-      border: 1px solid rgba(0,0,0,.15);
-      background: #fff;
-      border-radius: 999px;
-      padding: .3rem .75rem;
-      font-size: .84rem;
-      white-space: nowrap;
-      transition: background .16s ease, color .16s ease, border-color .16s ease;
-    }
-    .day-chip.active{
-      background:#111;
-      color:#fff;
-      border-color:#111;
-    }
-    .day-chip.active.done{
-      background:#111;
-      color:#fff;
-      border-color:#111;
-    }
-    .day-chip.done{
-      border-color: rgba(25,135,84,.45);
-      background: rgba(25,135,84,.08);
-    }
-
-    .day-panel{
-      border: 1px solid rgba(0,0,0,.12);
-      border-radius: .9rem;
-      background: #fff;
-      padding: 1rem;
-      min-height: 58vh;
-      display:flex;
-      flex-direction:column;
-      gap:.75rem;
-    }
-    .item-row{
-      border: 1px solid rgba(0,0,0,.12);
-      border-radius: .85rem;
-      padding: .8rem;
-      background: #fff;
-    }
-    .day-footer{
-      margin-top:auto;
-      padding-top:.5rem;
-      border-top:1px solid rgba(0,0,0,.08);
-    }
-    .open-ex-btn{
-      font-size: .73rem;
-      border-radius: 999px;
-      padding: .2rem .58rem;
-      line-height: 1.15;
-    }
-  </style>
-
-  <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+  <div class="flow-header mb-3">
     <div class="me-2">
-      <div class="text-muted small">Week detail</div>
+      <div class="flow-kicker">Week detail</div>
       <h1 class="h4 mb-1">
         Week {{ week_number }}
         {% if week and (week.title is defined or week.get('title')) %}
@@ -105,14 +20,13 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
           <span class="text-muted">•</span> <span class="text-muted">{{ wtitle }}</span>
         {% endif %}
       </h1>
-
-      <div class="text-muted">
-        {{ track.title if track and track.title else "Program" }}
-      </div>
-
-      <div class="d-flex flex-wrap gap-2 mt-2">
-        <span class="pill">Level: <strong>{{ lvl|capitalize }}</strong></span>
-        <span class="pill">Env: <strong>{{ envv|capitalize }}</strong></span>
+      <div class="text-muted">{{ track.title if track and track.title else "Program" }}</div>
+      <div class="week-detail-summary">
+        <span class="flow-chip">Level: {{ lvl|capitalize }}</span>
+        <span class="flow-chip">Environment: {{ envv|capitalize }}</span>
+        {% if total_days %}
+          <span class="flow-chip">{{ total_days }} day{{ '' if total_days == 1 else 's' }}</span>
+        {% endif %}
       </div>
     </div>
 
@@ -137,15 +51,15 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
     </div>
   </div>
 
-  <div class="card card-soft mb-3">
+  <div class="card week-detail-panel week-detail-switchboard mb-3">
     <div class="card-body">
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <div>
-          <div class="fw-semibold mb-1">Switch level</div>
-          <div class="d-flex flex-wrap gap-2">
+      <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div class="week-detail-switchboard-section">
+          <div class="week-detail-switchboard-label">Level</div>
+          <div class="week-detail-pills">
             {% for l in (levels or ['beginner','intermediate','advanced']) %}
               {% set lnorm = l|lower %}
-              <a class="pill {{ 'active' if lnorm == lvl else '' }}"
+              <a class="week-detail-pill {{ 'active' if lnorm == lvl else '' }}"
                  href="{{ url_for('program_hub_week_detail', hub_slug=hub_slug, week_number=week_number, level=lnorm, env=envv) }}">
                 {{ lnorm|capitalize }}
               </a>
@@ -153,12 +67,12 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
           </div>
         </div>
 
-        <div>
-          <div class="fw-semibold mb-1">Switch environment</div>
-          <div class="d-flex flex-wrap gap-2">
+        <div class="week-detail-switchboard-section">
+          <div class="week-detail-switchboard-label">Environment</div>
+          <div class="week-detail-pills">
             {% for e in (envs or ['home','gym','hybrid']) %}
               {% set enorm = e|lower %}
-              <a class="pill {{ 'active' if enorm == envv else '' }}"
+              <a class="week-detail-pill {{ 'active' if enorm == envv else '' }}"
                  href="{{ url_for('program_hub_week_detail', hub_slug=hub_slug, week_number=week_number, level=lvl, env=enorm) }}">
                 {{ enorm|capitalize }}
               </a>
@@ -170,23 +84,22 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
   </div>
 
   {% if day_groups and day_groups|length > 0 %}
-    <div class="card card-soft mb-3">
+    <div class="card week-detail-panel mb-3">
       <div class="card-body">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
           <div>
             <h2 class="h6 mb-1">Weekly split</h2>
-            <div class="small text-muted">
-              Swipe left/right to move between days, or tap the day chips.
-            </div>
+            <div class="small text-muted">Tap a day or swipe across the split.</div>
           </div>
-          <span class="badge text-bg-dark" id="dayProgress">
+          <span class="flow-chip flow-chip-accent" id="dayProgress">
             Day 1 of {{ total_days }} • {{ completed_days_count }} done
           </span>
         </div>
 
         {% if is_template_preview %}
-          <div class="alert alert-warning py-2 px-3 small">
-            This week is showing a sample template. Update it in Admin to publish your final exercises.
+          <div class="week-template-note mb-3">
+            <strong>Sample week</strong>
+            <span>Replace these items in Admin when the final plan is ready.</span>
           </div>
         {% endif %}
 
@@ -218,21 +131,20 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
               {% set is_done = group.key in completed_day_keys %}
               <div class="carousel-item {% if is_initial %}active{% endif %}">
                 <div class="day-panel">
-                  <div class="d-flex align-items-start justify-content-between gap-2">
+                  <div class="day-panel-header">
                     <div>
-                      <div class="fw-semibold">{{ group.label }} Day</div>
-                      <div class="small muted">{{ group['items']|length }} item{{ '' if group['items']|length == 1 else 's' }}</div>
+                      <div class="day-panel-title">{{ group.label }} Day</div>
+                      <div class="day-panel-subtitle">{{ group['items']|length }} exercise{{ '' if group['items']|length == 1 else 's' }} to complete</div>
                     </div>
-                    <span class="badge text-bg-light border text-dark">
-                      {{ loop.index }} / {{ total_days }}
-                    </span>
+                    <div class="day-panel-status">
+                      <span class="flow-chip">{{ loop.index }} / {{ total_days }}</span>
+                      {% if is_done %}
+                        <span class="flow-chip flow-chip-accent">Completed</span>
+                      {% endif %}
+                    </div>
                   </div>
 
-                  {% if is_done %}
-                    <div class="small text-success">Completed</div>
-                  {% endif %}
-
-                  <div class="d-grid gap-2">
+                  <div class="week-item-list">
                     {% for it in group['items'] %}
                       {% set wid = it.get('workout_id') %}
                       {% set wslug = it.get('workout_slug') %}
@@ -240,30 +152,30 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
                       {% set label = it.get('custom_name') or it.get('label') or it.get('title') or it.get('name') or it.get('workout_name') or (w.get('name') if w else 'Workout') %}
                       {% set note = it.get('notes') or it.get('note') or it.get('description') or it.get('instructions') %}
 
-                      <div class="item-row">
-                        <div class="d-flex align-items-start justify-content-between gap-2">
-                          <div>
-                            <div class="fw-semibold">{{ label }}</div>
-                            <div class="d-flex flex-wrap gap-2 mt-2">
-                              {% if it.get('sets') %}<span class="badge text-bg-light border">Sets: {{ it.get('sets') }}</span>{% endif %}
-                              {% if it.get('reps') %}<span class="badge text-bg-light border">Reps: {{ it.get('reps') }}</span>{% endif %}
-                              {% if it.get('rest') %}<span class="badge text-bg-light border">Rest: {{ it.get('rest') }}</span>{% endif %}
+                      <div class="week-item-card">
+                        <div class="week-item-row">
+                          <div class="week-item-main">
+                            <div class="week-item-title">{{ label }}</div>
+                            <div class="week-item-meta">
+                              {% if it.get('sets') %}<span class="week-item-tag">Sets {{ it.get('sets') }}</span>{% endif %}
+                              {% if it.get('reps') %}<span class="week-item-tag">Reps {{ it.get('reps') }}</span>{% endif %}
+                              {% if it.get('rest') %}<span class="week-item-tag">Rest {{ it.get('rest') }}</span>{% endif %}
                             </div>
                             {% if note %}
-                              <div class="small muted mt-2">{{ note }}</div>
+                              <div class="week-item-note">{{ note }}</div>
                             {% endif %}
                           </div>
 
-                          <div class="text-end">
+                          <div class="week-item-cta">
                             {% if w %}
                               <a class="btn btn-sm btn-outline-dark open-ex-btn"
                                  href="{{ url_for('workout_detail', slug=w.get('slug')) }}">
-                                Open exercise
+                                View exercise
                               </a>
                             {% elif wslug %}
-                              <span class="badge text-bg-warning">Exercise missing</span>
+                              <span class="week-item-tag">Exercise missing</span>
                             {% else %}
-                              <span class="badge text-bg-secondary">Custom</span>
+                              <span class="week-item-tag">Custom item</span>
                             {% endif %}
                           </div>
                         </div>
@@ -426,11 +338,11 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
     </script>
 
   {% else %}
-    <div class="card card-soft">
+    <div class="card week-detail-panel week-detail-empty">
       <div class="card-body">
         <h2 class="h6 mb-2">Week {{ week_number }} isn’t built yet</h2>
-        <p class="text-muted mb-3">
-          Add week items in Admin so this page can render Push/Pull/Legs/Upper/Lower/Core day pages.
+        <p class="text-muted small mb-3">
+          Add week items in Admin to populate the daily split for this week.
         </p>
         <div class="d-flex flex-wrap gap-2">
           {% if week and week._id %}

@@ -12,7 +12,8 @@
   </head>
 
   {% set page_ep = request.endpoint or '' %}
-  <body class="bg-light{% if page_ep in ['home','workouts','programs_index','recipes'] %} has-mobile-swipe-rail{% endif %}">
+  <body class="bg-light{% if page_ep in ['home','workouts','programs_index','recipes'] %} has-mobile-swipe-rail has-top-level-swipe{% endif %}"
+        {% if page_ep in ['home','workouts','programs_index','recipes'] %}data-top-level-swipe="enabled"{% endif %}>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
 
@@ -163,7 +164,7 @@
     </div>
 
     <!-- Swipe + slide animation zone -->
-    <main class="container my-4" id="swipe-zone">
+    <main class="container my-4{% if ep in swipe_eps %} top-level-swipe-zone{% endif %}" id="swipe-zone">
       <div id="page-shell">
         <div class="row g-4">
           <div class="col-lg-8">
@@ -223,7 +224,8 @@
         const zone = document.getElementById('swipe-zone');
         const rail = document.getElementById('mobile-swipe-rail');
         const shell = document.getElementById('page-shell');
-        if (!zone || !shell) return;
+        const swipeEnabled = document.body.dataset.topLevelSwipe === 'enabled';
+        if (!zone || !shell || !swipeEnabled) return;
 
         const isMobile = () => window.matchMedia('(max-width: 991.98px)').matches;
         const ep = "{{ ep }}";
@@ -237,52 +239,113 @@
         const activeRouteIndex = routes.findIndex((route) => route.endpoint === ep);
         if (activeRouteIndex < 0) return;
 
-        const INTERACTIVE_SELECTOR = [
+        const HARD_BLOCK_SELECTOR = [
           'a',
           'button',
           'input',
           'textarea',
           'select',
           'label',
+          'summary',
+          '[role="link"]',
           '[role="button"]',
           '[contenteditable="true"]',
+          '[draggable="true"]',
           '.navbar',
           '.bottom-nav',
           '.carousel',
           '.swipe-block',
           '.overflow-auto',
           '.day-chip-row',
+          '.rail-hit',
+          '.dropdown-menu',
+          '.modal',
+          '.offcanvas',
+          '.accordion-button',
+          '.page-link',
+          '.btn',
+          '.form-control',
+          '.form-select',
+          '.form-check-input',
           '[data-no-page-swipe]'
         ].join(',');
 
+        const SOFT_BLOCK_SELECTOR = [
+          '.js-workout-card .carousel',
+          '.js-workout-card [data-no-page-swipe]'
+        ].join(',');
+
         const EDGE_GUARD = 14;
-        const SWIPE_MIN_X = 48;
-        const SWIPE_MAX_Y = 70;
-        const SWIPE_RATIO = 1.18;
+        const SWIPE_MIN_X = 50;
+        const SWIPE_LOCK_X = 14;
+        const SWIPE_MAX_Y = 68;
+        const SWIPE_LOCK_RATIO = 1.2;
+        const SWIPE_RATIO = 1.38;
         const FLICK_MAX_MS = 260;
-        const NAV_COOLDOWN = 420;
+        const NAV_COOLDOWN = 440;
+        const MAX_DRAG = 112;
         let lastNavAt = 0;
+        let navInFlight = false;
         let state = null;
+        let framePending = false;
+        let pendingDrag = 0;
+        let pendingOpacity = 1;
+
+        const commitSwipeFrame = () => {
+          framePending = false;
+          shell.style.setProperty('--swipe-x', `${pendingDrag}px`);
+          shell.style.setProperty('--swipe-opacity', pendingOpacity.toFixed(3));
+        };
+
+        const renderSwipeFrame = (drag, opacity) => {
+          pendingDrag = drag;
+          pendingOpacity = opacity;
+          if (framePending) return;
+          framePending = true;
+          window.requestAnimationFrame(commitSwipeFrame);
+        };
 
         const resetGesture = () => {
+          if (state && state.captureEl && state.pointerId != null && state.captureEl.hasPointerCapture && state.captureEl.hasPointerCapture(state.pointerId)) {
+            try { state.captureEl.releasePointerCapture(state.pointerId); } catch (err) {}
+          }
           state = null;
           shell.classList.remove('is-swiping');
           shell.style.removeProperty('--swipe-x');
           shell.style.removeProperty('--swipe-opacity');
         };
 
-        const isInteractive = (el) => {
+        const isHardBlocked = (el) => {
           if (!el) return false;
-          return !!el.closest(INTERACTIVE_SELECTOR);
+          return !!el.closest(HARD_BLOCK_SELECTOR);
+        };
+
+        const isSoftBlocked = (el) => {
+          if (!el) return false;
+          return !!el.closest(SOFT_BLOCK_SELECTOR);
+        };
+
+        const getStartContext = (target) => {
+          if (!target) return null;
+          const inRail = rail && rail.contains(target);
+          const inZone = zone.contains(target);
+          if (!inRail && !inZone) return null;
+          return {
+            fromRail: !!inRail,
+            captureEl: inRail ? rail : zone
+          };
         };
 
         const startGesture = (e) => {
           if (!isMobile()) return;
+          if (navInFlight) return;
           if (e.pointerType === 'mouse' && e.button !== 0) return;
           if (e.pointerType === 'touch' && !e.isPrimary) return;
 
-          const fromRail = e.currentTarget === rail;
-          if (!fromRail && isInteractive(e.target)) return;
+          const context = getStartContext(e.target);
+          if (!context) return;
+          if (!context.fromRail && isHardBlocked(e.target)) return;
+          if (!context.fromRail && isSoftBlocked(e.target)) return;
           if (e.clientX < EDGE_GUARD || (window.innerWidth - e.clientX) < EDGE_GUARD) return;
 
           state = {
@@ -292,9 +355,15 @@
             lastX: e.clientX,
             lastY: e.clientY,
             startedAt: Date.now(),
-            locked: fromRail,
-            fromRail
+            locked: context.fromRail,
+            captureEl: context.captureEl,
+            fromRail: context.fromRail,
+            swiping: false
           };
+
+          if (state.captureEl && state.captureEl.setPointerCapture) {
+            try { state.captureEl.setPointerCapture(e.pointerId); } catch (err) {}
+          }
         };
 
         const moveGesture = (e) => {
@@ -309,31 +378,32 @@
           state.lastY = e.clientY;
 
           if (!state.locked) {
-            if (absY > 16 && absY > absX * .9) {
+            if (absY > 14 && absY > absX * .92) {
               resetGesture();
               return;
             }
-            if (absX > 12 && absX > absY * 1.08) {
+            if (absX >= SWIPE_LOCK_X && absX > absY * SWIPE_LOCK_RATIO) {
               state.locked = true;
             }
           }
 
           if (!state.locked) return;
           if (e.cancelable) e.preventDefault();
+          state.swiping = true;
 
-          const drag = Math.max(-92, Math.min(92, dx));
-          const opacity = Math.max(.82, 1 - Math.abs(drag) / 360);
+          const drag = Math.max(-MAX_DRAG, Math.min(MAX_DRAG, dx * .32));
+          const opacity = Math.max(.84, 1 - Math.abs(drag) / 420);
           shell.classList.add('is-swiping');
-          shell.style.setProperty('--swipe-x', `${drag * .22}px`);
-          shell.style.setProperty('--swipe-opacity', opacity.toFixed(3));
+          renderSwipeFrame(drag, opacity);
         };
 
         const navigateTo = (nextIdx, dx) => {
           if (nextIdx === activeRouteIndex) return;
 
           const now = Date.now();
-          if (now - lastNavAt < NAV_COOLDOWN) return;
+          if (navInFlight || now - lastNavAt < NAV_COOLDOWN) return;
           lastNavAt = now;
+          navInFlight = true;
 
           const route = routes[nextIdx];
           const targetLink = document.querySelector(`.bottom-nav a[data-nav="${route.key}"]`);
@@ -348,9 +418,8 @@
           shell.classList.remove('is-swiping', 'slide-out-left', 'slide-out-right');
           shell.style.removeProperty('--swipe-x');
           shell.style.removeProperty('--swipe-opacity');
-          void shell.offsetWidth;
           shell.classList.add(dx < 0 ? 'slide-out-left' : 'slide-out-right');
-          setTimeout(() => { window.location.href = route.url; }, 95);
+          window.setTimeout(() => { window.location.href = route.url; }, 64);
         };
 
         const endGesture = (e) => {
@@ -379,13 +448,17 @@
           resetGesture();
         };
 
-        const targets = rail ? [zone, rail] : [zone];
-        targets.forEach((target) => {
-          target.addEventListener('pointerdown', startGesture, { passive: true });
-        });
+        document.addEventListener('pointerdown', startGesture, { passive: true, capture: true });
         window.addEventListener('pointermove', moveGesture, { passive: false });
         window.addEventListener('pointerup', endGesture, { passive: true });
         window.addEventListener('pointercancel', resetGesture, { passive: true });
+        document.addEventListener('click', (e) => {
+          if (!navInFlight && !(state && state.swiping)) return;
+          const target = e.target;
+          if (target && target.closest && target.closest('.bottom-nav')) return;
+          e.preventDefault();
+          e.stopPropagation();
+        }, true);
       })();
     </script>
 
