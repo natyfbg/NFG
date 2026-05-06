@@ -13,7 +13,7 @@
 
   {% set page_ep = request.endpoint or '' %}
   <body class="bg-light{% if page_ep in ['home','workouts','programs_index','recipes'] %} has-mobile-swipe-rail has-top-level-swipe{% endif %}"
-        {% if page_ep in ['home','workouts','programs_index','recipes'] %}data-top-level-swipe="enabled"{% endif %}>
+        {% if page_ep in ['home','workouts','programs_index','recipes'] %}data-top-level-swipe="true"{% endif %}>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container">
 
@@ -219,12 +219,12 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-      /* Top-level mobile swipe navigation */
+      /* Top-level route swipe stays subtle because this shell still performs full Flask route navigations. */
       (function(){
         const zone = document.getElementById('swipe-zone');
         const rail = document.getElementById('mobile-swipe-rail');
         const shell = document.getElementById('page-shell');
-        const swipeEnabled = document.body.dataset.topLevelSwipe === 'enabled';
+        const swipeEnabled = document.body.dataset.topLevelSwipe === 'true';
         if (!zone || !shell || !swipeEnabled) return;
 
         const isMobile = () => window.matchMedia('(max-width: 991.98px)').matches;
@@ -263,7 +263,9 @@
           '.offcanvas',
           '.accordion-button',
           '.page-link',
+          'form',
           '.btn',
+          '.js-workout-card',
           '.form-control',
           '.form-select',
           '.form-check-input',
@@ -327,6 +329,7 @@
 
         const getStartContext = (target) => {
           if (!target) return null;
+          /* Deeper program pages are excluded so route-swipe never competes with setup/day interactions. */
           const inRail = rail && rail.contains(target);
           const inZone = zone.contains(target);
           if (!inRail && !inZone) return null;
@@ -409,17 +412,18 @@
           const targetLink = document.querySelector(`.bottom-nav a[data-nav="${route.key}"]`);
           document.querySelectorAll('.bottom-nav a').forEach((link) => link.classList.remove('is-pending'));
           if (targetLink) targetLink.classList.add('is-pending');
+          document.body.classList.add('is-route-navigating');
 
           if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             window.location.href = route.url;
             return;
           }
 
-          shell.classList.remove('is-swiping', 'slide-out-left', 'slide-out-right');
+          shell.classList.remove('is-swiping');
           shell.style.removeProperty('--swipe-x');
           shell.style.removeProperty('--swipe-opacity');
-          shell.classList.add(dx < 0 ? 'slide-out-left' : 'slide-out-right');
-          window.setTimeout(() => { window.location.href = route.url; }, 64);
+          shell.style.setProperty('--nav-out-x', dx < 0 ? '-18px' : '18px');
+          window.setTimeout(() => { window.location.href = route.url; }, 86);
         };
 
         const endGesture = (e) => {

@@ -347,7 +347,7 @@ body{
   }
 }
 
-/* ===== Swipe slide animation ===== */
+/* ===== Swipe shell ===== */
 #page-shell{
   will-change: transform, opacity;
   transform: translate3d(0, 0, 0);
@@ -360,11 +360,11 @@ body{
   transition: none;
   animation: none;
 }
-#page-shell.slide-out-left{
-  animation: slideOutLeft 76ms ease-out forwards;
-}
-#page-shell.slide-out-right{
-  animation: slideOutRight 76ms ease-out forwards;
+body.is-route-navigating #page-shell{
+  opacity: .16;
+  transform: translate3d(var(--nav-out-x, 0), 0, 0);
+  transition: transform 88ms ease-out, opacity 88ms ease-out;
+  animation: none;
 }
 
 @keyframes shellEnter{
@@ -372,22 +372,12 @@ body{
   to   { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
-@keyframes slideOutLeft{
-  from { transform: translateX(0); opacity: 1; }
-  to   { transform: translateX(-10%); opacity: .2; }
-}
-@keyframes slideOutRight{
-  from { transform: translateX(0); opacity: 1; }
-  to   { transform: translateX(10%); opacity: .2; }
-}
-
 @media (prefers-reduced-motion: reduce){
   #page-shell{
     animation: none;
   }
-  #page-shell.slide-out-left,
-  #page-shell.slide-out-right{
-    animation: none;
+  body.is-route-navigating #page-shell{
+    transition: none;
   }
 }
 
