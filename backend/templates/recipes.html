@@ -2,10 +2,12 @@
 {% block title %}Recipes – NFG{% endblock %}
 
 {% block content %}
-  <div class="d-flex align-items-start justify-content-between mb-3">
+  <div class="app-page">
+  <div class="app-page-header">
     <div>
+      <div class="app-page-kicker">Recipes</div>
       <h1 class="page-title mb-1">Recipes</h1>
-      <p class="text-muted mb-0">Quick meal ideas to support your training.</p>
+      <p class="app-page-copy">Quick meal ideas to support training without turning nutrition into another complicated workflow.</p>
     </div>
   </div>
 
@@ -13,7 +15,7 @@
     <div class="row g-3">
       {% for recipe in recipes %}
         <div class="col-12 col-lg-6">
-          <div class="card shadow-sm h-100">
+          <div class="card app-surface h-100">
             <div class="card-body d-flex flex-column">
               <div class="d-flex align-items-start justify-content-between">
                 <div class="me-3">
@@ -22,11 +24,11 @@
                     Tap to open the recipe.
                   </div>
                 </div>
-                <span class="badge text-bg-dark">Recipe</span>
+                <span class="flow-chip">Recipe</span>
               </div>
 
               <div class="mt-3 d-flex gap-2 align-items-center">
-                <a href="{{ recipe.url }}" class="btn btn-sm btn-outline-dark" target="_blank" rel="noopener">
+                <a href="{{ recipe.url }}" class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact" target="_blank" rel="noopener">
                   View
                 </a>
                 <small class="text-muted">Opens in a new tab</small>
@@ -39,11 +41,12 @@
       {% endfor %}
     </div>
   {% else %}
-    <div class="card shadow-sm">
+    <div class="card app-surface app-surface-muted">
       <div class="card-body">
         <h5 class="mb-1">No recipes yet</h5>
         <p class="text-muted mb-0">We’ll add an admin tool for recipes later, like workouts.</p>
       </div>
     </div>
   {% endif %}
+  </div>
 {% endblock %}

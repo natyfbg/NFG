@@ -1,11 +1,16 @@
-<!-- templates/quick_options.html -->
-<div class="card mb-4">
-  <div class="card-header">Quick Options</div>
-  <ul class="list-group list-group-flush">
-    {% for opt in quick_options %}
-    <li class="list-group-item">
-      <a href="{{ opt.url }}">{{ opt.label }}</a>
-    </li>
-    {% endfor %}
-  </ul>
+<div class="app-sidebar-stack">
+  <div class="card app-surface app-list-card">
+    <div class="card-header">
+      <strong>Quick options</strong>
+    </div>
+    <div class="list-group list-group-flush">
+      {% for opt in quick_options %}
+        <a class="list-group-item list-group-item-action app-list-row d-flex justify-content-between align-items-center"
+           href="{{ opt.url }}">
+          <span>{{ opt.label }}</span>
+          <span class="app-list-arrow">→</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
 </div>

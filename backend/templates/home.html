@@ -3,7 +3,8 @@
 {% block title %}Home – NFG{% endblock %}
 
 {% block content %}
-  <section class="home-hero mb-4">
+  <div class="app-page">
+  <section class="home-hero mb-0">
     <div class="home-kicker">Structured fitness system</div>
     <h1 class="page-title home-hero-title mb-2">Choose a program and follow a plan built week by week.</h1>
     <p class="text-muted home-hero-copy mb-3">
@@ -11,8 +12,8 @@
     </p>
 
     <div class="d-grid d-sm-flex gap-2 home-hero-actions">
-      <a class="btn btn-dark btn-lg" href="{{ url_for('programs_index') }}">Start a Program</a>
-      <a class="btn btn-outline-dark" href="{{ url_for('workouts') }}">Browse Workouts</a>
+      <a class="btn btn-dark btn-lg app-btn-primary" href="{{ url_for('programs_index') }}">Start a Program</a>
+      <a class="btn btn-outline-dark app-btn-secondary" href="{{ url_for('workouts') }}">Browse Workouts</a>
     </div>
 
     <div class="home-path mt-4">
@@ -48,25 +49,26 @@
   </section>
 
   {% if continue_plan %}
-    <section class="card shadow-sm border-primary-subtle mb-4">
+    <section class="card app-surface app-surface-muted">
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between gap-3">
           <div>
-            <div class="small text-muted text-uppercase">Resume program</div>
+            <div class="app-page-kicker mb-1">Resume program</div>
             <div class="fw-semibold">{{ continue_plan.track_title }}</div>
             <div class="small text-muted mt-1">
               Week {{ continue_plan.week_number }}{% if continue_plan.day_label %} • {{ continue_plan.day_label }}{% endif %}
             </div>
           </div>
-          <a class="btn btn-sm btn-primary" href="{{ continue_plan.url }}">Continue</a>
+          <a class="btn btn-sm btn-primary app-btn-primary app-btn-compact" href="{{ continue_plan.url }}">Continue</a>
         </div>
       </div>
     </section>
   {% endif %}
 
-  <section class="mb-4">
-    <div class="d-flex align-items-end justify-content-between gap-2 mb-3">
+  <section>
+    <div class="app-section-head">
       <div>
+        <div class="app-section-kicker">Programs</div>
         <h2 class="h5 mb-1">Featured Programs</h2>
         <p class="text-muted small mb-0">Start with a guided plan and build consistency one week at a time.</p>
       </div>
@@ -102,7 +104,7 @@
                       </div>
 
                       <div class="home-program-meta mt-3">
-                        <span class="btn btn-sm btn-outline-dark">Open Program</span>
+                        <span class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact">Open Program</span>
                         <span class="text-muted small">
                           {% if is_hub %}
                             Start with level selection
@@ -127,20 +129,21 @@
         {% endfor %}
       </div>
     {% else %}
-      <div class="card shadow-sm">
+      <div class="card app-surface">
         <div class="card-body">
           <div class="fw-semibold mb-1">No programs are featured yet.</div>
           <p class="text-muted small mb-3">The Programs Hub is still the main place to begin.</p>
-          <a class="btn btn-dark btn-sm" href="{{ url_for('programs_index') }}">Open Programs Hub</a>
+          <a class="btn btn-dark btn-sm app-btn-primary app-btn-compact" href="{{ url_for('programs_index') }}">Open Programs Hub</a>
         </div>
       </div>
     {% endif %}
   </section>
 
   {% if favorite_programs and favorite_programs|length > 0 %}
-    <section class="mb-4">
-      <div class="d-flex align-items-end justify-content-between gap-2 mb-3">
+    <section>
+      <div class="app-section-head">
         <div>
+          <div class="app-section-kicker">Library</div>
           <h2 class="h5 mb-1">Saved Programs</h2>
           <p class="text-muted small mb-0">Quick access to the plans you want to keep close.</p>
         </div>
@@ -183,22 +186,24 @@
     </section>
   {% endif %}
 
-  <section class="home-library card shadow-sm border-0">
+  <section class="home-library card border-0">
     <div class="card-body">
       <div class="home-library-kicker">Workout Library</div>
       <h2 class="h5 mb-1">Browse workouts and learn exercises.</h2>
       <p class="text-muted small mb-3">
         Use the library to see how an exercise looks, how to perform it, and what to reference while following your program.
       </p>
-      <a class="btn btn-outline-dark" href="{{ url_for('workouts') }}">Open Workout Library</a>
+      <a class="btn btn-outline-dark app-btn-secondary" href="{{ url_for('workouts') }}">Open Workout Library</a>
     </div>
   </section>
+  </div>
 {% endblock %}
 
 {% block sidebar %}
-  <div class="card shadow-sm">
+  <div class="app-sidebar-stack">
+  <div class="card app-surface">
     <div class="card-body">
-      <div class="small text-muted text-uppercase mb-2">How it works</div>
+      <div class="app-page-kicker mb-2">How it works</div>
       <div class="fw-semibold mb-2">Programs lead. Workouts support.</div>
       <ul class="small text-muted ps-3 mb-3">
         <li>Pick one program.</li>
@@ -207,9 +212,10 @@
         <li>Open workout pages when you need form guidance.</li>
       </ul>
       <div class="d-grid gap-2">
-        <a class="btn btn-dark" href="{{ url_for('programs_index') }}">Start a Program</a>
-        <a class="btn btn-outline-dark" href="{{ url_for('workouts') }}">Workout Library</a>
+        <a class="btn btn-dark app-btn-primary" href="{{ url_for('programs_index') }}">Start a Program</a>
+        <a class="btn btn-outline-dark app-btn-secondary" href="{{ url_for('workouts') }}">Workout Library</a>
       </div>
     </div>
+  </div>
   </div>
 {% endblock %}

@@ -2,147 +2,153 @@
 {% block title %}Browse Workouts – NFG{% endblock %}
 
 {% block sidebar %}
-<div class="card mb-3">
-  <div class="card-header">Quick Options</div>
-  <div class="list-group list-group-flush">
-    {% for item in quick_options %}
-      <a class="list-group-item list-group-item-action" href="{{ item.url }}">{{ item.label }}</a>
-    {% endfor %}
-  </div>
-</div>
+  {% include "quick_options.html" %}
 {% endblock %}
 
 {% block content %}
-<h1 class="mb-3">Browse Workouts</h1>
-
-{% set show_pills = (level or body or style or movement or equipment or difficulty or q or sort in ['recent','rating','favorites']) %}
-
-<form method="get" class="filter-toolbar mb-3">
-  <input type="hidden" name="per_page" value="{{ per_page }}">
-  <input type="hidden" name="page" value="1">
-
-  <div class="toolbar-top">
-    <input name="q" class="form-control toolbar-search" placeholder="Search workouts..." value="{{ q }}">
-
-    <select name="sort" class="form-select form-select-sm">
-      <option value="name" {{ 'selected' if sort=='name' else '' }}>A–Z</option>
-      <option value="recent" {{ 'selected' if sort=='recent' else '' }}>Recent</option>
-      <option value="rating" {{ 'selected' if sort=='rating' else '' }}>Top Rated</option>
-      <option value="favorites" {{ 'selected' if sort=='favorites' else '' }}>Favorites</option>
-    </select>
-
-    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#browseFilters" aria-expanded="false" aria-controls="browseFilters">
-      Filters
-    </button>
-  </div>
-
-  <div class="collapse mt-2 {% if level or body or style or movement or equipment or difficulty %}show{% endif %}" id="browseFilters">
-    <div class="row g-2">
-      <div class="col-6 col-md-4">
-        <select name="level" class="form-select form-select-sm">
-          <option value="">All Levels</option>
-          {% for lv in workout_levels %}
-            <option value="{{ lv }}" {{ 'selected' if level==lv else '' }}>{{ lv }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col-6 col-md-4">
-        <select name="body" class="form-select form-select-sm">
-          <option value="">All Body Parts</option>
-          {% for bp in body_parts %}
-            <option value="{{ bp }}" {{ 'selected' if body==bp else '' }}>{{ bp }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col-6 col-md-4">
-        <select name="style" class="form-select form-select-sm">
-          <option value="">All Styles</option>
-          {% for st in workout_styles %}
-            <option value="{{ st }}" {{ 'selected' if style==st else '' }}>{{ st }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col-6 col-md-4">
-        <select name="movement" class="form-select form-select-sm">
-          <option value="">All Movements</option>
-          {% for mp in movement_patterns %}
-            <option value="{{ mp }}" {{ 'selected' if movement==mp else '' }}>{{ mp }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col-6 col-md-4">
-        <select name="equipment" class="form-select form-select-sm">
-          <option value="">All Equipment</option>
-          {% for eq in equipment_types %}
-            <option value="{{ eq }}" {{ 'selected' if equipment==eq else '' }}>{{ eq }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col-6 col-md-4">
-        <select name="difficulty" class="form-select form-select-sm">
-          <option value="">All Difficulty Tiers</option>
-          {% for dt in difficulty_tiers %}
-            <option value="{{ dt }}" {{ 'selected' if difficulty==dt else '' }}>{{ dt }}</option>
-          {% endfor %}
-        </select>
-      </div>
+<div class="app-page">
+  <div class="app-page-header">
+    <div>
+      <div class="app-page-kicker">Workout library</div>
+      <h1 class="page-title mb-1">Browse Workouts</h1>
+      <p class="app-page-copy">Search and filter the library to find the exact movement you need for form, setup, and exercise guidance.</p>
     </div>
   </div>
 
-  <div class="mt-2 d-flex align-items-center justify-content-between gap-2">
-    <button class="btn btn-sm btn-dark" type="submit">Apply</button>
-    {% if show_pills %}
-      <a class="btn btn-sm btn-link text-decoration-none" href="{{ url_for('workouts_browse') }}">Clear</a>
-    {% endif %}
+  {% set show_pills = (level or body or style or movement or equipment or difficulty or q or sort in ['recent','rating','favorites']) %}
+
+  <form method="get" class="filter-toolbar workout-filter-shell">
+    <input type="hidden" name="per_page" value="{{ per_page }}">
+    <input type="hidden" name="page" value="1">
+
+    <div class="toolbar-top">
+      <input name="q" class="form-control toolbar-search" placeholder="Search workouts..." value="{{ q }}">
+
+      <select name="sort" class="form-select form-select-sm">
+        <option value="name" {{ 'selected' if sort=='name' else '' }}>A–Z</option>
+        <option value="recent" {{ 'selected' if sort=='recent' else '' }}>Recent</option>
+        <option value="rating" {{ 'selected' if sort=='rating' else '' }}>Top Rated</option>
+        <option value="favorites" {{ 'selected' if sort=='favorites' else '' }}>Favorites</option>
+      </select>
+
+      <button class="btn btn-sm btn-outline-secondary app-btn-secondary app-btn-compact" type="button" data-bs-toggle="collapse" data-bs-target="#browseFilters" aria-expanded="{{ 'true' if level or body or style or movement or equipment or difficulty else 'false' }}" aria-controls="browseFilters">
+        Filters
+      </button>
+    </div>
+
+    <div class="collapse mt-2 {% if level or body or style or movement or equipment or difficulty %}show{% endif %}" id="browseFilters">
+      <div class="row g-2">
+        <div class="col-6 col-md-4">
+          <select name="level" class="form-select form-select-sm">
+            <option value="">All Levels</option>
+            {% for lv in workout_levels %}
+              <option value="{{ lv }}" {{ 'selected' if level==lv else '' }}>{{ lv }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-4">
+          <select name="body" class="form-select form-select-sm">
+            <option value="">All Body Parts</option>
+            {% for bp in body_parts %}
+              <option value="{{ bp }}" {{ 'selected' if body==bp else '' }}>{{ bp }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-4">
+          <select name="style" class="form-select form-select-sm">
+            <option value="">All Styles</option>
+            {% for st in workout_styles %}
+              <option value="{{ st }}" {{ 'selected' if style==st else '' }}>{{ st }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-4">
+          <select name="movement" class="form-select form-select-sm">
+            <option value="">All Movements</option>
+            {% for mp in movement_patterns %}
+              <option value="{{ mp }}" {{ 'selected' if movement==mp else '' }}>{{ mp }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-4">
+          <select name="equipment" class="form-select form-select-sm">
+            <option value="">All Equipment</option>
+            {% for eq in equipment_types %}
+              <option value="{{ eq }}" {{ 'selected' if equipment==eq else '' }}>{{ eq }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-4">
+          <select name="difficulty" class="form-select form-select-sm">
+            <option value="">All Difficulty Tiers</option>
+            {% for dt in difficulty_tiers %}
+              <option value="{{ dt }}" {{ 'selected' if difficulty==dt else '' }}>{{ dt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="workout-filter-actions">
+      <button class="btn btn-sm btn-dark app-btn-primary app-btn-compact" type="submit">Apply</button>
+      {% if show_pills %}
+        <a class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact" href="{{ url_for('workouts_browse') }}">Clear</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <div class="workout-results-head">
+    <p class="text-muted mb-0">{{ total }} result{{ '' if total==1 else 's' }}</p>
+    <a class="small text-decoration-none text-muted" href="{{ url_for('workouts_all') }}">A–Z index</a>
   </div>
-</form>
 
-<div class="d-flex align-items-center justify-content-between mb-2">
-  <p class="text-muted mb-0">{{ total }} result{{ '' if total==1 else 's' }}</p>
-</div>
+  {% if show_pills %}
+    <div class="compact-pills workout-active-filters">
+      {% if level %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level='', body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ level }} ✕</a>{% endif %}
+      {% if body %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body='', style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ body }} ✕</a>{% endif %}
+      {% if style %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style='', movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ style }} ✕</a>{% endif %}
+      {% if movement %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement='', equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ movement }} ✕</a>{% endif %}
+      {% if equipment %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment='', difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ equipment }} ✕</a>{% endif %}
+      {% if difficulty %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty='', q=q, sort=sort, per_page=per_page) }}">{{ difficulty }} ✕</a>{% endif %}
+      {% if q %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q='', sort=sort, per_page=per_page) }}">"{{ q }}" ✕</a>{% endif %}
+      {% if sort in ['recent','rating','favorites'] %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort='name', per_page=per_page) }}">{{ 'Recent' if sort=='recent' else ('Top Rated' if sort=='rating' else 'Favorites') }} ✕</a>{% endif %}
+    </div>
+  {% endif %}
 
-{% if show_pills %}
-  <div class="compact-pills mb-3">
-    {% if level %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level='', body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ level }} ✕</a>{% endif %}
-    {% if body %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body='', style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ body }} ✕</a>{% endif %}
-    {% if style %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style='', movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ style }} ✕</a>{% endif %}
-    {% if movement %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement='', equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ movement }} ✕</a>{% endif %}
-    {% if equipment %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment='', difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ equipment }} ✕</a>{% endif %}
-    {% if difficulty %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty='', q=q, sort=sort, per_page=per_page) }}">{{ difficulty }} ✕</a>{% endif %}
-    {% if q %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q='', sort=sort, per_page=per_page) }}">"{{ q }}" ✕</a>{% endif %}
-    {% if sort in ['recent','rating','favorites'] %}<a class="badge rounded-pill text-bg-light border text-dark text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort='name', per_page=per_page) }}">{{ 'Recent' if sort=='recent' else ('Top Rated' if sort=='rating' else 'Favorites') }} ✕</a>{% endif %}
-  </div>
-{% endif %}
+  {% if items %}
+    <div class="workout-library-grid">
+      {% for w in items %}
+        {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
+        {% set thumbs = (w.images if w.images else []) %}
+        {% if w.muscle_image and (w.muscle_image not in thumbs) %}
+          {% set thumbs = thumbs + [w.muscle_image] %}
+        {% endif %}
+        {% if not thumbs or thumbs|length == 0 %}
+          {% set thumbs = ['https://via.placeholder.com/900x1600?text=Workout'] %}
+        {% endif %}
+        {% if thumbs|length == 1 %}
+          {% set thumbs = thumbs + [thumbs[0]] %}
+        {% endif %}
+        {% set cid = 'car-browse-' ~ (w._id|string if w._id else w.slug) %}
+        {% set body_label = parts|join(', ') if parts else (w.primary_muscle or 'Full body') %}
+        {% set tags = w.tags if w.tags is iterable and w.tags is not string else [] %}
 
-{% if items %}
-  <div class="row row-cols-2 row-cols-md-3 g-3 g-md-4">
-    {% for w in items %}
-      {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
-      {% set thumbs = (w.images if w.images else []) %}
-      {% if w.muscle_image and (w.muscle_image not in thumbs) %}
-        {% set thumbs = thumbs + [w.muscle_image] %}
-      {% endif %}
-      {% if not thumbs or thumbs|length == 0 %}
-        {% set thumbs = ['https://via.placeholder.com/900x1600?text=Workout'] %}
-      {% endif %}
-      {% if thumbs|length == 1 %}
-        {% set thumbs = thumbs + [thumbs[0]] %}
-      {% endif %}
-      {% set cid = 'car-browse-' ~ (w._id|string if w._id else w.slug) %}
-
-      <div class="col">
-        <article class="card portrait-card shadow overflow-hidden js-workout-card" data-href="{{ url_for('workout_detail', slug=w.slug) }}">
-          <div class="card-media position-relative h-100">
-            <div id="{{ cid }}" class="carousel slide fast-carousel h-100" data-bs-ride="false" data-bs-touch="true" aria-label="Images for {{ w.name }}">
-              <div class="carousel-inner h-100">
+        <article class="card workout-library-card js-workout-card" data-href="{{ url_for('workout_detail', slug=w.slug) }}">
+          <div class="workout-library-media">
+            <div id="{{ cid }}" class="carousel slide fast-carousel workout-library-carousel" data-bs-ride="false" data-bs-touch="true" aria-label="Images for {{ w.name }}">
+              <div class="carousel-inner">
                 {% for img in thumbs %}
-                  <div class="carousel-item {% if loop.first %}active{% endif %} h-100">
-                    <img src="{{ img }}" class="d-block w-100 h-100" style="object-fit:cover;" alt="{{ w.name }} image {{ loop.index }}" {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async">
+                  <div class="carousel-item {% if loop.first %}active{% endif %}">
+                    <img src="{{ img }}"
+                         class="d-block w-100"
+                         alt="{{ w.name }} image {{ loop.index }}"
+                         {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
+                         decoding="async">
                   </div>
                 {% endfor %}
               </div>
@@ -156,55 +162,61 @@
                 </button>
               {% endif %}
             </div>
+          </div>
 
-            <div class="card-caption">
-              <h6 class="mb-1"><a class="text-white text-decoration-none" href="{{ url_for('workout_detail', slug=w.slug) }}">{{ w.name }}</a></h6>
-              <div class="small opacity-75">
-                {{ w.level or '—' }}
-                {% if w.movement_pattern %} • {{ w.movement_pattern }}{% endif %}
-                {% if w.equipment %} • {{ w.equipment }}{% endif %}
-                {% if w.difficulty_tier %} • {{ w.difficulty_tier }}{% endif %}
+          <div class="card-body workout-library-body">
+            <div class="workout-library-title-row">
+              <div>
+                <h2 class="workout-library-title">{{ w.name }}</h2>
+                <div class="workout-library-subtitle">{{ body_label }}</div>
               </div>
+              {% if w.level %}
+                <span class="flow-chip">{{ w.level }}</span>
+              {% endif %}
+            </div>
+
+            <div class="workout-library-meta">
+              {% if w.style %}<span class="flow-chip">{{ w.style }}</span>{% endif %}
+              {% if w.movement_pattern %}<span class="flow-chip">{{ w.movement_pattern }}</span>{% endif %}
+              {% if w.equipment %}<span class="flow-chip">{{ w.equipment }}</span>{% endif %}
+              {% if w.difficulty_tier %}<span class="flow-chip">{{ w.difficulty_tier }}</span>{% endif %}
+              {% for tag in tags[:2] %}
+                <span class="flow-chip">{{ tag }}</span>
+              {% endfor %}
+            </div>
+
+            <div class="workout-library-actions">
+              <a class="btn btn-sm btn-dark app-btn-primary app-btn-compact" href="{{ url_for('workout_detail', slug=w.slug) }}">View exercise</a>
             </div>
           </div>
         </article>
-      </div>
-    {% endfor %}
-  </div>
-{% else %}
-  <div class="alert alert-secondary">No workouts match that filter.</div>
-{% endif %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="app-note workout-empty-state">
+      No workouts match that filter. Try a broader search or clear one of the active filters.
+    </div>
+  {% endif %}
 
-<nav class="mt-3">
-  <ul class="pagination">
-    <li class="page-item {% if page<=1 %}disabled{% endif %}">
-      <a class="page-link" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page, page=page-1) }}">Previous</a>
-    </li>
-    <li class="page-item disabled"><span class="page-link">Page {{ page }}</span></li>
-    <li class="page-item {% if (page*per_page) >= total %}disabled{% endif %}">
-      <a class="page-link" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page, page=page+1) }}">Next</a>
-    </li>
-  </ul>
-</nav>
-
-<style>
-  .portrait-card{ aspect-ratio: 9 / 16; width:100%; }
-  .portrait-card .card-media{ width:100%; height:100%; }
-  .portrait-card img{ width:100%; height:100%; object-fit:cover; }
-  .card-caption{ position:absolute; left:0; right:0; bottom:0; padding:.6rem .75rem; color:#fff; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.55) 60%, rgba(0,0,0,.78) 100%); }
-
-  .carousel.locked .carousel-control-prev,
-  .carousel.locked .carousel-control-next { display:none !important; pointer-events:none; }
-
-  .card .carousel-control-prev, .card .carousel-control-next { width:14%; }
-</style>
+  <nav class="workout-pagination-wrap" aria-label="Workout pagination">
+    <ul class="pagination workout-pagination">
+      <li class="page-item {% if page<=1 %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page, page=page-1) }}">Previous</a>
+      </li>
+      <li class="page-item disabled"><span class="page-link">Page {{ page }}</span></li>
+      <li class="page-item {% if (page*per_page) >= total %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page, page=page+1) }}">Next</a>
+      </li>
+    </ul>
+  </nav>
+</div>
 
 <script>
   (function(){
     const LOCK_W = 380;
     function updateLock(){
       const lock = window.innerWidth <= LOCK_W;
-      document.querySelectorAll('.carousel').forEach(carEl => {
+      document.querySelectorAll('.workout-library-carousel').forEach(carEl => {
         const inst = bootstrap.Carousel.getOrCreateInstance(carEl, { ride:false });
         if (lock){
           carEl.classList.add('locked');

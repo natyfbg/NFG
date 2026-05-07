@@ -2,40 +2,48 @@
 {% block title %}Programs – NFG{% endblock %}
 
 {% block sidebar %}
-<div class="card mb-3">
-  <div class="card-header">Explore</div>
-  <div class="list-group list-group-flush">
-    <a class="list-group-item list-group-item-action" href="{{ url_for('home') }}">Home</a>
-    <a class="list-group-item list-group-item-action" href="{{ url_for('workouts') }}">Workouts</a>
-    <a class="list-group-item list-group-item-action" href="{{ url_for('recipes') }}">Recipes</a>
-    <a class="list-group-item list-group-item-action active" href="{{ url_for('programs_index') }}">Programs</a>
+<div class="app-sidebar-stack">
+  <div class="card app-surface app-list-card">
+    <div class="app-surface-header">
+      <strong>Explore</strong>
+    </div>
+    <div class="list-group list-group-flush">
+      <a class="list-group-item list-group-item-action app-list-row d-flex justify-content-between align-items-center" href="{{ url_for('home') }}"><span>Home</span><span class="app-list-arrow">→</span></a>
+      <a class="list-group-item list-group-item-action app-list-row d-flex justify-content-between align-items-center" href="{{ url_for('workouts') }}"><span>Workouts</span><span class="app-list-arrow">→</span></a>
+      <a class="list-group-item list-group-item-action app-list-row d-flex justify-content-between align-items-center" href="{{ url_for('recipes') }}"><span>Recipes</span><span class="app-list-arrow">→</span></a>
+      <a class="list-group-item list-group-item-action app-list-row active d-flex justify-content-between align-items-center" href="{{ url_for('programs_index') }}"><span>Programs</span><span class="app-list-arrow">→</span></a>
+    </div>
   </div>
-</div>
 
-<div class="card">
-  <div class="card-header">Tip</div>
-  <div class="card-body text-muted">
-    Save a program to Favorites and it will appear on your Home page for quick access.
-    Sign in to sync favorites and progress across devices.
+  <div class="card app-surface app-surface-muted">
+    <div class="card-body">
+      <div class="app-page-kicker mb-2">Tip</div>
+      <div class="text-muted small">
+        Save a program to Favorites and it will appear on your Home page for quick access.
+        Sign in to sync favorites and progress across devices.
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
-  <div>
-    <h1 class="page-title mb-1">Programs</h1>
-    <p class="text-muted mb-0">
-      Start the current challenge. (More programs can come later — but for now we keep this simple and mobile-friendly.)
-    </p>
-  </div>
+<div class="app-page">
+  <div class="app-page-header">
+    <div>
+      <div class="app-page-kicker">Programs hub</div>
+      <h1 class="page-title mb-1">Programs</h1>
+      <p class="app-page-copy">
+        Start with the main challenge, choose your setup, and move into the week-by-week plan without extra clutter.
+      </p>
+    </div>
 
-  <div class="d-flex align-items-center gap-2">
-    {% if current_user.is_authenticated and current_user.is_admin %}
-      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_programs') }}">Manage (Admin)</a>
-    {% endif %}
+    <div class="d-flex align-items-center gap-2">
+      {% if current_user.is_authenticated and current_user.is_admin %}
+        <a class="btn btn-sm btn-outline-secondary app-btn-secondary app-btn-compact" href="{{ url_for('admin_programs') }}">Manage (Admin)</a>
+      {% endif %}
+    </div>
   </div>
-</div>
 
 {# -----------------------------------------------------------------------------
    Show ONLY the hub program.
@@ -60,7 +68,7 @@
 {% if hub %}
   <div class="row g-3">
     <div class="col-12">
-      <div class="card shadow-sm">
+      <div class="card app-surface">
         <div class="card-body">
           <div class="d-flex align-items-start justify-content-between gap-3">
             <div class="me-2 flex-grow-1">
@@ -75,19 +83,19 @@
               {% endif %}
 
               <div class="d-flex flex-wrap gap-2 mt-2">
-                <span class="badge text-bg-dark">{{ hub.get('category') or 'Challenge' }}</span>
-                <span class="badge text-bg-light border text-dark">{{ hub.get('duration_label') or '8 weeks' }}</span>
+                <span class="flow-chip">{{ hub.get('category') or 'Challenge' }}</span>
+                <span class="flow-chip">{{ hub.get('duration_label') or '8 weeks' }}</span>
 
                 {% if hub.get('show_on_home') %}
-                  <span class="badge text-bg-dark">Featured</span>
+                  <span class="flow-chip flow-chip-accent">Featured</span>
                 {% endif %}
                 {% if hub.get('slug') in program_favorite_slugs %}
-                  <span class="badge text-bg-warning">Favorite</span>
+                  <span class="flow-chip flow-chip-accent">Favorite</span>
                 {% endif %}
               </div>
 
               <div class="mt-3 d-flex align-items-center gap-2">
-                <a class="btn btn-sm btn-outline-dark"
+                <a class="btn btn-sm btn-dark app-btn-primary app-btn-compact"
                    href="{{ url_for('program_detail', slug=hub.get('slug')) }}">
                   Open
                 </a>
@@ -97,9 +105,9 @@
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <input type="hidden" name="next" value="{{ request.full_path }}">
                   {% if hub.get('slug') in program_favorite_slugs %}
-                    <button class="btn btn-sm btn-warning" type="submit">Unfavorite</button>
+                    <button class="btn btn-sm btn-warning app-btn-compact" type="submit">Unfavorite</button>
                   {% else %}
-                    <button class="btn btn-sm btn-outline-warning" type="submit">Favorite</button>
+                    <button class="btn btn-sm btn-outline-warning app-btn-compact" type="submit">Favorite</button>
                   {% endif %}
                 </form>
               </div>
@@ -118,17 +126,18 @@
     </div>
   </div>
 
-  <div class="alert alert-secondary small mt-3 mb-0">
+  <div class="app-note">
     Note: the Beginner/Intermediate/Advanced tracks exist in the database, but we keep them hidden here so users only see
     the single “8 Week Challenge” entry point.
   </div>
 
 {% else %}
-  <div class="alert alert-secondary">
+  <div class="app-note">
     No active hub programs yet.
     <div class="small text-muted mt-1">
       In <strong>Admin → Programs</strong>, create a program with type <code>Hub</code> and set it Active.
     </div>
   </div>
 {% endif %}
+</div>
 {% endblock %}

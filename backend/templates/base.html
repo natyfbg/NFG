@@ -164,8 +164,8 @@
     </div>
 
     <!-- Swipe + slide animation zone -->
-    <main class="container my-4{% if ep in swipe_eps %} top-level-swipe-zone{% endif %}" id="swipe-zone">
-      <div id="page-shell">
+    <main class="container my-4 app-main-shell{% if ep in swipe_eps %} top-level-swipe-zone{% endif %}" id="swipe-zone">
+      <div id="page-shell" class="app-page-shell">
         <div class="row g-4">
           <div class="col-lg-8">
             {% block content %}{% endblock %}

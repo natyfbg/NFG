@@ -11,6 +11,7 @@ from collections import deque
 from logging.handlers import RotatingFileHandler
 from time import perf_counter
 from typing import Dict, List, Optional, Tuple
+from urllib.parse import parse_qs, urlparse
 
 from bson.objectid import ObjectId
 from bson.regex import Regex
@@ -2556,7 +2557,45 @@ def workout_detail(slug):
         r["difficulty_tier"] = r.get("difficulty_tier") or _infer_difficulty_tier_from_level(
             r.get("level")
         )
-    return render_template("workout_detail.html", w=w, related=related)
+
+    back_to_week_url = None
+    hub_slug = (request.args.get("hub_slug") or "").strip()
+    week_number = (request.args.get("week_number") or "").strip()
+    level = (request.args.get("level") or "").strip()
+    env = (request.args.get("env") or "").strip()
+    day = (request.args.get("day") or "").strip()
+
+    if hub_slug and week_number.isdigit() and level and env:
+        args = {
+            "hub_slug": hub_slug,
+            "week_number": int(week_number),
+            "level": level,
+            "env": env,
+        }
+        if day:
+            args["day"] = day
+        back_to_week_url = url_for("program_hub_week_detail", **args)
+    elif request.referrer:
+        parsed = urlparse(request.referrer)
+        if not parsed.netloc or parsed.netloc == request.host:
+            match = re.match(r"^/programs/([^/]+)/week/(\d+)$", parsed.path or "")
+            if match:
+                ref_qs = parse_qs(parsed.query or "")
+                ref_level = (ref_qs.get("level") or [""])[0].strip()
+                ref_env = (ref_qs.get("env") or [""])[0].strip()
+                ref_day = (ref_qs.get("day") or [""])[0].strip()
+                if ref_level and ref_env:
+                    args = {
+                        "hub_slug": match.group(1),
+                        "week_number": int(match.group(2)),
+                        "level": ref_level,
+                        "env": ref_env,
+                    }
+                    if ref_day:
+                        args["day"] = ref_day
+                    back_to_week_url = url_for("program_hub_week_detail", **args)
+
+    return render_template("workout_detail.html", w=w, related=related, back_to_week_url=back_to_week_url)
 
 
 # -----------------------------------------------------------------------------

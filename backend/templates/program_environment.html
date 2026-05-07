@@ -17,17 +17,17 @@ Choose Environment – {{ hub.title if hub else "Program" }}
       <p class="flow-copy mb-0">Pick where you will do the plan.</p>
     </div>
 
-    <a class="btn btn-sm btn-outline-secondary"
+    <a class="btn btn-sm btn-outline-secondary app-btn-secondary app-btn-compact"
        href="{{ url_for('program_hub_level', hub_slug=(hub.slug if hub else '8-week-challenge')) }}">
       Back
     </a>
   </div>
 
-  <div class="flow-progress" aria-label="Program setup progress">
+  <div class="flow-progress app-progress" aria-label="Program setup progress">
     <span class="flow-progress-copy">Step 2 of 2</span>
-    <span class="flow-progress-track" aria-hidden="true">
-      <span class="flow-progress-step active"></span>
-      <span class="flow-progress-step active"></span>
+    <span class="flow-progress-track app-progress-track" aria-hidden="true">
+      <span class="flow-progress-step app-progress-step active"></span>
+      <span class="flow-progress-step app-progress-step active"></span>
     </span>
     <span class="flow-progress-label">Environment</span>
   </div>

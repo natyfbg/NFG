@@ -2,31 +2,34 @@
 {% block title %}All Workout Styles – NFG{% endblock %}
 
 {% block sidebar %}
-<div class="card">
-  <div class="card-header">Quick Options</div>
-  <div class="list-group list-group-flush">
-    {% for item in quick_options %}
-      <a class="list-group-item list-group-item-action" href="{{ item.url }}">{{ item.label }}</a>
-    {% endfor %}
-  </div>
-</div>
+  {% include "quick_options.html" %}
 {% endblock %}
 
 {% block content %}
-<h1 class="mb-3">All Workout Styles</h1>
+<div class="app-page">
+  <div class="app-page-header">
+    <div>
+      <div class="app-page-kicker">Workout library</div>
+      <h1 class="page-title mb-1">All Workout Styles</h1>
+      <p class="app-page-copy">Browse the movement library by training style to find exercises that match the way you want to train.</p>
+    </div>
+    <a class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact" href="{{ url_for('workouts_browse') }}">Open browse</a>
+  </div>
 
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-  {% for st in styles %}
-    <div class="col">
+  <div class="workout-category-grid">
+    {% for st in styles %}
       <a class="text-decoration-none" href="{{ url_for('workouts_browse', style=st) }}">
-        <div class="card h-100">
+        <div class="card workout-category-card h-100">
           <div class="card-body d-flex justify-content-between align-items-center">
-            <span>{{ st }}</span>
-            <span class="badge text-bg-secondary">{{ counts.get(st, 0) }}</span>
+            <div>
+              <div class="workout-category-title">{{ st }}</div>
+              <div class="workout-category-copy">{{ counts.get(st, 0) }} workout{{ '' if counts.get(st, 0) == 1 else 's' }}</div>
+            </div>
+            <span class="flow-chip">{{ counts.get(st, 0) }}</span>
           </div>
         </div>
       </a>
-    </div>
-  {% endfor %}
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}

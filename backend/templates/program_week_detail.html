@@ -31,11 +31,11 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
     </div>
 
     <div class="d-flex gap-2 flex-wrap justify-content-end">
-      <a class="btn btn-outline-secondary btn-sm"
+      <a class="btn btn-outline-secondary btn-sm app-btn-secondary app-btn-compact"
          href="{{ url_for('program_hub_weeks', hub_slug=hub_slug, level=lvl, env=envv) }}">
         Back to weeks
       </a>
-      <a class="btn btn-outline-dark btn-sm"
+      <a class="btn btn-outline-dark btn-sm app-btn-secondary app-btn-compact"
          href="{{ url_for('program_detail', slug=hub_slug) }}">
         Program home
       </a>
@@ -46,7 +46,7 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="level" value="{{ lvl }}">
         <input type="hidden" name="env" value="{{ envv }}">
-        <button class="btn btn-outline-danger btn-sm" type="submit">Reset progress</button>
+        <button class="btn btn-outline-danger btn-sm app-btn-compact" type="submit">Reset progress</button>
       </form>
     </div>
   </div>
@@ -168,7 +168,7 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
 
                           <div class="week-item-cta">
                             {% if w %}
-                              <a class="btn btn-sm btn-outline-dark open-ex-btn"
+                              <a class="btn btn-sm btn-outline-dark app-btn-secondary open-ex-btn"
                                  href="{{ url_for('workout_detail', slug=w.get('slug')) }}">
                                 View exercise
                               </a>
@@ -184,7 +184,7 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
                   </div>
 
                   <div class="day-footer d-flex flex-wrap justify-content-between gap-2">
-                    <button class="btn btn-sm btn-outline-secondary"
+                    <button class="btn btn-sm btn-outline-secondary app-btn-secondary app-btn-compact"
                             type="button"
                             data-bs-target="#weekDayCarousel"
                             data-bs-slide="prev">
@@ -205,33 +205,33 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
                         <input type="hidden" name="action" value="{{ 'undo' if is_done else 'done' }}">
 
                         {% if is_done %}
-                          <button class="btn btn-sm btn-outline-success" type="submit">Undo done</button>
+                          <button class="btn btn-sm btn-outline-success app-btn-compact" type="submit">Undo done</button>
                         {% elif not loop.last %}
-                          <button class="btn btn-sm btn-dark" type="submit">Done • Next day</button>
+                          <button class="btn btn-sm btn-dark app-btn-primary app-btn-compact" type="submit">Done • Next day</button>
                         {% else %}
-                          <button class="btn btn-sm btn-dark" type="submit">Mark day complete</button>
+                          <button class="btn btn-sm btn-dark app-btn-primary app-btn-compact" type="submit">Mark day complete</button>
                         {% endif %}
                       </form>
 
                       {% if not loop.last %}
-                        <button class="btn btn-sm btn-outline-dark js-next-day"
+                        <button class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact js-next-day"
                                 type="button"
                                 data-bs-target="#weekDayCarousel"
                                 data-bs-slide="next">
                           Next day
                         </button>
                       {% elif all_days_completed and next_week_number %}
-                        <a class="btn btn-sm btn-dark"
+                        <a class="btn btn-sm btn-dark app-btn-primary app-btn-compact"
                            href="{{ url_for('program_hub_week_detail', hub_slug=hub_slug, week_number=next_week_number, level=lvl, env=envv) }}">
                           Complete week • Go to week {{ next_week_number }}
                         </a>
                       {% elif all_days_completed %}
-                        <a class="btn btn-sm btn-dark"
+                        <a class="btn btn-sm btn-dark app-btn-primary app-btn-compact"
                            href="{{ url_for('program_hub_weeks', hub_slug=hub_slug, level=lvl, env=envv) }}">
                           Complete week
                         </a>
                       {% elif next_week_number %}
-                        <span class="btn btn-sm btn-outline-secondary disabled">
+                        <span class="btn btn-sm btn-outline-secondary app-btn-secondary app-btn-compact disabled">
                           Finish all days to unlock week {{ next_week_number }}
                         </span>
                       {% endif %}
