@@ -756,6 +756,15 @@ a{
   color: var(--app-text-muted);
 }
 
+.search-recipe-grid{
+  display: grid;
+  gap: .8rem;
+}
+
+.search-recipe-card .card-body{
+  padding: .9rem 1rem;
+}
+
 /* ===== Workout detail ===== */
 .workout-detail-page{
   gap: 1rem;
@@ -925,6 +934,9 @@ a{
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .workout-category-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .search-recipe-grid{
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .workout-detail-meta-grid{
