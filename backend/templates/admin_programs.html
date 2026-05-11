@@ -285,7 +285,7 @@
 
             <form method="post"
                   action="{{ url_for('admin_program_delete', id=p._id|string) }}"
-                  onsubmit="return confirm('Delete this program? This will also delete its weeks + workouts inside weeks.');"
+                  onsubmit="return confirm('Delete this program? This will also delete its weeks and week items.');"
                   class="d-inline">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>

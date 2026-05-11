@@ -1069,6 +1069,7 @@ def _program_link_health_report(include_rows: bool = False) -> dict:
                 "custom_name": 1,
                 "workout_id": 1,
                 "workout_slug": 1,
+                "workout_name": 1,
                 "order": 1,
                 "notes": 1,
             },
@@ -1273,6 +1274,35 @@ def _program_readiness_report(program: dict) -> dict:
         "active_tracks": active_tracks,
         "published_tracks": published_tracks,
     }
+
+
+def _child_track_count_for_hub_slug(hub_slug: str, exclude_program_id: Optional[ObjectId] = None) -> int:
+    hub_slug = (hub_slug or "").strip()
+    if not hub_slug:
+        return 0
+
+    query = {"kind": "track", "hub_slug": hub_slug}
+    if exclude_program_id is not None:
+        query["_id"] = {"$ne": exclude_program_id}
+    return db.programs.count_documents(query)
+
+
+def _program_item_reference_count_for_workout(workout: dict) -> int:
+    if not workout:
+        return 0
+
+    ref_filters = []
+    if workout.get("_id") is not None:
+        ref_filters.append({"workout_id": workout["_id"]})
+
+    slug = (workout.get("slug") or "").strip()
+    if slug:
+        ref_filters.append({"workout_slug": slug})
+
+    if not ref_filters:
+        return 0
+
+    return db.program_items.count_documents({"$or": ref_filters})
 
 
 def _viewer_id() -> str:
@@ -3196,6 +3226,21 @@ def admin_workout_edit(id):
 @app.route("/admin/workouts/<id>/delete", methods=["POST"])
 @login_required
 def admin_workout_delete(id):
+    workout = db.workouts.find_one({"_id": ObjectId(id)}, {"slug": 1, "name": 1})
+    if not workout:
+        abort(404)
+
+    ref_count = _program_item_reference_count_for_workout(workout)
+    if ref_count > 0:
+        flash(
+            (
+                f"Cannot delete workout '{workout.get('name') or workout.get('slug') or 'unknown'}'. "
+                f"It is still referenced by {ref_count} program item(s)."
+            ),
+            "danger",
+        )
+        return redirect(url_for("admin_index"))
+
     db.workouts.delete_one({"_id": ObjectId(id)})
     flash("Workout deleted.", "success")
     return redirect(url_for("admin_index"))
@@ -3928,6 +3973,20 @@ def admin_program_edit(id):
             track_level = None
             track_env = None
 
+        existing_kind = _norm_choice(p.get("kind")) or "hub"
+        existing_slug = (p.get("slug") or "").strip()
+        if existing_kind == "hub" and existing_slug:
+            child_track_count = _child_track_count_for_hub_slug(existing_slug, exclude_program_id=p["_id"])
+            if child_track_count > 0 and slug != existing_slug:
+                slug = existing_slug
+                flash(
+                    (
+                        f"Hub slug is locked because {child_track_count} child track(s) "
+                        "reference it. Other program changes were saved."
+                    ),
+                    "warning",
+                )
+
         if not title:
             flash("Title is required.", "danger")
             return render_template("admin_program_form.html", data=request.form, edit=True, _id=id)
@@ -3995,6 +4054,20 @@ def admin_program_delete(id):
     prog = db.programs.find_one({"_id": ObjectId(id)})
     if not prog:
         abort(404)
+
+    kind = _norm_choice(prog.get("kind")) or "hub"
+    slug = (prog.get("slug") or "").strip()
+    if kind == "hub" and slug:
+        child_track_count = _child_track_count_for_hub_slug(slug, exclude_program_id=prog["_id"])
+        if child_track_count > 0:
+            flash(
+                (
+                    f"Cannot delete hub program '{prog.get('title') or slug}'. "
+                    f"{child_track_count} child track(s) still reference this hub."
+                ),
+                "danger",
+            )
+            return redirect(url_for("admin_programs"))
 
     weeks = list(db.program_weeks.find({"program_id": prog["_id"]}, {"_id": 1}))
     week_ids = [w["_id"] for w in weeks]
