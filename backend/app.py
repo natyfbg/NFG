@@ -1305,6 +1305,64 @@ def _program_item_reference_count_for_workout(workout: dict) -> int:
     return db.program_items.count_documents({"$or": ref_filters})
 
 
+def _admin_workout_picker_payload(workouts: List[dict]) -> tuple[list[dict], list[str], list[str], list[str]]:
+    picker_workouts = []
+    levels = set()
+    styles = set()
+    body_parts = set()
+
+    for w in workouts:
+        wid = w.get("_id")
+        if wid is None:
+            continue
+
+        level = (w.get("level") or "").strip()
+        style = (w.get("style") or "").strip()
+
+        parts = []
+        for part in (w.get("body_parts") or []):
+            label = (part or "").strip()
+            if label and label not in parts:
+                parts.append(label)
+        fallback_part = (w.get("body_part") or "").strip()
+        primary_muscle = (w.get("primary_muscle") or "").strip()
+        for label in [fallback_part, primary_muscle]:
+            if label and label not in parts:
+                parts.append(label)
+
+        movement = (w.get("movement_pattern") or "").strip()
+        equipment = (w.get("equipment") or "").strip()
+
+        if level:
+            levels.add(level)
+        if style:
+            styles.add(style)
+        for part in parts:
+            body_parts.add(part)
+
+        picker_workouts.append(
+            {
+                "id": str(wid),
+                "name": w.get("name") or "Untitled workout",
+                "slug": (w.get("slug") or "").strip(),
+                "level": level,
+                "style": style,
+                "body_parts": parts,
+                "primary_muscle": primary_muscle,
+                "movement_pattern": movement,
+                "equipment": equipment,
+            }
+        )
+
+    picker_workouts.sort(key=lambda row: (row.get("name") or "").lower())
+    return (
+        picker_workouts,
+        sorted(levels),
+        sorted(styles),
+        sorted(body_parts),
+    )
+
+
 def _viewer_id() -> str:
     return (getattr(g, "viewer_id", "") or "").strip()
 
@@ -3977,6 +4035,18 @@ def admin_program_edit(id):
         existing_slug = (p.get("slug") or "").strip()
         if existing_kind == "hub" and existing_slug:
             child_track_count = _child_track_count_for_hub_slug(existing_slug, exclude_program_id=p["_id"])
+            if child_track_count > 0 and kind != "hub":
+                kind = "hub"
+                hub_slug = None
+                track_level = None
+                track_env = None
+                flash(
+                    (
+                        f"Program kind is locked as Hub because {child_track_count} child track(s) "
+                        "reference this hub. Other program changes were saved."
+                    ),
+                    "warning",
+                )
             if child_track_count > 0 and slug != existing_slug:
                 slug = existing_slug
                 flash(
@@ -4406,6 +4476,10 @@ def admin_program_week_items(program_id, week_id):
             {
                 "name": 1,
                 "slug": 1,
+                "level": 1,
+                "style": 1,
+                "body_part": 1,
+                "body_parts": 1,
                 "primary_muscle": 1,
                 "movement_pattern": 1,
                 "equipment": 1,
@@ -4414,6 +4488,7 @@ def admin_program_week_items(program_id, week_id):
         ).sort([("name", 1)])
     )
     workout_map = {w["_id"]: w for w in workouts}
+    picker_workouts, picker_levels, picker_styles, picker_body_parts = _admin_workout_picker_payload(workouts)
 
     return render_or_fallback(
         "admin_program_week_items.html",
@@ -4423,6 +4498,10 @@ def admin_program_week_items(program_id, week_id):
         workouts=workouts,
         other_weeks=other_weeks,
         workout_map=workout_map,
+        picker_workouts=picker_workouts,
+        picker_levels=picker_levels,
+        picker_styles=picker_styles,
+        picker_body_parts=picker_body_parts,
     )
 
 

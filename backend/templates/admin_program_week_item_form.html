@@ -1,0 +1,86 @@
+{% macro workout_picker(form_key, current_wid='', linked=None, picker_levels=[], picker_styles=[], picker_body_parts=[]) %}
+<div class="admin-workout-picker app-surface-muted" data-workout-picker data-picker-key="{{ form_key }}">
+  <input type="hidden" name="workout_id" value="{{ current_wid or '' }}" data-picker-input>
+
+  <div class="admin-workout-picker-head">
+    <div>
+      <div class="app-section-kicker mb-1">Exercise Link</div>
+      <div class="admin-workout-picker-title" data-picker-current-name>
+        {% if linked %}
+          {{ linked.name }}
+        {% elif current_wid %}
+          Linked workout unavailable
+        {% else %}
+          No workout linked
+        {% endif %}
+      </div>
+      <div class="admin-workout-picker-copy" data-picker-current-copy>
+        {% if linked %}
+          {% set details = [] %}
+          {% if linked.level %}{% set _ = details.append(linked.level) %}{% endif %}
+          {% if linked.primary_muscle %}{% set _ = details.append(linked.primary_muscle) %}{% endif %}
+          {% if linked.movement_pattern %}{% set _ = details.append(linked.movement_pattern) %}{% endif %}
+          {% if linked.equipment %}{% set _ = details.append(linked.equipment) %}{% endif %}
+          {{ details|join(' • ') if details else 'Workout linked from your library.' }}
+        {% elif current_wid %}
+          Workout reference exists, but the linked workout is missing.
+        {% else %}
+          Search your library and choose an exercise, or leave this blank for a custom item.
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <button class="btn app-btn-secondary app-btn-compact" type="button" data-picker-clear>
+        Clear Link
+      </button>
+      {% if linked %}
+        <a class="btn app-btn-secondary app-btn-compact" href="{{ url_for('workout_detail', slug=linked.slug) }}">
+          Open Exercise
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="admin-workout-picker-toolbar">
+    <div class="admin-workout-picker-search">
+      <label class="form-label small mb-1">Search by workout name</label>
+      <input class="form-control form-control-sm" type="search" placeholder="Push-up, squat, row..." data-picker-search>
+    </div>
+    <div class="admin-workout-picker-filters">
+      <div>
+        <label class="form-label small mb-1">Body Part</label>
+        <select class="form-select form-select-sm" data-picker-filter="body">
+          <option value="">All</option>
+          {% for part in picker_body_parts %}
+            <option value="{{ part }}">{{ part }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label small mb-1">Style</label>
+        <select class="form-select form-select-sm" data-picker-filter="style">
+          <option value="">All</option>
+          {% for style in picker_styles %}
+            <option value="{{ style }}">{{ style }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label small mb-1">Level</label>
+        <select class="form-select form-select-sm" data-picker-filter="level">
+          <option value="">All</option>
+          {% for level in picker_levels %}
+            <option value="{{ level }}">{{ level }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-workout-picker-status small text-muted" data-picker-status>
+    Type to search or use filters to narrow the library.
+  </div>
+  <div class="admin-workout-picker-results" data-picker-results></div>
+</div>
+{% endmacro %}

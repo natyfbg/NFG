@@ -971,6 +971,201 @@ a{
   --bs-carousel-transition-duration: .28s;
 }
 
+/* ===== Admin week item authoring ===== */
+.admin-week-items-page{
+  gap: 1rem;
+}
+
+.admin-week-tools{
+  padding: 0 1rem 1rem;
+}
+
+.admin-week-item-list{
+  display: grid;
+  gap: .9rem;
+}
+
+.admin-week-item-card .card-body{
+  padding: 0 1rem 1rem;
+}
+
+.admin-week-item-card-heading strong{
+  font-size: .98rem;
+}
+
+.admin-week-item-card-actions{
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.admin-week-item-form{
+  display: grid;
+  gap: .85rem;
+}
+
+.admin-week-item-grid{
+  display: grid;
+  gap: .85rem;
+}
+
+.admin-week-item-section{
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,.6);
+  padding: .8rem;
+}
+
+.admin-week-item-section-title{
+  font-size: .76rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--app-text-soft);
+  margin-bottom: .55rem;
+}
+
+.admin-week-item-status{
+  margin-top: -.1rem;
+}
+
+.admin-week-item-footer{
+  display: flex;
+  justify-content: flex-end;
+  gap: .55rem;
+  flex-wrap: wrap;
+}
+
+.admin-workout-picker{
+  display: grid;
+  gap: .75rem;
+  padding: .8rem;
+}
+
+.admin-workout-picker-head{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: .7rem;
+  flex-wrap: wrap;
+}
+
+.admin-workout-picker-title{
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--app-text);
+  line-height: 1.25;
+}
+
+.admin-workout-picker-copy{
+  color: var(--app-text-muted);
+  font-size: .82rem;
+  line-height: 1.4;
+  margin-top: .18rem;
+}
+
+.admin-workout-picker-toolbar{
+  display: grid;
+  gap: .65rem;
+}
+
+.admin-workout-picker-filters{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .55rem;
+}
+
+.admin-workout-picker-status{
+  margin-top: -.1rem;
+}
+
+.admin-workout-picker-results{
+  display: grid;
+  gap: .45rem;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: .1rem;
+}
+
+.admin-workout-result{
+  display: grid;
+  gap: .18rem;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-sm);
+  background: var(--app-surface-strong);
+  color: var(--app-text);
+  padding: .68rem .75rem;
+  transition: border-color .12s ease, background .12s ease, box-shadow .12s ease, transform .12s ease;
+}
+
+.admin-workout-result:hover,
+.admin-workout-result:focus-visible{
+  border-color: rgba(23,23,20,.2);
+  background: rgba(255,255,255,.98);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-workout-result:active{
+  transform: scale(.996);
+}
+
+.admin-workout-result.is-selected{
+  border-color: rgba(198,166,70,.48);
+  background: rgba(198,166,70,.12);
+  box-shadow: inset 0 0 0 1px rgba(198,166,70,.16);
+}
+
+.admin-workout-result-name{
+  font-weight: 700;
+  font-size: .9rem;
+  color: var(--app-text);
+  line-height: 1.25;
+}
+
+.admin-workout-result-meta{
+  font-size: .78rem;
+  color: var(--app-text-muted);
+  line-height: 1.35;
+}
+
+@media (min-width: 900px){
+  .admin-week-item-grid{
+    grid-template-columns: minmax(0, .95fr) minmax(0, 1.35fr);
+    align-items: start;
+  }
+
+  .admin-week-item-section-picker{
+    grid-row: span 2;
+  }
+
+  .admin-workout-picker-results{
+    max-height: 280px;
+  }
+}
+
+@media (max-width: 767.98px){
+  .admin-week-item-card .card-body,
+  .admin-week-tools{
+    padding-inline: .9rem;
+    padding-bottom: .9rem;
+  }
+
+  .admin-week-item-section,
+  .admin-workout-picker{
+    padding: .72rem;
+  }
+
+  .admin-workout-picker-filters{
+    grid-template-columns: 1fr;
+  }
+
+  .admin-workout-picker-results{
+    max-height: 220px;
+  }
+}
+
 /* ===== Floating bottom navigation (mobile) ===== */
 body{
   padding-bottom: env(safe-area-inset-bottom);
