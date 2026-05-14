@@ -49,7 +49,16 @@
 {% endblock %}
 
 {% block content %}
-<h1 class="mb-3">Admin</h1>
+<div class="app-page admin-ops-page">
+<div class="app-page-header">
+  <div>
+    <div class="app-page-kicker">Admin Workflow</div>
+    <h1 class="mb-1">Content Production</h1>
+    <p class="app-page-copy">
+      Use Admin to build the structured program flow: workout library first, then hub program, tracks, weeks, week items, link checks, and publish.
+    </p>
+  </div>
+</div>
 
 <div class="mb-3 d-flex gap-2 flex-wrap">
   <a class="btn btn-primary" href="{{ url_for('admin_workout_new') }}">
@@ -78,6 +87,63 @@
   <a class="btn btn-outline-secondary" href="{{ url_for('admin_program_link_health') }}">
     Program Link Health
   </a>
+</div>
+
+<div class="admin-ops-grid mb-3">
+  <section class="app-surface">
+    <div class="app-surface-header">
+      <div>
+        <div class="app-section-kicker">Recommended Workflow</div>
+        <strong>Build and ship a structured program</strong>
+      </div>
+    </div>
+    <div class="card-body">
+      <ol class="admin-workflow-list mb-0">
+        <li><strong>Create or clean workouts</strong> in the library, then run Workout Quality and metadata backfill.</li>
+        <li><strong>Create a hub program</strong> for the public entry point on <code>/programs</code>.</li>
+        <li><strong>Build tracks</strong> for level and environment variants from the Programs screen.</li>
+        <li><strong>Scaffold weeks</strong> inside each track with a default split.</li>
+        <li><strong>Add week items</strong> and link exercises for each day in the split.</li>
+        <li><strong>Run Link Health and readiness checks</strong> before switching status.</li>
+        <li><strong>Publish + Activate + Show on Home</strong> when the content is ready for members.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="app-surface">
+    <div class="app-surface-header">
+      <div>
+        <div class="app-section-kicker">Production Areas</div>
+        <strong>Main content systems</strong>
+      </div>
+    </div>
+    <div class="card-body admin-production-grid">
+      <a class="admin-production-card" href="{{ url_for('admin_index') }}">
+        <span class="admin-production-title">Workouts</span>
+        <span class="admin-production-copy">Exercise library, media, tips, and metadata quality.</span>
+      </a>
+      <a class="admin-production-card" href="{{ url_for('admin_programs') }}">
+        <span class="admin-production-title">Programs</span>
+        <span class="admin-production-copy">Hub cards, tracks, readiness, publish state, and Home visibility.</span>
+      </a>
+      <a class="admin-production-card" href="{{ url_for('admin_programs') }}">
+        <span class="admin-production-title">Program Weeks</span>
+        <span class="admin-production-copy">Week containers and scaffold tools for each track.</span>
+      </a>
+      <a class="admin-production-card" href="{{ url_for('admin_program_link_health') }}">
+        <span class="admin-production-title">Link Health / Readiness</span>
+        <span class="admin-production-copy">Broken workout links, unresolved items, and publish blockers.</span>
+      </a>
+      <a class="admin-production-card" href="{{ url_for('admin_styles') }}">
+        <span class="admin-production-title">Styles</span>
+        <span class="admin-production-copy">Controlled workout style labels used by the library.</span>
+      </a>
+      <a class="admin-production-card admin-production-card-legacy" href="{{ url_for('admin_home_plans') }}">
+        <span class="admin-production-title">Home Plans</span>
+        <span class="admin-production-copy">Legacy/supporting Home content. Programs are the current primary Home strategy.</span>
+      </a>
+    </div>
+  </section>
 </div>
 
 <div class="row g-3 mb-3">
@@ -184,4 +250,5 @@
     {% endfor %}
   </div>
 {% endif %}
+</div>
 {% endblock %}

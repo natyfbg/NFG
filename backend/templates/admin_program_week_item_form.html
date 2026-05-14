@@ -78,6 +78,43 @@
     </div>
   </div>
 
+  <div class="admin-workout-preview" data-picker-preview>
+    <div class="admin-workout-preview-media" data-picker-preview-media>
+      {% if linked and (linked.images if linked.images is defined else none) %}
+        <img src="{{ linked.images[0] }}" alt="" data-picker-preview-image>
+      {% elif linked and linked.muscle_image %}
+        <img src="{{ linked.muscle_image }}" alt="" data-picker-preview-image>
+      {% else %}
+        <div class="admin-workout-preview-fallback" data-picker-preview-fallback>Preview</div>
+      {% endif %}
+    </div>
+    <div class="admin-workout-preview-body">
+      <div class="admin-workout-preview-name" data-picker-preview-name>
+        {% if linked %}
+          {{ linked.name }}
+        {% elif current_wid %}
+          Linked workout unavailable
+        {% else %}
+          Select a workout
+        {% endif %}
+      </div>
+      <div class="admin-workout-preview-meta" data-picker-preview-meta>
+        {% if linked %}
+          {% set preview_bits = [] %}
+          {% if linked.level %}{% set _ = preview_bits.append(linked.level) %}{% endif %}
+          {% set linked_parts = linked.body_parts if linked.body_parts else ([linked.body_part] if linked.body_part else []) %}
+          {% if linked_parts and linked_parts[0] %}{% set _ = preview_bits.append(linked_parts[0]) %}{% elif linked.primary_muscle %}{% set _ = preview_bits.append(linked.primary_muscle) %}{% endif %}
+          {% if linked.style %}{% set _ = preview_bits.append(linked.style) %}{% endif %}
+          {{ preview_bits|join(' • ') if preview_bits else 'Workout linked from your library.' }}
+        {% elif current_wid %}
+          Workout reference exists, but the linked workout is missing.
+        {% else %}
+          Preview the image and key metadata here before linking.
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
   <div class="admin-workout-picker-status small text-muted" data-picker-status>
     Type to search or use filters to narrow the library.
   </div>

@@ -52,12 +52,24 @@
   <div>
     <h1 class="mb-1">Manage Weeks</h1>
     <p class="text-muted mb-0">
-      Add or remove week containers for this program.
+      Step 4 of the program workflow. Create week containers for this track, then open Manage Items to build the day-level exercise plan.
     </p>
   </div>
   <div class="d-flex gap-2">
     <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">Back to Programs</a>
     <a class="btn btn-outline-dark" href="{{ url_for('program_detail', slug=program.slug) }}">View Public</a>
+  </div>
+</div>
+
+<div class="app-surface mb-3">
+  <div class="app-surface-header">
+    <div>
+      <div class="app-section-kicker">Workflow Context</div>
+      <strong>Track → Weeks → Items</strong>
+    </div>
+  </div>
+  <div class="card-body small text-muted">
+    Use <strong>Auto Build Plan</strong> to scaffold the week structure first. Then use <strong>Manage Items</strong> inside each week to attach workouts, prescriptions, and notes for each training day.
   </div>
 </div>
 

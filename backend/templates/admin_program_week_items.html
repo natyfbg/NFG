@@ -60,7 +60,7 @@
       <div class="app-page-kicker">Program Authoring</div>
       <h1 class="mb-1">Week Items</h1>
       <p class="app-page-copy">
-        Build the daily split for this week and link each item to an exercise from the workout library.
+        Step 5 of the workflow. Build the daily split for this week and link each item to an exercise from the workout library.
       </p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
@@ -86,6 +86,18 @@
       <a class="btn app-btn-primary" href="{{ url_for('program_detail', slug=program.slug) }}">
         View Public
       </a>
+    </div>
+  </div>
+
+  <div class="app-surface">
+    <div class="app-surface-header">
+      <div>
+        <div class="app-section-kicker">Workflow Context</div>
+        <strong>Week content before publish</strong>
+      </div>
+    </div>
+    <div class="card-body small text-muted">
+      The recommended order is: <strong>Day / Order / Workout</strong>, then <strong>Sets / Reps / Rest</strong>, then <strong>Notes</strong>. After linking this week’s items, return to <strong>Link Health</strong> and the Programs screen for readiness and publish status.
     </div>
   </div>
 
@@ -197,11 +209,13 @@
                 <label class="form-label">Rest</label>
                 <input class="form-control" name="rest" placeholder="60s">
               </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label">Notes</label>
-                <input class="form-control" name="notes" placeholder="Tempo, cues, modifications...">
-              </div>
             </div>
+          </div>
+
+          <div class="admin-week-item-section admin-week-item-section-notes">
+            <div class="admin-week-item-section-title">Notes</div>
+            <label class="form-label">Coaching notes</label>
+            <input class="form-control" name="notes" placeholder="Tempo, cues, modifications...">
           </div>
         </div>
 
@@ -291,11 +305,13 @@
                       <label class="form-label small">Rest</label>
                       <input class="form-control form-control-sm" name="rest" value="{{ it.rest or '' }}">
                     </div>
-                    <div class="col-12 col-md-6">
-                      <label class="form-label small">Notes</label>
-                      <input class="form-control form-control-sm" name="notes" value="{{ it.notes or '' }}">
-                    </div>
                   </div>
+                </div>
+
+                <div class="admin-week-item-section admin-week-item-section-notes">
+                  <div class="admin-week-item-section-title">Notes</div>
+                  <label class="form-label small">Coaching notes</label>
+                  <input class="form-control form-control-sm" name="notes" value="{{ it.notes or '' }}">
                 </div>
               </div>
 
@@ -321,6 +337,11 @@
 
               <div class="admin-week-item-footer">
                 <button class="btn app-btn-primary app-btn-compact" type="submit">Save Item</button>
+                <button class="btn app-btn-secondary app-btn-compact"
+                        type="submit"
+                        formaction="{{ url_for('admin_program_week_item_duplicate', program_id=program._id|string, week_id=week._id|string, item_id=it._id|string) }}">
+                  Duplicate
+                </button>
                 <button class="btn app-btn-secondary app-btn-compact"
                         type="submit"
                         formaction="{{ url_for('admin_program_week_item_delete', program_id=program._id|string, week_id=week._id|string, item_id=it._id|string) }}"
@@ -377,11 +398,36 @@
     const formatDetails = (workout) => {
       const bits = [];
       if (workout.level) bits.push(workout.level);
-      if (workout.body_parts && workout.body_parts.length) bits.push(workout.body_parts.join(', '));
+      if (workout.body_parts && workout.body_parts.length) bits.push(workout.body_parts[0]);
+      else if (workout.primary_muscle) bits.push(workout.primary_muscle);
       if (workout.style) bits.push(workout.style);
-      if (workout.movement_pattern) bits.push(workout.movement_pattern);
-      if (workout.equipment) bits.push(workout.equipment);
       return bits.join(' • ');
+    };
+
+    const renderPreview = (picker, workout, hasBrokenRef) => {
+      const mediaNode = picker.querySelector('[data-picker-preview-media]');
+      const nameNode = picker.querySelector('[data-picker-preview-name]');
+      const metaNode = picker.querySelector('[data-picker-preview-meta]');
+      if (!mediaNode || !nameNode || !metaNode) return;
+
+      if (workout) {
+        nameNode.textContent = workout.name || 'Selected workout';
+        metaNode.textContent = formatDetails(workout) || 'Workout linked from your library.';
+        const image = (workout.preview_image || '').trim();
+        if (image) {
+          mediaNode.innerHTML = `<img src="${image}" alt="">`;
+        } else {
+          mediaNode.innerHTML = '<div class="admin-workout-preview-fallback">Preview</div>';
+        }
+      } else if (hasBrokenRef) {
+        nameNode.textContent = 'Linked workout unavailable';
+        metaNode.textContent = 'Workout reference exists, but the linked workout is missing.';
+        mediaNode.innerHTML = '<div class="admin-workout-preview-fallback">Missing</div>';
+      } else {
+        nameNode.textContent = 'Select a workout';
+        metaNode.textContent = 'Preview the image and key metadata here before linking.';
+        mediaNode.innerHTML = '<div class="admin-workout-preview-fallback">Preview</div>';
+      }
     };
 
     const renderPicker = (picker) => {
@@ -402,12 +448,15 @@
       if (selectedWorkout) {
         currentName.textContent = selectedWorkout.name;
         currentCopy.textContent = formatDetails(selectedWorkout) || 'Workout linked from your library.';
+        renderPreview(picker, selectedWorkout, false);
       } else if (selectedId) {
         currentName.textContent = 'Linked workout unavailable';
         currentCopy.textContent = 'Workout reference exists, but the linked workout is missing.';
+        renderPreview(picker, null, true);
       } else {
         currentName.textContent = 'No workout linked';
         currentCopy.textContent = 'Search your library and choose an exercise, or leave this blank for a custom item.';
+        renderPreview(picker, null, false);
       }
 
       const matches = workouts.filter((workout) => {
@@ -435,8 +484,13 @@
           button.classList.add('is-selected');
         }
         button.innerHTML = `
+          <span class="admin-workout-result-media">
+            ${workout.preview_image ? `<img src="${workout.preview_image}" alt="">` : '<span class="admin-workout-result-fallback">·</span>'}
+          </span>
+          <span class="admin-workout-result-copy">
           <span class="admin-workout-result-name">${workout.name}</span>
           <span class="admin-workout-result-meta">${formatDetails(workout) || 'Workout from exercise library'}</span>
+          </span>
         `;
         button.addEventListener('click', () => {
           hiddenInput.value = workout.id;

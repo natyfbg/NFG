@@ -1112,6 +1112,61 @@ a{
   gap: .85rem;
 }
 
+.admin-ops-page{
+  gap: 1rem;
+}
+
+.admin-ops-grid{
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-workflow-list{
+  display: grid;
+  gap: .55rem;
+  padding-left: 1.15rem;
+}
+
+.admin-production-grid{
+  display: grid;
+  gap: .8rem;
+}
+
+.admin-production-card{
+  display: grid;
+  gap: .2rem;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(245,241,232,.86));
+  padding: .8rem .9rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .12s ease, background .12s ease, box-shadow .12s ease;
+}
+
+.admin-production-card:hover,
+.admin-production-card:focus-visible{
+  border-color: rgba(23,23,20,.2);
+  box-shadow: var(--shadow-sm);
+  color: inherit;
+}
+
+.admin-production-card-legacy{
+  background: linear-gradient(180deg, rgba(247,243,233,.82), rgba(240,235,223,.72));
+}
+
+.admin-production-title{
+  font-weight: 700;
+  font-size: .92rem;
+  color: var(--app-text);
+}
+
+.admin-production-copy{
+  font-size: .8rem;
+  line-height: 1.38;
+  color: var(--app-text-muted);
+}
+
 .admin-week-item-grid{
   display: grid;
   gap: .85rem;
@@ -1187,6 +1242,62 @@ a{
   margin-top: -.1rem;
 }
 
+.admin-workout-preview{
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: .7rem;
+  align-items: center;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,.72);
+  padding: .65rem;
+}
+
+.admin-workout-preview-media{
+  width: 72px;
+  aspect-ratio: 9 / 16;
+  border-radius: .75rem;
+  overflow: hidden;
+  background: rgba(23,23,20,.08);
+  border: 1px solid rgba(23,23,20,.08);
+}
+
+.admin-workout-preview-media img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-workout-preview-fallback{
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-text-soft);
+  font-size: .72rem;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.admin-workout-preview-body{
+  min-width: 0;
+}
+
+.admin-workout-preview-name{
+  font-weight: 700;
+  font-size: .9rem;
+  line-height: 1.25;
+  color: var(--app-text);
+}
+
+.admin-workout-preview-meta{
+  margin-top: .2rem;
+  font-size: .78rem;
+  color: var(--app-text-muted);
+  line-height: 1.4;
+}
+
 .admin-workout-picker-results{
   display: grid;
   gap: .45rem;
@@ -1197,8 +1308,10 @@ a{
 
 .admin-workout-result{
   display: grid;
-  gap: .18rem;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: .58rem;
   width: 100%;
+  align-items: center;
   text-align: left;
   border: 1px solid var(--app-border);
   border-radius: var(--radius-sm);
@@ -1225,6 +1338,37 @@ a{
   box-shadow: inset 0 0 0 1px rgba(198,166,70,.16);
 }
 
+.admin-workout-result-media{
+  width: 48px;
+  aspect-ratio: 9 / 16;
+  border-radius: .6rem;
+  overflow: hidden;
+  background: rgba(23,23,20,.06);
+  border: 1px solid rgba(23,23,20,.08);
+}
+
+.admin-workout-result-media img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-workout-result-fallback{
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-text-soft);
+  font-size: 1rem;
+}
+
+.admin-workout-result-copy{
+  min-width: 0;
+  display: grid;
+  gap: .18rem;
+}
+
 .admin-workout-result-name{
   font-weight: 700;
   font-size: .9rem;
@@ -1239,13 +1383,22 @@ a{
 }
 
 @media (min-width: 900px){
+  .admin-ops-grid{
+    grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+    align-items: start;
+  }
+
+  .admin-production-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .admin-week-item-grid{
     grid-template-columns: minmax(0, .95fr) minmax(0, 1.35fr);
     align-items: start;
   }
 
   .admin-week-item-section-picker{
-    grid-row: span 2;
+    grid-row: span 3;
   }
 
   .admin-workout-picker-results{
@@ -1267,6 +1420,16 @@ a{
 
   .admin-workout-picker-filters{
     grid-template-columns: 1fr;
+  }
+
+  .admin-workout-preview{
+    grid-template-columns: 60px minmax(0, 1fr);
+    gap: .6rem;
+    padding: .58rem;
+  }
+
+  .admin-workout-preview-media{
+    width: 60px;
   }
 
   .admin-workout-picker-results{

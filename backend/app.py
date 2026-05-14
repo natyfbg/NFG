@@ -1332,6 +1332,8 @@ def _admin_workout_picker_payload(workouts: List[dict]) -> tuple[list[dict], lis
 
         movement = (w.get("movement_pattern") or "").strip()
         equipment = (w.get("equipment") or "").strip()
+        images = [img for img in (w.get("images") or []) if (img or "").strip()]
+        preview_image = images[0] if images else ((w.get("muscle_image") or "").strip() or None)
 
         if level:
             levels.add(level)
@@ -1351,6 +1353,7 @@ def _admin_workout_picker_payload(workouts: List[dict]) -> tuple[list[dict], lis
                 "primary_muscle": primary_muscle,
                 "movement_pattern": movement,
                 "equipment": equipment,
+                "preview_image": preview_image,
             }
         )
 
@@ -4480,6 +4483,8 @@ def admin_program_week_items(program_id, week_id):
                 "style": 1,
                 "body_part": 1,
                 "body_parts": 1,
+                "images": 1,
+                "muscle_image": 1,
                 "primary_muscle": 1,
                 "movement_pattern": 1,
                 "equipment": 1,
@@ -4503,6 +4508,47 @@ def admin_program_week_items(program_id, week_id):
         picker_styles=picker_styles,
         picker_body_parts=picker_body_parts,
     )
+
+
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/<item_id>/duplicate", methods=["POST"])
+@login_required
+def admin_program_week_item_duplicate(program_id, week_id, item_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not week:
+        abort(404)
+
+    item = db.program_items.find_one({"_id": ObjectId(item_id), "week_id": week["_id"]})
+    if not item:
+        abort(404)
+
+    last_item = db.program_items.find_one(
+        {"week_id": week["_id"]},
+        sort=[("order", -1), ("created_at", -1)],
+    )
+    next_order = _safe_int((last_item or {}).get("order"), default=0) + 1
+
+    clone_doc = {
+        "week_id": week["_id"],
+        "day": item.get("day"),
+        "custom_name": item.get("custom_name"),
+        "workout_id": item.get("workout_id"),
+        "workout_slug": item.get("workout_slug"),
+        "workout_name": item.get("workout_name"),
+        "sets": item.get("sets"),
+        "reps": item.get("reps"),
+        "rest": item.get("rest"),
+        "notes": item.get("notes"),
+        "order": next_order,
+        "created_at": datetime.datetime.utcnow(),
+    }
+    db.program_items.insert_one(clone_doc)
+
+    flash("Week item duplicated to the end of this week.", "success")
+    return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
 
 
 @app.route("/admin/programs/<program_id>/weeks/<week_id>/items/new", methods=["POST"])
