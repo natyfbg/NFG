@@ -55,8 +55,7 @@
             {% set thumbs = thumbs + [thumbs[0]] %}
           {% endif %}
           {% set cid = 'car-s-' ~ w.slug %}
-          {% set body_label = parts|join(', ') if parts else (w.primary_muscle or 'Full body') %}
-          {% set tags = w.tags if w.tags is iterable and w.tags is not string else [] %}
+          {% set body_chip = parts[0] if parts else (w.primary_muscle or 'Full body') %}
 
           <article class="card workout-library-card js-workout-card" data-href="{{ url_for('workout_detail', slug=w.slug) }}">
             <div class="workout-library-media workout-library-media-short">
@@ -85,28 +84,23 @@
             </div>
 
             <div class="card-body workout-library-body">
-              <div class="workout-library-title-row">
-                <div>
-                  <h3 class="workout-library-title">{{ w.name }}</h3>
-                  <div class="workout-library-subtitle">{{ body_label }}</div>
-                </div>
-                {% if w.level %}
-                  <span class="flow-chip">{{ w.level }}</span>
-                {% endif %}
+            <div class="workout-library-title-row">
+              <div>
+                <h3 class="workout-library-title">{{ w.name }}</h3>
               </div>
+            </div>
 
               <div class="workout-library-meta">
-                {% if w.style %}<span class="flow-chip">{{ w.style }}</span>{% endif %}
-                {% if w.movement_pattern %}<span class="flow-chip">{{ w.movement_pattern }}</span>{% endif %}
-                {% if w.equipment %}<span class="flow-chip">{{ w.equipment }}</span>{% endif %}
-                {% if w.difficulty_tier %}<span class="flow-chip">{{ w.difficulty_tier }}</span>{% endif %}
-                {% for tag in tags[:2] %}
-                  <span class="flow-chip">{{ tag }}</span>
-                {% endfor %}
+                {% if w.level %}<span class="workout-library-chip workout-library-chip-level">{{ w.level }}</span>{% endif %}
+                <span class="workout-library-chip workout-library-chip-body">{{ body_chip }}</span>
+                {% if w.style %}<span class="workout-library-chip workout-library-chip-style">{{ w.style }}</span>{% endif %}
               </div>
 
               <div class="workout-library-actions">
-                <a class="btn btn-sm btn-dark app-btn-primary app-btn-compact" href="{{ url_for('workout_detail', slug=w.slug) }}">View exercise</a>
+                <a class="btn workout-library-cta" href="{{ url_for('workout_detail', slug=w.slug) }}">
+                  <span>View exercise</span>
+                  <span aria-hidden="true">↗</span>
+                </a>
               </div>
             </div>
           </article>

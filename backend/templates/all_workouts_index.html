@@ -35,7 +35,7 @@
           {% set thumbs = thumbs + [thumbs[0]] %}
         {% endif %}
         {% set cid = 'car-all-' ~ w.slug %}
-        {% set body_label = parts|join(', ') if parts else (w.primary_muscle or 'Full body') %}
+        {% set body_chip = parts[0] if parts else (w.primary_muscle or 'Full body') %}
 
         <article class="card workout-library-card js-workout-card" data-href="{{ url_for('workout_detail', slug=w.slug) }}">
           <div class="workout-library-media workout-library-media-short">
@@ -67,19 +67,20 @@
             <div class="workout-library-title-row">
               <div>
                 <h2 class="workout-library-title">{{ w.name }}</h2>
-                <div class="workout-library-subtitle">{{ body_label }}</div>
               </div>
-              {% if w.level %}
-                <span class="flow-chip">{{ w.level }}</span>
-              {% endif %}
             </div>
 
             <div class="workout-library-meta">
-              {% if w.style %}<span class="flow-chip">{{ w.style }}</span>{% endif %}
+              {% if w.level %}<span class="workout-library-chip workout-library-chip-level">{{ w.level }}</span>{% endif %}
+              <span class="workout-library-chip workout-library-chip-body">{{ body_chip }}</span>
+              {% if w.style %}<span class="workout-library-chip workout-library-chip-style">{{ w.style }}</span>{% endif %}
             </div>
 
             <div class="workout-library-actions">
-              <a class="btn btn-sm btn-dark app-btn-primary app-btn-compact" href="{{ url_for('workout_detail', slug=w.slug) }}">View exercise</a>
+              <a class="btn workout-library-cta" href="{{ url_for('workout_detail', slug=w.slug) }}">
+                <span>View exercise</span>
+                <span aria-hidden="true">↗</span>
+              </a>
             </div>
           </div>
         </article>
