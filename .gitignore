@@ -1,9 +1,27 @@
 
-backend/.env
-
-
+# macOS / editors
 .DS_Store
 .idea/
+.vscode/
 
+# Python / virtualenvs
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+ENV/
+
+# Local env files
+.env
 .env.*
 !.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Runtime / logs / local data
+instance/
+*.log
+*.sqlite3
+mongo_data/

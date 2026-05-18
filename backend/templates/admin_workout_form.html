@@ -33,7 +33,9 @@
       <label class="form-label">Body Parts (comma or newline)</label>
       <textarea class="form-control" id="body_parts" name="body_parts" rows="2"
                 placeholder="e.g. Chest, Triceps, Shoulders">{{ data.get('body_parts','') }}</textarea>
-      <div class="form-text">Example: Chest, Triceps, Shoulders</div>
+      <div class="form-text">
+        Ordered support list. Put the main target first so <code>body_part</code> can mirror it automatically.
+      </div>
     </div>
 
     <div class="col-md-6">
@@ -60,7 +62,7 @@
           <option value="{{ bp }}" {{ 'selected' if data.get('primary_muscle')==bp else '' }}>{{ bp }}</option>
         {% endfor %}
       </select>
-      <div class="form-text">Primary target for this exercise page.</div>
+      <div class="form-text">Canonical source of truth for the main target on this exercise page.</div>
     </div>
 
     <div class="col-md-6">
@@ -95,9 +97,12 @@
     </div>
 
     <div class="col-md-6">
-      <label class="form-label">Tags (auto-filled from body parts; you can edit)</label>
+      <label class="form-label">Tags</label>
       <textarea class="form-control" id="tags" name="tags" rows="2"
-                placeholder="auto-filled from body parts">{{ data.get('tags','') }}</textarea>
+                placeholder="compound, unilateral, low-impact">{{ data.get('tags','') }}</textarea>
+      <div class="form-text">
+        Supplemental descriptors only. Do not repeat body parts, equipment, style, or level here.
+      </div>
     </div>
 
     <div class="col-md-3">
@@ -334,39 +339,11 @@
   if (muscleFile) muscleFile.addEventListener('change', updateMusclePreview);
   updateMusclePreview();
 
-  // --- Auto-populate Tags from Body Parts ---
   const bodyPartsEl = document.getElementById('body_parts');
-  const tagsEl      = document.getElementById('tags');
-
-  function toTag(s) {
-    return (s || '')
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  }
 
   function parseParts(raw) {
     if (!raw) return [];
     return raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
-  }
-
-  function unique(arr) { return Array.from(new Set(arr)); }
-
-  function syncTagsFromBodyParts() {
-    if (!bodyPartsEl || !tagsEl) return;
-    const parts = parseParts(bodyPartsEl.value);
-    const rawLabels = parts.map(p => p);
-    const normTags  = parts.map(p => toTag(p));
-    const all = unique([...rawLabels, ...normTags]).filter(Boolean);
-    tagsEl.value = all.join(', ');
-  }
-
-  if (bodyPartsEl && tagsEl) {
-    bodyPartsEl.addEventListener('input', syncTagsFromBodyParts);
-    if (!tagsEl.value || !tagsEl.value.trim()) {
-      syncTagsFromBodyParts();
-    }
   }
 
   // --- Metadata suggestions (only when target select is empty) ---

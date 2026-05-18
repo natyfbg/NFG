@@ -69,6 +69,9 @@ if os.getenv("RENDER"):
         SESSION_COOKIE_SAMESITE="Lax",
     )
 
+if os.getenv("RENDER") and SECRET_KEY == "dev-secret":
+    app.logger.warning("SECRET_KEY is using the development fallback in a hosted environment.")
+
 def _resolve_db_for_client(mongo_client: MongoClient, mongo_uri: str):
     """Pick DB name from override, URI default, or fallback to NFG."""
     if MONGO_DB:
@@ -144,6 +147,14 @@ def _split_list(text: str) -> List[str]:
     if not text:
         return []
     return [p.strip() for p in re.split(r"[\n,]+", text) if p.strip()]
+
+
+def _clean_text(raw: Optional[str]) -> str:
+    return re.sub(r"\s+", " ", (raw or "").strip())
+
+
+def _taxonomy_key(raw: Optional[str]) -> str:
+    return re.sub(r"[^a-z0-9]+", "", _norm_choice(raw))
 
 
 _YT_PAT = re.compile(
@@ -345,6 +356,11 @@ if ADMIN_PASSWORD_HASH and ADMIN_PASSWORD_HASH.count("$") < 2:
         "ADMIN_PASSWORD_HASH appears malformed/truncated (contains %s '$'). "
         "If using Docker env_file, quote the hash value in .env to avoid interpolation issues.",
         ADMIN_PASSWORD_HASH.count("$"),
+    )
+
+if os.getenv("RENDER") and not ADMIN_PASSWORD_HASH:
+    app.logger.warning(
+        "ADMIN_PASSWORD_HASH is not set in a hosted environment. Falling back to plaintext admin password."
     )
 
 login_manager = LoginManager(app)
@@ -675,6 +691,100 @@ def _canonical_choice(raw: Optional[str], options: List[str]) -> str:
         if _norm_choice(opt) == v:
             return opt
     return ""
+
+
+def _dedupe_values(values: List[str]) -> List[str]:
+    out: List[str] = []
+    seen = set()
+    for raw in values:
+        cleaned = _clean_text(raw)
+        if not cleaned:
+            continue
+        key = _taxonomy_key(cleaned) or cleaned.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(cleaned)
+    return out
+
+
+def _normalize_level_label(raw: Optional[str]) -> str:
+    canonical = _canonical_choice(raw, WORKOUT_LEVELS)
+    if canonical:
+        return canonical
+    return _clean_text(raw)
+
+
+def _normalize_track_env(raw: Optional[str]) -> Optional[str]:
+    val = _norm_choice(raw)
+    return val if val in DEFAULT_ENVS else None
+
+
+def _normalize_style_label(raw: Optional[str], style_options: List[str]) -> tuple[Optional[str], bool]:
+    cleaned = _clean_text(raw)
+    if not cleaned:
+        return None, False
+    canonical = _canonical_choice(cleaned, style_options)
+    if canonical:
+        return canonical, False
+    return cleaned, True
+
+
+def _normalize_body_parts(parts: List[str]) -> tuple[List[str], List[str]]:
+    normalized: List[str] = []
+    warnings: List[str] = []
+    seen_warning = set()
+
+    for raw in _dedupe_values(parts):
+        canonical = _canonical_choice(raw, BODY_PARTS_MASTER)
+        if canonical:
+            normalized.append(canonical)
+            continue
+        fallback = " ".join(part.capitalize() for part in raw.split())
+        normalized.append(fallback)
+        key = _taxonomy_key(raw)
+        if key and key not in seen_warning:
+            seen_warning.add(key)
+            warnings.append(fallback)
+
+    return _dedupe_values(normalized), warnings
+
+
+def _normalize_tags(
+    tags: List[str],
+    *,
+    body_parts: List[str],
+    primary_muscle: Optional[str],
+    style: Optional[str],
+    level: Optional[str],
+    equipment: Optional[str],
+) -> tuple[List[str], List[str]]:
+    blocked_keys = {
+        _taxonomy_key(val)
+        for val in list(body_parts) + [primary_muscle, style, level, equipment]
+        if _taxonomy_key(val)
+    }
+
+    out: List[str] = []
+    removed: List[str] = []
+    seen = set()
+
+    for raw in tags:
+        cleaned = _clean_text(raw)
+        if not cleaned:
+            continue
+        key = _taxonomy_key(cleaned) or cleaned.lower()
+        if not key:
+            continue
+        if key in blocked_keys:
+            removed.append(cleaned)
+            continue
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(cleaned)
+
+    return out, removed
 
 
 def _primary_muscle_from_doc(w: dict) -> str:
@@ -3047,23 +3157,33 @@ def admin_workout_quality():
 @login_required
 def admin_workout_new():
     if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        level = request.form.get("level", "").strip()
-        style = request.form.get("style", "").strip()
-        body_parts = _split_list(request.form.get("body_parts", ""))
-        body_part = (
-            body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
+        name = _clean_text(request.form.get("name"))
+        raw_level = _clean_text(request.form.get("level"))
+        level = _normalize_level_label(raw_level)
+        level_warning = bool(raw_level and level not in WORKOUT_LEVELS)
+        style_options = get_styles()
+        style, style_warning = _normalize_style_label(request.form.get("style"), style_options)
+        body_parts, body_part_warnings = _normalize_body_parts(
+            _split_list(request.form.get("body_parts", ""))
         )
-        tags = _split_list(request.form.get("tags", ""))
+        body_part = body_parts[0] if body_parts else (_clean_text(request.form.get("body_part")) or "")
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
-        info = (request.form.get("info") or "").strip() or None
+        info = _clean_text(request.form.get("info")) or None
         tips = _split_list(request.form.get("tips", ""))
         youtube_id = _extract_youtube_id(request.form.get("youtube_id"))
         is_favorite = request.form.get("is_favorite") == "on"
         rating = float(request.form.get("rating") or 0)
-        slug = (request.form.get("slug") or slugify(name)).strip()
+        slug = _clean_text(request.form.get("slug") or slugify(name))
         metadata, meta_errors = _workout_metadata_from_form(request.form)
+        tags, removed_tags = _normalize_tags(
+            _split_list(request.form.get("tags", "")),
+            body_parts=body_parts,
+            primary_muscle=metadata.get("primary_muscle"),
+            style=style,
+            level=level,
+            equipment=metadata.get("equipment"),
+        )
 
         if not name:
             flash("Name is required.", "danger")
@@ -3071,7 +3191,7 @@ def admin_workout_new():
                 "admin_workout_form.html",
                 levels=WORKOUT_LEVELS,
                 parts=BODY_PARTS_MASTER,
-                styles=get_styles(),
+                styles=style_options,
                 movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
                 equipment_types=WORKOUT_EQUIPMENT_TYPES,
                 difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
@@ -3085,7 +3205,7 @@ def admin_workout_new():
                 "admin_workout_form.html",
                 levels=WORKOUT_LEVELS,
                 parts=BODY_PARTS_MASTER,
-                styles=get_styles(),
+                styles=style_options,
                 movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
                 equipment_types=WORKOUT_EQUIPMENT_TYPES,
                 difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
@@ -3101,11 +3221,42 @@ def admin_workout_new():
                 "admin_workout_form.html",
                 levels=WORKOUT_LEVELS,
                 parts=BODY_PARTS_MASTER,
-                styles=get_styles(),
+                styles=style_options,
                 movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
                 equipment_types=WORKOUT_EQUIPMENT_TYPES,
                 difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
                 data=request.form,
+            )
+
+        if style_warning:
+            flash(
+                f"Style '{style}' is not in the active controlled vocabulary. It was saved as entered.",
+                "warning",
+            )
+        if level_warning:
+            flash(
+                f"Level '{raw_level}' is not one of the canonical workout levels. It was saved as entered.",
+                "warning",
+            )
+        if body_part_warnings:
+            flash(
+                "Non-canonical body parts were saved as entered: "
+                + ", ".join(body_part_warnings)
+                + ". Prefer the controlled body-part list.",
+                "warning",
+            )
+        if removed_tags:
+            flash(
+                "Removed tags that duplicate structured metadata: " + ", ".join(removed_tags) + ".",
+                "info",
+            )
+        if body_parts and metadata.get("primary_muscle") and body_parts[0] != metadata.get("primary_muscle"):
+            flash(
+                (
+                    f"Primary muscle is canonical. Body Parts starts with '{body_parts[0]}' "
+                    f"while Primary Muscle is '{metadata.get('primary_muscle')}'."
+                ),
+                "warning",
             )
 
         doc = {
@@ -3157,23 +3308,34 @@ def admin_workout_edit(id):
         abort(404)
 
     if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        level = request.form.get("level", "").strip()
-        style = request.form.get("style", "").strip()
-        body_parts = _split_list(request.form.get("body_parts", ""))
-        body_part = (
-            body_parts[0] if body_parts else (request.form.get("body_part", "").strip() or "")
+        name = _clean_text(request.form.get("name"))
+        raw_level = _clean_text(request.form.get("level"))
+        level = _normalize_level_label(raw_level)
+        level_warning = bool(raw_level and level not in WORKOUT_LEVELS)
+        style_options = get_styles()
+        style, style_warning = _normalize_style_label(request.form.get("style"), style_options)
+        body_parts, body_part_warnings = _normalize_body_parts(
+            _split_list(request.form.get("body_parts", ""))
         )
-        tags = _split_list(request.form.get("tags", ""))
+        prior_body_part = _clean_text(w.get("body_part"))
+        body_part = body_parts[0] if body_parts else (_clean_text(request.form.get("body_part")) or "")
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
-        info = (request.form.get("info") or "").strip() or None
+        info = _clean_text(request.form.get("info")) or None
         tips = _split_list(request.form.get("tips", ""))
         youtube_id = _extract_youtube_id(request.form.get("youtube_id"))
         is_favorite = request.form.get("is_favorite") == "on"
         rating = float(request.form.get("rating") or 0)
-        slug = (request.form.get("slug") or slugify(name)).strip()
+        slug = _clean_text(request.form.get("slug") or slugify(name))
         metadata, meta_errors = _workout_metadata_from_form(request.form, fallback_doc=w)
+        tags, removed_tags = _normalize_tags(
+            _split_list(request.form.get("tags", "")),
+            body_parts=body_parts,
+            primary_muscle=metadata.get("primary_muscle"),
+            style=style,
+            level=level,
+            equipment=metadata.get("equipment"),
+        )
 
         if not name:
             flash("Name is required.", "danger")
@@ -3181,7 +3343,7 @@ def admin_workout_edit(id):
                 "admin_workout_form.html",
                 levels=WORKOUT_LEVELS,
                 parts=BODY_PARTS_MASTER,
-                styles=get_styles(),
+                styles=style_options,
                 movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
                 equipment_types=WORKOUT_EQUIPMENT_TYPES,
                 difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
@@ -3197,7 +3359,7 @@ def admin_workout_edit(id):
                 "admin_workout_form.html",
                 levels=WORKOUT_LEVELS,
                 parts=BODY_PARTS_MASTER,
-                styles=get_styles(),
+                styles=style_options,
                 movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
                 equipment_types=WORKOUT_EQUIPMENT_TYPES,
                 difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
@@ -3216,13 +3378,49 @@ def admin_workout_edit(id):
                 "admin_workout_form.html",
                 levels=WORKOUT_LEVELS,
                 parts=BODY_PARTS_MASTER,
-                styles=get_styles(),
+                styles=style_options,
                 movement_patterns=WORKOUT_MOVEMENT_PATTERNS,
                 equipment_types=WORKOUT_EQUIPMENT_TYPES,
                 difficulty_tiers=WORKOUT_DIFFICULTY_TIERS,
                 data=request.form,
                 edit=True,
                 _id=id,
+            )
+
+        if style_warning:
+            flash(
+                f"Style '{style}' is not in the active controlled vocabulary. It was saved as entered.",
+                "warning",
+            )
+        if level_warning:
+            flash(
+                f"Level '{raw_level}' is not one of the canonical workout levels. It was saved as entered.",
+                "warning",
+            )
+        if body_part_warnings:
+            flash(
+                "Non-canonical body parts were saved as entered: "
+                + ", ".join(body_part_warnings)
+                + ". Prefer the controlled body-part list.",
+                "warning",
+            )
+        if removed_tags:
+            flash(
+                "Removed tags that duplicate structured metadata: " + ", ".join(removed_tags) + ".",
+                "info",
+            )
+        if body_parts and metadata.get("primary_muscle") and body_parts[0] != metadata.get("primary_muscle"):
+            flash(
+                (
+                    f"Primary muscle is canonical. Body Parts starts with '{body_parts[0]}' "
+                    f"while Primary Muscle is '{metadata.get('primary_muscle')}'."
+                ),
+                "warning",
+            )
+        if body_parts and prior_body_part and prior_body_part != body_parts[0]:
+            flash(
+                f"Body Part was normalized to match the first Body Parts value: {body_parts[0]}.",
+                "info",
             )
 
         update = {
@@ -3918,15 +4116,15 @@ def admin_program_set_status(id):
 @login_required
 def admin_program_new():
     if request.method == "POST":
-        title = (request.form.get("title") or "").strip()
-        slug = (request.form.get("slug") or "").strip() or slugify(title)
+        title = _clean_text(request.form.get("title"))
+        slug = _clean_text(request.form.get("slug")) or slugify(title)
 
-        category = (request.form.get("category") or "").strip() or None
-        duration_label = (request.form.get("duration_label") or "").strip() or None
-        default_week_split_raw = (request.form.get("default_week_split") or "").strip()
+        category = _clean_text(request.form.get("category")) or None
+        duration_label = _clean_text(request.form.get("duration_label")) or None
+        default_week_split_raw = _clean_text(request.form.get("default_week_split"))
         default_week_split = _parse_day_split(default_week_split_raw) if default_week_split_raw else None
-        summary = (request.form.get("summary") or "").strip() or None
-        cover_image = (request.form.get("cover_image") or "").strip() or None
+        summary = _clean_text(request.form.get("summary")) or None
+        cover_image = _clean_text(request.form.get("cover_image")) or None
 
         order = _safe_int(request.form.get("order"), default=0)
         active = request.form.get("active") == "on"
@@ -3940,16 +4138,26 @@ def admin_program_new():
         if kind not in ("hub", "track"):
             kind = "hub"
 
-        hub_slug = (request.form.get("hub_slug") or "").strip() or None
-        track_level = (request.form.get("track_level") or "").strip() or None
-        track_env = _norm_choice(request.form.get("track_env")) or None
-        if track_env and track_env not in DEFAULT_ENVS:
-            track_env = None
+        hub_slug = _clean_text(request.form.get("hub_slug")) or None
+        raw_track_level = _clean_text(request.form.get("track_level"))
+        track_level = _normalize_level_label(raw_track_level) or None
+        raw_track_env = _clean_text(request.form.get("track_env"))
+        track_env = _normalize_track_env(raw_track_env)
 
         if kind != "track":
             hub_slug = None
             track_level = None
             track_env = None
+        elif raw_track_level and track_level not in WORKOUT_LEVELS:
+            flash(
+                f"Track level '{raw_track_level}' is not canonical. Prefer Beginner, Intermediate, or Advanced.",
+                "warning",
+            )
+        if kind == "track" and raw_track_env and track_env not in DEFAULT_ENVS:
+            flash(
+                f"Track environment '{raw_track_env}' is not canonical. Prefer home, gym, or hybrid.",
+                "warning",
+            )
 
         if not title:
             flash("Title is required.", "danger")
@@ -3998,15 +4206,15 @@ def admin_program_edit(id):
         abort(404)
 
     if request.method == "POST":
-        title = (request.form.get("title") or "").strip()
-        slug = (request.form.get("slug") or "").strip() or slugify(title)
+        title = _clean_text(request.form.get("title"))
+        slug = _clean_text(request.form.get("slug")) or slugify(title)
 
-        category = (request.form.get("category") or "").strip() or None
-        duration_label = (request.form.get("duration_label") or "").strip() or None
-        default_week_split_raw = (request.form.get("default_week_split") or "").strip()
+        category = _clean_text(request.form.get("category")) or None
+        duration_label = _clean_text(request.form.get("duration_label")) or None
+        default_week_split_raw = _clean_text(request.form.get("default_week_split"))
         default_week_split = _parse_day_split(default_week_split_raw) if default_week_split_raw else None
-        summary = (request.form.get("summary") or "").strip() or None
-        cover_image = (request.form.get("cover_image") or "").strip() or None
+        summary = _clean_text(request.form.get("summary")) or None
+        cover_image = _clean_text(request.form.get("cover_image")) or None
 
         order = _safe_int(request.form.get("order"), default=0)
         active = request.form.get("active") == "on"
@@ -4023,16 +4231,26 @@ def admin_program_edit(id):
         if kind not in ("hub", "track"):
             kind = "hub"
 
-        hub_slug = (request.form.get("hub_slug") or "").strip() or None
-        track_level = (request.form.get("track_level") or "").strip() or None
-        track_env = _norm_choice(request.form.get("track_env")) or None
-        if track_env and track_env not in DEFAULT_ENVS:
-            track_env = None
+        hub_slug = _clean_text(request.form.get("hub_slug")) or None
+        raw_track_level = _clean_text(request.form.get("track_level"))
+        track_level = _normalize_level_label(raw_track_level) or None
+        raw_track_env = _clean_text(request.form.get("track_env"))
+        track_env = _normalize_track_env(raw_track_env)
 
         if kind != "track":
             hub_slug = None
             track_level = None
             track_env = None
+        elif raw_track_level and track_level not in WORKOUT_LEVELS:
+            flash(
+                f"Track level '{raw_track_level}' is not canonical. Prefer Beginner, Intermediate, or Advanced.",
+                "warning",
+            )
+        if kind == "track" and raw_track_env and track_env not in DEFAULT_ENVS:
+            flash(
+                f"Track environment '{raw_track_env}' is not canonical. Prefer home, gym, or hybrid.",
+                "warning",
+            )
 
         existing_kind = _norm_choice(p.get("kind")) or "hub"
         existing_slug = (p.get("slug") or "").strip()

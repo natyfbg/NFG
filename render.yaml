@@ -11,8 +11,7 @@ services:
     autoDeploy: true
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    startCommand: >
-      gunicorn -w 3 -b 0.0.0.0:8000 app:app --timeout 120
+    startCommand: /bin/sh /app/starter.sh
     envVars:
       - key: MONGO_URI
         fromService:

@@ -20,11 +20,11 @@ ENV FLASK_ENV=production
 ENV MONGO_URI=mongodb://mongo:27017/NFG
 
 # Add our start script and make it executable
-COPY starter.sh /app/start.sh
-RUN chmod +x /app/start.sh
+COPY starter.sh /app/starter.sh
+RUN chmod +x /app/starter.sh
 
 
-EXPOSE 5000
+EXPOSE 8000
 
-# Use the wrapper script so $PORT is resolved before launching gunicorn
-CMD ["/app/start.sh"]
+# Use the wrapper script via /bin/sh so local bind mounts do not require an executable bit
+CMD ["/bin/sh", "/app/starter.sh"]

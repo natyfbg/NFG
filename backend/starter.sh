@@ -2,7 +2,7 @@
 set -eu
 
 # Compute values without relying on inline expansion inside the gunicorn arg
-PORT="${PORT:-5000}"
+PORT="${PORT:-8000}"
 WEB_CONCURRENCY="${WEB_CONCURRENCY:-3}"
 GUNICORN_THREADS="${GUNICORN_THREADS:-2}"
 

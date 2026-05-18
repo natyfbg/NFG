@@ -1,75 +1,62 @@
-# 🏋️‍♂️ NattyFit (NFG) — Workout & Recipe Platform  
-*A modern Flask + MongoDB web app built for fitness trainers, creators, and enthusiasts.*
+# Backend Operations
 
----
+This directory contains the Flask application, Docker assets, templates, static files, and seed tooling for NFG.
 
-## 🌟 Overview
+## Key Files
 
-**NattyFit (NFG)** is a fitness-focused web application built with **Flask**, **MongoDB**, and **Bootstrap 5**.  
-It allows users to **browse, search, and manage workouts and recipes** through a responsive interface — with an admin dashboard for managing content and dynamic filtering for workouts.
+- `app.py` — main Flask app and configuration
+- `requirements.txt` — Python dependencies
+- `Dockerfile` — image build for local Docker and Render
+- `docker-compose.yml` — local app + Mongo stack
+- `starter.sh` — shared gunicorn startup path
+- `.env.example` — safe local environment template
 
-This project is designed to be:
-- ✅ Lightweight and portable (works locally or in Docker)
-- ✅ Ready for production (deployable on **Render**, with persistent MongoDB)
-- ✅ Scalable for future extensions (authentication, user dashboards, media uploads)
+## Local Environment
 
----
+Create your local env file here:
 
-## 🧱 Tech Stack
-
-| Layer | Technology | Purpose |
-|-------|-------------|----------|
-| **Backend** | Flask (Python 3.11) | RESTful routes, templates, admin logic |
-| **Database** | MongoDB 7 | Document-based storage for workouts & recipes |
-| **Auth** | Flask-Login | Admin authentication |
-| **Forms** | Flask-WTF + CSRFProtect | Secure forms with CSRF protection |
-| **Frontend** | Jinja2 Templates + Bootstrap 5 | Responsive UI, quick rendering |
-| **Deployment** | Docker + Render | Portable & cloud-native |
-| **Server** | Gunicorn | Production-grade WSGI HTTP server |
-
----
-
-## 🚀 Quick Start
-
-You can run **NattyFit** in two main ways:
-
-### 🧩 Option 1 — Local Python environment (developer-friendly)
 ```bash
-# From repo root
-cd backend
-
-# 1. Create and activate a virtual environment
-python -m venv .venv
-source .venv/bin/activate       # Windows: .venv\Scripts\activate
-
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. Copy and configure environment
 cp .env.example .env
+```
 
-# 4. Seed database (loads demo workouts & recipes)
+Important:
+
+- keep `.env` local only
+- prefer `ADMIN_PASSWORD_HASH` over plaintext admin passwords
+- if you use Docker Compose with `backend/.env`, escape each `$` in the hash as `$$`
+- the app normalizes `$$` back to `$` at runtime
+
+## Run Locally
+
+### Python
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 python seed.py
-
-# 5. Run app
 python app.py
+```
 
+### Docker
 
-[//]: # (To Run App)
+```bash
+docker compose up --build
+```
 
-[//]: # ()
-[//]: # (# 1&#41; Make sure your .env is at the repo root &#40;NFG/.env&#41;)
+App URL:
 
-[//]: # (# 2&#41; Build and start)
+- `http://localhost:5050`
 
-[//]: # (docker compose up -d --build)
+## Deployment Notes
 
-[//]: # ()
-[//]: # (# 3&#41; Seed sample data &#40;optional, but handy&#41;)
+- Render builds from this directory’s `Dockerfile`
+- startup goes through `/bin/sh /app/starter.sh`
+- health endpoint is `/healthz`
+- uploads are expected to persist outside the container in hosted environments
 
-[//]: # (docker compose run --rm app python seed.py)
+## Current Safety Assumptions
 
-[//]: # ()
-[//]: # (# 4&#41; Tail logs &#40;optional, to see requests/errors&#41;)
-
-[//]: # (docker compose logs -f app)
+- local runtime files should not be committed
+- app secrets must come from environment variables in hosted environments
+- Docker Compose is for development convenience, not production orchestration
