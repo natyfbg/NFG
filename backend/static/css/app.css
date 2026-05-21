@@ -242,6 +242,18 @@ a{
   color: var(--app-success);
 }
 
+.app-chip-warning{
+  border-color: rgba(198,166,70,.34);
+  background: rgba(198,166,70,.16);
+  color: var(--app-accent-strong);
+}
+
+.app-chip-danger{
+  border-color: rgba(176,66,66,.26);
+  background: var(--app-danger-soft);
+  color: #9f3d3d;
+}
+
 .app-btn-primary,
 .app-btn-secondary,
 .app-btn-compact{
@@ -1165,6 +1177,21 @@ a{
   font-size: .8rem;
   line-height: 1.38;
   color: var(--app-text-muted);
+}
+
+.template-library-list{
+  display: grid;
+  gap: .9rem;
+}
+
+.template-library-row .card-body{
+  display: grid;
+  gap: .9rem;
+}
+
+.template-library-main{
+  display: grid;
+  gap: .2rem;
 }
 
 .admin-week-item-grid{

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Admin – Taxonomy QA{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Content Management</div>
+  {% set ep = request.endpoint or '' %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality','admin_taxonomy_qa'] %}
+  {% set admin_program_eps = [
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_link_health_backfill',
+    'admin_program_weeks','admin_program_weeks_scaffold',
+    'admin_program_week_items','admin_program_week_item_new',
+    'admin_program_week_item_edit','admin_program_week_item_delete'
+  ] %}
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}" href="{{ url_for('admin_index') }}">Workouts</a>
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_styles'] %}active{% endif %}" href="{{ url_for('admin_styles') }}">Styles</a>
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_home_plans','admin_home_plan_new','admin_home_plan_edit'] %}active{% endif %}" href="{{ url_for('admin_home_plans') }}">Home Plans</a>
+    <a class="list-group-item list-group-item-action {% if ep in admin_program_eps %}active{% endif %}" href="{{ url_for('admin_programs') }}">Programs</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="app-page">
+  <div class="app-page-header">
+    <div>
+      <div class="app-page-kicker">Admin QA</div>
+      <h1 class="mb-1">Taxonomy QA</h1>
+      <p class="app-page-copy">
+        Review existing content drift before mass population. This page reports issues only and sends you back to the normal edit screens for cleanup.
+      </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn app-btn-secondary" href="{{ url_for('admin_index') }}">Back to Admin</a>
+      <a class="btn app-btn-secondary" href="{{ url_for('admin_workout_quality') }}">Workout Quality</a>
+      <a class="btn app-btn-secondary" href="{{ url_for('admin_programs') }}">Programs</a>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-md-3">
+      <div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Duplicate Names</div><div class="h4 mb-0">{{ report.summary.duplicate_names }}</div></div></div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Taxonomy Drift</div><div class="h4 mb-0">{{ report.summary.taxonomy_drift }}</div></div></div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Missing Core Metadata</div><div class="h4 mb-0">{{ report.summary.missing_core_metadata }}</div></div></div>
+    </div>
+    <div class="col-12 col-md-3">
+      <div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Media Problems</div><div class="h4 mb-0">{{ report.summary.media_problems }}</div></div></div>
+    </div>
+  </div>
+
+  {% if report.duplicate_name_groups %}
+    <section class="app-surface mt-3">
+      <div class="app-surface-header">
+        <div>
+          <div class="app-section-kicker">Duplicate Names</div>
+          <strong>Workout names collapsing to the same normalized slug</strong>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="list-group">
+          {% for group in report.duplicate_name_groups %}
+            <div class="list-group-item">
+              <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                <div>
+                  <div class="fw-semibold"><code>{{ group.normalized_slug }}</code></div>
+                  <div class="small text-muted">{{ group.items|length }} workout{{ '' if group.items|length == 1 else 's' }} resolve to the same normalized slug.</div>
+                </div>
+                <span class="flow-chip app-chip-danger">Duplicate</span>
+              </div>
+              <div class="mt-2 d-flex flex-column gap-2">
+                {% for w in group.items %}
+                  <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                    <div class="small">
+                      <strong>{{ w.name or 'Untitled' }}</strong>
+                      <span class="text-muted">/{{ w.slug or 'no-slug' }}</span>
+                    </div>
+                    <a class="btn btn-sm app-btn-secondary app-btn-compact" href="{{ url_for('admin_workout_edit', id=w._id) }}">Open</a>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if report.similar_pairs %}
+    <section class="app-surface mt-3">
+      <div class="app-surface-header">
+        <div>
+          <div class="app-section-kicker">Suspiciously Similar</div>
+          <strong>Likely duplicate workout names for review</strong>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="list-group">
+          {% for row in report.similar_pairs %}
+            <div class="list-group-item">
+              <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                <div>
+                  <div class="fw-semibold">{{ row.left.name }} ↔ {{ row.right.name }}</div>
+                  <div class="small text-muted">Similarity {{ '%.0f'|format(row.score * 100) }}%</div>
+                </div>
+                <span class="flow-chip app-chip-warning">Needs Cleanup</span>
+              </div>
+              <div class="mt-2 d-flex gap-2 flex-wrap">
+                <a class="btn btn-sm app-btn-secondary app-btn-compact" href="{{ url_for('admin_workout_edit', id=row.left._id) }}">Open {{ row.left.slug }}</a>
+                <a class="btn btn-sm app-btn-secondary app-btn-compact" href="{{ url_for('admin_workout_edit', id=row.right._id) }}">Open {{ row.right.slug }}</a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if report.workout_rows %}
+    <section class="app-surface mt-3">
+      <div class="app-surface-header">
+        <div>
+          <div class="app-section-kicker">Workout Drift</div>
+          <strong>Taxonomy and metadata cleanup candidates</strong>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="list-group">
+          {% for w in report.workout_rows %}
+            <div class="list-group-item">
+              <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                <div>
+                  <div class="fw-semibold">{{ w.name or 'Untitled' }} <small class="text-muted">/{{ w.slug or 'no-slug' }}</small></div>
+                  <div class="mt-1 d-flex flex-wrap gap-2">
+                    {% if 'Missing primary muscle' in w._qa_issues or 'Missing body parts' in w._qa_issues %}
+                      <span class="flow-chip app-chip-danger">Missing Metadata</span>
+                    {% elif 'Missing thumbnail image' in w._qa_issues %}
+                      <span class="flow-chip app-chip-warning">Media Problem</span>
+                    {% else %}
+                      <span class="flow-chip app-chip-warning">Taxonomy Drift</span>
+                    {% endif %}
+                    {% for issue in w._qa_issues %}
+                      <span class="badge text-bg-warning">{{ issue }}</span>
+                    {% endfor %}
+                  </div>
+                  <div class="small text-muted mt-1">
+                    {% if w._qa_body_parts %}Body Parts: {{ w._qa_body_parts|join(', ') }}{% else %}No body parts set{% endif %}
+                    {% if w.primary_muscle %} • Primary: {{ w.primary_muscle }}{% endif %}
+                    {% if w.style %} • Style: {{ w.style }}{% endif %}
+                  </div>
+                  {% if w._qa_duplicate_tags %}
+                    <div class="small text-muted mt-1">Duplicate tags: {{ w._qa_duplicate_tags|join(', ') }}</div>
+                  {% endif %}
+                </div>
+                <a class="btn btn-sm app-btn-secondary app-btn-compact" href="{{ url_for('admin_workout_edit', id=w._id) }}">Fix Workout</a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if report.program_rows %}
+    <section class="app-surface mt-3">
+      <div class="app-surface-header">
+        <div>
+          <div class="app-section-kicker">Program Naming</div>
+          <strong>Program title drift from V1 naming conventions</strong>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="list-group">
+          {% for p in report.program_rows %}
+            <div class="list-group-item">
+              <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                <div>
+                  <div class="fw-semibold">{{ p.title or 'Untitled Program' }} <small class="text-muted">/{{ p.slug or 'no-slug' }}</small></div>
+                  <div class="mt-1 d-flex flex-wrap gap-2">
+                    <span class="flow-chip app-chip-warning">Needs Cleanup</span>
+                    {% for issue in p._qa_issues %}
+                      <span class="badge text-bg-warning">{{ issue }}</span>
+                    {% endfor %}
+                  </div>
+                </div>
+                <a class="btn btn-sm app-btn-secondary app-btn-compact" href="{{ url_for('admin_program_edit', id=p._id) }}">Fix Program</a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if not report.duplicate_name_groups and not report.similar_pairs and not report.workout_rows and not report.program_rows %}
+    <div class="app-note mt-3">No taxonomy QA issues were found in the current content set.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -9,10 +9,13 @@
   {% set ep = request.endpoint or '' %}
   {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality'] %}
   {% set admin_program_eps = [
+    'admin_template_library','admin_template_library_rename','admin_template_library_duplicate','admin_template_library_archive','admin_template_library_delete',
     'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_link_health_backfill','admin_program_weeks','admin_program_weeks_scaffold',
     'admin_program_week_update','admin_program_week_clone',
     'admin_program_week_items','admin_program_week_item_new',
-    'admin_program_week_item_edit','admin_program_week_item_delete','admin_program_week_items_copy','admin_program_week_items_reindex'
+    'admin_program_week_item_edit','admin_program_week_item_delete','admin_program_week_items_copy','admin_program_week_items_reindex',
+    'admin_program_week_items_apply_template','admin_program_week_items_apply_week_template',
+    'admin_program_week_items_save_day_template','admin_program_week_items_save_week_template','admin_program_week_items_duplicate_day'
   ] %}
 
   <div class="list-group list-group-flush">
@@ -66,6 +69,9 @@
     <div class="d-flex gap-2 flex-wrap">
       <a class="btn app-btn-secondary" href="{{ url_for('admin_program_weeks', program_id=program._id|string) }}">
         Back to Weeks
+      </a>
+      <a class="btn app-btn-secondary" href="{{ url_for('admin_template_library') }}">
+        Template Library
       </a>
       {% if program.kind == 'track' and program.hub_slug and program.track_level %}
         {% set env = (program.track_env|string|lower if program.track_env else '') %}
@@ -142,6 +148,201 @@
           If overwrite is off, copied items are appended to the bottom of the current week.
         </div>
       </form>
+
+      <hr class="my-3">
+
+      <form method="post"
+            action="{{ url_for('admin_program_week_items_save_day_template', program_id=program._id|string, week_id=week._id|string) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-4">
+            <label class="form-label">Save current day as template</label>
+            <select class="form-select" name="source_day" required>
+              <option value="">— Select day —</option>
+              {% for label in day_labels %}
+                <option value="{{ label }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Template name</label>
+            <input class="form-control" name="template_name" required placeholder="Beginner Push Home v1">
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button class="btn app-btn-secondary" type="submit" {% if not day_labels %}disabled{% endif %}>
+              Save Day
+            </button>
+          </div>
+        </div>
+        <div class="small text-muted mt-2">
+          Saves linked workouts, sets, reps, rest, notes, and ordering for the selected day. Reusing the same name updates the existing template.
+        </div>
+      </form>
+
+      <hr class="my-3">
+
+      <form method="post"
+            action="{{ url_for('admin_program_week_items_save_week_template', program_id=program._id|string, week_id=week._id|string) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-10">
+            <label class="form-label">Save this week as template</label>
+            <input class="form-control" name="template_name" required placeholder="8 Week Challenge - Week Structure A">
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button class="btn app-btn-secondary" type="submit" {% if not items %}disabled{% endif %}>
+              Save Week
+            </button>
+          </div>
+        </div>
+        <div class="small text-muted mt-2">
+          Saves the full week structure, including linked workouts, day labels, prescription fields, notes, and ordering.
+        </div>
+      </form>
+
+      <hr class="my-3">
+
+      <form method="post"
+            action="{{ url_for('admin_program_week_items_apply_template', program_id=program._id|string, week_id=week._id|string) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-4">
+            <label class="form-label">Apply reusable day template</label>
+            <select class="form-select" name="template_key" required>
+              <option value="">— Select template —</option>
+              {% if saved_day_templates %}
+                <optgroup label="Saved Day Templates">
+                  {% for template in saved_day_templates %}
+                    {% set option_value = "saved:" ~ (template._id|string) %}
+                    <option value="{{ option_value }}" {% if preferred_template_ref == option_value %}selected{% endif %}>{{ template.name }}</option>
+                  {% endfor %}
+                </optgroup>
+              {% endif %}
+              {% if day_templates %}
+                <optgroup label="Built-in Day Templates">
+                  {% for preset in day_templates %}
+                    {% set option_value = "preset:" ~ preset.key %}
+                    <option value="{{ option_value }}" {% if preferred_template_ref == option_value %}selected{% endif %}>{{ preset.label }}</option>
+                  {% endfor %}
+                </optgroup>
+              {% endif %}
+            </select>
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label">Target day</label>
+            <input class="form-control" name="target_day" list="dayNameList" placeholder="Uses template default">
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" id="overwriteTemplateDay" name="overwrite_target_day">
+              <label class="form-check-label" for="overwriteTemplateDay">
+                Overwrite target day items
+              </label>
+            </div>
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button class="btn app-btn-secondary" type="submit" {% if not (day_templates or saved_day_templates) %}disabled{% endif %}>
+              Apply Template
+            </button>
+          </div>
+        </div>
+        <div class="small text-muted mt-2">
+          Reusable programming blocks create normal week items with linked workouts when matches are found.
+        </div>
+      </form>
+
+      <hr class="my-3">
+
+      <form method="post"
+            action="{{ url_for('admin_program_week_items_apply_week_template', program_id=program._id|string, week_id=week._id|string) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-7">
+            <label class="form-label">Apply saved week template</label>
+            <select class="form-select" name="template_id" required>
+              <option value="">— Select week template —</option>
+              {% for template in saved_week_templates %}
+                <option value="{{ template._id|string }}" {% if preferred_week_template_id == (template._id|string) %}selected{% endif %}>
+                  {{ template.name }}{% if template.source_week_number %} — Week {{ template.source_week_number }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" id="overwriteWeekTemplate" name="overwrite_items">
+              <label class="form-check-label" for="overwriteWeekTemplate">
+                Overwrite current week items
+              </label>
+            </div>
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button class="btn app-btn-secondary" type="submit" {% if not saved_week_templates %}disabled{% endif %}>
+              Apply Week
+            </button>
+          </div>
+        </div>
+        <div class="small text-muted mt-2">
+          Saved week templates preserve day labels and item order, so you can stamp a full authored structure into another week quickly.
+        </div>
+      </form>
+
+      <hr class="my-3">
+
+      <form method="post"
+            action="{{ url_for('admin_program_week_items_duplicate_day', program_id=program._id|string, week_id=week._id|string) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-4">
+            <label class="form-label">Duplicate one day in this week</label>
+            <select class="form-select" name="source_day" required>
+              <option value="">— Select source day —</option>
+              {% for label in day_labels %}
+                <option value="{{ label }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label">Target day</label>
+            <input class="form-control" name="target_day" list="dayNameList" required placeholder="Push / Pull / Upper...">
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" id="overwriteDuplicateDay" name="overwrite_target_day">
+              <label class="form-check-label" for="overwriteDuplicateDay">
+                Overwrite target day items
+              </label>
+            </div>
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button class="btn app-btn-secondary" type="submit" {% if not day_labels %}disabled{% endif %}>
+              Duplicate Day
+            </button>
+          </div>
+        </div>
+      </form>
+
+      {% if prev_week %}
+        <hr class="my-3">
+
+        <form method="post"
+              action="{{ url_for('admin_program_week_items_copy', program_id=program._id|string, week_id=week._id|string) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="source_week_id" value="{{ prev_week._id|string }}">
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="small text-muted">
+              Copy the full structure from Week {{ prev_week.week_number }}{% if prev_week.title %} — {{ prev_week.title }}{% endif %}.
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <label class="d-inline-flex align-items-center gap-2 small text-muted">
+                <input class="form-check-input m-0" type="checkbox" name="overwrite_items">
+                Overwrite current week
+              </label>
+              <button class="btn app-btn-secondary app-btn-compact" type="submit">Copy Previous Week</button>
+            </div>
+          </div>
+        </form>
+      {% endif %}
 
       <hr class="my-3">
 

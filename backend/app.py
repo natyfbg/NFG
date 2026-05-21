@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime
+import difflib
 import logging
 import os
 import re
@@ -643,6 +644,136 @@ DEFAULT_WEEK_DAY_ORDER = [
 ]
 DEFAULT_TRACK_DAY_SPLIT = ["Push", "Pull", "Legs", "Upper", "Lower", "Core"]
 
+SPLIT_TEMPLATE_PRESETS = [
+    {
+        "key": "push_pull_legs",
+        "label": "Push Pull Legs",
+        "week_count": 8,
+        "day_split": ["Push", "Pull", "Legs", "Push", "Pull", "Legs"],
+        "copy": "Six-day canonical PPL split for higher-volume plans.",
+    },
+    {
+        "key": "upper_lower",
+        "label": "Upper Lower",
+        "week_count": 8,
+        "day_split": ["Upper", "Lower", "Upper", "Lower", "Core"],
+        "copy": "Four lifting days plus a focused core day.",
+    },
+    {
+        "key": "full_body",
+        "label": "Full Body",
+        "week_count": 8,
+        "day_split": ["Full Body", "Full Body", "Full Body", "Mobility"],
+        "copy": "Three full-body sessions with a mobility day.",
+    },
+    {
+        "key": "arnold",
+        "label": "Arnold",
+        "week_count": 8,
+        "day_split": ["Push", "Pull", "Legs", "Upper", "Lower", "Core"],
+        "copy": "Arnold-inspired scaffold using the canonical V1 day labels.",
+    },
+]
+
+QUICK_START_TEMPLATES = [
+    {
+        "key": "beginner_home",
+        "label": "Beginner Home",
+        "week_count": 8,
+        "day_split": ["Upper", "Lower", "Full Body"],
+        "copy": "Three-day home-friendly beginner structure.",
+    },
+    {
+        "key": "beginner_gym",
+        "label": "Beginner Gym",
+        "week_count": 8,
+        "day_split": ["Push", "Pull", "Legs", "Upper", "Lower"],
+        "copy": "Five-day beginner gym structure with broad coverage.",
+    },
+    {
+        "key": "intermediate_ppl",
+        "label": "Intermediate PPL",
+        "week_count": 8,
+        "day_split": ["Push", "Pull", "Legs", "Push", "Pull", "Legs"],
+        "copy": "Six-day intermediate Push Pull Legs setup.",
+    },
+    {
+        "key": "upper_lower",
+        "label": "Upper Lower",
+        "week_count": 8,
+        "day_split": ["Upper", "Lower", "Upper", "Lower", "Core"],
+        "copy": "Four-day upper/lower split with a core day.",
+    },
+]
+
+PROGRESSION_HELPERS = [
+    {"key": "none", "label": "Copy only", "copy": "Clone the source week without changing prescriptions."},
+    {"key": "increase_sets", "label": "Increase sets", "copy": "Adds 1 set anywhere the sets field is numeric."},
+    {"key": "increase_reps", "label": "Increase reps", "copy": "Adds 1 rep to each numeric value in the reps field."},
+    {"key": "decrease_reps", "label": "Decrease reps", "copy": "Subtracts 1 rep from each numeric value in the reps field."},
+    {"key": "deload_week", "label": "Deload week", "copy": "Reduces sets and reps, then appends a deload note."},
+]
+
+DAY_TEMPLATE_PRESETS = [
+    {
+        "key": "beginner_push_home",
+        "label": "Beginner Push Home",
+        "default_day": "Push",
+        "items": [
+            {"queries": ["push up", "kneeling push up"], "sets": "3", "reps": "8-12", "rest": "60s"},
+            {"queries": ["shoulder press", "pike push up"], "sets": "3", "reps": "10-12", "rest": "60s"},
+            {"queries": ["tricep dip", "bench dip"], "sets": "2-3", "reps": "10-15", "rest": "45s"},
+        ],
+    },
+    {
+        "key": "beginner_push_gym",
+        "label": "Beginner Push Gym",
+        "default_day": "Push",
+        "items": [
+            {"queries": ["bench press", "machine chest press"], "sets": "3", "reps": "8-10", "rest": "90s"},
+            {"queries": ["incline dumbbell press", "incline press"], "sets": "3", "reps": "10-12", "rest": "75s"},
+            {"queries": ["shoulder press", "machine shoulder press"], "sets": "3", "reps": "10-12", "rest": "60s"},
+            {"queries": ["tricep pushdown", "tricep extension"], "sets": "2-3", "reps": "12-15", "rest": "45s"},
+        ],
+    },
+    {
+        "key": "intermediate_pull",
+        "label": "Intermediate Pull",
+        "default_day": "Pull",
+        "items": [
+            {"queries": ["pull up", "lat pulldown"], "sets": "4", "reps": "6-10", "rest": "90s"},
+            {"queries": ["barbell row", "row"], "sets": "4", "reps": "8-10", "rest": "90s"},
+            {"queries": ["seated cable row", "cable row"], "sets": "3", "reps": "10-12", "rest": "75s"},
+            {"queries": ["bicep curl", "dumbbell curl"], "sets": "3", "reps": "10-15", "rest": "45s"},
+        ],
+    },
+    {
+        "key": "upper_strength",
+        "label": "Upper Strength",
+        "default_day": "Upper",
+        "items": [
+            {"queries": ["bench press"], "sets": "4", "reps": "5-6", "rest": "120s"},
+            {"queries": ["row", "barbell row"], "sets": "4", "reps": "5-6", "rest": "120s"},
+            {"queries": ["shoulder press"], "sets": "3", "reps": "6-8", "rest": "90s"},
+            {"queries": ["lat pulldown", "pull up"], "sets": "3", "reps": "6-8", "rest": "90s"},
+        ],
+    },
+    {
+        "key": "leg_hypertrophy",
+        "label": "Leg Hypertrophy",
+        "default_day": "Legs",
+        "items": [
+            {"queries": ["squat", "leg press"], "sets": "4", "reps": "8-12", "rest": "90s"},
+            {"queries": ["romanian deadlift", "rdl"], "sets": "3", "reps": "8-12", "rest": "90s"},
+            {"queries": ["walking lunge", "lunge"], "sets": "3", "reps": "10-12 / leg", "rest": "60s"},
+            {"queries": ["leg curl", "hamstring curl"], "sets": "3", "reps": "12-15", "rest": "45s"},
+            {"queries": ["calf raise"], "sets": "3", "reps": "12-20", "rest": "30-45s"},
+        ],
+    },
+]
+
+CONTENT_TEMPLATE_KINDS = {"day", "week"}
+
 SAMPLE_DAY_WORKOUT_QUERIES = {
     "push": ["push up", "bench press", "shoulder press"],
     "pull": ["row", "pull up", "lat pulldown"],
@@ -997,6 +1128,329 @@ def _normalize_week_day_label(val: Optional[str]) -> str:
     return " ".join(p.capitalize() for p in key.split(" "))
 
 
+def _preset_lookup(presets: List[dict]) -> Dict[str, dict]:
+    return {preset["key"]: preset for preset in presets if preset.get("key")}
+
+
+def _resolve_workout_for_template(queries: List[str]) -> Optional[dict]:
+    for raw in queries or []:
+        q = _clean_text(raw)
+        if not q:
+            continue
+        rx = Regex(q, "i")
+        doc = db.workouts.find_one(
+            {"$or": [{"name": rx}, {"slug": rx}]},
+            {"_id": 1, "slug": 1, "name": 1},
+            sort=[("rating", -1), ("name", 1)],
+        )
+        if doc:
+            return doc
+    return None
+
+
+def _week_day_labels(items: List[dict]) -> List[str]:
+    out: List[str] = []
+    seen = set()
+    for item in items:
+        label = _normalize_week_day_label(item.get("day"))
+        if not label:
+            continue
+        key = _norm_choice(label)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(label)
+    return out
+
+
+def _adjust_numeric_text(raw: Optional[str], delta: int, minimum: int = 1) -> Optional[str]:
+    text = _clean_text(raw)
+    if not text:
+        return raw
+
+    def repl(match: re.Match) -> str:
+        current = int(match.group(0))
+        return str(max(minimum, current + delta))
+
+    return re.sub(r"\d+", repl, text)
+
+
+def _append_note(raw: Optional[str], extra: str) -> str:
+    note = _clean_text(raw)
+    extra = _clean_text(extra)
+    if not extra:
+        return note
+    if not note:
+        return extra
+    if extra.lower() in note.lower():
+        return note
+    return f"{note} {extra}"
+
+
+def _apply_progression_to_clone(clone_doc: dict, progression_key: str) -> dict:
+    key = _norm_choice(progression_key)
+    if key == "increase_sets":
+        clone_doc["sets"] = _adjust_numeric_text(clone_doc.get("sets"), 1)
+    elif key == "increase_reps":
+        clone_doc["reps"] = _adjust_numeric_text(clone_doc.get("reps"), 1)
+    elif key == "decrease_reps":
+        clone_doc["reps"] = _adjust_numeric_text(clone_doc.get("reps"), -1)
+    elif key == "deload_week":
+        clone_doc["sets"] = _adjust_numeric_text(clone_doc.get("sets"), -1)
+        clone_doc["reps"] = _adjust_numeric_text(clone_doc.get("reps"), -2)
+        clone_doc["notes"] = _append_note(clone_doc.get("notes"), "Deload week.")
+    return clone_doc
+
+
+def _content_template_collection():
+    return db.content_templates
+
+
+def _template_ref(kind: str, value: str) -> str:
+    return f"{kind}:{value}"
+
+
+def _parse_template_ref(raw: Optional[str]) -> Tuple[str, str]:
+    value = _clean_text(raw)
+    if not value or ":" not in value:
+        return "", ""
+    kind, ident = value.split(":", 1)
+    return _norm_choice(kind), ident.strip()
+
+
+def _serialize_week_item_for_template(item: dict, include_day: bool = True) -> dict:
+    out = {
+        "custom_name": _clean_text(item.get("custom_name")) or None,
+        "workout_id": item.get("workout_id"),
+        "workout_slug": _clean_text(item.get("workout_slug")) or None,
+        "workout_name": _clean_text(item.get("workout_name")) or None,
+        "sets": _clean_text(item.get("sets")) or None,
+        "reps": _clean_text(item.get("reps")) or None,
+        "rest": _clean_text(item.get("rest")) or None,
+        "notes": _clean_text(item.get("notes")) or None,
+        "order": _safe_int(item.get("order"), default=0, min_value=0, max_value=9999),
+    }
+    if include_day:
+        out["day"] = _normalize_week_day_label(item.get("day")) or None
+    return out
+
+
+def _saved_templates(kind: str) -> List[dict]:
+    key = _norm_choice(kind)
+    if key not in CONTENT_TEMPLATE_KINDS:
+        return []
+    return list(
+        _content_template_collection()
+        .find({"kind": key})
+        .sort([("updated_at", -1), ("name", ASCENDING)])
+    )
+
+
+def _upsert_content_template(kind: str, name: str, doc: dict) -> str:
+    key = _norm_choice(kind)
+    if key not in CONTENT_TEMPLATE_KINDS:
+        raise ValueError("Invalid template kind")
+    normalized_name = slugify(name)
+    if not normalized_name:
+        raise ValueError("Template name is required")
+
+    now = datetime.datetime.utcnow()
+    payload = dict(doc)
+    payload.update(
+        {
+            "kind": key,
+            "name": name,
+            "key": normalized_name,
+            "updated_at": now,
+        }
+    )
+
+    existing = _content_template_collection().find_one({"kind": key, "key": normalized_name}, {"_id": 1})
+    if existing:
+        _content_template_collection().update_one({"_id": existing["_id"]}, {"$set": payload})
+        return "updated"
+
+    payload["created_at"] = now
+    _content_template_collection().insert_one(payload)
+    return "created"
+
+
+def _find_saved_template(kind: str, template_id: str) -> Optional[dict]:
+    key = _norm_choice(kind)
+    if key not in CONTENT_TEMPLATE_KINDS:
+        return None
+    try:
+        oid = ObjectId(template_id)
+    except Exception:
+        return None
+    return _content_template_collection().find_one({"_id": oid, "kind": key})
+
+
+def _content_template_by_id(template_id: str) -> Optional[dict]:
+    try:
+        oid = ObjectId(template_id)
+    except Exception:
+        return None
+    return _content_template_collection().find_one({"_id": oid})
+
+
+def _next_template_copy_name(kind: str, base_name: str) -> str:
+    key = _norm_choice(kind)
+    stem = _clean_text(base_name) or "Template"
+    candidate = f"{stem} Copy"
+    existing_keys = {
+        (doc.get("key") or "").strip()
+        for doc in _content_template_collection().find({"kind": key}, {"key": 1})
+    }
+    if slugify(candidate) not in existing_keys:
+        return candidate
+    idx = 2
+    while True:
+        candidate = f"{stem} Copy {idx}"
+        if slugify(candidate) not in existing_keys:
+            return candidate
+        idx += 1
+
+
+def _apply_saved_template_item(
+    entry: dict,
+    *,
+    week_id: ObjectId,
+    order: int,
+    created_at: datetime.datetime,
+    target_day: Optional[str] = None,
+) -> dict:
+    target_label = _normalize_week_day_label(target_day) or _normalize_week_day_label(entry.get("day"))
+    return {
+        "week_id": week_id,
+        "day": target_label or "Push",
+        "custom_name": _clean_text(entry.get("custom_name")) or None,
+        "workout_id": entry.get("workout_id"),
+        "workout_slug": _clean_text(entry.get("workout_slug")) or None,
+        "workout_name": _clean_text(entry.get("workout_name")) or None,
+        "sets": _clean_text(entry.get("sets")) or None,
+        "reps": _clean_text(entry.get("reps")) or None,
+        "rest": _clean_text(entry.get("rest")) or None,
+        "notes": _clean_text(entry.get("notes")) or None,
+        "order": order,
+        "created_at": created_at,
+    }
+
+
+def _template_source_key(doc: dict) -> str:
+    source_program_id = doc.get("source_program_id")
+    if source_program_id is not None:
+        return str(source_program_id)
+    title = _clean_text(doc.get("source_program_title"))
+    return "__unknown__" if not title else f"title:{slugify(title)}"
+
+
+def _template_source_label(doc: dict) -> str:
+    title = _clean_text(doc.get("source_program_title"))
+    return title or "Unknown source"
+
+
+def _template_apply_url(doc: dict) -> Optional[str]:
+    program_id = doc.get("source_program_id")
+    week_id = doc.get("source_week_id")
+    if program_id is None or week_id is None:
+        return None
+    try:
+        program_id_str = str(program_id)
+        week_id_str = str(week_id)
+    except Exception:
+        return None
+    kind = _norm_choice(doc.get("kind"))
+    if kind == "day":
+        template_ref = _template_ref("saved", str(doc.get("_id")))
+        return url_for(
+            "admin_program_week_items",
+            program_id=program_id_str,
+            week_id=week_id_str,
+            template_ref=template_ref,
+        )
+    if kind == "week":
+        return url_for(
+            "admin_program_week_items",
+            program_id=program_id_str,
+            week_id=week_id_str,
+            week_template_id=str(doc.get("_id")),
+        )
+    return None
+
+
+def _template_library_report(
+    *,
+    q: str = "",
+    kind: str = "",
+    source: str = "",
+    archived: str = "",
+) -> dict:
+    docs = _saved_templates("day") + _saved_templates("week")
+    docs = sorted(docs, key=lambda row: (row.get("updated_at") or datetime.datetime.min), reverse=True)
+
+    source_options_map = {}
+    for doc in docs:
+        source_key = _template_source_key(doc)
+        source_options_map[source_key] = _template_source_label(doc)
+
+    q_norm = _clean_text(q).lower()
+    kind_norm = _norm_choice(kind)
+    archived_norm = _norm_choice(archived)
+    source_value = (source or "").strip()
+
+    rows = []
+    for doc in docs:
+        row = dict(doc)
+        row["archived"] = bool(doc.get("archived"))
+        row["type_label"] = "Day" if _norm_choice(doc.get("kind")) == "day" else "Week"
+        row["source_label"] = _template_source_label(doc)
+        row["source_key"] = _template_source_key(doc)
+        row["item_count"] = _safe_int(doc.get("item_count"), default=len(doc.get("items") or []), min_value=0)
+        row["apply_url"] = _template_apply_url(doc)
+        row["source_week_number"] = _safe_int(doc.get("source_week_number"), default=0, min_value=0)
+        rows.append(row)
+
+    filtered = []
+    for row in rows:
+        if q_norm and q_norm not in (_clean_text(row.get("name")).lower()):
+            continue
+        if kind_norm in CONTENT_TEMPLATE_KINDS and _norm_choice(row.get("kind")) != kind_norm:
+            continue
+        if source_value and row.get("source_key") != source_value:
+            continue
+        if archived_norm == "archived" and not row.get("archived"):
+            continue
+        if archived_norm == "active" and row.get("archived"):
+            continue
+        filtered.append(row)
+
+    summary = {
+        "total": len(rows),
+        "active": sum(1 for row in rows if not row.get("archived")),
+        "archived": sum(1 for row in rows if row.get("archived")),
+        "day": sum(1 for row in rows if _norm_choice(row.get("kind")) == "day"),
+        "week": sum(1 for row in rows if _norm_choice(row.get("kind")) == "week"),
+    }
+
+    source_options = [
+        {"value": key, "label": label}
+        for key, label in sorted(source_options_map.items(), key=lambda pair: pair[1].lower())
+    ]
+
+    return {
+        "rows": filtered,
+        "summary": summary,
+        "source_options": source_options,
+        "filters": {
+            "q": q,
+            "kind": kind_norm,
+            "source": source_value,
+            "archived": archived_norm or "active",
+        },
+    }
+
+
 def _safe_int(raw, default: int = 0, min_value: Optional[int] = None, max_value: Optional[int] = None) -> int:
     try:
         val = int(str(raw).strip())
@@ -1122,6 +1576,10 @@ def _workout_quality_issues(doc: dict) -> List[str]:
         issues.append("Missing difficulty tier")
     if not doc.get("images"):
         issues.append("Missing exercise image")
+    if not (doc.get("youtube_id") or "").strip():
+        issues.append("Missing YouTube")
+    if not doc.get("tags"):
+        issues.append("Missing tags")
     if not (doc.get("info") or "").strip():
         issues.append("Missing exercise info")
     if not doc.get("tips"):
@@ -1129,33 +1587,78 @@ def _workout_quality_issues(doc: dict) -> List[str]:
     return issues
 
 
+def _workout_readiness_report(doc: dict) -> dict:
+    issues = _workout_quality_issues(doc)
+    missing_metadata = [
+        issue
+        for issue in issues
+        if issue
+        in {
+            "Missing primary muscle",
+            "Missing movement pattern",
+            "Missing equipment",
+            "Missing difficulty tier",
+        }
+    ]
+    missing_image = "Missing exercise image" in issues
+    missing_video = "Missing YouTube" in issues
+    missing_tags = "Missing tags" in issues
+    missing_guidance = any(issue in issues for issue in {"Missing exercise info", "Missing tips"})
+
+    status = "Ready"
+    if missing_metadata:
+        status = "Incomplete"
+    elif missing_image:
+        status = "Missing Media"
+    elif missing_video:
+        status = "Missing Video"
+    elif missing_tags or missing_guidance:
+        status = "Needs Review"
+
+    return {
+        "issues": issues,
+        "status": status,
+        "missing_metadata": bool(missing_metadata),
+        "missing_image": missing_image,
+        "missing_video": missing_video,
+        "missing_tags": missing_tags,
+        "missing_guidance": missing_guidance,
+        "is_ready": not issues,
+    }
+
+
 def _workout_quality_summary(workouts: List[dict]) -> dict:
     total = len(workouts)
     with_issues = 0
     missing_images = 0
     missing_metadata = 0
+    missing_video = 0
+    missing_tags = 0
+    missing_guidance = 0
     for w in workouts:
-        issues = _workout_quality_issues(w)
+        report = _workout_readiness_report(w)
+        issues = report["issues"]
         if issues:
             with_issues += 1
-        if "Missing exercise image" in issues:
+        if report["missing_image"]:
             missing_images += 1
-        if any(
-            i in issues
-            for i in (
-                "Missing primary muscle",
-                "Missing movement pattern",
-                "Missing equipment",
-                "Missing difficulty tier",
-            )
-        ):
+        if report["missing_metadata"]:
             missing_metadata += 1
+        if report["missing_video"]:
+            missing_video += 1
+        if report["missing_tags"]:
+            missing_tags += 1
+        if report["missing_guidance"]:
+            missing_guidance += 1
     return {
         "total": total,
         "with_issues": with_issues,
         "quality_ok": max(0, total - with_issues),
         "missing_images": missing_images,
         "missing_metadata": missing_metadata,
+        "missing_video": missing_video,
+        "missing_tags": missing_tags,
+        "missing_guidance": missing_guidance,
     }
 
 
@@ -1383,6 +1886,254 @@ def _program_readiness_report(program: dict) -> dict:
         "unresolved_items": unresolved_items,
         "active_tracks": active_tracks,
         "published_tracks": published_tracks,
+    }
+
+
+def _program_readiness_summary(programs: List[dict], readiness_by_program: dict) -> dict:
+    summary = {
+        "total": len(programs),
+        "checks_clear": 0,
+        "needs_review": 0,
+        "draft": 0,
+        "published": 0,
+        "missing_tracks": 0,
+        "missing_weeks": 0,
+        "missing_items": 0,
+    }
+
+    for p in programs:
+        pid = str(p.get("_id")) if p.get("_id") is not None else ""
+        report = readiness_by_program.get(pid) or {}
+        status = _program_publish_status(p, fallback="published")
+        kind = _norm_choice(p.get("kind")) or "hub"
+
+        if status == "draft":
+            summary["draft"] += 1
+        if status == "published":
+            summary["published"] += 1
+
+        if report.get("critical_count", 0) == 0 and report.get("warning_count", 0) == 0:
+            summary["checks_clear"] += 1
+        else:
+            summary["needs_review"] += 1
+
+        critical = report.get("critical", []) or []
+        if kind == "hub" and any("Hub has no tracks." in msg for msg in critical):
+            summary["missing_tracks"] += 1
+        if kind == "track" and any("Track has no weeks." in msg for msg in critical):
+            summary["missing_weeks"] += 1
+        if kind == "track" and any("Track has no week items." in msg for msg in critical):
+            summary["missing_items"] += 1
+
+    return summary
+
+
+def _workout_body_parts(doc: dict) -> List[str]:
+    raw = doc.get("body_parts")
+    if isinstance(raw, list):
+        return [part for part in raw if _clean_text(part)]
+    if isinstance(raw, str):
+        return _split_list(raw)
+    body_part = _clean_text(doc.get("body_part"))
+    return [body_part] if body_part else []
+
+
+def _workout_has_thumbnail(doc: dict) -> bool:
+    images = doc.get("images") or []
+    if isinstance(images, list):
+        return bool(images and _clean_text(images[0]))
+    if isinstance(images, str):
+        return bool(_split_list(images))
+    return False
+
+
+def _expected_track_title(track: dict, hub_title: str) -> Optional[str]:
+    level = _clean_text(track.get("track_level"))
+    env = _normalize_track_env(track.get("track_env"))
+    if not (hub_title and level and env):
+        return None
+    return f"{hub_title} — {level} ({env.capitalize()})"
+
+
+def _taxonomy_qa_report() -> dict:
+    workouts = list(
+        db.workouts.find(
+            {},
+            {
+                "name": 1,
+                "slug": 1,
+                "style": 1,
+                "body_part": 1,
+                "body_parts": 1,
+                "primary_muscle": 1,
+                "equipment": 1,
+                "level": 1,
+                "tags": 1,
+                "images": 1,
+                "muscle_image": 1,
+            },
+        ).sort([("name", 1)])
+    )
+    styles = get_styles()
+    style_keys = {_taxonomy_key(style) for style in styles}
+
+    programs = list(
+        db.programs.find(
+            {},
+            {
+                "title": 1,
+                "slug": 1,
+                "kind": 1,
+                "hub_slug": 1,
+                "track_level": 1,
+                "track_env": 1,
+            },
+        ).sort([("title", 1)])
+    )
+    hub_title_by_slug = {
+        (p.get("slug") or "").strip(): _clean_text(p.get("title"))
+        for p in programs
+        if (_norm_choice(p.get("kind")) or "hub") == "hub" and (p.get("slug") or "").strip()
+    }
+
+    duplicate_groups = {}
+    workout_rows = []
+    affected_workout_ids = set()
+
+    for w in workouts:
+        name = _clean_text(w.get("name"))
+        normalized_slug = slugify(name)
+        if normalized_slug:
+            duplicate_groups.setdefault(normalized_slug, []).append(w)
+
+        parts = _workout_body_parts(w)
+        primary = _clean_text(w.get("primary_muscle"))
+        style = _clean_text(w.get("style"))
+        level = _clean_text(w.get("level"))
+        equipment = _clean_text(w.get("equipment"))
+        _, duplicate_tags = _normalize_tags(
+            w.get("tags") or [],
+            body_parts=parts,
+            primary_muscle=primary,
+            style=style,
+            level=level,
+            equipment=equipment,
+        )
+
+        issues = []
+        if style and _taxonomy_key(style) not in style_keys:
+            issues.append("Non-canonical style")
+        if parts and _clean_text(w.get("body_part")) and _clean_text(w.get("body_part")) != parts[0]:
+            issues.append("Body part mismatch")
+        if duplicate_tags:
+            issues.append("Tags duplicate structured metadata")
+        if not primary:
+            issues.append("Missing primary muscle")
+        if not parts:
+            issues.append("Missing body parts")
+        if not _workout_has_thumbnail(w):
+            issues.append("Missing thumbnail image")
+
+        if issues:
+            w["_qa_issues"] = issues
+            w["_qa_duplicate_tags"] = duplicate_tags
+            w["_qa_body_parts"] = parts
+            workout_rows.append(w)
+            if w.get("_id") is not None:
+                affected_workout_ids.add(str(w["_id"]))
+
+    duplicate_name_groups = [
+        {
+            "normalized_slug": key,
+            "items": sorted(group, key=lambda row: ((_clean_text(row.get("name")) or ""), (row.get("slug") or ""))),
+        }
+        for key, group in duplicate_groups.items()
+        if len(group) > 1
+    ]
+    duplicate_workout_ids = {
+        str(w["_id"])
+        for group in duplicate_name_groups
+        for w in group["items"]
+        if w.get("_id") is not None
+    }
+    affected_workout_ids.update(duplicate_workout_ids)
+
+    similar_pairs = []
+    sorted_workouts = sorted(workouts, key=lambda row: _clean_text(row.get("name")).lower())
+    for idx, left in enumerate(sorted_workouts):
+        left_name = _clean_text(left.get("name"))
+        if not left_name:
+            continue
+        left_slug = slugify(left_name)
+        for right in sorted_workouts[idx + 1 :]:
+            right_name = _clean_text(right.get("name"))
+            if not right_name:
+                continue
+            right_slug = slugify(right_name)
+            if not right_slug or left_slug == right_slug:
+                continue
+            ratio = difflib.SequenceMatcher(None, left_name.lower(), right_name.lower()).ratio()
+            if ratio < 0.9:
+                continue
+            if left.get("primary_muscle") and right.get("primary_muscle"):
+                if _taxonomy_key(left.get("primary_muscle")) != _taxonomy_key(right.get("primary_muscle")):
+                    continue
+            similar_pairs.append(
+                {
+                    "left": left,
+                    "right": right,
+                    "score": ratio,
+                }
+            )
+            affected_workout_ids.update(
+                [str(item["_id"]) for item in (left, right) if item.get("_id") is not None]
+            )
+            if len(similar_pairs) >= 20:
+                break
+        if len(similar_pairs) >= 20:
+            break
+
+    program_rows = []
+    affected_program_ids = set()
+    for p in programs:
+        issues = []
+        kind = _norm_choice(p.get("kind")) or "hub"
+        title = _clean_text(p.get("title"))
+        if kind == "track":
+            hub_title = hub_title_by_slug.get((p.get("hub_slug") or "").strip(), "")
+            expected = _expected_track_title(p, hub_title)
+            if expected and title != expected:
+                issues.append(f'Track title should be "{expected}"')
+        elif kind == "hub":
+            lower_title = title.lower()
+            if any(level in lower_title for level in DEFAULT_LEVELS) and any(env in lower_title for env in DEFAULT_ENVS):
+                issues.append("Hub title looks like a track title")
+
+        if issues:
+            p["_qa_issues"] = issues
+            program_rows.append(p)
+            if p.get("_id") is not None:
+                affected_program_ids.add(str(p["_id"]))
+
+    summary = {
+        "duplicate_names": sum(len(group["items"]) for group in duplicate_name_groups),
+        "taxonomy_drift": len(affected_workout_ids) + len(affected_program_ids),
+        "missing_core_metadata": sum(
+            1
+            for w in workouts
+            if not _clean_text(w.get("primary_muscle")) or not _workout_body_parts(w)
+        ),
+        "media_problems": sum(1 for w in workouts if not _workout_has_thumbnail(w)),
+        "similar_names": len(similar_pairs),
+        "program_naming": len(program_rows),
+    }
+
+    return {
+        "summary": summary,
+        "duplicate_name_groups": duplicate_name_groups,
+        "similar_pairs": similar_pairs,
+        "workout_rows": workout_rows,
+        "program_rows": program_rows,
     }
 
 
@@ -3059,6 +3810,12 @@ def health():
 def admin_index():
     try:
         items = list(db.workouts.find().sort([("created_at", -1)]))
+        programs = list(
+            db.programs.find(
+                {},
+                {"title": 1, "slug": 1, "kind": 1, "active": 1, "publish_status": 1, "show_on_home": 1},
+            )
+        )
     except Exception as e:
         app.logger.warning("Admin index DB read failed: %s", e)
         flash(
@@ -3066,14 +3823,12 @@ def admin_index():
             "warning",
         )
         items = []
+        programs = []
 
     for w in items:
-        w["_quality_missing"] = not (
-            w.get("primary_muscle")
-            and w.get("movement_pattern")
-            and w.get("equipment")
-            and w.get("difficulty_tier")
-        )
+        readiness = _workout_readiness_report(w)
+        w["_quality_missing"] = readiness["missing_metadata"]
+        w["_readiness"] = readiness
         w["primary_muscle"] = w.get("primary_muscle") or _primary_muscle_from_doc(w)
         w["movement_pattern"] = w.get("movement_pattern") or _infer_movement_from_primary_muscle(
             w.get("primary_muscle")
@@ -3084,11 +3839,19 @@ def admin_index():
         )
     quality_summary = _workout_quality_summary(items)
     link_health = _program_link_health_report()
+    readiness_by_program = {}
+    for p in programs:
+        pid = p.get("_id")
+        if pid is None:
+            continue
+        readiness_by_program[str(pid)] = _program_readiness_report(p)
+    program_summary = _program_readiness_summary(programs, readiness_by_program)
     return render_template(
         "admin_index.html",
         items=items,
         quality_summary=quality_summary,
         link_health=link_health,
+        program_summary=program_summary,
     )
 
 
@@ -3151,6 +3914,100 @@ def admin_workout_quality():
         rows=rows,
         summary=summary,
     )
+
+
+@app.route("/admin/taxonomy-qa")
+@login_required
+def admin_taxonomy_qa():
+    report = _taxonomy_qa_report()
+    return render_or_fallback(
+        "admin_taxonomy_qa.html",
+        report=report,
+    )
+
+
+@app.route("/admin/templates")
+@login_required
+def admin_template_library():
+    report = _template_library_report(
+        q=(request.args.get("q") or "").strip(),
+        kind=request.args.get("kind") or "",
+        source=request.args.get("source") or "",
+        archived=request.args.get("archived") or "active",
+    )
+    return render_or_fallback(
+        "admin_template_library.html",
+        report=report,
+    )
+
+
+@app.route("/admin/templates/<template_id>/rename", methods=["POST"])
+@login_required
+def admin_template_library_rename(template_id):
+    template = _find_saved_template(request.form.get("kind"), template_id)
+    if not template:
+        abort(404)
+    name = _clean_text(request.form.get("name"))
+    if not name:
+        flash("Template name is required.", "danger")
+        return redirect(url_for("admin_template_library"))
+    conflicting = _content_template_collection().find_one(
+        {
+            "kind": _norm_choice(template.get("kind")),
+            "key": slugify(name),
+            "_id": {"$ne": template["_id"]},
+        },
+        {"_id": 1},
+    )
+    if conflicting:
+        flash(f'A template named "{name}" already exists for this type.', "danger")
+        return redirect(url_for("admin_template_library"))
+    action = _upsert_content_template(_norm_choice(template.get("kind")), name, {
+        k: v for k, v in template.items() if k not in {"_id", "kind", "name", "key", "created_at", "updated_at"}
+    })
+    if action == "created":
+        _content_template_collection().delete_one({"_id": template["_id"]})
+    flash(f'Template renamed to "{name}".', "success")
+    return redirect(url_for("admin_template_library"))
+
+
+@app.route("/admin/templates/<template_id>/duplicate", methods=["POST"])
+@login_required
+def admin_template_library_duplicate(template_id):
+    template = _content_template_by_id(template_id)
+    if not template:
+        abort(404)
+    new_name = _next_template_copy_name(_norm_choice(template.get("kind")), _clean_text(template.get("name")) or "Template")
+    payload = {k: v for k, v in template.items() if k not in {"_id", "kind", "name", "key", "created_at", "updated_at", "archived"}}
+    _upsert_content_template(_norm_choice(template.get("kind")), new_name, payload)
+    flash(f'Template duplicated as "{new_name}".', "success")
+    return redirect(url_for("admin_template_library"))
+
+
+@app.route("/admin/templates/<template_id>/archive", methods=["POST"])
+@login_required
+def admin_template_library_archive(template_id):
+    template = _content_template_by_id(template_id)
+    if not template:
+        abort(404)
+    archived = request.form.get("archived") == "1"
+    _content_template_collection().update_one(
+        {"_id": template["_id"]},
+        {"$set": {"archived": archived, "updated_at": datetime.datetime.utcnow()}},
+    )
+    flash(f'Template {"archived" if archived else "unarchived"}: {template.get("name")}.', "success")
+    return redirect(url_for("admin_template_library"))
+
+
+@app.route("/admin/templates/<template_id>/delete", methods=["POST"])
+@login_required
+def admin_template_library_delete(template_id):
+    template = _content_template_by_id(template_id)
+    if not template:
+        abort(404)
+    _content_template_collection().delete_one({"_id": template["_id"]})
+    flash(f'Template deleted: {template.get("name")}.', "success")
+    return redirect(url_for("admin_template_library"))
 
 
 @app.route("/admin/workouts/new", methods=["GET", "POST"])
@@ -3789,12 +4646,14 @@ def admin_programs():
         key = str(pid)
         readiness_by_program[key] = _program_readiness_report(p)
         p["_publish_status"] = _program_publish_status(p, fallback="published")
+    program_summary = _program_readiness_summary(programs, readiness_by_program)
 
     return render_template(
         "admin_programs.html",
         programs=programs,
         tracks_by_hub=tracks_by_hub,
         readiness_by_program=readiness_by_program,
+        program_summary=program_summary,
         default_levels_csv=", ".join([lvl.capitalize() for lvl in DEFAULT_LEVELS]),
         default_envs_csv=", ".join(DEFAULT_ENVS),
     )
@@ -4394,6 +5253,9 @@ def admin_program_weeks(program_id):
         weeks=weeks,
         suggested_weeks=_week_count_from_duration_label(program.get("duration_label")),
         default_day_split=", ".join(DEFAULT_TRACK_DAY_SPLIT),
+        split_templates=SPLIT_TEMPLATE_PRESETS,
+        quick_start_templates=QUICK_START_TEMPLATES,
+        progression_helpers=PROGRESSION_HELPERS,
     )
 
 
@@ -4404,13 +5266,26 @@ def admin_program_weeks_scaffold(program_id):
     if not program:
         abort(404)
 
+    split_template_key = _norm_choice(request.form.get("split_template"))
+    quick_start_key = _norm_choice(request.form.get("quick_start_template"))
+    split_presets = _preset_lookup(SPLIT_TEMPLATE_PRESETS)
+    quick_presets = _preset_lookup(QUICK_START_TEMPLATES)
+    active_preset = quick_presets.get(quick_start_key) or split_presets.get(split_template_key)
+
+    default_week_count = _week_count_from_duration_label(program.get("duration_label"))
     week_count = _safe_int(
         request.form.get("week_count"),
-        default=_week_count_from_duration_label(program.get("duration_label")),
+        default=(active_preset.get("week_count") if active_preset else default_week_count),
         min_value=1,
         max_value=52,
     )
-    day_split = _parse_day_split(request.form.get("day_split"))
+    if quick_start_key and active_preset:
+        week_count = _safe_int(active_preset.get("week_count"), default=week_count, min_value=1, max_value=52)
+
+    if active_preset:
+        day_split = list(active_preset.get("day_split") or DEFAULT_TRACK_DAY_SPLIT)
+    else:
+        day_split = _parse_day_split(request.form.get("day_split"))
     add_sample_items = request.form.get("add_sample_items") == "on"
 
     # Keep the selected split as program default for future placeholder week pages.
@@ -4469,6 +5344,9 @@ def admin_program_weeks_scaffold(program_id):
 
     flash(
         (
+            f"{active_preset.get('label')}: " if active_preset else ""
+        )
+        + (
             f"Scaffold complete: {weeks_created} week(s) created, "
             f"{items_created} sample item(s) added. "
             f"{weeks_skipped_for_items} existing week(s) kept unchanged."
@@ -4586,6 +5464,11 @@ def admin_program_week_clone(program_id, week_id):
     target_title = (request.form.get("target_title") or "").strip() or None
     include_items = request.form.get("include_items") == "on"
     overwrite_items = request.form.get("overwrite_items") == "on"
+    progression_key = _norm_choice(request.form.get("progression_helper")) or "none"
+    progression_label = next(
+        (helper.get("label") for helper in PROGRESSION_HELPERS if helper.get("key") == progression_key),
+        "Copy only",
+    )
 
     target_week = db.program_weeks.find_one(
         {"program_id": program["_id"], "week_number": target_week_number}
@@ -4633,6 +5516,7 @@ def admin_program_week_clone(program_id, week_id):
                 clone_doc.pop("_id", None)
                 clone_doc["week_id"] = target_week["_id"]
                 clone_doc["created_at"] = now
+                clone_doc = _apply_progression_to_clone(clone_doc, progression_key)
                 db.program_items.insert_one(clone_doc)
                 copied_count += 1
 
@@ -4641,7 +5525,8 @@ def admin_program_week_clone(program_id, week_id):
         flash(
             (
                 f"Week {target_week_number} {week_msg}. "
-                f"Copied {copied_count} item(s) from Week {source_week_number}."
+                f"Copied {copied_count} item(s) from Week {source_week_number}. "
+                f"Progression: {progression_label}."
             ),
             "success",
         )
@@ -4685,12 +5570,20 @@ def admin_program_week_items(program_id, week_id):
     items = list(
         db.program_items.find({"week_id": week["_id"]}).sort([("order", 1), ("created_at", 1)])
     )
+    day_labels = _week_day_labels(items)
     weeks_in_program = list(
         db.program_weeks.find({"program_id": program["_id"]}, {"week_number": 1, "title": 1}).sort(
             [("week_number", 1), ("order", 1)]
         )
     )
     other_weeks = [w for w in weeks_in_program if w.get("_id") != week.get("_id")]
+    prev_week = None
+    current_week_number = _safe_int(week.get("week_number"), default=0)
+    if current_week_number > 1:
+        prev_week = next(
+            (w for w in weeks_in_program if _safe_int(w.get("week_number"), default=0) == current_week_number - 1),
+            None,
+        )
     workouts = list(
         db.workouts.find(
             {},
@@ -4712,19 +5605,30 @@ def admin_program_week_items(program_id, week_id):
     )
     workout_map = {w["_id"]: w for w in workouts}
     picker_workouts, picker_levels, picker_styles, picker_body_parts = _admin_workout_picker_payload(workouts)
+    saved_day_templates = _saved_templates("day")
+    saved_week_templates = _saved_templates("week")
+    preferred_template_ref = _clean_text(request.args.get("template_ref")) or ""
+    preferred_week_template_id = _clean_text(request.args.get("week_template_id")) or ""
 
     return render_or_fallback(
         "admin_program_week_items.html",
         program=program,
         week=week,
         items=items,
+        day_labels=day_labels,
         workouts=workouts,
         other_weeks=other_weeks,
+        prev_week=prev_week,
         workout_map=workout_map,
         picker_workouts=picker_workouts,
         picker_levels=picker_levels,
         picker_styles=picker_styles,
         picker_body_parts=picker_body_parts,
+        day_templates=DAY_TEMPLATE_PRESETS,
+        saved_day_templates=saved_day_templates,
+        saved_week_templates=saved_week_templates,
+        preferred_template_ref=preferred_template_ref,
+        preferred_week_template_id=preferred_week_template_id,
     )
 
 
@@ -4766,6 +5670,284 @@ def admin_program_week_item_duplicate(program_id, week_id, item_id):
     db.program_items.insert_one(clone_doc)
 
     flash("Week item duplicated to the end of this week.", "success")
+    return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/apply-template", methods=["POST"])
+@login_required
+def admin_program_week_items_apply_template(program_id, week_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not week:
+        abort(404)
+
+    template_kind, template_ident = _parse_template_ref(request.form.get("template_key"))
+    template = None
+    is_saved_template = False
+    if template_kind == "preset":
+        template = _preset_lookup(DAY_TEMPLATE_PRESETS).get(_norm_choice(template_ident))
+    elif template_kind == "saved":
+        template = _find_saved_template("day", template_ident)
+        is_saved_template = True
+    if not template:
+        flash("Choose a valid day template.", "danger")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    target_day = _normalize_week_day_label(request.form.get("target_day")) or template.get("default_day") or "Push"
+    overwrite_target_day = request.form.get("overwrite_target_day") == "on"
+
+    if overwrite_target_day:
+        db.program_items.delete_many({"week_id": week["_id"], "day": target_day})
+
+    last_item = db.program_items.find_one(
+        {"week_id": week["_id"]},
+        sort=[("order", -1), ("created_at", -1)],
+    )
+    base_order = _safe_int((last_item or {}).get("order"), default=0)
+
+    created = 0
+    unresolved = 0
+    now = datetime.datetime.utcnow()
+    template_label = template.get("label") or template.get("name") or "Template"
+    for idx, entry in enumerate(template.get("items") or [], start=1):
+        if is_saved_template:
+            doc = _apply_saved_template_item(
+                entry,
+                week_id=week["_id"],
+                order=base_order + idx,
+                created_at=now,
+                target_day=target_day,
+            )
+        else:
+            workout = _resolve_workout_for_template(entry.get("queries") or [])
+            fallback_name = _clean_text((entry.get("queries") or ["Template Item"])[0]).title()
+            doc = {
+                "week_id": week["_id"],
+                "day": target_day,
+                "custom_name": None,
+                "workout_id": None,
+                "workout_slug": None,
+                "workout_name": None,
+                "sets": _clean_text(entry.get("sets")) or None,
+                "reps": _clean_text(entry.get("reps")) or None,
+                "rest": _clean_text(entry.get("rest")) or None,
+                "notes": _clean_text(entry.get("notes")) or f"Applied from template: {template_label}",
+                "order": base_order + idx,
+                "created_at": now,
+            }
+            if workout:
+                doc["workout_id"] = workout.get("_id")
+                doc["workout_slug"] = workout.get("slug")
+                doc["workout_name"] = workout.get("name")
+            else:
+                doc["custom_name"] = fallback_name
+                unresolved += 1
+        if not (doc.get("workout_id") or doc.get("workout_slug") or doc.get("custom_name")):
+            unresolved += 1
+        db.program_items.insert_one(doc)
+        created += 1
+
+    flash(
+        (
+            f'Applied template "{template_label}" to {target_day}. '
+            f"Created {created} item(s). "
+            f"{unresolved} item(s) need workout linking."
+        ),
+        "success",
+    )
+    return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/apply-week-template", methods=["POST"])
+@login_required
+def admin_program_week_items_apply_week_template(program_id, week_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not week:
+        abort(404)
+
+    template = _find_saved_template("week", request.form.get("template_id"))
+    if not template:
+        flash("Choose a valid saved week template.", "danger")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    overwrite_items = request.form.get("overwrite_items") == "on"
+    if overwrite_items:
+        db.program_items.delete_many({"week_id": week["_id"]})
+
+    last_item = db.program_items.find_one(
+        {"week_id": week["_id"]},
+        sort=[("order", -1), ("created_at", -1)],
+    )
+    base_order = _safe_int((last_item or {}).get("order"), default=0)
+
+    created = 0
+    unresolved = 0
+    now = datetime.datetime.utcnow()
+    for idx, entry in enumerate(sorted(template.get("items") or [], key=lambda row: _safe_int(row.get("order"), default=0)), start=1):
+        doc = _apply_saved_template_item(
+            entry,
+            week_id=week["_id"],
+            order=base_order + idx,
+            created_at=now,
+        )
+        if not (doc.get("workout_id") or doc.get("workout_slug") or doc.get("custom_name")):
+            unresolved += 1
+        db.program_items.insert_one(doc)
+        created += 1
+
+    flash(
+        (
+            f'Applied week template "{template.get("name")}" to Week {week.get("week_number")}. '
+            f"Created {created} item(s). "
+            f"{unresolved} item(s) need workout linking."
+        ),
+        "success",
+    )
+    return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/save-day-template", methods=["POST"])
+@login_required
+def admin_program_week_items_save_day_template(program_id, week_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not week:
+        abort(404)
+
+    template_name = _clean_text(request.form.get("template_name"))
+    source_day = _normalize_week_day_label(request.form.get("source_day"))
+    if not template_name:
+        flash("Template name is required.", "danger")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+    if not source_day:
+        flash("Choose a source day to save as a template.", "danger")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    source_items = list(
+        db.program_items.find({"week_id": week["_id"], "day": source_day}).sort([("order", 1), ("created_at", 1)])
+    )
+    if not source_items:
+        flash(f"{source_day} has no items to save.", "warning")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    action = _upsert_content_template(
+        "day",
+        template_name,
+        {
+            "default_day": source_day,
+            "item_count": len(source_items),
+            "source_program_id": program["_id"],
+            "source_program_title": _clean_text(program.get("title")) or None,
+            "source_week_id": week["_id"],
+            "source_week_number": _safe_int(week.get("week_number"), default=0),
+            "source_day": source_day,
+            "items": [_serialize_week_item_for_template(item, include_day=False) for item in source_items],
+        },
+    )
+    flash(f'Day template "{template_name}" {action}.', "success")
+    return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/save-week-template", methods=["POST"])
+@login_required
+def admin_program_week_items_save_week_template(program_id, week_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not week:
+        abort(404)
+
+    template_name = _clean_text(request.form.get("template_name"))
+    if not template_name:
+        flash("Template name is required.", "danger")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    source_items = list(
+        db.program_items.find({"week_id": week["_id"]}).sort([("order", 1), ("created_at", 1)])
+    )
+    if not source_items:
+        flash("This week has no items to save.", "warning")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    action = _upsert_content_template(
+        "week",
+        template_name,
+        {
+            "item_count": len(source_items),
+            "source_program_id": program["_id"],
+            "source_program_title": _clean_text(program.get("title")) or None,
+            "source_week_id": week["_id"],
+            "source_week_number": _safe_int(week.get("week_number"), default=0),
+            "items": [_serialize_week_item_for_template(item, include_day=True) for item in source_items],
+        },
+    )
+    flash(f'Week template "{template_name}" {action}.', "success")
+    return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+
+@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/duplicate-day", methods=["POST"])
+@login_required
+def admin_program_week_items_duplicate_day(program_id, week_id):
+    program = db.programs.find_one({"_id": ObjectId(program_id)})
+    if not program:
+        abort(404)
+
+    week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    if not week:
+        abort(404)
+
+    source_day = _normalize_week_day_label(request.form.get("source_day"))
+    target_day = _normalize_week_day_label(request.form.get("target_day"))
+    overwrite_target_day = request.form.get("overwrite_target_day") == "on"
+
+    if not source_day or not target_day:
+        flash("Choose both a source day and a target day.", "danger")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    source_items = list(
+        db.program_items.find({"week_id": week["_id"], "day": source_day}).sort([("order", 1), ("created_at", 1)])
+    )
+    if not source_items:
+        flash(f"{source_day} has no items to duplicate.", "warning")
+        return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+
+    if overwrite_target_day:
+        db.program_items.delete_many({"week_id": week["_id"], "day": target_day})
+
+    last_item = db.program_items.find_one(
+        {"week_id": week["_id"]},
+        sort=[("order", -1), ("created_at", -1)],
+    )
+    base_order = _safe_int((last_item or {}).get("order"), default=0)
+
+    copied = 0
+    now = datetime.datetime.utcnow()
+    for idx, source in enumerate(source_items, start=1):
+        clone_doc = dict(source)
+        clone_doc.pop("_id", None)
+        clone_doc["week_id"] = week["_id"]
+        clone_doc["day"] = target_day
+        clone_doc["created_at"] = now
+        clone_doc["order"] = base_order + idx
+        db.program_items.insert_one(clone_doc)
+        copied += 1
+
+    flash(
+        f"Duplicated {copied} item(s) from {source_day} to {target_day}.",
+        "success",
+    )
     return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
 
 

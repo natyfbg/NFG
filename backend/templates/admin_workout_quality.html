@@ -29,6 +29,7 @@
   </div>
   <div class="d-flex gap-2">
     <a class="btn btn-outline-secondary" href="{{ url_for('admin_index') }}">Back to Workouts</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_taxonomy_qa') }}">Taxonomy QA</a>
     <form method="post" action="{{ url_for('admin_workout_backfill_metadata') }}" class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-outline-dark" type="submit">Backfill Metadata</button>
@@ -51,6 +52,18 @@
   </div>
 </div>
 
+<div class="row g-3 mb-3">
+  <div class="col-12 col-md-4">
+    <div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Missing Video</div><div class="h4 mb-0">{{ summary.missing_video }}</div></div></div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Missing Tags</div><div class="h4 mb-0">{{ summary.missing_tags }}</div></div></div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card shadow-sm"><div class="card-body"><div class="small text-muted">Missing Info / Tips</div><div class="h4 mb-0">{{ summary.missing_guidance }}</div></div></div>
+  </div>
+</div>
+
 {% if rows and rows|length > 0 %}
   <div class="list-group">
     {% for row in rows %}
@@ -60,6 +73,15 @@
           <div>
             <div class="fw-semibold">{{ w.name or 'Untitled' }} <small class="text-muted">/{{ w.slug or 'no-slug' }}</small></div>
             <div class="mt-1 d-flex flex-wrap gap-2">
+              {% if 'Missing primary muscle' in row.issues or 'Missing movement pattern' in row.issues or 'Missing equipment' in row.issues or 'Missing difficulty tier' in row.issues %}
+                <span class="flow-chip app-chip-danger">Incomplete</span>
+              {% elif 'Missing exercise image' in row.issues %}
+                <span class="flow-chip app-chip-warning">Missing Media</span>
+              {% elif 'Missing YouTube' in row.issues %}
+                <span class="flow-chip app-chip-warning">Missing Video</span>
+              {% else %}
+                <span class="flow-chip">Needs Review</span>
+              {% endif %}
               {% for issue in row.issues %}
                 <span class="badge text-bg-warning">{{ issue }}</span>
               {% endfor %}

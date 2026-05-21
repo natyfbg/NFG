@@ -66,6 +66,7 @@
   </div>
   <div class="d-flex gap-2">
     <a class="btn btn-primary" href="{{ url_for('admin_program_new') }}">+ New Program</a>
+    <a class="btn btn-outline-dark" href="{{ url_for('admin_taxonomy_qa') }}">Taxonomy QA</a>
     <a class="btn btn-outline-dark" href="{{ url_for('admin_program_link_health') }}">Open Link Health</a>
     <a class="btn btn-outline-secondary" href="{{ url_for('programs_index') }}">View Public</a>
   </div>
@@ -80,6 +81,45 @@
   </div>
   <div class="card-body small text-muted">
     Create the <strong>Hub</strong> first, use <strong>Build Tracks</strong> to generate level/environment variants, open <strong>Manage Weeks</strong> inside each track, then build day content through <strong>Manage Items</strong> before setting status to <strong>Ready</strong> or <strong>Published</strong>.
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-12 col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="small text-muted">Programs</div>
+        <div class="h5 mb-1">{{ program_summary.total }}</div>
+        <div class="small text-muted">{{ program_summary.published }} published • {{ program_summary.draft }} draft</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="small text-muted">Checks Clear</div>
+        <div class="h5 mb-1">{{ program_summary.checks_clear }}</div>
+        <div class="small text-muted">{{ program_summary.needs_review }} need review</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="small text-muted">Missing Tracks</div>
+        <div class="h5 mb-1">{{ program_summary.missing_tracks }}</div>
+        <div class="small text-muted">Hubs without child tracks</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="small text-muted">Missing Build-Out</div>
+        <div class="h5 mb-1">{{ program_summary.missing_weeks + program_summary.missing_items }}</div>
+        <div class="small text-muted">{{ program_summary.missing_weeks }} no weeks • {{ program_summary.missing_items }} no items</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -211,11 +251,31 @@
                 {% else %}
                   <span class="badge text-bg-warning text-dark">Draft</span>
                 {% endif %}
-                {% if critical_count > 0 %}
+                {% if critical_count == 0 and warning_count == 0 %}
+                  <span class="flow-chip app-chip-success">Ready</span>
+                {% elif critical_count > 0 %}
+                  <span class="flow-chip app-chip-danger">Incomplete</span>
                   <span class="badge text-bg-danger">{{ critical_count }} critical</span>
                 {% elif warning_count > 0 %}
+                  <span class="flow-chip app-chip-warning">Needs Review</span>
                   <span class="badge text-bg-secondary">{{ warning_count }} warning{{ '' if warning_count == 1 else 's' }}</span>
-                {% else %}
+                {% endif %}
+                {% if kind == 'hub' and readiness and readiness.get('active_tracks', 0) == 0 and critical_count == 0 %}
+                  <span class="flow-chip">No Active Tracks</span>
+                {% endif %}
+                {% if kind == 'track' and readiness and readiness.get('week_count', 0) == 0 %}
+                  <span class="flow-chip">Missing Weeks</span>
+                {% endif %}
+                {% if kind == 'track' and readiness and readiness.get('week_count', 0) > 0 and readiness.get('item_count', 0) == 0 %}
+                  <span class="flow-chip">Missing Items</span>
+                {% endif %}
+                {% if kind == 'track' and readiness and readiness.get('broken_links', 0) > 0 %}
+                  <span class="flow-chip app-chip-warning">Broken Links</span>
+                {% endif %}
+                {% if kind == 'track' and readiness and readiness.get('unresolved_items', 0) > 0 %}
+                  <span class="flow-chip">Unresolved Items</span>
+                {% endif %}
+                {% if critical_count == 0 and warning_count == 0 %}
                   <span class="badge text-bg-light border text-dark">Checks clear</span>
                 {% endif %}
 
@@ -227,6 +287,15 @@
               </div>
               {% if readiness %}
                 <div class="small text-muted mt-1">
+                  {% if kind == 'track' %}
+                    Weeks {{ readiness.get('week_count', 0) }} • Items {{ readiness.get('item_count', 0) }}
+                    {% if readiness.get('broken_links', 0) %} • Broken {{ readiness.get('broken_links', 0) }}{% endif %}
+                    {% if readiness.get('unresolved_items', 0) %} • Unresolved {{ readiness.get('unresolved_items', 0) }}{% endif %}
+                    <br>
+                  {% elif kind == 'hub' %}
+                    Active tracks {{ readiness.get('active_tracks', 0) }} • Published tracks {{ readiness.get('published_tracks', 0) }}
+                    <br>
+                  {% endif %}
                   {% if critical_count > 0 %}
                     {{ readiness.get('critical', [])[0] }}
                   {% elif warning_count > 0 %}

@@ -78,10 +78,36 @@
   <div class="card-body">
     <form method="post" action="{{ url_for('admin_program_weeks_scaffold', program_id=program._id|string) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if quick_start_templates %}
+        <div class="mb-3">
+          <label class="form-label">Quick-start templates</label>
+          <div class="d-flex flex-wrap gap-2">
+            {% for preset in quick_start_templates %}
+              <button class="btn btn-sm btn-outline-dark" type="submit" name="quick_start_template" value="{{ preset.key }}">
+                {{ preset.label }}
+              </button>
+            {% endfor %}
+          </div>
+          <div class="small text-muted mt-2">
+            One click scaffolds the standard week count and canonical split for the selected template.
+          </div>
+        </div>
+      {% endif %}
+
       <div class="row g-3 align-items-end">
         <div class="col-12 col-md-3">
           <label class="form-label">Weeks to create</label>
           <input class="form-control" type="number" min="1" max="52" name="week_count" value="{{ suggested_weeks or 8 }}">
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label">Split template</label>
+          <select class="form-select" name="split_template">
+            <option value="">Custom day split</option>
+            {% for preset in split_templates %}
+              <option value="{{ preset.key }}">{{ preset.label }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text">Optional preset using the V1 day naming rules.</div>
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label">Day split (comma-separated)</label>
@@ -102,6 +128,13 @@
           </span>
         </div>
       </div>
+      {% if split_templates %}
+        <div class="small text-muted mt-3">
+          {% for preset in split_templates %}
+            <div><strong>{{ preset.label }}:</strong> {{ preset.day_split|join(', ') }}. {{ preset.copy }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
     </form>
   </div>
 </div>
@@ -234,6 +267,14 @@
                   <label class="form-label small mb-1">Target title (optional)</label>
                   <input class="form-control form-control-sm" name="target_title" placeholder="Week title">
                 </div>
+                <div class="col-12 col-md-2">
+                  <label class="form-label small mb-1">Progression</label>
+                  <select class="form-select form-select-sm" name="progression_helper">
+                    {% for helper in progression_helpers %}
+                      <option value="{{ helper.key }}">{{ helper.label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
                 <div class="col-6 col-md-2">
                   <div class="form-check mt-4">
                     <input class="form-check-input" type="checkbox" id="cloneItems{{ w._id|string }}"
@@ -255,6 +296,9 @@
                 <div class="col-12 col-md-2 d-grid">
                   <button class="btn btn-sm btn-dark" type="submit">Clone Week</button>
                 </div>
+              </div>
+              <div class="small text-muted mt-2">
+                Use progression helpers to clone Week {{ wn }} into the next week with small prescription adjustments instead of editing every item manually.
               </div>
             </form>
           </div>
