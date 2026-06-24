@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if edit %}Edit Program{% else %}New Program{% endif %} – Admin{% endblock %}
+{% block title %}{% if edit %}Edit Home Plan{% else %}New Home Plan{% endif %} – Admin{% endblock %}
 
 {% block sidebar %}
 <div class="card mb-3">
@@ -7,15 +7,15 @@
   <div class="list-group list-group-flush">
     <a class="list-group-item list-group-item-action" href="{{ url_for('admin_index') }}">Workouts</a>
     <a class="list-group-item list-group-item-action" href="{{ url_for('admin_styles') }}">Styles</a>
-    <a class="list-group-item list-group-item-action" href="{{ url_for('admin_home_plans') }}">Home Plans</a>
-    <a class="list-group-item list-group-item-action active" href="{{ url_for('admin_programs') }}">Programs</a>
+    <a class="list-group-item list-group-item-action active" href="{{ url_for('admin_home_plans') }}">Home Plans</a>
+    <a class="list-group-item list-group-item-action" href="{{ url_for('admin_programs') }}">Programs</a>
   </div>
 </div>
 
 <div class="card">
   <div class="card-header">Tip</div>
   <div class="card-body text-muted small">
-    Create the program first (title/slug/summary). Next we’ll add Weeks + Workouts inside each week.
+    Home Plans are simple featured cards for the home page. Give them a clear CTA and keep the copy short.
   </div>
 </div>
 {% endblock %}
@@ -23,14 +23,11 @@
 {% block content %}
 <div class="d-flex align-items-start justify-content-between mb-3">
   <div>
-    <h1 class="mb-1">{% if edit %}Edit Program{% else %}New Program{% endif %}</h1>
-    <p class="text-muted mb-0">Programs are the top-level containers (ex: “6 Week Beginner”).</p>
+    <h1 class="mb-1">{% if edit %}Edit Home Plan{% else %}New Home Plan{% endif %}</h1>
+    <p class="text-muted mb-0">Home Plans are homepage promo cards with a title, short summary, and CTA.</p>
   </div>
   <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">Back</a>
-    {% if edit and data.slug %}
-      <a class="btn btn-outline-dark" href="{{ url_for('program_detail', slug=data.slug) }}">View Public</a>
-    {% endif %}
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_home_plans') }}">Back</a>
   </div>
 </div>
 
@@ -43,7 +40,7 @@
         <label class="form-label">Title <span class="text-danger">*</span></label>
         <input class="form-control" name="title" required
                value="{{ data.title if data else '' }}"
-               placeholder="6 Week Beginner Program">
+               placeholder="Week 1 Plan">
       </div>
 
       <div class="col-12">
@@ -52,7 +49,7 @@
                value="{{ data.slug if data else '' }}"
                placeholder="auto-generated if blank (recommended)">
         <div class="form-text">
-          Used in URL: <code>/programs/&lt;slug&gt;</code>. Leave blank to auto-generate.
+          Used internally for admin organization. Leave blank to auto-generate.
         </div>
       </div>
 
@@ -60,14 +57,14 @@
         <label class="form-label">Category</label>
         <input class="form-control" name="category"
                value="{{ data.category if data else '' }}"
-               placeholder="Beginner / Strength / Hypertrophy / Split...">
+               placeholder="Challenge / Recovery / Nutrition">
       </div>
 
       <div class="col-md-6">
         <label class="form-label">Duration Label</label>
         <input class="form-control" name="duration_label"
                value="{{ data.duration_label if data else '' }}"
-               placeholder="6 weeks / 4 weeks / 12 sessions...">
+               placeholder="Week 1 / Month 1 / 7 days">
       </div>
 
       <div class="col-12">
@@ -81,9 +78,21 @@
         <input class="form-control" name="cover_image"
                value="{{ data.cover_image if data else '' }}"
                placeholder="https://...">
-        <div class="form-text">
-          (Optional) Later we can support uploads like workouts.
-        </div>
+        <div class="form-text">(Optional) Add a thumbnail for the home card.</div>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">CTA Label</label>
+        <input class="form-control" name="cta_label"
+               value="{{ data.cta_label if data else '' }}"
+               placeholder="View Plan">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">CTA URL <span class="text-danger">*</span></label>
+        <input class="form-control" name="cta_url" required
+               value="{{ data.cta_url if data else '' }}"
+               placeholder="/programs/8-week-challenge">
       </div>
 
       <div class="col-md-4">
@@ -93,7 +102,7 @@
         <div class="form-text">Lower shows first.</div>
       </div>
 
-      <div class="col-md-4 d-flex align-items-center">
+      <div class="col-md-8 d-flex align-items-center">
         <div class="form-check mt-4">
           <input class="form-check-input" type="checkbox" name="active"
                  id="active"
@@ -101,22 +110,13 @@
           <label class="form-check-label" for="active">Active</label>
         </div>
       </div>
-
-      <div class="col-md-4 d-flex align-items-center">
-        <div class="form-check mt-4">
-          <input class="form-check-input" type="checkbox" name="show_on_home"
-                 id="show_on_home"
-                 {% if data and data.show_on_home %}checked{% endif %}>
-          <label class="form-check-label" for="show_on_home">Show on Home</label>
-        </div>
-      </div>
     </div>
   </div>
 
   <div class="card-footer d-flex justify-content-end gap-2">
-    <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">Cancel</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_home_plans') }}">Cancel</a>
     <button class="btn btn-primary" type="submit">
-      {% if edit %}Save Changes{% else %}Create Program{% endif %}
+      {% if edit %}Save Changes{% else %}Create Home Plan{% endif %}
     </button>
   </div>
 </form>

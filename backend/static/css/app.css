@@ -190,23 +190,3 @@ body{
   font-size: .75rem;
   line-height: 1;
 }
-
-/* ===== Swipe slide animation ===== */
-#page-shell{
-  will-change: transform, opacity;
-}
-#page-shell.slide-out-left{
-  animation: slideOutLeft 160ms ease forwards;
-}
-#page-shell.slide-out-right{
-  animation: slideOutRight 160ms ease forwards;
-}
-
-@keyframes slideOutLeft{
-  from { transform: translateX(0); opacity: 1; }
-  to   { transform: translateX(-10%); opacity: .2; }
-}
-@keyframes slideOutRight{
-  from { transform: translateX(0); opacity: 1; }
-  to   { transform: translateX(10%); opacity: .2; }
-}

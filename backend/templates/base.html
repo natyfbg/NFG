@@ -25,8 +25,9 @@
 
         {# Public endpoints #}
         {% set workouts_eps = ['workouts','workouts_browse','workouts_all','styles_index','body_parts_index','workout_detail'] %}
-        {% set programs_eps = ['programs_index','program_detail'] %}
+        {% set programs_eps = ['programs_index','program_detail','program_hub_level','program_hub_environment','program_hub_weeks','program_hub_week_detail'] %}
         {% set recipes_eps = ['recipes'] %}
+        {% set main_swipe_eps = ['home','workouts','programs_index','recipes'] %}
 
         {# Admin endpoints (expand to cover all admin pages) #}
         {% set admin_eps = [
@@ -34,7 +35,9 @@
           'admin_workout_new','admin_workout_edit',
           'admin_styles','admin_style_toggle','admin_style_delete',
           'admin_home_plans','admin_home_plan_new','admin_home_plan_edit','admin_home_plan_toggle','admin_home_plan_delete',
-          'admin_programs','admin_program_new','admin_program_edit',
+          'admin_programs','admin_program_new','admin_program_edit','admin_program_copy_structure','admin_program_copy_structure_submit','admin_program_weeks',
+          'admin_program_week_duplicate','admin_program_week_duplicate_submit',
+          'admin_program_week_items','admin_program_week_item_new','admin_program_week_item_edit','admin_program_week_item_delete',
           'admin_program_toggle_active','admin_program_toggle_home','admin_program_delete'
         ] %}
 
@@ -122,7 +125,7 @@
       {% endwith %}
     </div>
 
-    <!-- Swipe + slide animation zone -->
+    <!-- Mobile swipe navigation zone -->
     <main class="container my-4" id="swipe-zone">
       <div id="page-shell">
         <div class="row g-4">
@@ -211,102 +214,86 @@
       })();
     </script>
 
-    <script>
-      /* Swipe navigation with a slide animation (mobile-first) */
-      (function(){
-        const zone = document.getElementById('swipe-zone');
-        const shell = document.getElementById('page-shell');
-        if (!zone || !shell) return;
-
-        const isMobile = () => window.matchMedia('(max-width: 991.98px)').matches;
-        if (!isMobile()) return;
-
-        const ep = "{{ ep }}";
-        const routes = [
-          { key: 'home',     endpoints: ['home'],                      url: "{{ url_for('home') }}" },
-          { key: 'workouts', endpoints: {{ workouts_eps|tojson }},     url: "{{ url_for('workouts') }}" },
-          { key: 'programs', endpoints: {{ programs_eps|tojson }},     url: "{{ url_for('programs_index') }}" },
-          { key: 'recipes',  endpoints: {{ recipes_eps|tojson }},      url: "{{ url_for('recipes') }}" }
-        ];
-
-        function currentIndex(){
-          for (let i=0; i<routes.length; i++){
-            if (routes[i].endpoints.includes(ep)) return i;
-          }
-          return 0;
-        }
-
-        const SWIPE_MIN_X = 55;
-        const SWIPE_MAX_Y = 70;
-        const EDGE_GUARD  = 12;
-        const NAV_COOLDOWN = 700;
-        let lastNavAt = 0;
-
-        let startX = 0, startY = 0;
-        let tracking = false;
-
-        const isInteractive = (el) => {
-          if (!el) return false;
-          return !!el.closest('a,button,input,textarea,select,label,[role="button"],.dropdown-menu,.navbar');
+    {% if ep in main_swipe_eps %}
+      <script>
+        window.NFG_MAIN_NAV = {
+          endpoint: "{{ ep }}",
+          order: [
+            { endpoint: "home", url: "{{ url_for('home') }}" },
+            { endpoint: "workouts", url: "{{ url_for('workouts') }}" },
+            { endpoint: "programs_index", url: "{{ url_for('programs_index') }}" },
+            { endpoint: "recipes", url: "{{ url_for('recipes') }}" }
+          ]
         };
+      </script>
+      <script>
+        /* Mobile-only swipe between Home, Workouts, Programs, and Recipes. */
+        (function(){
+          const config = window.NFG_MAIN_NAV;
+          if (!config || !Array.isArray(config.order)) return;
 
-        const animateAndGo = (dir, url) => {
-          shell.classList.remove('slide-out-left', 'slide-out-right');
-          void shell.offsetWidth;
-          shell.classList.add(dir < 0 ? 'slide-out-left' : 'slide-out-right');
-          setTimeout(() => { window.location.href = url; }, 150);
-        };
+          const zone = document.getElementById('swipe-zone');
+          if (!zone) return;
 
-        zone.addEventListener('touchstart', (e) => {
-          if (!isMobile()) return;
-          if (!e.touches || e.touches.length !== 1) return;
+          const mobileQuery = window.matchMedia('(max-width: 991.98px) and (pointer: coarse)');
+          const currentIndex = config.order.findIndex((item) => item.endpoint === config.endpoint);
+          if (currentIndex < 0) return;
 
-          const t = e.touches[0];
-          if (t.clientX < EDGE_GUARD || (window.innerWidth - t.clientX) < EDGE_GUARD) return;
-          if (isInteractive(e.target)) return;
+          const SWIPE_MIN_X = 80;
+          const VERTICAL_SLOP = 70;
+          const TOUCH_MARGIN = 12;
+          const NAV_COOLDOWN = 700;
 
-          startX = t.clientX;
-          startY = t.clientY;
-          tracking = true;
-        }, { passive: true });
+          let startX = 0;
+          let startY = 0;
+          let tracking = false;
+          let lastNavAt = 0;
 
-        zone.addEventListener('touchmove', (e) => {
-          if (!tracking) return;
-          const t = e.touches[0];
-          const dy = Math.abs(t.clientY - startY);
-          const dx = Math.abs(t.clientX - startX);
-          if (dy > dx && dy > 18) tracking = false;
-        }, { passive: true });
+          const isInteractive = (el) => {
+            if (!el) return false;
+            return !!el.closest(
+              'a,button,input,textarea,select,label,summary,[role="button"],[contenteditable="true"],form,.dropdown-menu,.navbar'
+            );
+          };
+          zone.addEventListener('touchstart', (event) => {
+            if (!mobileQuery.matches) return;
+            if (!event.touches || event.touches.length !== 1) return;
+            if (isInteractive(event.target)) return;
 
-        zone.addEventListener('touchend', (e) => {
-          if (!tracking) return;
-          tracking = false;
+            const touch = event.touches[0];
+            if (touch.clientX < TOUCH_MARGIN || window.innerWidth - touch.clientX < TOUCH_MARGIN) return;
 
-          const now = Date.now();
-          if (now - lastNavAt < NAV_COOLDOWN) return;
+            startX = touch.clientX;
+            startY = touch.clientY;
+            tracking = true;
+          }, { passive: true });
 
-          const t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
-          if (!t) return;
+          zone.addEventListener('touchend', (event) => {
+            if (!tracking) return;
+            tracking = false;
 
-          const dx = t.clientX - startX;
-          const dy = t.clientY - startY;
+            const now = Date.now();
+            if (now - lastNavAt < NAV_COOLDOWN) return;
 
-          if (Math.abs(dx) < SWIPE_MIN_X) return;
-          if (Math.abs(dy) > SWIPE_MAX_Y) return;
+            const touch = event.changedTouches && event.changedTouches[0];
+            if (!touch) return;
 
-          const idx = currentIndex();
-          let nextIdx = idx;
+            const dx = touch.clientX - startX;
+            const dy = touch.clientY - startY;
 
-          if (dx < 0) nextIdx = Math.min(routes.length - 1, idx + 1);
-          if (dx > 0) nextIdx = Math.max(0, idx - 1);
-          if (nextIdx === idx) return;
+            if (Math.abs(dx) < SWIPE_MIN_X) return;
+            if (Math.abs(dx) <= Math.abs(dy)) return;
+            if (Math.abs(dy) > VERTICAL_SLOP) return;
 
-          lastNavAt = now;
+            const nextIndex = dx < 0 ? currentIndex + 1 : currentIndex - 1;
+            const next = config.order[nextIndex];
+            if (!next) return;
 
-          const dir = dx < 0 ? -1 : 1;
-          animateAndGo(dir, routes[nextIdx].url);
-        }, { passive: true });
-      })();
-    </script>
+            lastNavAt = now;
+            window.location.href = next.url;
+          }, { passive: true });
+        })();
+      </script>
+    {% endif %}
   </body>
 </html>

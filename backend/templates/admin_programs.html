@@ -181,6 +181,11 @@
               Manage Weeks
             </a>
 
+            <a class="btn btn-sm btn-outline-primary"
+               href="{{ url_for('admin_program_copy_structure', id=p._id|string) }}">
+              Copy Structure
+            </a>
+
             <a class="btn btn-sm btn-outline-secondary"
                href="{{ url_for('admin_program_edit', id=p._id|string) }}">
               Edit

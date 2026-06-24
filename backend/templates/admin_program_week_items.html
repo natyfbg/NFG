@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Admin - Week Items{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Content Management</div>
+
+  {% set ep = request.endpoint or '' %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
+  {% set admin_program_eps = ['admin_programs','admin_program_new','admin_program_edit','admin_program_weeks','admin_program_week_items','admin_program_week_item_edit'] %}
+
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}"
+       href="{{ url_for('admin_index') }}">Workouts</a>
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_styles'] %}active{% endif %}"
+       href="{{ url_for('admin_styles') }}">Styles</a>
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_home_plans','admin_home_plan_new','admin_home_plan_edit'] %}active{% endif %}"
+       href="{{ url_for('admin_home_plans') }}">Home Plans</a>
+    <a class="list-group-item list-group-item-action {% if ep in admin_program_eps %}active{% endif %}"
+       href="{{ url_for('admin_programs') }}">Programs</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Week</div>
+  <div class="card-body">
+    <div class="fw-semibold">{{ program.title }}</div>
+    <div class="text-muted small">{{ program.slug }}</div>
+    <hr>
+    <div class="fw-semibold">
+      Week {{ week.week_number }}
+      {% if week.title %}<span class="text-muted">- {{ week.title }}</span>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% set is_edit = edit_item is not none %}
+{% set form_action = url_for('admin_program_week_item_edit', program_id=program._id|string, week_id=week._id|string, item_id=edit_item._id|string) if is_edit else url_for('admin_program_week_item_new', program_id=program._id|string, week_id=week._id|string) %}
+
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h1 class="mb-1">Week Items</h1>
+    <p class="text-muted mb-0">Assign workouts from the database to days in Week {{ week.week_number }}.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_program_weeks', program_id=program._id|string) }}">Back to Weeks</a>
+    <a class="btn btn-outline-dark" href="{{ url_for('program_detail', slug=program.slug) }}">View Public</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <form method="post" action="{{ form_action }}" class="card shadow-sm">
+      <div class="card-header">{{ 'Edit Item' if is_edit else 'Add Workout Item' }}</div>
+      <div class="card-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label class="form-label">Workout *</label>
+          <select class="form-select" name="workout_id" required>
+            <option value="">Choose a workout</option>
+            {% for workout in workouts %}
+              {% set selected = is_edit and edit_item.workout_id and (edit_item.workout_id|string == workout._id|string) %}
+              <option value="{{ workout._id|string }}" {% if selected %}selected{% endif %}>
+                {{ workout.name }}{% if workout.level %} - {{ workout.level }}{% endif %}{% if workout.style %} - {{ workout.style }}{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+          {% if not workouts %}
+            <div class="form-text text-warning">No workouts exist yet. Add workouts first.</div>
+          {% endif %}
+        </div>
+
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label">Day Number *</label>
+            <input class="form-control" type="number" min="1" name="day_number" required
+                   value="{{ edit_item.day_number if is_edit and edit_item.day_number is not none else 1 }}">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Order</label>
+            <input class="form-control" type="number" min="0" name="order"
+                   value="{{ edit_item.order if is_edit and edit_item.order is not none else 0 }}">
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <label class="form-label">Day Label</label>
+          <input class="form-control" name="day_label"
+                 value="{{ edit_item.day_label if is_edit and edit_item.day_label else '' }}"
+                 placeholder="Day 1 / Monday / Push Day">
+        </div>
+
+        <div class="mt-3">
+          <label class="form-label">Split Type</label>
+          <select class="form-select" name="split_type">
+            <option value="">None</option>
+            {% for split in split_types %}
+              <option value="{{ split }}" {% if is_edit and edit_item.split_type == split %}selected{% endif %}>
+                {{ split|capitalize }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="row g-2 mt-1">
+          <div class="col-4">
+            <label class="form-label">Sets</label>
+            <input class="form-control" name="sets" value="{{ edit_item.sets if is_edit and edit_item.sets else '' }}">
+          </div>
+          <div class="col-4">
+            <label class="form-label">Reps</label>
+            <input class="form-control" name="reps" value="{{ edit_item.reps if is_edit and edit_item.reps else '' }}">
+          </div>
+          <div class="col-4">
+            <label class="form-label">Duration</label>
+            <input class="form-control" name="duration" value="{{ edit_item.duration if is_edit and edit_item.duration else '' }}">
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <label class="form-label">Notes</label>
+          <textarea class="form-control" name="notes" rows="3">{{ edit_item.notes if is_edit and edit_item.notes else '' }}</textarea>
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+          <button class="btn btn-primary" type="submit">{{ 'Save Changes' if is_edit else 'Add Item' }}</button>
+          {% if is_edit %}
+            <a class="btn btn-outline-secondary"
+               href="{{ url_for('admin_program_week_items', program_id=program._id|string, week_id=week._id|string) }}">Cancel</a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-header">Existing Items</div>
+      <div class="list-group list-group-flush">
+        {% if items %}
+          {% for item in items %}
+            <div class="list-group-item">
+              <div class="d-flex align-items-start justify-content-between gap-3">
+                <div>
+                  <div class="fw-semibold">
+                    Day {{ item.day_number or 1 }}
+                    {% if item.day_label %}<span class="text-muted">- {{ item.day_label }}</span>{% endif %}
+                  </div>
+                  <div class="mt-1">
+                    {{ item.workout_name or 'Missing workout' }}
+                    {% if item.split_type %}
+                      <span class="badge text-bg-light border text-dark ms-1">{{ item.split_type }}</span>
+                    {% endif %}
+                  </div>
+                  <div class="small text-muted mt-1">
+                    Order: {{ item.order if item.order is not none else 0 }}
+                    {% if item.sets %} - Sets: {{ item.sets }}{% endif %}
+                    {% if item.reps %} - Reps: {{ item.reps }}{% endif %}
+                    {% if item.duration %} - Duration: {{ item.duration }}{% endif %}
+                  </div>
+                  {% if item.notes %}
+                    <div class="small text-muted mt-2">{{ item.notes }}</div>
+                  {% endif %}
+                </div>
+
+                <div class="d-flex gap-2">
+                  <a class="btn btn-sm btn-outline-secondary"
+                     href="{{ url_for('admin_program_week_item_edit', program_id=program._id|string, week_id=week._id|string, item_id=item._id|string) }}">
+                    Edit
+                  </a>
+                  <form method="post"
+                        action="{{ url_for('admin_program_week_item_delete', program_id=program._id|string, week_id=week._id|string, item_id=item._id|string) }}"
+                        onsubmit="return confirm('Delete this workout item?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="list-group-item text-muted">
+            No workout items yet. Add one using the form.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

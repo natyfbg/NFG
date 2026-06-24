@@ -55,6 +55,29 @@ Choose Environment – {{ hub.title if hub else "Program" }}
     </div>
   </div>
 
+  {# Resume card (shown if user has saved progress) #}
+  {% if saved and saved.level and saved.env %}
+    <div class="card shadow-sm border mb-3">
+      <div class="card-body d-flex align-items-center justify-content-between gap-3">
+        <div>
+          <div class="fw-semibold">Continue where you left off</div>
+          <div class="text-muted small mt-1">
+            Level: <span class="text-dark fw-semibold text-capitalize">{{ saved.level }}</span>
+            • Environment: <span class="text-dark fw-semibold text-capitalize">{{ saved.env }}</span>
+            {% if saved.completed_weeks is defined and saved.completed_weeks %}
+              • Completed: <span class="text-dark fw-semibold">{{ saved.completed_weeks|length }}</span> week(s)
+            {% endif %}
+          </div>
+        </div>
+
+        <a class="btn btn-sm btn-dark"
+           href="{{ url_for('program_start', hub_slug=(hub.slug if hub else '8-week-challenge')) }}">
+          Resume
+        </a>
+      </div>
+    </div>
+  {% endif %}
+
   <!-- Program card -->
   <div class="card shadow-sm mb-3">
     {% if hub and hub.cover_image %}
@@ -113,7 +136,10 @@ Choose Environment – {{ hub.title if hub else "Program" }}
 
       <div class="col-12">
         <a class="env-card card-press"
-           href="{{ url_for('program_hub_weeks', hub_slug=(hub.slug if hub else '8-week-challenge'), level=level, env=env_l) }}">
+           href="{{ url_for('program_hub_weeks',
+                            hub_slug=(hub.slug if hub else '8-week-challenge'),
+                            level=level,
+                            env=env_l) }}">
           <div class="title">{{ label }}</div>
           <div class="desc">{{ desc }}</div>
           <div class="mt-3">

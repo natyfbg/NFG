@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Admin - Copy Program Structure{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Content Management</div>
+
+  {% set ep = request.endpoint or '' %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
+  {% set admin_program_eps = ['admin_programs','admin_program_new','admin_program_edit','admin_program_copy_structure','admin_program_weeks','admin_program_week_duplicate','admin_program_week_items','admin_program_week_item_edit'] %}
+
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}"
+       href="{{ url_for('admin_index') }}">Workouts</a>
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_styles'] %}active{% endif %}"
+       href="{{ url_for('admin_styles') }}">Styles</a>
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_home_plans','admin_home_plan_new','admin_home_plan_edit'] %}active{% endif %}"
+       href="{{ url_for('admin_home_plans') }}">Home Plans</a>
+    <a class="list-group-item list-group-item-action {% if ep in admin_program_eps %}active{% endif %}"
+       href="{{ url_for('admin_programs') }}">Programs</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Source Program</div>
+  <div class="card-body">
+    <div class="fw-semibold">{{ source_program.title }}</div>
+    <div class="text-muted small">{{ source_program.slug }}</div>
+    <hr>
+    <div class="small text-muted">
+      {{ source_weeks|length }} week{{ '' if source_weeks|length == 1 else 's' }}
+      {% if item_count is not none %}
+        - {{ item_count }} item{{ '' if item_count == 1 else 's' }}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h1 class="mb-1">Copy Program Structure</h1>
+    <p class="text-muted mb-0">Duplicate all weeks from <strong>{{ source_program.title }}</strong> into another program.</p>
+  </div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">Back to Programs</a>
+</div>
+
+<form method="post"
+      action="{{ url_for('admin_program_copy_structure_submit', id=source_program._id|string) }}"
+      class="card shadow-sm">
+  <div class="card-header">Target</div>
+  <div class="card-body">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="mb-3">
+      <label class="form-label">Target Program *</label>
+      <select class="form-select" name="target_program_id" required>
+        <option value="">Choose a program</option>
+        {% for p in programs %}
+          <option value="{{ p._id|string }}">
+            {{ p.title }}{% if p.kind %} - {{ p.kind|capitalize }}{% endif %}{% if p.track_level %} - {{ p.track_level }}{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+      {% if not programs %}
+        <div class="form-text text-warning">No other programs are available.</div>
+      {% endif %}
+    </div>
+
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" id="copy_items" name="copy_items" checked>
+      <label class="form-check-label" for="copy_items">
+        Copy program items
+      </label>
+      <div class="form-text">When enabled, workout links, day labels, split types, sets, reps, duration, notes, and order are copied.</div>
+    </div>
+
+    <div class="alert alert-secondary mt-3 mb-0">
+      Copying is blocked if the target program already has any matching week numbers. Source data is never modified.
+    </div>
+  </div>
+
+  <div class="card-footer d-flex gap-2">
+    <button class="btn btn-primary" type="submit" {% if not programs or not source_weeks %}disabled{% endif %}>
+      Copy Structure
+    </button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">Cancel</a>
+  </div>
+</form>
+
+{% if source_weeks %}
+  <div class="card shadow-sm mt-3">
+    <div class="card-header">Weeks to Copy</div>
+    <div class="list-group list-group-flush">
+      {% for week in source_weeks %}
+        <div class="list-group-item">
+          <div class="fw-semibold">
+            Week {{ week.week_number }}
+            {% if week.title %}<span class="text-muted">- {{ week.title }}</span>{% endif %}
+          </div>
+          <div class="small text-muted">Order: {{ week.order if week.order is not none else week.week_number }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% else %}
+  <div class="alert alert-warning mt-3">This source program has no weeks to copy.</div>
+{% endif %}
+{% endblock %}

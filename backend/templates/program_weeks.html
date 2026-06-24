@@ -11,6 +11,11 @@ Weeks – {{ track.title if track and track.title else "Program" }}
   {% set lvl = (level or 'beginner')|lower %}
   {% set envv = (env or 'home')|lower %}
 
+  {% set done_weeks = (saved.completed if saved and saved.completed is defined else (completed_weeks if completed_weeks is defined and completed_weeks else [])) %}
+  {% set unlocked = (saved.week if saved and saved.week is defined else (unlocked_week if unlocked_week is defined and unlocked_week else 1)) %}
+  {% set maxw = (saved.max_week if saved and saved.max_week is defined else (max_week if max_week is defined and max_week else 8)) %}
+  {% set all_done = (maxw > 0 and done_weeks|length >= maxw) %}
+
   <style>
     .week-card{
       border: 1px solid rgba(0,0,0,.12);
@@ -32,6 +37,21 @@ Weeks – {{ track.title if track and track.title else "Program" }}
       font-size:.78rem;
     }
     .muted{ color: rgba(0,0,0,.6); }
+    .badge-soft{
+      display:inline-flex; align-items:center;
+      border:1px solid rgba(0,0,0,.12);
+      background: rgba(0,0,0,.02);
+      border-radius: 999px;
+      padding: .22rem .6rem;
+      font-size: .75rem;
+      color:#111;
+    }
+    .locked{ opacity:.72; }
+    .btn-mini{
+      padding:.35rem .6rem;
+      font-size:.82rem;
+      border-radius:.7rem;
+    }
   </style>
 
   <!-- Header -->
@@ -42,7 +62,16 @@ Weeks – {{ track.title if track and track.title else "Program" }}
       <div class="d-flex flex-wrap gap-2">
         <span class="pill">Level: <strong>{{ lvl|capitalize }}</strong></span>
         <span class="pill">Env: <strong>{{ envv|capitalize }}</strong></span>
+
+        {% if saved %}
+          {% if all_done %}
+            <span class="badge-soft">Status: Completed ✅</span>
+          {% else %}
+            <span class="badge-soft">Current: Week {{ unlocked }}</span>
+          {% endif %}
+        {% endif %}
       </div>
+
       {% if track and track.summary %}
         <p class="text-muted mt-2 mb-0">{{ track.summary }}</p>
       {% endif %}
@@ -51,7 +80,9 @@ Weeks – {{ track.title if track and track.title else "Program" }}
     <div class="d-flex gap-2">
       <!-- Back goes to environment step -->
       <a class="btn btn-outline-secondary btn-sm"
-         href="{{ url_for('program_hub_environment', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'), level=lvl) }}">
+         href="{{ url_for('program_hub_environment',
+                          hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'),
+                          level=lvl) }}">
         Back
       </a>
 
@@ -59,6 +90,32 @@ Weeks – {{ track.title if track and track.title else "Program" }}
          href="{{ url_for('programs_index') }}">
         All programs
       </a>
+    </div>
+  </div>
+
+  {# Launch / Resume card #}
+  <div class="card shadow-sm mb-3">
+    <div class="card-body d-flex align-items-center justify-content-between gap-3">
+      <div>
+        <div class="fw-semibold">Launch challenge</div>
+        <div class="text-muted small mt-1">
+          Start Week 1 and progress week-by-week. We’ll keep your place so you can resume later.
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        {% if done_weeks %}
+          <a class="btn btn-dark btn-sm"
+             href="{{ url_for('program_start', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge')) }}">
+            Resume
+          </a>
+        {% else %}
+          <a class="btn btn-dark btn-sm"
+             href="{{ url_for('program_start', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge')) }}">
+            Start
+          </a>
+        {% endif %}
+      </div>
     </div>
   </div>
 
@@ -90,21 +147,66 @@ Weeks – {{ track.title if track and track.title else "Program" }}
       {% for w in weeks %}
         {% set wn = w.week_number if w.week_number is defined else w.get('week_number') %}
         {% set wtitle = (w.title if w.title is defined else w.get('title')) %}
+
+        {% set is_done = (wn in done_weeks) %}
+        {% set is_active = ((not is_done) and (wn == unlocked)) %}
+        {% set is_locked = (wn > unlocked) %}
+
         <div class="col-12">
-          <a class="week-card"
-             href="{{ url_for('program_hub_week_detail', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'), week_number=wn, level=lvl, env=envv) }}">
+          <div class="week-card {% if is_locked %}locked{% endif %}">
             <div class="d-flex align-items-start justify-content-between gap-3">
-              <div>
-                <div class="fw-semibold">Week {{ wn }}</div>
+              <div style="min-width:0;">
+                <div class="fw-semibold d-flex align-items-center gap-2 flex-wrap">
+                  <span>Week {{ wn }}</span>
+
+                  {% if is_done %}
+                    <span class="badge text-bg-success">Completed</span>
+                  {% elif is_active %}
+                    <span class="badge text-bg-dark">Active</span>
+                  {% elif is_locked %}
+                    <span class="badge text-bg-light border text-dark">Locked</span>
+                  {% else %}
+                    <span class="badge text-bg-light border text-dark">Available</span>
+                  {% endif %}
+                </div>
+
                 {% if wtitle %}
                   <div class="muted small mt-1">{{ wtitle }}</div>
                 {% else %}
                   <div class="muted small mt-1">View workouts and guidance for this week.</div>
                 {% endif %}
 
-                <div class="mt-3">
-                  <span class="btn btn-sm btn-dark">Open</span>
-                  <span class="text-muted small ms-2">See week details</span>
+                <div class="mt-3 d-flex align-items-center gap-2 flex-wrap">
+                  {% if is_locked %}
+                    <button class="btn btn-outline-secondary btn-mini" type="button" disabled>
+                      Locked
+                    </button>
+                    <span class="text-muted small">Complete previous weeks first</span>
+                  {% else %}
+                    <a class="btn btn-dark btn-mini"
+                       href="{{ url_for('program_hub_week_detail',
+                                        hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'),
+                                        week_number=wn,
+                                        level=lvl,
+                                        env=envv) }}">
+                      {% if is_active %}Continue{% else %}Open{% endif %}
+                    </a>
+
+                    {% if is_done %}
+                      <a class="btn btn-outline-dark btn-mini"
+                         href="{{ url_for('program_hub_week_detail',
+                                          hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge'),
+                                          week_number=wn,
+                                          level=lvl,
+                                          env=envv) }}">
+                        Replay
+                      </a>
+                    {% endif %}
+
+                    <span class="text-muted small">
+                      {% if is_active %}You’re on this week{% elif is_done %}Already completed{% else %}Ready when you are{% endif %}
+                    </span>
+                  {% endif %}
                 </div>
               </div>
 
@@ -112,8 +214,9 @@ Weeks – {{ track.title if track and track.title else "Program" }}
                 <span class="badge text-bg-light border text-dark">Week</span>
               </div>
             </div>
-          </a>
+          </div>
         </div>
+
       {% endfor %}
     </div>
   {% else %}

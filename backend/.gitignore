@@ -19,7 +19,7 @@ instance/
 *.sqlite3
 
 # Environment files (keep example)
-../.env
+.env
 .env.*
 !.env.example
 
