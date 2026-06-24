@@ -30,12 +30,12 @@ services:
 
     # This compose file lives in backend/ and expects backend/.env for local development.
     env_file:
-      - path: .env
-        format: raw
+      - .env
 
     environment:
       # Force the app to use the Docker mongo service in local dev.
       MONGO_URI: mongodb://mongo:27017/NFG
+      MONGO_DB: NFG
       # Keep SECRET_KEY from .env if present; else fallback.
       SECRET_KEY: ${SECRET_KEY:-dev-secret}
       PORT: 8000
@@ -59,10 +59,10 @@ services:
       mongo:
         condition: service_healthy
     env_file:
-      - path: .env
-        format: raw
+      - .env
     environment:
       MONGO_URI: mongodb://mongo:27017/NFG
+      MONGO_DB: NFG
     command: python seed.py
     profiles: ["tools"]  # won't start with `up` unless profile is specified
 
