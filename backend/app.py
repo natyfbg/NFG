@@ -104,7 +104,12 @@ def _resolve_client_and_db() -> Tuple[MongoClient, object, str, Optional[Excepti
 
     # Keep the primary URI as final client even if ping failed; routes can still
     # return useful errors and health checks will surface DB status.
-    fallback_client = MongoClient(MONGO_URI)
+    fallback_client = MongoClient(
+        MONGO_URI,
+        serverSelectionTimeoutMS=1500,
+        connectTimeoutMS=1500,
+        socketTimeoutMS=1500,
+    )
     return (
         fallback_client,
         _resolve_db_for_client(fallback_client, MONGO_URI),
@@ -2574,65 +2579,72 @@ def _continue_plan_for_owner(owner_key: str) -> Optional[dict]:
 # -----------------------------------------------------------------------------
 # Indexes (safe to call repeatedly)
 # -----------------------------------------------------------------------------
-db.workouts.create_index([("slug", 1)], unique=True, sparse=True)
-db.workouts.create_index([("name", 1)])
-db.workouts.create_index([("level", 1)])
-db.workouts.create_index([("body_part", 1)])
-db.workouts.create_index([("style", 1)])
-db.workouts.create_index([("primary_muscle", 1)])
-db.workouts.create_index([("movement_pattern", 1)])
-db.workouts.create_index([("equipment", 1)])
-db.workouts.create_index([("difficulty_tier", 1)])
-db.workouts.create_index([("created_at", -1)])
-db.workouts.create_index([("rating", -1)])
+def _ensure_indexes() -> None:
+    try:
+        db.workouts.create_index([("slug", 1)], unique=True, sparse=True)
+        db.workouts.create_index([("name", 1)])
+        db.workouts.create_index([("level", 1)])
+        db.workouts.create_index([("body_part", 1)])
+        db.workouts.create_index([("style", 1)])
+        db.workouts.create_index([("primary_muscle", 1)])
+        db.workouts.create_index([("movement_pattern", 1)])
+        db.workouts.create_index([("equipment", 1)])
+        db.workouts.create_index([("difficulty_tier", 1)])
+        db.workouts.create_index([("created_at", -1)])
+        db.workouts.create_index([("rating", -1)])
 
-db.styles.create_index([("slug", 1)], unique=True, sparse=True)
+        db.styles.create_index([("slug", 1)], unique=True, sparse=True)
 
-db.home_plans.create_index([("slug", 1)], unique=True, sparse=True)
-db.home_plans.create_index([("order", 1)])
-db.home_plans.create_index([("created_at", -1)])
-db.home_plans.create_index([("active", 1)])
+        db.home_plans.create_index([("slug", 1)], unique=True, sparse=True)
+        db.home_plans.create_index([("order", 1)])
+        db.home_plans.create_index([("created_at", -1)])
+        db.home_plans.create_index([("active", 1)])
 
-db.programs.create_index([("slug", 1)], unique=True, sparse=True)
-db.programs.create_index([("active", 1)])
-db.programs.create_index([("order", 1)])
-db.programs.create_index([("created_at", -1)])
-db.programs.create_index([("show_on_home", 1)])
-db.programs.create_index([("kind", 1)])
-db.programs.create_index([("publish_status", 1)])
-db.programs.create_index([("hub_slug", 1)])
-db.programs.create_index([("track_level", 1)])
-db.programs.create_index([("track_env", 1)])
+        db.programs.create_index([("slug", 1)], unique=True, sparse=True)
+        db.programs.create_index([("active", 1)])
+        db.programs.create_index([("order", 1)])
+        db.programs.create_index([("created_at", -1)])
+        db.programs.create_index([("show_on_home", 1)])
+        db.programs.create_index([("kind", 1)])
+        db.programs.create_index([("publish_status", 1)])
+        db.programs.create_index([("hub_slug", 1)])
+        db.programs.create_index([("track_level", 1)])
+        db.programs.create_index([("track_env", 1)])
 
-db.program_weeks.create_index([("program_id", 1)])
-db.program_weeks.create_index([("week_number", 1)])
-db.program_weeks.create_index([("order", 1)])
+        db.program_weeks.create_index([("program_id", 1)])
+        db.program_weeks.create_index([("week_number", 1)])
+        db.program_weeks.create_index([("order", 1)])
 
-db.program_items.create_index([("week_id", 1)])
-db.program_items.create_index([("order", 1)])
-db.program_items.create_index([("created_at", 1)])
-db.program_items.create_index([("workout_id", 1)])
-db.program_items.create_index([("workout_slug", 1)])
-db.program_items.create_index([("week_id", 1), ("day", 1), ("order", 1)])
+        db.program_items.create_index([("week_id", 1)])
+        db.program_items.create_index([("order", 1)])
+        db.program_items.create_index([("created_at", 1)])
+        db.program_items.create_index([("workout_id", 1)])
+        db.program_items.create_index([("workout_slug", 1)])
+        db.program_items.create_index([("week_id", 1), ("day", 1), ("order", 1)])
 
-db.program_favorites.create_index([("viewer_id", 1), ("program_slug", 1)], unique=True)
-db.program_favorites.create_index([("viewer_id", 1), ("created_at", -1)])
+        db.program_favorites.create_index([("viewer_id", 1), ("program_slug", 1)], unique=True)
+        db.program_favorites.create_index([("viewer_id", 1), ("created_at", -1)])
 
-db.program_day_progress.create_index(
-    [("viewer_id", 1), ("track_slug", 1), ("week_number", 1), ("day_key", 1)],
-    unique=True,
-)
-db.program_day_progress.create_index([("viewer_id", 1), ("track_slug", 1), ("week_number", 1)])
+        db.program_day_progress.create_index(
+            [("viewer_id", 1), ("track_slug", 1), ("week_number", 1), ("day_key", 1)],
+            unique=True,
+        )
+        db.program_day_progress.create_index([("viewer_id", 1), ("track_slug", 1), ("week_number", 1)])
 
-db.program_week_progress.create_index(
-    [("viewer_id", 1), ("track_slug", 1), ("week_number", 1)],
-    unique=True,
-)
-db.program_week_progress.create_index([("viewer_id", 1), ("track_slug", 1), ("completed_at", -1)])
+        db.program_week_progress.create_index(
+            [("viewer_id", 1), ("track_slug", 1), ("week_number", 1)],
+            unique=True,
+        )
+        db.program_week_progress.create_index([("viewer_id", 1), ("track_slug", 1), ("completed_at", -1)])
 
-db.users.create_index([("username_lower", 1)], unique=True, sparse=True)
-db.users.create_index([("email_lower", 1)], unique=True, sparse=True)
-db.users.create_index([("created_at", -1)])
+        db.users.create_index([("username_lower", 1)], unique=True, sparse=True)
+        db.users.create_index([("email_lower", 1)], unique=True, sparse=True)
+        db.users.create_index([("created_at", -1)])
+    except Exception as e:
+        app.logger.warning("Index initialization skipped: %s", e)
+
+
+_ensure_indexes()
 
 
 def get_styles() -> List[str]:
