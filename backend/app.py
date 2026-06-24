@@ -1451,6 +1451,47 @@ def _template_library_report(
     }
 
 
+def _template_preview_payload(doc: dict) -> dict:
+    row = dict(doc)
+    items = list(doc.get("items") or [])
+    items = sorted(items, key=lambda entry: (_normalize_week_day_label(entry.get("day")) or "", _safe_int(entry.get("order"), default=0)))
+
+    day_labels = []
+    seen_days = set()
+    linked_count = 0
+    custom_count = 0
+    unique_workouts = set()
+
+    for entry in items:
+        day_label = _normalize_week_day_label(entry.get("day"))
+        if day_label and day_label not in seen_days:
+            seen_days.add(day_label)
+            day_labels.append(day_label)
+        if entry.get("workout_id") or _clean_text(entry.get("workout_slug")):
+            linked_count += 1
+        else:
+            custom_count += 1
+        workout_key = _clean_text(entry.get("workout_slug")) or _clean_text(entry.get("workout_name"))
+        if workout_key:
+            unique_workouts.add(workout_key.lower())
+
+    row["archived"] = bool(doc.get("archived"))
+    row["type_label"] = "Day" if _norm_choice(doc.get("kind")) == "day" else "Week"
+    row["source_label"] = _template_source_label(doc)
+    row["source_week_number"] = _safe_int(doc.get("source_week_number"), default=0, min_value=0)
+    row["apply_url"] = _template_apply_url(doc)
+    row["items"] = items
+    row["stats"] = {
+        "total_exercises": len(items),
+        "day_count": len(day_labels) or (1 if _norm_choice(doc.get("kind")) == "day" and items else 0),
+        "linked_items": linked_count,
+        "custom_items": custom_count,
+        "unique_workouts": len(unique_workouts),
+    }
+    row["day_labels"] = day_labels
+    return row
+
+
 def _safe_int(raw, default: int = 0, min_value: Optional[int] = None, max_value: Optional[int] = None) -> int:
     try:
         val = int(str(raw).strip())
@@ -3938,6 +3979,19 @@ def admin_template_library():
     return render_or_fallback(
         "admin_template_library.html",
         report=report,
+    )
+
+
+@app.route("/admin/templates/<template_id>")
+@login_required
+def admin_template_library_detail(template_id):
+    template = _content_template_by_id(template_id)
+    if not template:
+        abort(404)
+    preview = _template_preview_payload(template)
+    return render_or_fallback(
+        "admin_template_detail.html",
+        template=preview,
     )
 
 
