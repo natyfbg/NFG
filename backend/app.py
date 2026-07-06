@@ -29,8 +29,14 @@ from flask import (
     send_from_directory,
     url_for,
 )
-from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user
-from flask_login import current_user
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    current_user,
+    login_required,
+    login_user,
+    logout_user,
+)
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from jinja2 import TemplateNotFound
 from pymongo import ASCENDING, MongoClient
@@ -72,6 +78,7 @@ if os.getenv("RENDER"):
 
 if os.getenv("RENDER") and SECRET_KEY == "dev-secret":
     app.logger.warning("SECRET_KEY is using the development fallback in a hosted environment.")
+
 
 def _resolve_db_for_client(mongo_client: MongoClient, mongo_uri: str):
     """Pick DB name from override, URI default, or fallback to NFG."""
@@ -433,7 +440,9 @@ def _check_admin_credentials(username: str, password: str) -> bool:
             if check_password_hash(ADMIN_PASSWORD_HASH, submitted_password):
                 return True
         except Exception:
-            app.logger.warning("Invalid ADMIN_PASSWORD_HASH format. Falling back to plaintext admin password.")
+            app.logger.warning(
+                "Invalid ADMIN_PASSWORD_HASH format. Falling back to plaintext admin password."
+            )
 
     if ADMIN_PASSWORD:
         return submitted_password == ADMIN_PASSWORD
@@ -712,11 +721,31 @@ QUICK_START_TEMPLATES = [
 ]
 
 PROGRESSION_HELPERS = [
-    {"key": "none", "label": "Copy only", "copy": "Clone the source week without changing prescriptions."},
-    {"key": "increase_sets", "label": "Increase sets", "copy": "Adds 1 set anywhere the sets field is numeric."},
-    {"key": "increase_reps", "label": "Increase reps", "copy": "Adds 1 rep to each numeric value in the reps field."},
-    {"key": "decrease_reps", "label": "Decrease reps", "copy": "Subtracts 1 rep from each numeric value in the reps field."},
-    {"key": "deload_week", "label": "Deload week", "copy": "Reduces sets and reps, then appends a deload note."},
+    {
+        "key": "none",
+        "label": "Copy only",
+        "copy": "Clone the source week without changing prescriptions.",
+    },
+    {
+        "key": "increase_sets",
+        "label": "Increase sets",
+        "copy": "Adds 1 set anywhere the sets field is numeric.",
+    },
+    {
+        "key": "increase_reps",
+        "label": "Increase reps",
+        "copy": "Adds 1 rep to each numeric value in the reps field.",
+    },
+    {
+        "key": "decrease_reps",
+        "label": "Decrease reps",
+        "copy": "Subtracts 1 rep from each numeric value in the reps field.",
+    },
+    {
+        "key": "deload_week",
+        "label": "Deload week",
+        "copy": "Reduces sets and reps, then appends a deload note.",
+    },
 ]
 
 DAY_TEMPLATE_PRESETS = [
@@ -725,8 +754,18 @@ DAY_TEMPLATE_PRESETS = [
         "label": "Beginner Push Home",
         "default_day": "Push",
         "items": [
-            {"queries": ["push up", "kneeling push up"], "sets": "3", "reps": "8-12", "rest": "60s"},
-            {"queries": ["shoulder press", "pike push up"], "sets": "3", "reps": "10-12", "rest": "60s"},
+            {
+                "queries": ["push up", "kneeling push up"],
+                "sets": "3",
+                "reps": "8-12",
+                "rest": "60s",
+            },
+            {
+                "queries": ["shoulder press", "pike push up"],
+                "sets": "3",
+                "reps": "10-12",
+                "rest": "60s",
+            },
             {"queries": ["tricep dip", "bench dip"], "sets": "2-3", "reps": "10-15", "rest": "45s"},
         ],
     },
@@ -735,10 +774,30 @@ DAY_TEMPLATE_PRESETS = [
         "label": "Beginner Push Gym",
         "default_day": "Push",
         "items": [
-            {"queries": ["bench press", "machine chest press"], "sets": "3", "reps": "8-10", "rest": "90s"},
-            {"queries": ["incline dumbbell press", "incline press"], "sets": "3", "reps": "10-12", "rest": "75s"},
-            {"queries": ["shoulder press", "machine shoulder press"], "sets": "3", "reps": "10-12", "rest": "60s"},
-            {"queries": ["tricep pushdown", "tricep extension"], "sets": "2-3", "reps": "12-15", "rest": "45s"},
+            {
+                "queries": ["bench press", "machine chest press"],
+                "sets": "3",
+                "reps": "8-10",
+                "rest": "90s",
+            },
+            {
+                "queries": ["incline dumbbell press", "incline press"],
+                "sets": "3",
+                "reps": "10-12",
+                "rest": "75s",
+            },
+            {
+                "queries": ["shoulder press", "machine shoulder press"],
+                "sets": "3",
+                "reps": "10-12",
+                "rest": "60s",
+            },
+            {
+                "queries": ["tricep pushdown", "tricep extension"],
+                "sets": "2-3",
+                "reps": "12-15",
+                "rest": "45s",
+            },
         ],
     },
     {
@@ -748,8 +807,18 @@ DAY_TEMPLATE_PRESETS = [
         "items": [
             {"queries": ["pull up", "lat pulldown"], "sets": "4", "reps": "6-10", "rest": "90s"},
             {"queries": ["barbell row", "row"], "sets": "4", "reps": "8-10", "rest": "90s"},
-            {"queries": ["seated cable row", "cable row"], "sets": "3", "reps": "10-12", "rest": "75s"},
-            {"queries": ["bicep curl", "dumbbell curl"], "sets": "3", "reps": "10-15", "rest": "45s"},
+            {
+                "queries": ["seated cable row", "cable row"],
+                "sets": "3",
+                "reps": "10-12",
+                "rest": "75s",
+            },
+            {
+                "queries": ["bicep curl", "dumbbell curl"],
+                "sets": "3",
+                "reps": "10-15",
+                "rest": "45s",
+            },
         ],
     },
     {
@@ -770,8 +839,18 @@ DAY_TEMPLATE_PRESETS = [
         "items": [
             {"queries": ["squat", "leg press"], "sets": "4", "reps": "8-12", "rest": "90s"},
             {"queries": ["romanian deadlift", "rdl"], "sets": "3", "reps": "8-12", "rest": "90s"},
-            {"queries": ["walking lunge", "lunge"], "sets": "3", "reps": "10-12 / leg", "rest": "60s"},
-            {"queries": ["leg curl", "hamstring curl"], "sets": "3", "reps": "12-15", "rest": "45s"},
+            {
+                "queries": ["walking lunge", "lunge"],
+                "sets": "3",
+                "reps": "10-12 / leg",
+                "rest": "60s",
+            },
+            {
+                "queries": ["leg curl", "hamstring curl"],
+                "sets": "3",
+                "reps": "12-15",
+                "rest": "45s",
+            },
             {"queries": ["calf raise"], "sets": "3", "reps": "12-20", "rest": "30-45s"},
         ],
     },
@@ -813,7 +892,9 @@ def _public_program_query(extra: Optional[dict] = None) -> dict:
     filters = [{"active": {"$ne": False}}]
     include_unpublished_for_admin = bool(getattr(current_user, "is_admin", False))
     if not include_unpublished_for_admin:
-        filters.append({"$or": [{"publish_status": {"$exists": False}}, {"publish_status": "published"}]})
+        filters.append(
+            {"$or": [{"publish_status": {"$exists": False}}, {"publish_status": "published"}]}
+        )
     if extra:
         filters.append(extra)
     return {"$and": filters}
@@ -856,7 +937,9 @@ def _normalize_track_env(raw: Optional[str]) -> Optional[str]:
     return val if val in DEFAULT_ENVS else None
 
 
-def _normalize_style_label(raw: Optional[str], style_options: List[str]) -> tuple[Optional[str], bool]:
+def _normalize_style_label(
+    raw: Optional[str], style_options: List[str]
+) -> tuple[Optional[str], bool]:
     cleaned = _clean_text(raw)
     if not cleaned:
         return None, False
@@ -1063,9 +1146,9 @@ def _get_hub_or_404(hub_slug: str) -> dict:
 
 
 def _tracks_for_hub(hub_slug: str) -> List[dict]:
-    cursor = db.programs.find(
-        _public_program_query({"kind": "track", "hub_slug": hub_slug})
-    ).sort([("order", 1), ("created_at", -1)])
+    cursor = db.programs.find(_public_program_query({"kind": "track", "hub_slug": hub_slug})).sort(
+        [("order", 1), ("created_at", -1)]
+    )
     return list(cursor)
 
 
@@ -1103,10 +1186,7 @@ def _pick_track_for(hub_slug: str, level: str, env: str) -> Optional[dict]:
     env = _norm_choice(env)
 
     for t in tracks:
-        if (
-            _norm_choice(t.get("track_level")) == level
-            and _track_env_value(t) == env
-        ):
+        if _norm_choice(t.get("track_level")) == level and _track_env_value(t) == env:
             return t
 
     for t in tracks:
@@ -1270,7 +1350,9 @@ def _upsert_content_template(kind: str, name: str, doc: dict) -> str:
         }
     )
 
-    existing = _content_template_collection().find_one({"kind": key, "key": normalized_name}, {"_id": 1})
+    existing = _content_template_collection().find_one(
+        {"kind": key, "key": normalized_name}, {"_id": 1}
+    )
     if existing:
         _content_template_collection().update_one({"_id": existing["_id"]}, {"$set": payload})
         return "updated"
@@ -1325,7 +1407,9 @@ def _apply_saved_template_item(
     created_at: datetime.datetime,
     target_day: Optional[str] = None,
 ) -> dict:
-    target_label = _normalize_week_day_label(target_day) or _normalize_week_day_label(entry.get("day"))
+    target_label = _normalize_week_day_label(target_day) or _normalize_week_day_label(
+        entry.get("day")
+    )
     return {
         "week_id": week_id,
         "day": target_label or "Push",
@@ -1392,7 +1476,9 @@ def _template_library_report(
     archived: str = "",
 ) -> dict:
     docs = _saved_templates("day") + _saved_templates("week")
-    docs = sorted(docs, key=lambda row: (row.get("updated_at") or datetime.datetime.min), reverse=True)
+    docs = sorted(
+        docs, key=lambda row: (row.get("updated_at") or datetime.datetime.min), reverse=True
+    )
 
     source_options_map = {}
     for doc in docs:
@@ -1411,7 +1497,9 @@ def _template_library_report(
         row["type_label"] = "Day" if _norm_choice(doc.get("kind")) == "day" else "Week"
         row["source_label"] = _template_source_label(doc)
         row["source_key"] = _template_source_key(doc)
-        row["item_count"] = _safe_int(doc.get("item_count"), default=len(doc.get("items") or []), min_value=0)
+        row["item_count"] = _safe_int(
+            doc.get("item_count"), default=len(doc.get("items") or []), min_value=0
+        )
         row["apply_url"] = _template_apply_url(doc)
         row["source_week_number"] = _safe_int(doc.get("source_week_number"), default=0, min_value=0)
         rows.append(row)
@@ -1459,7 +1547,13 @@ def _template_library_report(
 def _template_preview_payload(doc: dict) -> dict:
     row = dict(doc)
     items = list(doc.get("items") or [])
-    items = sorted(items, key=lambda entry: (_normalize_week_day_label(entry.get("day")) or "", _safe_int(entry.get("order"), default=0)))
+    items = sorted(
+        items,
+        key=lambda entry: (
+            _normalize_week_day_label(entry.get("day")) or "",
+            _safe_int(entry.get("order"), default=0),
+        ),
+    )
 
     day_labels = []
     seen_days = set()
@@ -1476,7 +1570,9 @@ def _template_preview_payload(doc: dict) -> dict:
             linked_count += 1
         else:
             custom_count += 1
-        workout_key = _clean_text(entry.get("workout_slug")) or _clean_text(entry.get("workout_name"))
+        workout_key = _clean_text(entry.get("workout_slug")) or _clean_text(
+            entry.get("workout_name")
+        )
         if workout_key:
             unique_workouts.add(workout_key.lower())
 
@@ -1488,7 +1584,8 @@ def _template_preview_payload(doc: dict) -> dict:
     row["items"] = items
     row["stats"] = {
         "total_exercises": len(items),
-        "day_count": len(day_labels) or (1 if _norm_choice(doc.get("kind")) == "day" and items else 0),
+        "day_count": len(day_labels)
+        or (1 if _norm_choice(doc.get("kind")) == "day" and items else 0),
         "linked_items": linked_count,
         "custom_items": custom_count,
         "unique_workouts": len(unique_workouts),
@@ -1497,7 +1594,9 @@ def _template_preview_payload(doc: dict) -> dict:
     return row
 
 
-def _safe_int(raw, default: int = 0, min_value: Optional[int] = None, max_value: Optional[int] = None) -> int:
+def _safe_int(
+    raw, default: int = 0, min_value: Optional[int] = None, max_value: Optional[int] = None
+) -> int:
     try:
         val = int(str(raw).strip())
     except Exception:
@@ -1736,7 +1835,9 @@ def _program_link_health_report(include_rows: bool = False) -> dict:
     )
 
     workout_ids = [it.get("workout_id") for it in items if it.get("workout_id")]
-    workouts = list(db.workouts.find({"_id": {"$in": workout_ids}}, {"_id": 1, "name": 1, "slug": 1}))
+    workouts = list(
+        db.workouts.find({"_id": {"$in": workout_ids}}, {"_id": 1, "name": 1, "slug": 1})
+    )
     workout_by_id = {w["_id"]: w for w in workouts if w.get("_id") is not None}
 
     broken_items = []
@@ -1748,7 +1849,9 @@ def _program_link_health_report(include_rows: bool = False) -> dict:
 
     for it in items:
         week = week_by_id.get(it.get("week_id")) if include_rows else None
-        program = program_by_id.get((week or {}).get("program_id")) if (include_rows and week) else None
+        program = (
+            program_by_id.get((week or {}).get("program_id")) if (include_rows and week) else None
+        )
 
         has_custom_text = bool(
             (it.get("custom_name") or "").strip()
@@ -1822,9 +1925,9 @@ def _program_readiness_report(program: dict) -> dict:
             critical.append("Track is missing environment.")
 
         weeks = list(
-            db.program_weeks.find({"program_id": program["_id"]}, {"_id": 1, "week_number": 1}).sort(
-                [("week_number", 1), ("order", 1)]
-            )
+            db.program_weeks.find(
+                {"program_id": program["_id"]}, {"_id": 1, "week_number": 1}
+            ).sort([("week_number", 1), ("order", 1)])
         )
         week_count = len(weeks)
         if week_count == 0:
@@ -1836,7 +1939,13 @@ def _program_readiness_report(program: dict) -> dict:
             items = list(
                 db.program_items.find(
                     {"week_id": {"$in": week_ids}},
-                    {"week_id": 1, "workout_id": 1, "custom_name": 1, "workout_name": 1, "notes": 1},
+                    {
+                        "week_id": 1,
+                        "workout_id": 1,
+                        "custom_name": 1,
+                        "workout_name": 1,
+                        "notes": 1,
+                    },
                 )
             )
             item_count = len(items)
@@ -1850,7 +1959,9 @@ def _program_readiness_report(program: dict) -> dict:
                 if it.get("workout_id"):
                     workout_ids.append(it.get("workout_id"))
 
-            empty_weeks = [week_num_by_id[wid] for wid, count in items_by_week.items() if count == 0]
+            empty_weeks = [
+                week_num_by_id[wid] for wid, count in items_by_week.items() if count == 0
+            ]
             if empty_weeks:
                 empty_weeks = sorted([n for n in empty_weeks if n > 0])
                 label = ", ".join([str(n) for n in empty_weeks[:6]])
@@ -2069,7 +2180,11 @@ def _taxonomy_qa_report() -> dict:
         issues = []
         if style and _taxonomy_key(style) not in style_keys:
             issues.append("Non-canonical style")
-        if parts and _clean_text(w.get("body_part")) and _clean_text(w.get("body_part")) != parts[0]:
+        if (
+            parts
+            and _clean_text(w.get("body_part"))
+            and _clean_text(w.get("body_part")) != parts[0]
+        ):
             issues.append("Body part mismatch")
         if duplicate_tags:
             issues.append("Tags duplicate structured metadata")
@@ -2091,7 +2206,10 @@ def _taxonomy_qa_report() -> dict:
     duplicate_name_groups = [
         {
             "normalized_slug": key,
-            "items": sorted(group, key=lambda row: ((_clean_text(row.get("name")) or ""), (row.get("slug") or ""))),
+            "items": sorted(
+                group,
+                key=lambda row: ((_clean_text(row.get("name")) or ""), (row.get("slug") or "")),
+            ),
         }
         for key, group in duplicate_groups.items()
         if len(group) > 1
@@ -2122,7 +2240,9 @@ def _taxonomy_qa_report() -> dict:
             if ratio < 0.9:
                 continue
             if left.get("primary_muscle") and right.get("primary_muscle"):
-                if _taxonomy_key(left.get("primary_muscle")) != _taxonomy_key(right.get("primary_muscle")):
+                if _taxonomy_key(left.get("primary_muscle")) != _taxonomy_key(
+                    right.get("primary_muscle")
+                ):
                     continue
             similar_pairs.append(
                 {
@@ -2152,7 +2272,9 @@ def _taxonomy_qa_report() -> dict:
                 issues.append(f'Track title should be "{expected}"')
         elif kind == "hub":
             lower_title = title.lower()
-            if any(level in lower_title for level in DEFAULT_LEVELS) and any(env in lower_title for env in DEFAULT_ENVS):
+            if any(level in lower_title for level in DEFAULT_LEVELS) and any(
+                env in lower_title for env in DEFAULT_ENVS
+            ):
                 issues.append("Hub title looks like a track title")
 
         if issues:
@@ -2183,7 +2305,9 @@ def _taxonomy_qa_report() -> dict:
     }
 
 
-def _child_track_count_for_hub_slug(hub_slug: str, exclude_program_id: Optional[ObjectId] = None) -> int:
+def _child_track_count_for_hub_slug(
+    hub_slug: str, exclude_program_id: Optional[ObjectId] = None
+) -> int:
     hub_slug = (hub_slug or "").strip()
     if not hub_slug:
         return 0
@@ -2212,7 +2336,9 @@ def _program_item_reference_count_for_workout(workout: dict) -> int:
     return db.program_items.count_documents({"$or": ref_filters})
 
 
-def _admin_workout_picker_payload(workouts: List[dict]) -> tuple[list[dict], list[str], list[str], list[str]]:
+def _admin_workout_picker_payload(
+    workouts: List[dict],
+) -> tuple[list[dict], list[str], list[str], list[str]]:
     picker_workouts = []
     levels = set()
     styles = set()
@@ -2227,7 +2353,7 @@ def _admin_workout_picker_payload(workouts: List[dict]) -> tuple[list[dict], lis
         style = (w.get("style") or "").strip()
 
         parts = []
-        for part in (w.get("body_parts") or []):
+        for part in w.get("body_parts") or []:
             label = (part or "").strip()
             if label and label not in parts:
                 parts.append(label)
@@ -2305,9 +2431,7 @@ def _favorite_programs_for_viewer(viewer_id: str, limit: int = 6) -> List[dict]:
 
     # Keep the user's favorite order (latest favorite first).
     want = slugs[: max(1, limit * 3)]
-    found = list(
-        db.programs.find(_public_program_query({"slug": {"$in": want}, "kind": "hub"}))
-    )
+    found = list(db.programs.find(_public_program_query({"slug": {"$in": want}, "kind": "hub"})))
     by_slug = {p.get("slug"): p for p in found if p.get("slug")}
     ordered = [by_slug[s] for s in want if s in by_slug]
     return ordered[:limit]
@@ -2351,7 +2475,10 @@ def _day_key_from_program_item(item: dict, fallback_num: int) -> str:
         or item.get("custom_name")
         or f"Day {fallback_num}"
     )
-    return slugify(_normalize_week_day_label(raw_day) or f"Day {fallback_num}") or f"day-{fallback_num}"
+    return (
+        slugify(_normalize_week_day_label(raw_day) or f"Day {fallback_num}")
+        or f"day-{fallback_num}"
+    )
 
 
 def _week_day_keys_by_week(weeks: List[dict]) -> dict:
@@ -2437,9 +2564,7 @@ def _week_completion_map(owner_key: str, track_slug: str, week_numbers: List[int
 def _week_progress_for_track(owner_key: str, track: dict, weeks: List[dict]) -> dict:
     week_numbers = _ordered_week_numbers(weeks)
     progress_map = {
-        wn: {"done": 0, "total": 0, "all_done": False}
-        for wn in week_numbers
-        if wn is not None
+        wn: {"done": 0, "total": 0, "all_done": False} for wn in week_numbers if wn is not None
     }
     if not week_numbers:
         return progress_map
@@ -2477,7 +2602,9 @@ def _week_unlock_map(weeks: List[dict], week_progress: dict) -> dict:
     return unlock_map
 
 
-def _resume_target_for_track(owner_key: str, track: dict, weeks: List[dict], week_progress: dict) -> tuple:
+def _resume_target_for_track(
+    owner_key: str, track: dict, weeks: List[dict], week_progress: dict
+) -> tuple:
     week_numbers = _ordered_week_numbers(weeks)
     if not owner_key or not track.get("slug") or not week_numbers:
         return None, ""
@@ -2629,13 +2756,17 @@ def _ensure_indexes() -> None:
             [("viewer_id", 1), ("track_slug", 1), ("week_number", 1), ("day_key", 1)],
             unique=True,
         )
-        db.program_day_progress.create_index([("viewer_id", 1), ("track_slug", 1), ("week_number", 1)])
+        db.program_day_progress.create_index(
+            [("viewer_id", 1), ("track_slug", 1), ("week_number", 1)]
+        )
 
         db.program_week_progress.create_index(
             [("viewer_id", 1), ("track_slug", 1), ("week_number", 1)],
             unique=True,
         )
-        db.program_week_progress.create_index([("viewer_id", 1), ("track_slug", 1), ("completed_at", -1)])
+        db.program_week_progress.create_index(
+            [("viewer_id", 1), ("track_slug", 1), ("completed_at", -1)]
+        )
 
         db.users.create_index([("username_lower", 1)], unique=True, sparse=True)
         db.users.create_index([("email_lower", 1)], unique=True, sparse=True)
@@ -3136,7 +3267,9 @@ def program_hub_week_detail(hub_slug, week_number: int):
             db.program_items.find({"week_id": week["_id"]}).sort([("order", 1), ("created_at", 1)])
         )
         workout_ids = [it.get("workout_id") for it in items if it.get("workout_id")]
-        workout_slugs = [it.get("workout_slug") for it in items if (it.get("workout_slug") or "").strip()]
+        workout_slugs = [
+            it.get("workout_slug") for it in items if (it.get("workout_slug") or "").strip()
+        ]
         ws = []
         if workout_ids or workout_slugs:
             ws = list(
@@ -3192,7 +3325,9 @@ def program_hub_week_detail(hub_slug, week_number: int):
         is_template_preview = True
 
     weeks_in_track = list(
-        db.program_weeks.find({"program_id": track["_id"]}, {"week_number": 1}).sort([("week_number", 1)])
+        db.program_weeks.find({"program_id": track["_id"]}, {"week_number": 1}).sort(
+            [("week_number", 1)]
+        )
     )
     week_numbers = [w.get("week_number") for w in weeks_in_track if w.get("week_number")]
     owner_key = _progress_owner_key()
@@ -3204,7 +3339,9 @@ def program_hub_week_detail(hub_slug, week_number: int):
 
     next_week_number = next((n for n in week_numbers if n > week_number), None)
     if not next_week_number:
-        max_weeks = _week_count_from_duration_label(track.get("duration_label") or hub.get("duration_label"))
+        max_weeks = _week_count_from_duration_label(
+            track.get("duration_label") or hub.get("duration_label")
+        )
         if week_number < max_weeks:
             next_week_number = week_number + 1
 
@@ -3256,8 +3393,6 @@ def program_hub_week_detail(hub_slug, week_number: int):
 
 @app.route("/programs/<hub_slug>/week/<int:week_number>/day-status", methods=["POST"])
 def program_hub_week_day_status(hub_slug, week_number: int):
-    hub = _get_hub_or_404(hub_slug)
-
     level = _norm_choice(request.form.get("level")) or "beginner"
     env = _norm_choice(request.form.get("env")) or "home"
 
@@ -3384,7 +3519,9 @@ def workouts():
     # Backwards compatibility for old /workouts?filter=... links.
     legacy_filter = _norm_choice(request.args.get("filter"))
     if legacy_filter in LEGACY_WORKOUT_FILTER_TO_SORT:
-        return redirect(url_for("workouts_browse", sort=LEGACY_WORKOUT_FILTER_TO_SORT[legacy_filter]))
+        return redirect(
+            url_for("workouts_browse", sort=LEGACY_WORKOUT_FILTER_TO_SORT[legacy_filter])
+        )
 
     parts_single = set(db.workouts.distinct("body_part"))
     parts_multi = set(db.workouts.distinct("body_parts"))
@@ -3456,7 +3593,9 @@ def workouts_browse():
     if difficulty:
         and_clauses.append({"difficulty_tier": difficulty})
     if body:
-        and_clauses.append({"$or": [{"body_part": body}, {"body_parts": body}, {"primary_muscle": body}]})
+        and_clauses.append(
+            {"$or": [{"body_part": body}, {"body_parts": body}, {"primary_muscle": body}]}
+        )
     if sort_key == "favorites":
         and_clauses.append({"is_favorite": True})
     if q:
@@ -3534,7 +3673,9 @@ def workout_detail(slug):
         w.get("primary_muscle")
     )
     w["equipment"] = w.get("equipment") or _infer_equipment_from_style(w.get("style"))
-    w["difficulty_tier"] = w.get("difficulty_tier") or _infer_difficulty_tier_from_level(w.get("level"))
+    w["difficulty_tier"] = w.get("difficulty_tier") or _infer_difficulty_tier_from_level(
+        w.get("level")
+    )
 
     parts = w.get("body_parts") or ([w.get("body_part")] if w.get("body_part") else [])
     rel_or = []
@@ -3600,7 +3741,9 @@ def workout_detail(slug):
                         args["day"] = ref_day
                     back_to_week_url = url_for("program_hub_week_detail", **args)
 
-    return render_template("workout_detail.html", w=w, related=related, back_to_week_url=back_to_week_url)
+    return render_template(
+        "workout_detail.html", w=w, related=related, back_to_week_url=back_to_week_url
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -3707,9 +3850,13 @@ def logout():
 
 @app.route("/account/register", methods=["GET", "POST"])
 def account_register():
-    if getattr(current_user, "is_authenticated", False) and not getattr(current_user, "is_admin", False):
+    if getattr(current_user, "is_authenticated", False) and not getattr(
+        current_user, "is_admin", False
+    ):
         return redirect(url_for("account_profile"))
-    if getattr(current_user, "is_authenticated", False) and getattr(current_user, "is_admin", False):
+    if getattr(current_user, "is_authenticated", False) and getattr(
+        current_user, "is_admin", False
+    ):
         return redirect(url_for("admin_index"))
 
     if request.method == "POST":
@@ -3728,7 +3875,9 @@ def account_register():
             flash("Password must be at least 8 characters.", "danger")
             return render_template("account_register.html")
         if not re.match(r"^[a-zA-Z0-9_]{3,30}$", username):
-            flash("Username must be 3-30 characters and only letters, numbers, underscore.", "danger")
+            flash(
+                "Username must be 3-30 characters and only letters, numbers, underscore.", "danger"
+            )
             return render_template("account_register.html")
 
         username_lower = username.lower()
@@ -3767,9 +3916,13 @@ def account_register():
 
 @app.route("/account/login", methods=["GET", "POST"])
 def account_login():
-    if getattr(current_user, "is_authenticated", False) and not getattr(current_user, "is_admin", False):
+    if getattr(current_user, "is_authenticated", False) and not getattr(
+        current_user, "is_admin", False
+    ):
         return redirect(url_for("account_profile"))
-    if getattr(current_user, "is_authenticated", False) and getattr(current_user, "is_admin", False):
+    if getattr(current_user, "is_authenticated", False) and getattr(
+        current_user, "is_admin", False
+    ):
         return redirect(url_for("admin_index"))
 
     if request.method == "POST":
@@ -3781,7 +3934,11 @@ def account_login():
             return render_template("account_login.html")
 
         doc = db.users.find_one({"$or": [{"email_lower": identity}, {"username_lower": identity}]})
-        if not doc or not doc.get("password_hash") or not check_password_hash(doc["password_hash"], password):
+        if (
+            not doc
+            or not doc.get("password_hash")
+            or not check_password_hash(doc["password_hash"], password)
+        ):
             flash("Invalid login.", "danger")
             return render_template("account_login.html")
         if doc.get("active") is False:
@@ -3866,7 +4023,14 @@ def admin_index():
         programs = list(
             db.programs.find(
                 {},
-                {"title": 1, "slug": 1, "kind": 1, "active": 1, "publish_status": 1, "show_on_home": 1},
+                {
+                    "title": 1,
+                    "slug": 1,
+                    "kind": 1,
+                    "active": 1,
+                    "publish_status": 1,
+                    "show_on_home": 1,
+                },
             )
         )
     except Exception as e:
@@ -4028,9 +4192,15 @@ def admin_template_library_rename(template_id):
     if conflicting:
         flash(f'A template named "{name}" already exists for this type.', "danger")
         return redirect(url_for("admin_template_library"))
-    action = _upsert_content_template(_norm_choice(template.get("kind")), name, {
-        k: v for k, v in template.items() if k not in {"_id", "kind", "name", "key", "created_at", "updated_at"}
-    })
+    action = _upsert_content_template(
+        _norm_choice(template.get("kind")),
+        name,
+        {
+            k: v
+            for k, v in template.items()
+            if k not in {"_id", "kind", "name", "key", "created_at", "updated_at"}
+        },
+    )
     if action == "created":
         _content_template_collection().delete_one({"_id": template["_id"]})
     flash(f'Template renamed to "{name}".', "success")
@@ -4043,8 +4213,14 @@ def admin_template_library_duplicate(template_id):
     template = _content_template_by_id(template_id)
     if not template:
         abort(404)
-    new_name = _next_template_copy_name(_norm_choice(template.get("kind")), _clean_text(template.get("name")) or "Template")
-    payload = {k: v for k, v in template.items() if k not in {"_id", "kind", "name", "key", "created_at", "updated_at", "archived"}}
+    new_name = _next_template_copy_name(
+        _norm_choice(template.get("kind")), _clean_text(template.get("name")) or "Template"
+    )
+    payload = {
+        k: v
+        for k, v in template.items()
+        if k not in {"_id", "kind", "name", "key", "created_at", "updated_at", "archived"}
+    }
     _upsert_content_template(_norm_choice(template.get("kind")), new_name, payload)
     flash(f'Template duplicated as "{new_name}".', "success")
     return redirect(url_for("admin_template_library"))
@@ -4061,7 +4237,9 @@ def admin_template_library_archive(template_id):
         {"_id": template["_id"]},
         {"$set": {"archived": archived, "updated_at": datetime.datetime.utcnow()}},
     )
-    flash(f'Template {"archived" if archived else "unarchived"}: {template.get("name")}.', "success")
+    flash(
+        f'Template {"archived" if archived else "unarchived"}: {template.get("name")}.', "success"
+    )
     return redirect(url_for("admin_template_library"))
 
 
@@ -4089,7 +4267,9 @@ def admin_workout_new():
         body_parts, body_part_warnings = _normalize_body_parts(
             _split_list(request.form.get("body_parts", ""))
         )
-        body_part = body_parts[0] if body_parts else (_clean_text(request.form.get("body_part")) or "")
+        body_part = (
+            body_parts[0] if body_parts else (_clean_text(request.form.get("body_part")) or "")
+        )
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
         info = _clean_text(request.form.get("info")) or None
@@ -4173,7 +4353,11 @@ def admin_workout_new():
                 "Removed tags that duplicate structured metadata: " + ", ".join(removed_tags) + ".",
                 "info",
             )
-        if body_parts and metadata.get("primary_muscle") and body_parts[0] != metadata.get("primary_muscle"):
+        if (
+            body_parts
+            and metadata.get("primary_muscle")
+            and body_parts[0] != metadata.get("primary_muscle")
+        ):
             flash(
                 (
                     f"Primary muscle is canonical. Body Parts starts with '{body_parts[0]}' "
@@ -4241,7 +4425,9 @@ def admin_workout_edit(id):
             _split_list(request.form.get("body_parts", ""))
         )
         prior_body_part = _clean_text(w.get("body_part"))
-        body_part = body_parts[0] if body_parts else (_clean_text(request.form.get("body_part")) or "")
+        body_part = (
+            body_parts[0] if body_parts else (_clean_text(request.form.get("body_part")) or "")
+        )
         images = _collect_ordered_images_from_form(request)
         muscle_image = _collect_muscle_image_from_form(request)
         info = _clean_text(request.form.get("info")) or None
@@ -4332,7 +4518,11 @@ def admin_workout_edit(id):
                 "Removed tags that duplicate structured metadata: " + ", ".join(removed_tags) + ".",
                 "info",
             )
-        if body_parts and metadata.get("primary_muscle") and body_parts[0] != metadata.get("primary_muscle"):
+        if (
+            body_parts
+            and metadata.get("primary_muscle")
+            and body_parts[0] != metadata.get("primary_muscle")
+        ):
             flash(
                 (
                     f"Primary muscle is canonical. Body Parts starts with '{body_parts[0]}' "
@@ -4636,13 +4826,19 @@ def admin_program_link_health_backfill():
         )
     )
     workout_ids = [it.get("workout_id") for it in items if it.get("workout_id")]
-    workouts = list(db.workouts.find({"_id": {"$in": workout_ids}}, {"_id": 1, "slug": 1, "name": 1}))
+    workouts = list(
+        db.workouts.find({"_id": {"$in": workout_ids}}, {"_id": 1, "slug": 1, "name": 1})
+    )
     by_id = {w["_id"]: w for w in workouts if w.get("_id") is not None}
 
-    slugs_needed = [it.get("workout_slug") for it in items if (it.get("workout_slug") or "").strip()]
+    slugs_needed = [
+        it.get("workout_slug") for it in items if (it.get("workout_slug") or "").strip()
+    ]
     by_slug = {}
     if slugs_needed:
-        slug_docs = list(db.workouts.find({"slug": {"$in": slugs_needed}}, {"_id": 1, "slug": 1, "name": 1}))
+        slug_docs = list(
+            db.workouts.find({"slug": {"$in": slugs_needed}}, {"_id": 1, "slug": 1, "name": 1})
+        )
         by_slug = {w.get("slug"): w for w in slug_docs if (w.get("slug") or "").strip()}
 
     updated = 0
@@ -4726,7 +4922,9 @@ def admin_programs():
 
 
 def _display_level_label(level: str) -> str:
-    return " ".join([(part or "").strip().capitalize() for part in (level or "").split() if part.strip()])
+    return " ".join(
+        [(part or "").strip().capitalize() for part in (level or "").split() if part.strip()]
+    )
 
 
 def _unique_program_slug(base_slug: str, exclude_program_id: Optional[ObjectId] = None) -> str:
@@ -4749,7 +4947,9 @@ def _clone_weeks_and_items_to_program(
     include_items: bool = True,
 ) -> tuple:
     source_weeks = list(
-        db.program_weeks.find({"program_id": source_program_id}).sort([("week_number", 1), ("order", 1)])
+        db.program_weeks.find({"program_id": source_program_id}).sort(
+            [("week_number", 1), ("order", 1)]
+        )
     )
     if not source_weeks:
         return 0, 0
@@ -4844,10 +5044,17 @@ def admin_program_clone(id):
         if report.get("critical_count", 0) == 0:
             final_status = publish_status
         else:
-            status_note = f" Status set to Draft due to {report.get('critical_count', 0)} critical issue(s)."
+            status_note = (
+                f" Status set to Draft due to {report.get('critical_count', 0)} critical issue(s)."
+            )
     db.programs.update_one(
         {"_id": inserted.inserted_id},
-        {"$set": {"publish_status": final_status, "publish_checked_at": datetime.datetime.utcnow()}},
+        {
+            "$set": {
+                "publish_status": final_status,
+                "publish_checked_at": datetime.datetime.utcnow(),
+            }
+        },
     )
 
     flash(
@@ -4882,7 +5089,7 @@ def admin_program_build_tracks(id):
 
     levels = []
     seen_levels = set()
-    for level in (levels_raw or DEFAULT_LEVELS):
+    for level in levels_raw or DEFAULT_LEVELS:
         normalized = _norm_choice(level)
         if not normalized or normalized in seen_levels:
             continue
@@ -4893,7 +5100,7 @@ def admin_program_build_tracks(id):
 
     envs = []
     seen_envs = set()
-    for env in (envs_raw or DEFAULT_ENVS):
+    for env in envs_raw or DEFAULT_ENVS:
         normalized = _norm_choice(env)
         if not normalized or normalized not in DEFAULT_ENVS or normalized in seen_envs:
             continue
@@ -5047,7 +5254,9 @@ def admin_program_new():
         category = _clean_text(request.form.get("category")) or None
         duration_label = _clean_text(request.form.get("duration_label")) or None
         default_week_split_raw = _clean_text(request.form.get("default_week_split"))
-        default_week_split = _parse_day_split(default_week_split_raw) if default_week_split_raw else None
+        default_week_split = (
+            _parse_day_split(default_week_split_raw) if default_week_split_raw else None
+        )
         summary = _clean_text(request.form.get("summary")) or None
         cover_image = _clean_text(request.form.get("cover_image")) or None
 
@@ -5057,7 +5266,10 @@ def admin_program_new():
         publish_status = _norm_publish_status(request.form.get("publish_status"), fallback="draft")
         if publish_status in ("ready", "published"):
             publish_status = "draft"
-            flash("New programs are created as Draft. Use Programs → status controls when checks are clear.", "info")
+            flash(
+                "New programs are created as Draft. Use Programs → status controls when checks are clear.",
+                "info",
+            )
 
         kind = (request.form.get("kind") or "").strip().lower() or "hub"
         if kind not in ("hub", "track"):
@@ -5114,9 +5326,7 @@ def admin_program_new():
         try:
             new_program = db.programs.insert_one(doc)
             flash("Program created. Next: build its weeks.", "success")
-            return redirect(
-                url_for("admin_program_weeks", program_id=str(new_program.inserted_id))
-            )
+            return redirect(url_for("admin_program_weeks", program_id=str(new_program.inserted_id)))
         except Exception as e:
             flash(f"Error: {e}", "danger")
 
@@ -5137,7 +5347,9 @@ def admin_program_edit(id):
         category = _clean_text(request.form.get("category")) or None
         duration_label = _clean_text(request.form.get("duration_label")) or None
         default_week_split_raw = _clean_text(request.form.get("default_week_split"))
-        default_week_split = _parse_day_split(default_week_split_raw) if default_week_split_raw else None
+        default_week_split = (
+            _parse_day_split(default_week_split_raw) if default_week_split_raw else None
+        )
         summary = _clean_text(request.form.get("summary")) or None
         cover_image = _clean_text(request.form.get("cover_image")) or None
 
@@ -5150,7 +5362,10 @@ def admin_program_edit(id):
         )
         if publish_status in ("ready", "published"):
             publish_status = "draft"
-            flash("Program saved as Draft. Use Programs → status controls to set Ready/Published after checks.", "info")
+            flash(
+                "Program saved as Draft. Use Programs → status controls to set Ready/Published after checks.",
+                "info",
+            )
 
         kind = (request.form.get("kind") or p.get("kind") or "hub").strip().lower()
         if kind not in ("hub", "track"):
@@ -5180,7 +5395,9 @@ def admin_program_edit(id):
         existing_kind = _norm_choice(p.get("kind")) or "hub"
         existing_slug = (p.get("slug") or "").strip()
         if existing_kind == "hub" and existing_slug:
-            child_track_count = _child_track_count_for_hub_slug(existing_slug, exclude_program_id=p["_id"])
+            child_track_count = _child_track_count_for_hub_slug(
+                existing_slug, exclude_program_id=p["_id"]
+            )
             if child_track_count > 0 and kind != "hub":
                 kind = "hub"
                 hub_slug = None
@@ -5346,7 +5563,9 @@ def admin_program_weeks_scaffold(program_id):
         max_value=52,
     )
     if quick_start_key and active_preset:
-        week_count = _safe_int(active_preset.get("week_count"), default=week_count, min_value=1, max_value=52)
+        week_count = _safe_int(
+            active_preset.get("week_count"), default=week_count, min_value=1, max_value=52
+        )
 
     if active_preset:
         day_split = list(active_preset.get("day_split") or DEFAULT_TRACK_DAY_SPLIT)
@@ -5365,9 +5584,7 @@ def admin_program_weeks_scaffold(program_id):
     weeks_skipped_for_items = 0
 
     for week_number in range(1, week_count + 1):
-        week = db.program_weeks.find_one(
-            {"program_id": program["_id"], "week_number": week_number}
-        )
+        week = db.program_weeks.find_one({"program_id": program["_id"], "week_number": week_number})
         if not week:
             db.program_weeks.insert_one(
                 {
@@ -5409,9 +5626,7 @@ def admin_program_weeks_scaffold(program_id):
             items_created += 1
 
     flash(
-        (
-            f"{active_preset.get('label')}: " if active_preset else ""
-        )
+        (f"{active_preset.get('label')}: " if active_preset else "")
         + (
             f"Scaffold complete: {weeks_created} week(s) created, "
             f"{items_created} sample item(s) added. "
@@ -5508,7 +5723,9 @@ def admin_program_week_clone(program_id, week_id):
     if not program:
         abort(404)
 
-    source_week = db.program_weeks.find_one({"_id": ObjectId(week_id), "program_id": program["_id"]})
+    source_week = db.program_weeks.find_one(
+        {"_id": ObjectId(week_id), "program_id": program["_id"]}
+    )
     if not source_week:
         abort(404)
 
@@ -5532,7 +5749,11 @@ def admin_program_week_clone(program_id, week_id):
     overwrite_items = request.form.get("overwrite_items") == "on"
     progression_key = _norm_choice(request.form.get("progression_helper")) or "none"
     progression_label = next(
-        (helper.get("label") for helper in PROGRESSION_HELPERS if helper.get("key") == progression_key),
+        (
+            helper.get("label")
+            for helper in PROGRESSION_HELPERS
+            if helper.get("key") == progression_key
+        ),
         "Copy only",
     )
 
@@ -5560,10 +5781,14 @@ def admin_program_week_clone(program_id, week_id):
     copied_count = 0
     if include_items and target_week:
         source_items = list(
-            db.program_items.find({"week_id": source_week["_id"]}).sort([("order", 1), ("created_at", 1)])
+            db.program_items.find({"week_id": source_week["_id"]}).sort(
+                [("order", 1), ("created_at", 1)]
+            )
         )
         if source_items:
-            target_existing_count = db.program_items.count_documents({"week_id": target_week["_id"]})
+            target_existing_count = db.program_items.count_documents(
+                {"week_id": target_week["_id"]}
+            )
             if target_existing_count > 0 and not overwrite_items:
                 flash(
                     (
@@ -5647,7 +5872,11 @@ def admin_program_week_items(program_id, week_id):
     current_week_number = _safe_int(week.get("week_number"), default=0)
     if current_week_number > 1:
         prev_week = next(
-            (w for w in weeks_in_program if _safe_int(w.get("week_number"), default=0) == current_week_number - 1),
+            (
+                w
+                for w in weeks_in_program
+                if _safe_int(w.get("week_number"), default=0) == current_week_number - 1
+            ),
             None,
         )
     workouts = list(
@@ -5670,7 +5899,9 @@ def admin_program_week_items(program_id, week_id):
         ).sort([("name", 1)])
     )
     workout_map = {w["_id"]: w for w in workouts}
-    picker_workouts, picker_levels, picker_styles, picker_body_parts = _admin_workout_picker_payload(workouts)
+    picker_workouts, picker_levels, picker_styles, picker_body_parts = (
+        _admin_workout_picker_payload(workouts)
+    )
     saved_day_templates = _saved_templates("day")
     saved_week_templates = _saved_templates("week")
     preferred_template_ref = _clean_text(request.args.get("template_ref")) or ""
@@ -5698,7 +5929,9 @@ def admin_program_week_items(program_id, week_id):
     )
 
 
-@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/<item_id>/duplicate", methods=["POST"])
+@app.route(
+    "/admin/programs/<program_id>/weeks/<week_id>/items/<item_id>/duplicate", methods=["POST"]
+)
 @login_required
 def admin_program_week_item_duplicate(program_id, week_id, item_id):
     program = db.programs.find_one({"_id": ObjectId(program_id)})
@@ -5762,7 +5995,11 @@ def admin_program_week_items_apply_template(program_id, week_id):
         flash("Choose a valid day template.", "danger")
         return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
 
-    target_day = _normalize_week_day_label(request.form.get("target_day")) or template.get("default_day") or "Push"
+    target_day = (
+        _normalize_week_day_label(request.form.get("target_day"))
+        or template.get("default_day")
+        or "Push"
+    )
     overwrite_target_day = request.form.get("overwrite_target_day") == "on"
 
     if overwrite_target_day:
@@ -5800,7 +6037,8 @@ def admin_program_week_items_apply_template(program_id, week_id):
                 "sets": _clean_text(entry.get("sets")) or None,
                 "reps": _clean_text(entry.get("reps")) or None,
                 "rest": _clean_text(entry.get("rest")) or None,
-                "notes": _clean_text(entry.get("notes")) or f"Applied from template: {template_label}",
+                "notes": _clean_text(entry.get("notes"))
+                or f"Applied from template: {template_label}",
                 "order": base_order + idx,
                 "created_at": now,
             }
@@ -5827,7 +6065,9 @@ def admin_program_week_items_apply_template(program_id, week_id):
     return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
 
 
-@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/apply-week-template", methods=["POST"])
+@app.route(
+    "/admin/programs/<program_id>/weeks/<week_id>/items/apply-week-template", methods=["POST"]
+)
 @login_required
 def admin_program_week_items_apply_week_template(program_id, week_id):
     program = db.programs.find_one({"_id": ObjectId(program_id)})
@@ -5856,7 +6096,10 @@ def admin_program_week_items_apply_week_template(program_id, week_id):
     created = 0
     unresolved = 0
     now = datetime.datetime.utcnow()
-    for idx, entry in enumerate(sorted(template.get("items") or [], key=lambda row: _safe_int(row.get("order"), default=0)), start=1):
+    for idx, entry in enumerate(
+        sorted(template.get("items") or [], key=lambda row: _safe_int(row.get("order"), default=0)),
+        start=1,
+    ):
         doc = _apply_saved_template_item(
             entry,
             week_id=week["_id"],
@@ -5900,7 +6143,9 @@ def admin_program_week_items_save_day_template(program_id, week_id):
         return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
 
     source_items = list(
-        db.program_items.find({"week_id": week["_id"], "day": source_day}).sort([("order", 1), ("created_at", 1)])
+        db.program_items.find({"week_id": week["_id"], "day": source_day}).sort(
+            [("order", 1), ("created_at", 1)]
+        )
     )
     if not source_items:
         flash(f"{source_day} has no items to save.", "warning")
@@ -5917,14 +6162,18 @@ def admin_program_week_items_save_day_template(program_id, week_id):
             "source_week_id": week["_id"],
             "source_week_number": _safe_int(week.get("week_number"), default=0),
             "source_day": source_day,
-            "items": [_serialize_week_item_for_template(item, include_day=False) for item in source_items],
+            "items": [
+                _serialize_week_item_for_template(item, include_day=False) for item in source_items
+            ],
         },
     )
     flash(f'Day template "{template_name}" {action}.', "success")
     return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
 
 
-@app.route("/admin/programs/<program_id>/weeks/<week_id>/items/save-week-template", methods=["POST"])
+@app.route(
+    "/admin/programs/<program_id>/weeks/<week_id>/items/save-week-template", methods=["POST"]
+)
 @login_required
 def admin_program_week_items_save_week_template(program_id, week_id):
     program = db.programs.find_one({"_id": ObjectId(program_id)})
@@ -5956,7 +6205,9 @@ def admin_program_week_items_save_week_template(program_id, week_id):
             "source_program_title": _clean_text(program.get("title")) or None,
             "source_week_id": week["_id"],
             "source_week_number": _safe_int(week.get("week_number"), default=0),
-            "items": [_serialize_week_item_for_template(item, include_day=True) for item in source_items],
+            "items": [
+                _serialize_week_item_for_template(item, include_day=True) for item in source_items
+            ],
         },
     )
     flash(f'Week template "{template_name}" {action}.', "success")
@@ -5983,7 +6234,9 @@ def admin_program_week_items_duplicate_day(program_id, week_id):
         return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
 
     source_items = list(
-        db.program_items.find({"week_id": week["_id"], "day": source_day}).sort([("order", 1), ("created_at", 1)])
+        db.program_items.find({"week_id": week["_id"], "day": source_day}).sort(
+            [("order", 1), ("created_at", 1)]
+        )
     )
     if not source_items:
         flash(f"{source_day} has no items to duplicate.", "warning")
@@ -6049,11 +6302,15 @@ def admin_program_week_item_new(program_id, week_id):
             workout_id = ObjectId(workout_id_raw)
         except Exception:
             flash("Invalid workout selection.", "danger")
-            return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+            return redirect(
+                url_for("admin_program_week_items", program_id=program_id, week_id=week_id)
+            )
         workout_doc = db.workouts.find_one({"_id": workout_id}, {"slug": 1, "name": 1})
         if not workout_doc:
             flash("Selected workout no longer exists. Pick another workout.", "danger")
-            return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+            return redirect(
+                url_for("admin_program_week_items", program_id=program_id, week_id=week_id)
+            )
         workout_slug = workout_doc.get("slug")
         workout_name = workout_doc.get("name")
 
@@ -6113,11 +6370,15 @@ def admin_program_week_item_edit(program_id, week_id, item_id):
             workout_id = ObjectId(workout_id_raw)
         except Exception:
             flash("Invalid workout selection.", "danger")
-            return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+            return redirect(
+                url_for("admin_program_week_items", program_id=program_id, week_id=week_id)
+            )
         workout_doc = db.workouts.find_one({"_id": workout_id}, {"slug": 1, "name": 1})
         if not workout_doc:
             flash("Selected workout no longer exists. Pick another workout.", "danger")
-            return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
+            return redirect(
+                url_for("admin_program_week_items", program_id=program_id, week_id=week_id)
+            )
         workout_slug = workout_doc.get("slug")
         workout_name = workout_doc.get("name")
 
@@ -6191,7 +6452,9 @@ def admin_program_week_items_copy(program_id, week_id):
         return redirect(url_for("admin_program_week_items", program_id=program_id, week_id=week_id))
 
     source_items = list(
-        db.program_items.find({"week_id": source_week["_id"]}).sort([("order", 1), ("created_at", 1)])
+        db.program_items.find({"week_id": source_week["_id"]}).sort(
+            [("order", 1), ("created_at", 1)]
+        )
     )
     if not source_items:
         flash("Source week has no items to copy.", "warning")
@@ -6244,7 +6507,9 @@ def admin_program_week_items_reindex(program_id, week_id):
         abort(404)
 
     items = list(
-        db.program_items.find({"week_id": week["_id"]}, {"_id": 1}).sort([("order", 1), ("created_at", 1)])
+        db.program_items.find({"week_id": week["_id"]}, {"_id": 1}).sort(
+            [("order", 1), ("created_at", 1)]
+        )
     )
     for idx, item in enumerate(items, start=1):
         db.program_items.update_one({"_id": item["_id"]}, {"$set": {"order": idx}})
