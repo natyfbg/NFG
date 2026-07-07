@@ -1,13 +1,8 @@
 #!/bin/sh
-set -eu
+set -e
 
-# Compute values without relying on inline expansion inside the gunicorn arg
-PORT="${PORT:-5000}"
-WEB_CONCURRENCY="${WEB_CONCURRENCY:-3}"
-GUNICORN_THREADS="${GUNICORN_THREADS:-2}"
+PORT="${PORT:-8000}"
 
-exec gunicorn \
-  -w "$WEB_CONCURRENCY" \
-  -k gthread --threads "$GUNICORN_THREADS" \
-  -b "0.0.0.0:${PORT}" \
-  app:app
+echo "Starting NFG app on port ${PORT}..."
+
+exec gunicorn -w 3 -b "0.0.0.0:${PORT}" app:app --timeout 120

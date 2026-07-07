@@ -20,6 +20,7 @@ instance/
 
 # Environment files (keep example)
 ../.env
+.env
 .env.*
 !.env.example
 

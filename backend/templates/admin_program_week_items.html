@@ -1,0 +1,723 @@
+{% extends "base.html" %}
+{% from "admin_program_week_item_form.html" import workout_picker %}
+{% block title %}Admin – Week Items{% endblock %}
+
+{% block sidebar %}
+<div class="card mb-3">
+  <div class="card-header">Content Management</div>
+
+  {% set ep = request.endpoint or '' %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality'] %}
+  {% set admin_program_eps = [
+    'admin_template_library','admin_template_library_rename','admin_template_library_duplicate','admin_template_library_archive','admin_template_library_delete',
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_link_health_backfill','admin_program_weeks','admin_program_weeks_scaffold',
+    'admin_program_week_update','admin_program_week_clone',
+    'admin_program_week_items','admin_program_week_item_new',
+    'admin_program_week_item_edit','admin_program_week_item_delete','admin_program_week_items_copy','admin_program_week_items_reindex',
+    'admin_program_week_items_apply_template','admin_program_week_items_apply_week_template',
+    'admin_program_week_items_save_day_template','admin_program_week_items_save_week_template','admin_program_week_items_duplicate_day'
+  ] %}
+
+  <div class="list-group list-group-flush">
+    <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}"
+       href="{{ url_for('admin_index') }}">Workouts</a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_styles'] %}active{% endif %}"
+       href="{{ url_for('admin_styles') }}">Styles</a>
+
+    <a class="list-group-item list-group-item-action {% if ep in ['admin_home_plans','admin_home_plan_new','admin_home_plan_edit'] %}active{% endif %}"
+       href="{{ url_for('admin_home_plans') }}">Home Plans</a>
+
+    <a class="list-group-item list-group-item-action {% if ep in admin_program_eps %}active{% endif %}"
+       href="{{ url_for('admin_programs') }}">Programs</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Context</div>
+  <div class="card-body small app-sidebar-stack">
+    <div>
+      <div><strong>{{ program.title }}</strong></div>
+      <div class="text-muted">/{{ program.slug }}</div>
+    </div>
+    <div>
+      <strong>Week {{ week.week_number }}</strong>
+      {% if week.title %}
+        <span class="text-muted">— {{ week.title }}</span>
+      {% endif %}
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <span class="flow-chip">{{ items|length }} item{{ '' if items|length == 1 else 's' }}</span>
+      {% if other_weeks %}
+        <span class="flow-chip">{{ other_weeks|length }} other week{{ '' if other_weeks|length == 1 else 's' }} available to copy</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="app-page admin-week-items-page">
+  <div class="app-page-header">
+    <div>
+      <div class="app-page-kicker">Program Authoring</div>
+      <h1 class="mb-1">Week Items</h1>
+      <p class="app-page-copy">
+        Step 5 of the workflow. Build the daily split for this week and link each item to an exercise from the workout library.
+      </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn app-btn-secondary" href="{{ url_for('admin_program_weeks', program_id=program._id|string) }}">
+        Back to Weeks
+      </a>
+      <a class="btn app-btn-secondary" href="{{ url_for('admin_template_library') }}">
+        Template Library
+      </a>
+      {% if program.kind == 'track' and program.hub_slug and program.track_level %}
+        {% set env = (program.track_env|string|lower if program.track_env else '') %}
+        {% if not env %}
+          {% if program.slug and program.slug.endswith('-gym') %}
+            {% set env = 'gym' %}
+          {% elif program.slug and program.slug.endswith('-hybrid') %}
+            {% set env = 'hybrid' %}
+          {% else %}
+            {% set env = 'home' %}
+          {% endif %}
+        {% endif %}
+        <a class="btn app-btn-secondary"
+           href="{{ url_for('program_hub_week_detail', hub_slug=program.hub_slug, week_number=week.week_number, level=(program.track_level|string|lower), env=env) }}">
+          Open Week Experience
+        </a>
+      {% endif %}
+      <a class="btn app-btn-primary" href="{{ url_for('program_detail', slug=program.slug) }}">
+        View Public
+      </a>
+    </div>
+  </div>
+
+  <div class="app-surface">
+    <div class="app-surface-header">
+      <div>
+        <div class="app-section-kicker">Workflow Context</div>
+        <strong>Week content before publish</strong>
+      </div>
+    </div>
+    <div class="card-body small text-muted">
+      The recommended order is: <strong>Day / Order / Workout</strong>, then <strong>Sets / Reps / Rest</strong>, then <strong>Notes</strong>. After linking this week’s items, return to <strong>Link Health</strong> and the Programs screen for readiness and publish status.
+    </div>
+  </div>
+
+  <div class="app-surface">
+    <div class="app-surface-header">
+      <div>
+        <div class="app-section-kicker">Speed Tools</div>
+        <strong>Reuse existing structure</strong>
+      </div>
+    </div>
+    <div class="card-body admin-week-tools">
+      <form method="post"
+            action="{{ url_for('admin_program_week_items_copy', program_id=program._id|string, week_id=week._id|string) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Copy items from another week</label>
+            <select class="form-select" name="source_week_id" required>
+              <option value="">— Select source week —</option>
+              {% for w in other_weeks %}
+                <option value="{{ w._id|string }}">
+                  Week {{ w.week_number }}{% if w.title %} — {{ w.title }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" id="overwriteWeekItems" name="overwrite_items">
+              <label class="form-check-label" for="overwriteWeekItems">
+                Overwrite current week items
+              </label>
+            </div>
+          </div>
+          <div class="col-12 col-md-3 d-grid">
+            <button class="btn app-btn-secondary" type="submit" {% if not other_weeks %}disabled{% endif %}>
+              Copy Items
+            </button>
+          </div>
+        </div>
+        <div class="small text-muted mt-2">
+          If overwrite is off, copied items are appended to the bottom of the current week.
+        </div>
+      </form>
+
+      <hr class="my-3">
+
+      <form method="post"
+            action="{{ url_for('admin_program_week_items_save_day_template', program_id=program._id|string, week_id=week._id|string) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-4">
+            <label class="form-label">Save current day as template</label>
+            <select class="form-select" name="source_day" required>
+              <option value="">— Select day —</option>
+              {% for label in day_labels %}
+                <option value="{{ label }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Template name</label>
+            <input class="form-control" name="template_name" required placeholder="Beginner Push Home v1">
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button class="btn app-btn-secondary" type="submit" {% if not day_labels %}disabled{% endif %}>
+              Save Day
+            </button>
+          </div>
+        </div>
+        <div class="small text-muted mt-2">
+          Saves linked workouts, sets, reps, rest, notes, and ordering for the selected day. Reusing the same name updates the existing template.
+        </div>
+      </form>
+
+      <hr class="my-3">
+
+      <form method="post"
+            action="{{ url_for('admin_program_week_items_save_week_template', program_id=program._id|string, week_id=week._id|string) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-10">
+            <label class="form-label">Save this week as template</label>
+            <input class="form-control" name="template_name" required placeholder="8 Week Challenge - Week Structure A">
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button class="btn app-btn-secondary" type="submit" {% if not items %}disabled{% endif %}>
+              Save Week
+            </button>
+          </div>
+        </div>
+        <div class="small text-muted mt-2">
+          Saves the full week structure, including linked workouts, day labels, prescription fields, notes, and ordering.
+        </div>
+      </form>
+
+      <hr class="my-3">
+
+      <form method="post"
+            action="{{ url_for('admin_program_week_items_apply_template', program_id=program._id|string, week_id=week._id|string) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-4">
+            <label class="form-label">Apply reusable day template</label>
+            <select class="form-select" name="template_key" required>
+              <option value="">— Select template —</option>
+              {% if saved_day_templates %}
+                <optgroup label="Saved Day Templates">
+                  {% for template in saved_day_templates %}
+                    {% set option_value = "saved:" ~ (template._id|string) %}
+                    <option value="{{ option_value }}" {% if preferred_template_ref == option_value %}selected{% endif %}>{{ template.name }}</option>
+                  {% endfor %}
+                </optgroup>
+              {% endif %}
+              {% if day_templates %}
+                <optgroup label="Built-in Day Templates">
+                  {% for preset in day_templates %}
+                    {% set option_value = "preset:" ~ preset.key %}
+                    <option value="{{ option_value }}" {% if preferred_template_ref == option_value %}selected{% endif %}>{{ preset.label }}</option>
+                  {% endfor %}
+                </optgroup>
+              {% endif %}
+            </select>
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label">Target day</label>
+            <input class="form-control" name="target_day" list="dayNameList" placeholder="Uses template default">
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" id="overwriteTemplateDay" name="overwrite_target_day">
+              <label class="form-check-label" for="overwriteTemplateDay">
+                Overwrite target day items
+              </label>
+            </div>
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button class="btn app-btn-secondary" type="submit" {% if not (day_templates or saved_day_templates) %}disabled{% endif %}>
+              Apply Template
+            </button>
+          </div>
+        </div>
+        <div class="small text-muted mt-2">
+          Reusable programming blocks create normal week items with linked workouts when matches are found.
+        </div>
+      </form>
+
+      <hr class="my-3">
+
+      <form method="post"
+            action="{{ url_for('admin_program_week_items_apply_week_template', program_id=program._id|string, week_id=week._id|string) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-7">
+            <label class="form-label">Apply saved week template</label>
+            <select class="form-select" name="template_id" required>
+              <option value="">— Select week template —</option>
+              {% for template in saved_week_templates %}
+                <option value="{{ template._id|string }}" {% if preferred_week_template_id == (template._id|string) %}selected{% endif %}>
+                  {{ template.name }}{% if template.source_week_number %} — Week {{ template.source_week_number }}{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" id="overwriteWeekTemplate" name="overwrite_items">
+              <label class="form-check-label" for="overwriteWeekTemplate">
+                Overwrite current week items
+              </label>
+            </div>
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button class="btn app-btn-secondary" type="submit" {% if not saved_week_templates %}disabled{% endif %}>
+              Apply Week
+            </button>
+          </div>
+        </div>
+        <div class="small text-muted mt-2">
+          Saved week templates preserve day labels and item order, so you can stamp a full authored structure into another week quickly.
+        </div>
+      </form>
+
+      <hr class="my-3">
+
+      <form method="post"
+            action="{{ url_for('admin_program_week_items_duplicate_day', program_id=program._id|string, week_id=week._id|string) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-4">
+            <label class="form-label">Duplicate one day in this week</label>
+            <select class="form-select" name="source_day" required>
+              <option value="">— Select source day —</option>
+              {% for label in day_labels %}
+                <option value="{{ label }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label">Target day</label>
+            <input class="form-control" name="target_day" list="dayNameList" required placeholder="Push / Pull / Upper...">
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" id="overwriteDuplicateDay" name="overwrite_target_day">
+              <label class="form-check-label" for="overwriteDuplicateDay">
+                Overwrite target day items
+              </label>
+            </div>
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button class="btn app-btn-secondary" type="submit" {% if not day_labels %}disabled{% endif %}>
+              Duplicate Day
+            </button>
+          </div>
+        </div>
+      </form>
+
+      {% if prev_week %}
+        <hr class="my-3">
+
+        <form method="post"
+              action="{{ url_for('admin_program_week_items_copy', program_id=program._id|string, week_id=week._id|string) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="source_week_id" value="{{ prev_week._id|string }}">
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="small text-muted">
+              Copy the full structure from Week {{ prev_week.week_number }}{% if prev_week.title %} — {{ prev_week.title }}{% endif %}.
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <label class="d-inline-flex align-items-center gap-2 small text-muted">
+                <input class="form-check-input m-0" type="checkbox" name="overwrite_items">
+                Overwrite current week
+              </label>
+              <button class="btn app-btn-secondary app-btn-compact" type="submit">Copy Previous Week</button>
+            </div>
+          </div>
+        </form>
+      {% endif %}
+
+      <hr class="my-3">
+
+      <form method="post"
+            action="{{ url_for('admin_program_week_items_reindex', program_id=program._id|string, week_id=week._id|string) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div class="small text-muted">
+            Normalize item order to 1..N based on the current sequence.
+          </div>
+          <button class="btn app-btn-secondary app-btn-compact" type="submit">Reindex Order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="app-surface admin-week-item-card">
+    <div class="app-surface-header">
+      <div>
+        <div class="app-section-kicker">Add Item</div>
+        <strong>Create a new workout line</strong>
+      </div>
+    </div>
+    <div class="card-body">
+      <form method="post"
+            action="{{ url_for('admin_program_week_item_new', program_id=program._id|string, week_id=week._id|string) }}"
+            class="admin-week-item-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="admin-week-item-grid">
+          <div class="admin-week-item-section admin-week-item-section-meta">
+            <div class="admin-week-item-section-title">Placement</div>
+            <div class="row g-2">
+              <div class="col-12 col-md-5">
+                <label class="form-label">Day *</label>
+                <input class="form-control" name="day" list="dayNameList" required placeholder="Push / Pull / Legs / Upper / Lower / Core">
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label">Order</label>
+                <input class="form-control" type="number" min="0" step="1" name="order" value="0">
+              </div>
+              <div class="col-6 col-md-4">
+                <label class="form-label">Custom Item Name</label>
+                <input class="form-control" name="custom_name" placeholder="Warmup Circuit A">
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-week-item-section admin-week-item-section-picker">
+            {{ workout_picker('new-item', '', none, picker_levels, picker_styles, picker_body_parts) }}
+          </div>
+
+          <div class="admin-week-item-section admin-week-item-section-prescription">
+            <div class="admin-week-item-section-title">Prescription</div>
+            <div class="row g-2">
+              <div class="col-4 col-md-2">
+                <label class="form-label">Sets</label>
+                <input class="form-control" name="sets" placeholder="3">
+              </div>
+              <div class="col-4 col-md-2">
+                <label class="form-label">Reps</label>
+                <input class="form-control" name="reps" placeholder="8-12">
+              </div>
+              <div class="col-4 col-md-2">
+                <label class="form-label">Rest</label>
+                <input class="form-control" name="rest" placeholder="60s">
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-week-item-section admin-week-item-section-notes">
+            <div class="admin-week-item-section-title">Notes</div>
+            <label class="form-label">Coaching notes</label>
+            <input class="form-control" name="notes" placeholder="Tempo, cues, modifications...">
+          </div>
+        </div>
+
+        <div class="mt-3 d-flex justify-content-end">
+          <button class="btn app-btn-primary" type="submit">Add Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if items and items|length > 0 %}
+    <div class="admin-week-item-list">
+      {% for it in items %}
+        {% set linked = (workout_map.get(it.workout_id) if it.workout_id else None) %}
+        {% set current_wid = (it.workout_id|string if it.workout_id else '') %}
+        <div class="app-surface admin-week-item-card">
+          <div class="app-surface-header">
+            <div class="admin-week-item-card-heading">
+              <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="flow-chip flow-chip-accent">{{ it.day or 'Unassigned day' }}</span>
+                <span class="flow-chip">Order {{ it.order if it.order is not none else 0 }}</span>
+                {% if linked %}
+                  <span class="flow-chip app-chip-success">Linked</span>
+                {% elif it.workout_id %}
+                  <span class="flow-chip">Broken link</span>
+                {% elif it.custom_name %}
+                  <span class="flow-chip">Custom item</span>
+                {% else %}
+                  <span class="flow-chip">Needs link</span>
+                {% endif %}
+              </div>
+              <strong class="d-block mt-2">
+                {{ it.custom_name or (linked.name if linked else 'Program item') }}
+              </strong>
+            </div>
+            <div class="admin-week-item-card-actions">
+              {% if linked %}
+                <a class="btn app-btn-secondary app-btn-compact"
+                   href="{{ url_for('workout_detail', slug=linked.slug) }}">
+                  Open Exercise
+                </a>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="card-body">
+            <form method="post"
+                  action="{{ url_for('admin_program_week_item_edit', program_id=program._id|string, week_id=week._id|string, item_id=it._id|string) }}"
+                  class="admin-week-item-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+              <div class="admin-week-item-grid">
+                <div class="admin-week-item-section admin-week-item-section-meta">
+                  <div class="admin-week-item-section-title">Placement</div>
+                  <div class="row g-2">
+                    <div class="col-12 col-md-5">
+                      <label class="form-label small">Day</label>
+                      <input class="form-control form-control-sm" name="day" list="dayNameList" required value="{{ it.day or '' }}">
+                    </div>
+                    <div class="col-6 col-md-3">
+                      <label class="form-label small">Order</label>
+                      <input class="form-control form-control-sm" type="number" min="0" step="1" name="order" value="{{ it.order if it.order is not none else 0 }}">
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small">Custom Name</label>
+                      <input class="form-control form-control-sm" name="custom_name" value="{{ it.custom_name or '' }}">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="admin-week-item-section admin-week-item-section-picker">
+                  {{ workout_picker('item-' ~ (it._id|string), current_wid, linked, picker_levels, picker_styles, picker_body_parts) }}
+                </div>
+
+                <div class="admin-week-item-section admin-week-item-section-prescription">
+                  <div class="admin-week-item-section-title">Prescription</div>
+                  <div class="row g-2">
+                    <div class="col-4 col-md-2">
+                      <label class="form-label small">Sets</label>
+                      <input class="form-control form-control-sm" name="sets" value="{{ it.sets or '' }}">
+                    </div>
+                    <div class="col-4 col-md-2">
+                      <label class="form-label small">Reps</label>
+                      <input class="form-control form-control-sm" name="reps" value="{{ it.reps or '' }}">
+                    </div>
+                    <div class="col-4 col-md-2">
+                      <label class="form-label small">Rest</label>
+                      <input class="form-control form-control-sm" name="rest" value="{{ it.rest or '' }}">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="admin-week-item-section admin-week-item-section-notes">
+                  <div class="admin-week-item-section-title">Notes</div>
+                  <label class="form-label small">Coaching notes</label>
+                  <input class="form-control form-control-sm" name="notes" value="{{ it.notes or '' }}">
+                </div>
+              </div>
+
+              <div class="admin-week-item-status small text-muted">
+                {% if linked %}
+                  Linked: <strong>{{ linked.name }}</strong>
+                  {% if linked.level %} • {{ linked.level }}{% endif %}
+                  {% if linked.primary_muscle %} • {{ linked.primary_muscle }}{% endif %}
+                  {% if linked.movement_pattern %} • {{ linked.movement_pattern }}{% endif %}
+                  {% if linked.equipment %} • {{ linked.equipment }}{% endif %}
+                {% elif it.workout_id %}
+                  <span class="text-warning">Broken link:</span>
+                  workout reference no longer exists.
+                  {% if it.workout_slug %}
+                    Last known slug: <code>{{ it.workout_slug }}</code>
+                  {% endif %}
+                {% elif it.custom_name %}
+                  Custom item: <strong>{{ it.custom_name }}</strong>
+                {% else %}
+                  Add a workout link or a custom name for this item.
+                {% endif %}
+              </div>
+
+              <div class="admin-week-item-footer">
+                <button class="btn app-btn-primary app-btn-compact" type="submit">Save Item</button>
+                <button class="btn app-btn-secondary app-btn-compact"
+                        type="submit"
+                        formaction="{{ url_for('admin_program_week_item_duplicate', program_id=program._id|string, week_id=week._id|string, item_id=it._id|string) }}">
+                  Duplicate
+                </button>
+                <button class="btn app-btn-secondary app-btn-compact"
+                        type="submit"
+                        formaction="{{ url_for('admin_program_week_item_delete', program_id=program._id|string, week_id=week._id|string, item_id=it._id|string) }}"
+                        onclick="return confirm('Delete this week item?');">
+                  Delete
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="app-surface">
+      <div class="card-body">
+        <div class="workout-empty-state">
+          <div class="fw-semibold mb-1">No items yet for this week.</div>
+          <div class="text-muted small">
+            Start by adding your first day item above, or copy a full week structure from another week.
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<datalist id="dayNameList">
+  <option value="Push"></option>
+  <option value="Pull"></option>
+  <option value="Legs"></option>
+  <option value="Upper"></option>
+  <option value="Lower"></option>
+  <option value="Core"></option>
+  <option value="Full Body"></option>
+  <option value="Cardio"></option>
+  <option value="Mobility"></option>
+</datalist>
+
+<script id="adminWorkoutPickerData" type="application/json">{{ picker_workouts|tojson }}</script>
+<script>
+  (function () {
+    const dataNode = document.getElementById('adminWorkoutPickerData');
+    if (!dataNode) return;
+
+    let workouts = [];
+    try {
+      workouts = JSON.parse(dataNode.textContent || '[]');
+    } catch (err) {
+      workouts = [];
+    }
+
+    const workoutMap = new Map(workouts.map((workout) => [String(workout.id), workout]));
+
+    const formatDetails = (workout) => {
+      const bits = [];
+      if (workout.level) bits.push(workout.level);
+      if (workout.body_parts && workout.body_parts.length) bits.push(workout.body_parts[0]);
+      else if (workout.primary_muscle) bits.push(workout.primary_muscle);
+      if (workout.style) bits.push(workout.style);
+      return bits.join(' • ');
+    };
+
+    const renderPreview = (picker, workout, hasBrokenRef) => {
+      const mediaNode = picker.querySelector('[data-picker-preview-media]');
+      const nameNode = picker.querySelector('[data-picker-preview-name]');
+      const metaNode = picker.querySelector('[data-picker-preview-meta]');
+      if (!mediaNode || !nameNode || !metaNode) return;
+
+      if (workout) {
+        nameNode.textContent = workout.name || 'Selected workout';
+        metaNode.textContent = formatDetails(workout) || 'Workout linked from your library.';
+        const image = (workout.preview_image || '').trim();
+        if (image) {
+          mediaNode.innerHTML = `<img src="${image}" alt="">`;
+        } else {
+          mediaNode.innerHTML = '<div class="admin-workout-preview-fallback">Preview</div>';
+        }
+      } else if (hasBrokenRef) {
+        nameNode.textContent = 'Linked workout unavailable';
+        metaNode.textContent = 'Workout reference exists, but the linked workout is missing.';
+        mediaNode.innerHTML = '<div class="admin-workout-preview-fallback">Missing</div>';
+      } else {
+        nameNode.textContent = 'Select a workout';
+        metaNode.textContent = 'Preview the image and key metadata here before linking.';
+        mediaNode.innerHTML = '<div class="admin-workout-preview-fallback">Preview</div>';
+      }
+    };
+
+    const renderPicker = (picker) => {
+      const hiddenInput = picker.querySelector('[data-picker-input]');
+      const searchInput = picker.querySelector('[data-picker-search]');
+      const statusNode = picker.querySelector('[data-picker-status]');
+      const resultsNode = picker.querySelector('[data-picker-results]');
+      const currentName = picker.querySelector('[data-picker-current-name]');
+      const currentCopy = picker.querySelector('[data-picker-current-copy]');
+      const selectedId = (hiddenInput.value || '').trim();
+      const selectedWorkout = workoutMap.get(selectedId) || null;
+
+      const level = (picker.querySelector('[data-picker-filter="level"]')?.value || '').trim().toLowerCase();
+      const style = (picker.querySelector('[data-picker-filter="style"]')?.value || '').trim().toLowerCase();
+      const body = (picker.querySelector('[data-picker-filter="body"]')?.value || '').trim().toLowerCase();
+      const q = (searchInput.value || '').trim().toLowerCase();
+
+      if (selectedWorkout) {
+        currentName.textContent = selectedWorkout.name;
+        currentCopy.textContent = formatDetails(selectedWorkout) || 'Workout linked from your library.';
+        renderPreview(picker, selectedWorkout, false);
+      } else if (selectedId) {
+        currentName.textContent = 'Linked workout unavailable';
+        currentCopy.textContent = 'Workout reference exists, but the linked workout is missing.';
+        renderPreview(picker, null, true);
+      } else {
+        currentName.textContent = 'No workout linked';
+        currentCopy.textContent = 'Search your library and choose an exercise, or leave this blank for a custom item.';
+        renderPreview(picker, null, false);
+      }
+
+      const matches = workouts.filter((workout) => {
+        if (q && !(workout.name || '').toLowerCase().includes(q)) return false;
+        if (level && (workout.level || '').toLowerCase() !== level) return false;
+        if (style && (workout.style || '').toLowerCase() !== style) return false;
+        if (body) {
+          const parts = (workout.body_parts || []).map((part) => (part || '').toLowerCase());
+          if (!parts.includes(body)) return false;
+        }
+        return true;
+      });
+
+      const limited = matches.slice(0, 8);
+      statusNode.textContent = matches.length
+        ? `Showing ${limited.length} of ${matches.length} matching workout${matches.length === 1 ? '' : 's'}.`
+        : 'No workouts match this search. Adjust your filters or create a custom item name.';
+
+      resultsNode.innerHTML = '';
+      limited.forEach((workout) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'admin-workout-result';
+        if (String(workout.id) === selectedId) {
+          button.classList.add('is-selected');
+        }
+        button.innerHTML = `
+          <span class="admin-workout-result-media">
+            ${workout.preview_image ? `<img src="${workout.preview_image}" alt="">` : '<span class="admin-workout-result-fallback">·</span>'}
+          </span>
+          <span class="admin-workout-result-copy">
+          <span class="admin-workout-result-name">${workout.name}</span>
+          <span class="admin-workout-result-meta">${formatDetails(workout) || 'Workout from exercise library'}</span>
+          </span>
+        `;
+        button.addEventListener('click', () => {
+          hiddenInput.value = workout.id;
+          renderPicker(picker);
+        });
+        resultsNode.appendChild(button);
+      });
+    };
+
+    document.querySelectorAll('[data-workout-picker]').forEach((picker) => {
+      picker.querySelectorAll('[data-picker-search], [data-picker-filter]').forEach((control) => {
+        control.addEventListener('input', () => renderPicker(picker));
+        control.addEventListener('change', () => renderPicker(picker));
+      });
+
+      const clearButton = picker.querySelector('[data-picker-clear]');
+      if (clearButton) {
+        clearButton.addEventListener('click', () => {
+          const hiddenInput = picker.querySelector('[data-picker-input]');
+          hiddenInput.value = '';
+          renderPicker(picker);
+        });
+      }
+
+      renderPicker(picker);
+    });
+  })();
+</script>
+{% endblock %}

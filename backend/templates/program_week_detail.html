@@ -1,4 +1,3 @@
-{# backend/templates/program_week_detail.html #}
 {% extends "base.html" %}
 
 {% block title %}
@@ -6,46 +5,14 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
 {% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 900px;">
-
+<div class="week-detail-shell">
   {% set lvl = (level or 'beginner')|lower %}
   {% set envv = (env or 'home')|lower %}
   {% set hub_slug = (hub.slug if hub and hub.slug else (track.hub_slug if track and track.hub_slug else '8-week-challenge')) %}
 
-  <style>
-    .pill{
-      display:inline-flex; align-items:center; gap:.35rem;
-      border: 1px solid rgba(0,0,0,.15);
-      background: rgba(0,0,0,.03);
-      border-radius: 999px;
-      padding: .2rem .6rem;
-      font-size:.78rem;
-      text-decoration:none;
-      color: inherit;
-    }
-    .pill.active{
-      background: rgba(0,0,0,.08);
-      border-color: rgba(0,0,0,.25);
-      font-weight: 600;
-    }
-    .card-soft{
-      border: 1px solid rgba(0,0,0,.12);
-      border-radius: 1rem;
-      box-shadow: 0 .35rem .9rem rgba(0,0,0,.05);
-    }
-    .item-row{
-      border: 1px solid rgba(0,0,0,.12);
-      border-radius: .9rem;
-      padding: 1rem;
-      background: #fff;
-    }
-    .muted{ color: rgba(0,0,0,.6); }
-  </style>
-
-  <!-- Header -->
-  <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+  <div class="flow-header mb-3">
     <div class="me-2">
-      <div class="text-muted small">Week detail</div>
+      <div class="flow-kicker">Week detail</div>
       <h1 class="h4 mb-1">
         Week {{ week_number }}
         {% if week and (week.title is defined or week.get('title')) %}
@@ -53,40 +20,46 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
           <span class="text-muted">•</span> <span class="text-muted">{{ wtitle }}</span>
         {% endif %}
       </h1>
-
-      <div class="text-muted">
-        {{ track.title if track and track.title else "Program" }}
-      </div>
-
-      <div class="d-flex flex-wrap gap-2 mt-2">
-        <span class="pill">Level: <strong>{{ lvl|capitalize }}</strong></span>
-        <span class="pill">Env: <strong>{{ envv|capitalize }}</strong></span>
+      <div class="text-muted">{{ track.title if track and track.title else "Program" }}</div>
+      <div class="week-detail-summary">
+        <span class="flow-chip">Level: {{ lvl|capitalize }}</span>
+        <span class="flow-chip">Environment: {{ envv|capitalize }}</span>
+        {% if total_days %}
+          <span class="flow-chip">{{ total_days }} day{{ '' if total_days == 1 else 's' }}</span>
+        {% endif %}
       </div>
     </div>
 
-    <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary btn-sm"
+    <div class="d-flex gap-2 flex-wrap justify-content-end">
+      <a class="btn btn-outline-secondary btn-sm app-btn-secondary app-btn-compact"
          href="{{ url_for('program_hub_weeks', hub_slug=hub_slug, level=lvl, env=envv) }}">
         Back to weeks
       </a>
-
-      <a class="btn btn-outline-dark btn-sm"
+      <a class="btn btn-outline-dark btn-sm app-btn-secondary app-btn-compact"
          href="{{ url_for('program_detail', slug=hub_slug) }}">
         Program home
       </a>
+      <form method="post"
+            action="{{ url_for('program_hub_reset_progress', hub_slug=hub_slug) }}"
+            onsubmit="return confirm('Reset all saved progress for this program? This cannot be undone.');"
+            class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="level" value="{{ lvl }}">
+        <input type="hidden" name="env" value="{{ envv }}">
+        <button class="btn btn-outline-danger btn-sm app-btn-compact" type="submit">Reset progress</button>
+      </form>
     </div>
   </div>
 
-  <!-- Level / Environment Switchers -->
-  <div class="card card-soft mb-3">
+  <div class="card week-detail-panel week-detail-switchboard mb-3">
     <div class="card-body">
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <div>
-          <div class="fw-semibold mb-1">Switch level</div>
-          <div class="d-flex flex-wrap gap-2">
+      <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div class="week-detail-switchboard-section">
+          <div class="week-detail-switchboard-label">Level</div>
+          <div class="week-detail-pills">
             {% for l in (levels or ['beginner','intermediate','advanced']) %}
               {% set lnorm = l|lower %}
-              <a class="pill {{ 'active' if lnorm == lvl else '' }}"
+              <a class="week-detail-pill {{ 'active' if lnorm == lvl else '' }}"
                  href="{{ url_for('program_hub_week_detail', hub_slug=hub_slug, week_number=week_number, level=lnorm, env=envv) }}">
                 {{ lnorm|capitalize }}
               </a>
@@ -94,12 +67,12 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
           </div>
         </div>
 
-        <div>
-          <div class="fw-semibold mb-1">Switch environment</div>
-          <div class="d-flex flex-wrap gap-2">
+        <div class="week-detail-switchboard-section">
+          <div class="week-detail-switchboard-label">Environment</div>
+          <div class="week-detail-pills">
             {% for e in (envs or ['home','gym','hybrid']) %}
               {% set enorm = e|lower %}
-              <a class="pill {{ 'active' if enorm == envv else '' }}"
+              <a class="week-detail-pill {{ 'active' if enorm == envv else '' }}"
                  href="{{ url_for('program_hub_week_detail', hub_slug=hub_slug, week_number=week_number, level=lvl, env=enorm) }}">
                 {{ enorm|capitalize }}
               </a>
@@ -107,99 +80,282 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
           </div>
         </div>
       </div>
-
-      <div class="text-muted small mt-3">
-        Tip: these toggles just reload the correct Track (level + environment) for the same week number.
-      </div>
     </div>
   </div>
 
-  <!-- Items / Workouts -->
-  {% if items and items|length > 0 %}
-    <div class="d-flex align-items-center justify-content-between mb-2">
-      <h2 class="h6 mb-0">This week’s plan</h2>
-      <span class="text-muted small">{{ items|length }} item{{ '' if items|length == 1 else 's' }}</span>
-    </div>
+  {% if day_groups and day_groups|length > 0 %}
+    <div class="card week-detail-panel mb-3">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+          <div>
+            <h2 class="h6 mb-1">Weekly split</h2>
+            <div class="small text-muted">Tap a day or swipe across the split.</div>
+          </div>
+          <span class="flow-chip flow-chip-accent" id="dayProgress">
+            Day 1 of {{ total_days }} • {{ completed_days_count }} done
+          </span>
+        </div>
 
-    <div class="d-grid gap-3">
-      {% for it in items %}
-        {% set wid = it.get('workout_id') %}
-        {% set w = workout_map.get(wid) if workout_map else None %}
-        {% set label = it.get('label') or it.get('title') or it.get('name') or 'Workout' %}
-        {% set note = it.get('note') or it.get('description') or it.get('instructions') %}
-        {% set day = it.get('day') or it.get('day_label') %}
+        {% if is_template_preview %}
+          <div class="week-template-note mb-3">
+            <strong>Sample week</strong>
+            <span>Replace these items in Admin when the final plan is ready.</span>
+          </div>
+        {% endif %}
 
-        <div class="item-row">
-          <div class="d-flex align-items-start justify-content-between gap-2">
-            <div>
-              <div class="fw-semibold">
-                {{ label }}
-                {% if day %}<span class="text-muted">•</span> <span class="muted">{{ day }}</span>{% endif %}
+        <div class="day-chip-row mb-3">
+          {% for group in day_groups %}
+            {% set is_initial = (group.key == initial_day_key) or (not initial_day_key and loop.first) %}
+            {% set is_done = group.key in completed_day_keys %}
+            <button class="day-chip {% if is_initial %}active{% endif %} {% if is_done %}done{% endif %}"
+                    type="button"
+                    data-day-key="{{ group.key }}"
+                    data-day-index="{{ loop.index0 }}"
+                    data-bs-target="#weekDayCarousel"
+                    data-bs-slide-to="{{ loop.index0 }}"
+                    aria-current="{% if is_initial %}true{% else %}false{% endif %}">
+              {{ group.label }}{% if is_done %} ✓{% endif %}
+            </button>
+          {% endfor %}
+        </div>
+
+        <div id="weekDayCarousel"
+             class="carousel slide swipe-block"
+             data-bs-ride="false"
+             data-bs-touch="true"
+             data-bs-interval="false"
+             data-bs-wrap="false">
+          <div class="carousel-inner">
+            {% for group in day_groups %}
+              {% set is_initial = (group.key == initial_day_key) or (not initial_day_key and loop.first) %}
+              {% set is_done = group.key in completed_day_keys %}
+              <div class="carousel-item {% if is_initial %}active{% endif %}">
+                <div class="day-panel">
+                  <div class="day-panel-header">
+                    <div>
+                      <div class="day-panel-title">{{ group.label }} Day</div>
+                      <div class="day-panel-subtitle">{{ group['items']|length }} exercise{{ '' if group['items']|length == 1 else 's' }} to complete</div>
+                    </div>
+                    <div class="day-panel-status">
+                      <span class="flow-chip">{{ loop.index }} / {{ total_days }}</span>
+                      {% if is_done %}
+                        <span class="flow-chip flow-chip-accent">Completed</span>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <div class="week-item-list">
+                    {% for it in group['items'] %}
+                      {% set wid = it.get('workout_id') %}
+                      {% set wslug = it.get('workout_slug') %}
+                      {% set w = (workout_map.get(wid) if workout_map else None) or (workout_map.get(wslug) if workout_map and wslug else None) %}
+                      {% set label = it.get('custom_name') or it.get('label') or it.get('title') or it.get('name') or it.get('workout_name') or (w.get('name') if w else 'Workout') %}
+                      {% set note = it.get('notes') or it.get('note') or it.get('description') or it.get('instructions') %}
+
+                      <div class="week-item-card">
+                        <div class="week-item-row">
+                          <div class="week-item-main">
+                            <div class="week-item-title">{{ label }}</div>
+                            <div class="week-item-meta">
+                              {% if it.get('sets') %}<span class="week-item-tag">Sets {{ it.get('sets') }}</span>{% endif %}
+                              {% if it.get('reps') %}<span class="week-item-tag">Reps {{ it.get('reps') }}</span>{% endif %}
+                              {% if it.get('rest') %}<span class="week-item-tag">Rest {{ it.get('rest') }}</span>{% endif %}
+                            </div>
+                            {% if note %}
+                              <div class="week-item-note">{{ note }}</div>
+                            {% endif %}
+                          </div>
+
+                          <div class="week-item-cta">
+                            {% if w %}
+                              <a class="btn btn-sm btn-outline-dark app-btn-secondary open-ex-btn"
+                                 href="{{ url_for('workout_detail', slug=w.get('slug')) }}">
+                                View exercise
+                              </a>
+                            {% elif wslug %}
+                              <span class="week-item-tag">Exercise missing</span>
+                            {% else %}
+                              <span class="week-item-tag">Custom item</span>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+
+                  <div class="day-footer d-flex flex-wrap justify-content-between gap-2">
+                    <button class="btn btn-sm btn-outline-secondary app-btn-secondary app-btn-compact"
+                            type="button"
+                            data-bs-target="#weekDayCarousel"
+                            data-bs-slide="prev">
+                      Previous day
+                    </button>
+
+                    <div class="d-flex flex-wrap gap-2">
+                      <form method="post"
+                            action="{{ url_for('program_hub_week_day_status', hub_slug=hub_slug, week_number=week_number) }}"
+                            class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="level" value="{{ lvl }}">
+                        <input type="hidden" name="env" value="{{ envv }}">
+                        <input type="hidden" name="day_key" value="{{ group.key }}">
+                        {% if not is_done and not loop.last %}
+                          <input type="hidden" name="next_day_key" value="{{ day_groups[loop.index].key }}">
+                        {% endif %}
+                        <input type="hidden" name="action" value="{{ 'undo' if is_done else 'done' }}">
+
+                        {% if is_done %}
+                          <button class="btn btn-sm btn-outline-success app-btn-compact" type="submit">Undo done</button>
+                        {% elif not loop.last %}
+                          <button class="btn btn-sm btn-dark app-btn-primary app-btn-compact" type="submit">Done • Next day</button>
+                        {% else %}
+                          <button class="btn btn-sm btn-dark app-btn-primary app-btn-compact" type="submit">Mark day complete</button>
+                        {% endif %}
+                      </form>
+
+                      {% if not loop.last %}
+                        <button class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact js-next-day"
+                                type="button"
+                                data-bs-target="#weekDayCarousel"
+                                data-bs-slide="next">
+                          Next day
+                        </button>
+                      {% elif all_days_completed and next_week_number %}
+                        <a class="btn btn-sm btn-dark app-btn-primary app-btn-compact"
+                           href="{{ url_for('program_hub_week_detail', hub_slug=hub_slug, week_number=next_week_number, level=lvl, env=envv) }}">
+                          Complete week • Go to week {{ next_week_number }}
+                        </a>
+                      {% elif all_days_completed %}
+                        <a class="btn btn-sm btn-dark app-btn-primary app-btn-compact"
+                           href="{{ url_for('program_hub_weeks', hub_slug=hub_slug, level=lvl, env=envv) }}">
+                          Complete week
+                        </a>
+                      {% elif next_week_number %}
+                        <span class="btn btn-sm btn-outline-secondary app-btn-secondary app-btn-compact disabled">
+                          Finish all days to unlock week {{ next_week_number }}
+                        </span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
               </div>
-
-              {% if w %}
-                <div class="mt-1">
-                  <a href="{{ url_for('workout_detail', slug=w.get('slug')) }}" class="text-decoration-none">
-                    View workout: <strong>{{ w.get('name') }}</strong>
-                  </a>
-                </div>
-              {% else %}
-                <div class="muted small mt-1">
-                  No workout linked yet (you can attach one in Admin later).
-                </div>
-              {% endif %}
-
-              {% if note %}
-                <div class="muted small mt-2">{{ note }}</div>
-              {% endif %}
-            </div>
-
-            <div class="text-end">
-              <span class="badge text-bg-light border text-dark">Item</span>
-            </div>
+            {% endfor %}
           </div>
         </div>
-      {% endfor %}
+      </div>
     </div>
+
+    <script>
+      (function () {
+        function initWeekCarousel() {
+          const carouselEl = document.getElementById('weekDayCarousel');
+          if (!carouselEl || !window.bootstrap || !window.bootstrap.Carousel) return;
+
+          const carousel = window.bootstrap.Carousel.getOrCreateInstance(carouselEl, {
+            interval: false,
+            ride: false,
+            wrap: false,
+            touch: true
+          });
+          const chips = Array.from(document.querySelectorAll('.day-chip'));
+          const slides = Array.from(carouselEl.querySelectorAll('.carousel-item'));
+          const progressEl = document.getElementById('dayProgress');
+          const initialDayKey = "{{ initial_day_key }}";
+          const completedCount = {{ completed_days_count|default(0) }};
+
+          function clampIdx(value) {
+            const parsed = parseInt(value, 10);
+            if (!Number.isFinite(parsed) || parsed < 0) return 0;
+            if (parsed >= chips.length) return Math.max(chips.length - 1, 0);
+            return parsed;
+          }
+
+          function updateUI(activeIdx, shouldScrollChip) {
+            const idx = clampIdx(activeIdx);
+            chips.forEach((chip, i) => {
+              const isActive = i === idx;
+              chip.classList.toggle('active', isActive);
+              chip.setAttribute('aria-current', isActive ? 'true' : 'false');
+              if (isActive && shouldScrollChip) {
+                chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+              }
+            });
+            if (progressEl) progressEl.textContent = `Day ${idx + 1} of ${chips.length} • ${completedCount} done`;
+            return idx;
+          }
+
+          function activeIndexFromDom() {
+            const activeSlide = carouselEl.querySelector('.carousel-item.active');
+            if (!activeSlide) return 0;
+            const idx = slides.indexOf(activeSlide);
+            return idx >= 0 ? idx : 0;
+          }
+
+          function syncFromDom() {
+            updateUI(activeIndexFromDom(), false);
+          }
+
+          chips.forEach((chip) => {
+            chip.addEventListener('click', () => {
+              const idx = clampIdx(chip.dataset.dayIndex || chip.dataset.bsSlideTo || '0');
+              carousel.to(idx);
+              updateUI(idx, true);
+            });
+          });
+
+          carouselEl.addEventListener('slide.bs.carousel', (ev) => {
+            const toIdx = (typeof ev.to === 'number') ? ev.to : activeIndexFromDom();
+            updateUI(toIdx, true);
+          });
+          carouselEl.addEventListener('slid.bs.carousel', (ev) => {
+            const toIdx = (typeof ev.to === 'number') ? ev.to : activeIndexFromDom();
+            updateUI(toIdx, false);
+          });
+          carouselEl.addEventListener('touchend', () => {
+            window.setTimeout(syncFromDom, 30);
+          }, { passive: true });
+
+          const observer = new MutationObserver(() => syncFromDom());
+          slides.forEach((slide) => {
+            observer.observe(slide, { attributes: true, attributeFilter: ['class'] });
+          });
+
+          let startIdx = 0;
+          if (initialDayKey) {
+            const idx = chips.findIndex((c) => c.dataset.dayKey === initialDayKey);
+            if (idx >= 0) startIdx = idx;
+          }
+          if (startIdx > 0) carousel.to(startIdx);
+          syncFromDom();
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initWeekCarousel, { once: true });
+        } else {
+          initWeekCarousel();
+        }
+      })();
+    </script>
 
   {% else %}
-    <!-- Placeholder if no items exist yet -->
-    <div class="card card-soft">
+    <div class="card week-detail-panel week-detail-empty">
       <div class="card-body">
         <h2 class="h6 mb-2">Week {{ week_number }} isn’t built yet</h2>
-        <p class="text-muted mb-2">
-          This is a placeholder so navigation works end-to-end.
-          When you’re ready, add the week + items in Admin.
+        <p class="text-muted small mb-3">
+          Add week items in Admin to populate the daily split for this week.
         </p>
-
-        <div class="row g-3 mt-1">
-          <div class="col-12 col-md-6">
-            <div class="p-3 border rounded-4">
-              <div class="fw-semibold">Suggested focus</div>
-              <div class="muted small mt-1">
-                - 3–5 strength sessions<br/>
-                - 2–3 low intensity cardio sessions<br/>
-                - Prioritize form + consistent sleep
-              </div>
-            </div>
-          </div>
-
-          <div class="col-12 col-md-6">
-            <div class="p-3 border rounded-4">
-              <div class="fw-semibold">How we’ll build this later</div>
-              <div class="muted small mt-1">
-                1) Create Week {{ week_number }} under this Track<br/>
-                2) Add program items (days/workouts)<br/>
-                3) Link each item to an existing workout
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="d-flex flex-wrap gap-2 mt-3">
-          <a class="btn btn-dark btn-sm" href="{{ url_for('admin_programs') }}">
-            Go to Admin → Programs
-          </a>
+        <div class="d-flex flex-wrap gap-2">
+          {% if week and week._id %}
+            <a class="btn btn-dark btn-sm"
+               href="{{ url_for('admin_program_week_items', program_id=track._id|string, week_id=week._id|string) }}">
+              Add week items in Admin
+            </a>
+          {% else %}
+            <a class="btn btn-dark btn-sm"
+               href="{{ url_for('admin_programs') }}">
+              Go to Admin → Programs
+            </a>
+          {% endif %}
           <a class="btn btn-outline-secondary btn-sm"
              href="{{ url_for('program_hub_weeks', hub_slug=hub_slug, level=lvl, env=envv) }}">
             Back to weeks

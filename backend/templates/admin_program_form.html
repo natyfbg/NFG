@@ -6,8 +6,14 @@
   <div class="card-header">Content Management</div>
 
   {% set ep = request.endpoint or '' %}
-  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit'] %}
-  {% set admin_program_eps = ['admin_programs','admin_program_new','admin_program_edit'] %}
+  {% set admin_workout_eps = ['admin_index','admin_workout_new','admin_workout_edit','admin_workout_quality'] %}
+  {% set admin_program_eps = [
+    'admin_programs','admin_program_new','admin_program_edit','admin_program_link_health','admin_program_link_health_backfill',
+    'admin_program_clone','admin_program_build_tracks','admin_program_set_status',
+    'admin_program_weeks','admin_program_weeks_scaffold',
+    'admin_program_week_items','admin_program_week_item_new',
+    'admin_program_week_item_edit','admin_program_week_item_delete'
+  ] %}
 
   <div class="list-group list-group-flush">
     <a class="list-group-item list-group-item-action {% if ep in admin_workout_eps %}active{% endif %}"
@@ -63,18 +69,30 @@
 {# Track-only fields #}
 {% set hub_slug_val = (data.hub_slug if data and data.hub_slug is defined else (request.form.get('hub_slug') or '')) %}
 {% set track_level_val = (data.track_level if data and data.track_level is defined else (request.form.get('track_level') or '')) %}
+{% set track_env_val = (data.track_env if data and data.track_env is defined else (request.form.get('track_env') or '')) %}
+{% set track_env_val = (track_env_val|string|lower) %}
+{% set publish_status_val = (data.publish_status if data and data.publish_status is defined else (request.form.get('publish_status') or ('published' if edit else 'draft'))) %}
+{% set publish_status_val = (publish_status_val|string|lower) %}
+{% if publish_status_val not in ['draft','ready','published'] %}
+  {% set publish_status_val = ('published' if edit else 'draft') %}
+{% endif %}
+{% set default_week_split_val = (request.form.get('default_week_split') or '') %}
+{% if not default_week_split_val and data and data.default_week_split %}
+  {% set default_week_split_val = (data.default_week_split|join(', ')) %}
+{% endif %}
 
 {# If not track, keep UI inputs empty (backend will null them anyway) #}
 {% if kind_val != 'track' %}
   {% set hub_slug_val = '' %}
   {% set track_level_val = '' %}
+  {% set track_env_val = '' %}
 {% endif %}
 
 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
   <div>
     <h1 class="mb-0">{% if edit %}Edit{% else %}New{% endif %} Program</h1>
     <div class="text-muted small mt-1">
-      Programs are the cards users see. (Weeks + workouts are the next step.)
+      Programs are user-facing cards. Manage Weeks from the Programs list.
     </div>
   </div>
 
@@ -150,6 +168,28 @@
           <div class="form-text">Lower shows first.</div>
         </div>
 
+        <div class="col-12 col-md-4">
+          <label class="form-label">Publish status</label>
+          <select class="form-select" name="publish_status">
+            <option value="draft" {% if publish_status_val == 'draft' %}selected{% endif %}>Draft</option>
+            <option value="ready" {% if publish_status_val == 'ready' %}selected{% endif %}>Ready</option>
+            <option value="published" {% if publish_status_val == 'published' %}selected{% endif %}>Published</option>
+          </select>
+          <div class="form-text">
+            Published programs are visible on public pages. Keep new content in Draft until validated.
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Default week split (optional)</label>
+          <input class="form-control" name="default_week_split"
+                 value="{{ default_week_split_val }}"
+                 placeholder="Push, Pull, Legs, Upper, Lower, Core">
+          <div class="form-text">
+            Used as placeholder day pages and by Auto Build. Comma-separated.
+          </div>
+        </div>
+
         <div class="col-12">
           <label class="form-label">Summary</label>
           <textarea class="form-control" name="summary" rows="2"
@@ -176,7 +216,7 @@
               </div>
 
               <div class="row g-3">
-                <div class="col-12 col-md-6">
+                <div class="col-12 col-md-4">
                   <label class="form-label">Hub slug (for Track programs)</label>
                   <input class="form-control" name="hub_slug"
                          value="{{ hub_slug_val }}"
@@ -187,7 +227,7 @@
                   </div>
                 </div>
 
-                <div class="col-12 col-md-6">
+                <div class="col-12 col-md-4">
                   <label class="form-label">Track level (for Track programs)</label>
                   <select class="form-select" name="track_level" {% if kind_val != 'track' %}disabled{% endif %}>
                     <option value="" {% if not track_level_val %}selected{% endif %}>—</option>
@@ -197,6 +237,19 @@
                   </select>
                   <div class="form-text">
                     Optional: helps group tracks under the hub (Beginner/Intermediate/Advanced).
+                  </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                  <label class="form-label">Track environment</label>
+                  <select class="form-select" name="track_env" {% if kind_val != 'track' %}disabled{% endif %}>
+                    <option value="" {% if not track_env_val %}selected{% endif %}>—</option>
+                    <option value="home" {% if track_env_val == 'home' %}selected{% endif %}>Home</option>
+                    <option value="gym" {% if track_env_val == 'gym' %}selected{% endif %}>Gym</option>
+                    <option value="hybrid" {% if track_env_val == 'hybrid' %}selected{% endif %}>Hybrid</option>
+                  </select>
+                  <div class="form-text">
+                    Used for route selection and week links (not just slug parsing).
                   </div>
                 </div>
 
@@ -252,8 +305,7 @@
 
 {% if edit %}
   <div class="alert alert-info mt-3 mb-0">
-    Next step: we’ll add an Admin screen to create <strong>Weeks</strong> under this program,
-    and then add <strong>Workouts</strong> (linked or placeholder) inside each week.
+    Next: use Programs → Manage Weeks → Manage Items to build each week/day flow for this program.
   </div>
 {% endif %}
 
@@ -262,21 +314,61 @@
   (function () {
     const hubRadio = document.getElementById('kindHub');
     const trackRadio = document.getElementById('kindTrack');
+    const titleInput = document.querySelector('input[name="title"]');
+    const slugInput = document.querySelector('input[name="slug"]');
     const hubSlug = document.querySelector('input[name="hub_slug"]');
     const trackLevel = document.querySelector('select[name="track_level"]');
+    const trackEnv = document.querySelector('select[name="track_env"]');
+    let slugTouched = !!(slugInput && (slugInput.value || '').trim());
+
+    const slugify = (val) =>
+      (val || '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    function maybeAutoSlug() {
+      if (!slugInput || slugTouched) return;
+      const isTrack = trackRadio && trackRadio.checked;
+      const titleSlug = slugify(titleInput ? titleInput.value : '');
+      const hub = slugify(hubSlug ? hubSlug.value : '');
+      const lvl = slugify(trackLevel ? trackLevel.value : '');
+      const env = slugify(trackEnv ? trackEnv.value : '');
+
+      if (isTrack && hub && lvl && env) {
+        slugInput.value = `${hub}-${lvl}-${env}`;
+        return;
+      }
+      if (!slugInput.value.trim()) {
+        slugInput.value = titleSlug;
+      }
+    }
 
     function sync() {
       const isTrack = trackRadio && trackRadio.checked;
       if (hubSlug) hubSlug.disabled = !isTrack;
       if (trackLevel) trackLevel.disabled = !isTrack;
+      if (trackEnv) trackEnv.disabled = !isTrack;
       if (!isTrack) {
         if (hubSlug) hubSlug.value = '';
         if (trackLevel) trackLevel.value = '';
+        if (trackEnv) trackEnv.value = '';
       }
+      maybeAutoSlug();
     }
 
     if (hubRadio) hubRadio.addEventListener('change', sync);
     if (trackRadio) trackRadio.addEventListener('change', sync);
+    if (titleInput) titleInput.addEventListener('input', maybeAutoSlug);
+    if (hubSlug) hubSlug.addEventListener('input', maybeAutoSlug);
+    if (trackLevel) trackLevel.addEventListener('change', maybeAutoSlug);
+    if (trackEnv) trackEnv.addEventListener('change', maybeAutoSlug);
+    if (slugInput) {
+      slugInput.addEventListener('input', () => {
+        slugTouched = (slugInput.value || '').trim().length > 0;
+      });
+    }
     sync();
   })();
 </script>
