@@ -34,6 +34,20 @@
     </div>
 
     <div class="d-flex gap-2 flex-wrap justify-content-end">
+      {% set workout_next = request.full_path if request.query_string else request.path %}
+      {% if current_user.is_authenticated and current_user.is_member %}
+        <form method="post" action="{{ url_for('workout_favorite_toggle', slug=w.slug) }}" class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="next" value="{{ workout_next }}">
+          {% if is_saved_workout %}
+            <button class="btn btn-sm btn-warning app-btn-compact" type="submit">Unsave workout</button>
+          {% else %}
+            <button class="btn btn-sm btn-outline-warning app-btn-compact" type="submit">Save workout</button>
+          {% endif %}
+        </form>
+      {% else %}
+        <a class="btn btn-sm btn-outline-warning app-btn-compact" href="{{ url_for('account_login', next=workout_next) }}">Sign in to save this workout</a>
+      {% endif %}
       {% if back_to_week_url %}
         <a class="btn btn-sm btn-outline-secondary app-btn-secondary app-btn-compact" href="{{ back_to_week_url }}">Back to week</a>
       {% endif %}

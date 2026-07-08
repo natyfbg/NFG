@@ -9,20 +9,88 @@
   </div>
 </div>
 
+{% if continue_plan %}
+  <section class="card app-surface app-surface-muted mb-3">
+    <div class="card-body">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <div class="app-page-kicker mb-1">Resume program</div>
+          <div class="fw-semibold">{{ continue_plan.track_title }}</div>
+          <div class="small text-muted mt-1">
+            Week {{ continue_plan.week_number }}{% if continue_plan.day_label %} • {{ continue_plan.day_label }}{% endif %}
+          </div>
+        </div>
+        <a class="btn btn-sm btn-primary app-btn-primary app-btn-compact" href="{{ continue_plan.url }}">Continue</a>
+      </div>
+    </div>
+  </section>
+{% endif %}
+
 <div class="row g-3 mb-3">
-  <div class="col-12 col-md-6">
+  <div class="col-12 col-md-4">
     <div class="card shadow-sm">
       <div class="card-body">
-        <div class="small text-muted">Favorite programs</div>
+        <div class="small text-muted">Saved programs</div>
         <div class="h4 mb-0">{{ favorites_count }}</div>
       </div>
     </div>
   </div>
-  <div class="col-12 col-md-6">
+  <div class="col-12 col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="small text-muted">Saved workouts</div>
+        <div class="h4 mb-0">{{ saved_workouts_count }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
     <div class="card shadow-sm">
       <div class="card-body">
         <div class="small text-muted">Completed day cards</div>
         <div class="h4 mb-0">{{ completed_days }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white">
+        <strong>Saved programs</strong>
+      </div>
+      <div class="list-group list-group-flush">
+        {% if saved_programs and saved_programs|length > 0 %}
+          {% for p in saved_programs %}
+            <a class="list-group-item list-group-item-action" href="{{ url_for('program_detail', slug=p.slug) }}">
+              <div class="fw-semibold">{{ p.title }}</div>
+              <div class="small text-muted">{{ p.duration_label or 'Program' }}</div>
+            </a>
+          {% endfor %}
+        {% else %}
+          <div class="list-group-item text-muted">No saved programs yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white">
+        <strong>Saved workouts</strong>
+      </div>
+      <div class="list-group list-group-flush">
+        {% if saved_workouts and saved_workouts|length > 0 %}
+          {% for w in saved_workouts %}
+            <a class="list-group-item list-group-item-action" href="{{ url_for('workout_detail', slug=w.slug) }}">
+              <div class="fw-semibold">{{ w.name }}</div>
+              <div class="small text-muted">
+                {{ w.level or 'Workout' }}{% if w.style %} • {{ w.style }}{% endif %}
+              </div>
+            </a>
+          {% endfor %}
+        {% else %}
+          <div class="list-group-item text-muted">No saved workouts yet.</div>
+        {% endif %}
       </div>
     </div>
   </div>

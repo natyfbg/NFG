@@ -471,6 +471,41 @@ def _safe_next_url(default_endpoint: str = "home") -> str:
     return url_for(default_endpoint)
 
 
+def _member_action_next_url(default_endpoint: str = "home") -> str:
+    candidates = []
+
+    nxt = (request.form.get("next") or request.args.get("next") or "").strip()
+    if nxt:
+        candidates.append(nxt)
+
+    referrer = (request.referrer or "").strip()
+    if referrer:
+        parsed = urlparse(referrer)
+        if not parsed.netloc or parsed.netloc == request.host:
+            ref_path = parsed.path or "/"
+            if parsed.query:
+                ref_path = f"{ref_path}?{parsed.query}"
+            candidates.append(ref_path)
+
+    current_url = request.full_path if request.query_string else request.path
+    candidates.append((current_url or "").rstrip("?"))
+
+    for candidate in candidates:
+        if candidate.startswith("/"):
+            return candidate
+    return url_for(default_endpoint)
+
+
+def _require_member_action():
+    if getattr(current_user, "is_authenticated", False) and getattr(
+        current_user, "is_member", False
+    ):
+        return None
+
+    flash("Sign in to save progress and favorites.", "warning")
+    return redirect(url_for("account_login", next=_member_action_next_url()))
+
+
 def _migrate_guest_state_to_member(guest_viewer_id: str, member_key: str) -> None:
     guest = (guest_viewer_id or "").strip()
     if not guest or guest == member_key:
@@ -2419,9 +2454,33 @@ def _favorite_slug_set_for_request() -> set:
     if hasattr(g, "_program_favorite_slugs"):
         return g._program_favorite_slugs
 
-    favs = set(_program_favorite_slugs_for_viewer(_progress_owner_key()))
+    favs = set(_program_favorite_slugs_for_viewer(_member_owner_key() or ""))
     g._program_favorite_slugs = favs
     return favs
+
+
+def _workout_favorite_slugs_for_viewer(viewer_id: str) -> List[str]:
+    if not viewer_id:
+        return []
+
+    rows = list(
+        db.workout_favorites.find({"viewer_id": viewer_id}, {"workout_slug": 1}).sort(
+            [("created_at", -1)]
+        )
+    )
+    return [r.get("workout_slug") for r in rows if r.get("workout_slug")]
+
+
+def _favorite_workouts_for_viewer(viewer_id: str, limit: int = 12) -> List[dict]:
+    slugs = _workout_favorite_slugs_for_viewer(viewer_id)
+    if not slugs:
+        return []
+
+    want = slugs[: max(1, limit * 3)]
+    found = list(db.workouts.find({"slug": {"$in": want}}))
+    by_slug = {w.get("slug"): w for w in found if w.get("slug")}
+    ordered = [by_slug[s] for s in want if s in by_slug]
+    return ordered[:limit]
 
 
 def _favorite_programs_for_viewer(viewer_id: str, limit: int = 6) -> List[dict]:
@@ -2752,6 +2811,9 @@ def _ensure_indexes() -> None:
         db.program_favorites.create_index([("viewer_id", 1), ("program_slug", 1)], unique=True)
         db.program_favorites.create_index([("viewer_id", 1), ("created_at", -1)])
 
+        db.workout_favorites.create_index([("viewer_id", 1), ("workout_slug", 1)], unique=True)
+        db.workout_favorites.create_index([("viewer_id", 1), ("created_at", -1)])
+
         db.program_day_progress.create_index(
             [("viewer_id", 1), ("track_slug", 1), ("week_number", 1), ("day_key", 1)],
             unique=True,
@@ -3018,7 +3080,7 @@ def home():
         .sort([("order", 1), ("created_at", -1)])
         .limit(6)
     )
-    owner_key = _progress_owner_key()
+    owner_key = _member_owner_key() or ""
     favorite_programs = _favorite_programs_for_viewer(owner_key, limit=6)
     continue_plan = _continue_plan_for_owner(owner_key)
     return render_template(
@@ -3055,10 +3117,11 @@ def program_favorite_toggle(slug):
     if not program:
         abort(404)
 
-    owner_key = _progress_owner_key()
-    if not owner_key:
-        return redirect(url_for("programs_index"))
+    member_redirect = _require_member_action()
+    if member_redirect:
+        return member_redirect
 
+    owner_key = _member_owner_key() or ""
     existing = db.program_favorites.find_one({"viewer_id": owner_key, "program_slug": slug})
     if existing:
         db.program_favorites.delete_one({"_id": existing["_id"]})
@@ -3175,7 +3238,7 @@ def program_hub_weeks(hub_slug):
         )
         weeks = [{"week_number": i, "title": None} for i in range(1, n + 1)]
 
-    owner_key = _progress_owner_key()
+    owner_key = _member_owner_key() or ""
     week_progress = _week_progress_for_track(owner_key, track, weeks)
     week_unlock_map = _week_unlock_map(weeks, week_progress)
     week_numbers = _ordered_week_numbers(weeks)
@@ -3207,6 +3270,10 @@ def program_hub_weeks(hub_slug):
 
 @app.route("/programs/<hub_slug>/progress/reset", methods=["POST"])
 def program_hub_reset_progress(hub_slug):
+    member_redirect = _require_member_action()
+    if member_redirect:
+        return member_redirect
+
     _get_hub_or_404(hub_slug)
 
     level = _norm_choice(request.form.get("level")) or "beginner"
@@ -3224,7 +3291,7 @@ def program_hub_reset_progress(hub_slug):
     if not track:
         abort(404)
 
-    owner_key = _progress_owner_key()
+    owner_key = _member_owner_key() or ""
     track_slug = track.get("slug")
     if owner_key and track_slug:
         db.program_day_progress.delete_many({"viewer_id": owner_key, "track_slug": track_slug})
@@ -3330,7 +3397,7 @@ def program_hub_week_detail(hub_slug, week_number: int):
         )
     )
     week_numbers = [w.get("week_number") for w in weeks_in_track if w.get("week_number")]
-    owner_key = _progress_owner_key()
+    owner_key = _member_owner_key() or ""
     week_progress = _week_progress_for_track(owner_key, track, weeks_in_track)
     week_unlock_map = _week_unlock_map(weeks_in_track, week_progress)
     if week_unlock_map and not week_unlock_map.get(week_number, True):
@@ -3393,6 +3460,10 @@ def program_hub_week_detail(hub_slug, week_number: int):
 
 @app.route("/programs/<hub_slug>/week/<int:week_number>/day-status", methods=["POST"])
 def program_hub_week_day_status(hub_slug, week_number: int):
+    member_redirect = _require_member_action()
+    if member_redirect:
+        return member_redirect
+
     level = _norm_choice(request.form.get("level")) or "beginner"
     env = _norm_choice(request.form.get("env")) or "home"
 
@@ -3412,7 +3483,7 @@ def program_hub_week_day_status(hub_slug, week_number: int):
     action = _norm_choice(request.form.get("action")) or "done"
     next_day_key = slugify(request.form.get("next_day_key") or "")
 
-    owner_key = _progress_owner_key()
+    owner_key = _member_owner_key() or ""
     if day_key and owner_key:
         query = {
             "viewer_id": owner_key,
@@ -3741,9 +3812,50 @@ def workout_detail(slug):
                         args["day"] = ref_day
                     back_to_week_url = url_for("program_hub_week_detail", **args)
 
-    return render_template(
-        "workout_detail.html", w=w, related=related, back_to_week_url=back_to_week_url
+    member_owner = _member_owner_key() or ""
+    is_saved_workout = bool(
+        member_owner
+        and db.workout_favorites.find_one(
+            {"viewer_id": member_owner, "workout_slug": w.get("slug")}, {"_id": 1}
+        )
     )
+
+    return render_template(
+        "workout_detail.html",
+        w=w,
+        related=related,
+        back_to_week_url=back_to_week_url,
+        is_saved_workout=is_saved_workout,
+    )
+
+
+@app.route("/workouts/<slug>/favorite", methods=["POST"])
+def workout_favorite_toggle(slug):
+    workout = db.workouts.find_one({"slug": slug}, {"slug": 1, "name": 1})
+    if not workout:
+        abort(404)
+
+    member_redirect = _require_member_action()
+    if member_redirect:
+        return member_redirect
+
+    owner_key = _member_owner_key() or ""
+    existing = db.workout_favorites.find_one({"viewer_id": owner_key, "workout_slug": slug})
+    if existing:
+        db.workout_favorites.delete_one({"_id": existing["_id"]})
+        flash("Workout removed from saved workouts.", "success")
+    else:
+        db.workout_favorites.insert_one(
+            {
+                "viewer_id": owner_key,
+                "workout_slug": slug,
+                "created_at": datetime.datetime.utcnow(),
+            }
+        )
+        flash("Workout saved.", "success")
+
+    next_url = _member_action_next_url(default_endpoint="workouts_browse")
+    return redirect(next_url)
 
 
 # -----------------------------------------------------------------------------
@@ -3988,7 +4100,11 @@ def account_profile():
     if not owner_key:
         return redirect(url_for("account_login"))
 
-    favorites_count = db.program_favorites.count_documents({"viewer_id": owner_key})
+    saved_programs = _favorite_programs_for_viewer(owner_key, limit=12)
+    saved_workouts = _favorite_workouts_for_viewer(owner_key, limit=12)
+    continue_plan = _continue_plan_for_owner(owner_key)
+    favorites_count = len(saved_programs)
+    saved_workouts_count = len(saved_workouts)
     completed_days = db.program_day_progress.count_documents({"viewer_id": owner_key})
     recent_days = list(
         db.program_day_progress.find({"viewer_id": owner_key}).sort([("completed_at", -1)]).limit(8)
@@ -4001,9 +4117,13 @@ def account_profile():
     return render_template(
         "account_profile.html",
         favorites_count=favorites_count,
+        saved_workouts_count=saved_workouts_count,
         completed_days=completed_days,
         recent_days=recent_days,
         track_map=track_map,
+        saved_programs=saved_programs,
+        saved_workouts=saved_workouts,
+        continue_plan=continue_plan,
     )
 
 

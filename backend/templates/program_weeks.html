@@ -38,15 +38,20 @@ Weeks – {{ track.title if track and track.title else "Program" }}
          href="{{ url_for('programs_index') }}">
         All programs
       </a>
-      <form method="post"
-            action="{{ url_for('program_hub_reset_progress', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge')) }}"
-            onsubmit="return confirm('Reset all saved progress for this program? This cannot be undone.');"
-            class="d-inline">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="level" value="{{ lvl }}">
-        <input type="hidden" name="env" value="{{ envv }}">
-        <button class="btn btn-outline-danger btn-sm app-btn-compact" type="submit">Reset progress</button>
-      </form>
+      {% set weeks_next = request.full_path if request.query_string else request.path %}
+      {% if current_user.is_authenticated and current_user.is_member %}
+        <form method="post"
+              action="{{ url_for('program_hub_reset_progress', hub_slug=(track.hub_slug if track and track.hub_slug else '8-week-challenge')) }}"
+              onsubmit="return confirm('Reset all saved progress for this program? This cannot be undone.');"
+              class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="level" value="{{ lvl }}">
+          <input type="hidden" name="env" value="{{ envv }}">
+          <button class="btn btn-outline-danger btn-sm app-btn-compact" type="submit">Reset progress</button>
+        </form>
+      {% else %}
+        <a class="btn btn-outline-warning btn-sm app-btn-compact" href="{{ url_for('account_login', next=weeks_next) }}">Sign in to save progress</a>
+      {% endif %}
     </div>
   </div>
 
