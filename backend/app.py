@@ -143,7 +143,7 @@ file_handler.setLevel(logging.INFO)
 app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info("App startup")
-app.logger.info("Using Mongo at: %s (db=%s)", ACTIVE_MONGO_URI, db.name)
+app.logger.info("Using Mongo at host=%s (db=%s)", urlparse(ACTIVE_MONGO_URI).hostname, db.name)
 if MONGO_CONNECT_ERROR:
     app.logger.warning("Mongo ping failed on startup: %s", MONGO_CONNECT_ERROR)
 
