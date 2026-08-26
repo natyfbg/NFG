@@ -14,10 +14,7 @@ services:
     startCommand: /bin/sh /app/starter.sh
     envVars:
       - key: MONGO_URI
-        fromService:
-          type: pserv
-          name: nfg-mongo
-          property: connectionString
+        sync: false   # MongoDB Atlas connection string; set in Render dashboard
       - key: MONGO_DB
         value: NFG
       - key: SECRET_KEY
@@ -36,6 +33,9 @@ services:
       sizeGB: 2
 
   # === 2) Persistent MongoDB container ===
+  # Retained temporarily for rollback after the production cutover to MongoDB
+  # Atlas. No service now reads its connectionString (see nfg-app/nfg-seed
+  # MONGO_URI below). Safe to remove once Atlas is confirmed stable.
   - type: pserv
     name: nfg-mongo
     env: docker
@@ -58,9 +58,6 @@ services:
     autoDeploy: false         # run manually after first deploy
     envVars:
       - key: MONGO_URI
-        fromService:
-          type: pserv
-          name: nfg-mongo
-          property: connectionString
+        sync: false   # MongoDB Atlas connection string; set in Render dashboard
       - key: MONGO_DB
         value: NFG
