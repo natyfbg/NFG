@@ -32,23 +32,7 @@ services:
       mountPath: /app/static/uploads
       sizeGB: 2
 
-  # === 2) Persistent MongoDB container ===
-  # Retained temporarily for rollback after the production cutover to MongoDB
-  # Atlas. No service now reads its connectionString (see nfg-app/nfg-seed
-  # MONGO_URI below). Safe to remove once Atlas is confirmed stable.
-  - type: pserv
-    name: nfg-mongo
-    env: docker
-    plan: starter
-    region: oregon
-    image:
-      url: mongo:7
-    disk:
-      name: mongo_data
-      mountPath: /data/db
-      sizeGB: 10
-
-  # === 3) One-off seed job (manual trigger) ===
+  # === 2) One-off seed job (manual trigger) ===
   - type: job
     name: nfg-seed
     env: docker
