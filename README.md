@@ -91,10 +91,10 @@ Optional:
 - `ADMIN_USERNAME`
 
 **Production database is MongoDB Atlas.** `MONGO_URI` is set manually as a Render
-secret (`sync: false`) pointing at the Atlas cluster; it is no longer derived from
-the `nfg-mongo` Render service. `nfg-mongo` is temporarily retained in `render.yaml`
-for rollback only and is not read by `nfg-app` or `nfg-seed`. Local Docker
-development is unaffected and still uses a local `mongo:7` container.
+secret (`sync: false`) pointing at the Atlas cluster. Render no longer hosts a Mongo
+service: `render.yaml` defines only `nfg-app` and `nfg-seed`, and both read
+`MONGO_URI` from the dashboard secret. Local Docker development is unaffected and
+still uses a local `mongo:7` container.
 
 Uploads are mounted to a Render disk at `/app/static/uploads`.
 

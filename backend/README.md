@@ -55,7 +55,7 @@ App URL:
 - health endpoint is `/healthz`
 - uploads are expected to persist outside the container in hosted environments
 - **Production database is MongoDB Atlas.** `MONGO_URI` is supplied manually as a
-  Render secret (`sync: false`), not derived from a Render-hosted Mongo service.
+  Render secret (`sync: false`). Render does not host a Mongo service.
 - **Local Docker development is unaffected** — `docker-compose.yml` still runs a
   local `mongo:7` container; only production points at Atlas.
 
