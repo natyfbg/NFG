@@ -163,7 +163,7 @@
                 <a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', style=w.style) }}">{{ w.style }}</a>
               </div>
             {% endif %}
-            {% if w.rating is not none %}
+            {% if w.rating is defined and w.rating is not none %}
               <div class="workout-detail-meta-item">
                 <div class="workout-detail-meta-label">Rating</div>
                 <span class="flow-chip">★ {{ '%.1f'|format(w.rating) }}</span>

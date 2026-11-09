@@ -21,6 +21,10 @@ dist/
 .mypy_cache/
 .pytest_cache/
 
+# Tests and dev-only requirements are not shipped in the image
+tests/
+requirements-dev.txt
+
 # ==============================
 # Git / version control
 # ==============================

@@ -3,12 +3,11 @@ from __future__ import annotations
 
 import datetime
 import difflib
+import hmac
 import logging
 import os
 import re
-import time
 import uuid
-from collections import deque
 from logging.handlers import RotatingFileHandler
 from time import perf_counter
 from typing import Dict, List, Optional, Tuple
@@ -39,7 +38,9 @@ from flask_login import (
 )
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from jinja2 import TemplateNotFound
+from PIL import Image, UnidentifiedImageError
 from pymongo import ASCENDING, MongoClient
+from pymongo.errors import PyMongoError
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -59,7 +60,11 @@ for _dotenv_path in (os.path.join(ROOT_DIR, ".env"), os.path.join(BACKEND_DIR, "
 MONGO_URI = os.environ.get("MONGO_URI") or "mongodb://localhost:27017/NFG"
 MONGO_DB = os.environ.get("MONGO_DB")  # optional override to align with seed.py
 MONGO_URI_LOCAL = os.environ.get("MONGO_URI_LOCAL") or "mongodb://localhost:27017/NFG"
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret")
+DEV_SECRET_KEY = "dev-secret"
+SECRET_KEY = os.environ.get("SECRET_KEY", DEV_SECRET_KEY)
+
+# Render sets RENDER=true. Anything hosted gets strict config rules below.
+IS_HOSTED = bool(os.getenv("RENDER"))
 
 # Upload/media configuration (Render Disk ready)
 MEDIA_ROOT = os.getenv("MEDIA_ROOT", "").strip()
@@ -70,14 +75,11 @@ app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
 # Safer cookies in hosted envs (Render sets RENDER=true)
-if os.getenv("RENDER"):
+if IS_HOSTED:
     app.config.update(
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_SAMESITE="Lax",
     )
-
-if os.getenv("RENDER") and SECRET_KEY == "dev-secret":
-    app.logger.warning("SECRET_KEY is using the development fallback in a hosted environment.")
 
 
 def _resolve_db_for_client(mongo_client: MongoClient, mongo_uri: str):
@@ -182,6 +184,18 @@ def _extract_youtube_id(val: Optional[str]) -> Optional[str]:
     return m.group(1) if m else val.strip()
 
 
+SEARCH_MAX_LEN = 80
+
+
+def _clean_search_query(raw: Optional[str]) -> str:
+    return (raw or "").strip()[:SEARCH_MAX_LEN]
+
+
+def _search_regex(q: str) -> Regex:
+    """Case-insensitive literal match: user input is never interpreted as a regex."""
+    return Regex(re.escape(q), "i")
+
+
 # -----------------------------------------------------------------------------
 # Upload helpers
 # -----------------------------------------------------------------------------
@@ -224,8 +238,30 @@ app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB
 ALLOWED_IMAGE_EXTS = {"png", "jpg", "jpeg", "gif", "webp"}
 
 
+# Pillow format name -> extension we save with. The saved extension always comes
+# from the decoded content, never from the uploaded filename.
+IMAGE_FORMAT_EXTS = {"PNG": "png", "JPEG": "jpg", "GIF": "gif", "WEBP": "webp"}
+
+
 def _allowed_image(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_IMAGE_EXTS
+
+
+def _detect_image_ext(stream) -> Optional[str]:
+    """Return the save extension if the stream decodes as an allowed image, else None."""
+    try:
+        stream.seek(0)
+        with Image.open(stream) as img:
+            fmt = (img.format or "").upper()
+            img.verify()
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError, SyntaxError, ValueError):
+        return None
+    finally:
+        try:
+            stream.seek(0)
+        except (OSError, ValueError):
+            pass
+    return IMAGE_FORMAT_EXTS.get(fmt)
 
 
 def _save_one_file(file_storage) -> Optional[str]:
@@ -235,7 +271,15 @@ def _save_one_file(file_storage) -> Optional[str]:
     if not _allowed_image(file_storage.filename):
         return None
 
-    ext = file_storage.filename.rsplit(".", 1)[1].lower()
+    ext = _detect_image_ext(file_storage.stream)
+    if not ext:
+        app.logger.warning("Rejected upload that is not a valid image: %s", file_storage.filename)
+        flash(
+            f"Skipped '{file_storage.filename}': not a valid PNG, JPEG, GIF or WebP image.",
+            "warning",
+        )
+        return None
+
     day = datetime.datetime.utcnow().strftime("%Y%m%d")
     folder_abs = os.path.join(UPLOAD_ROOT_ABS, day)
     os.makedirs(folder_abs, exist_ok=True)
@@ -343,9 +387,21 @@ def _log_request(resp):
             viewer_to_set,
             max_age=60 * 60 * 24 * 365 * 2,  # 2 years
             samesite="Lax",
-            secure=bool(os.getenv("RENDER")),
+            secure=IS_HOSTED,
             httponly=True,
         )
+    return resp
+
+
+@app.after_request
+def _security_headers(resp):
+    # A Content-Security-Policy is deferred until inline scripts move out of
+    # base.html; these headers are safe with the current templates.
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    resp.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    if IS_HOSTED:
+        resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
     return resp
 
 
@@ -355,7 +411,13 @@ csrf = CSRFProtect(app)
 # Auth (admin + members)
 # -----------------------------------------------------------------------------
 ADMIN_USERNAME = (os.getenv("ADMIN_USERNAME", "admin") or "admin").strip()
-ADMIN_PASSWORD = (os.getenv("ADMIN_PASSWORD", "changeme") or "").strip()
+# Plaintext admin passwords are a local-development convenience only. "changeme" is the
+# default solely when running locally with nothing configured; hosted envs never use it.
+_ADMIN_PASSWORD_ENV = os.getenv("ADMIN_PASSWORD")
+if _ADMIN_PASSWORD_ENV is None and not IS_HOSTED:
+    ADMIN_PASSWORD = "changeme"
+else:
+    ADMIN_PASSWORD = (_ADMIN_PASSWORD_ENV or "").strip()
 ADMIN_PASSWORD_HASH = (os.getenv("ADMIN_PASSWORD_HASH", "") or "").strip().strip('"').strip("'")
 
 # Support Docker env_file escaping styles:
@@ -371,10 +433,31 @@ if ADMIN_PASSWORD_HASH and ADMIN_PASSWORD_HASH.count("$") < 2:
         ADMIN_PASSWORD_HASH.count("$"),
     )
 
-if os.getenv("RENDER") and not ADMIN_PASSWORD_HASH:
-    app.logger.warning(
-        "ADMIN_PASSWORD_HASH is not set in a hosted environment. Falling back to plaintext admin password."
-    )
+
+def _hosted_config_problems(
+    is_hosted: bool, secret_key: str, admin_password_hash: str
+) -> List[str]:
+    """Return config problems that make a hosted deployment unsafe to start."""
+    if not is_hosted:
+        return []
+    problems = []
+    if not secret_key or secret_key == DEV_SECRET_KEY:
+        problems.append("SECRET_KEY is missing or uses the development fallback")
+    if not admin_password_hash:
+        problems.append("ADMIN_PASSWORD_HASH is not set (plaintext admin passwords are disabled)")
+    return problems
+
+
+_CONFIG_PROBLEMS = _hosted_config_problems(IS_HOSTED, SECRET_KEY, ADMIN_PASSWORD_HASH)
+if _CONFIG_PROBLEMS:
+    # Fail fast: refusing to boot keeps the previous Render deploy serving traffic
+    # instead of running production with forgeable sessions or an open admin.
+    for _problem in _CONFIG_PROBLEMS:
+        app.logger.critical("Unsafe hosted configuration: %s", _problem)
+    raise RuntimeError("Unsafe hosted configuration: " + "; ".join(_CONFIG_PROBLEMS))
+
+if not IS_HOSTED and not ADMIN_PASSWORD_HASH and ADMIN_PASSWORD == "changeme":
+    app.logger.warning("Local admin login is using the default password 'changeme'.")
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
@@ -435,18 +518,18 @@ def _check_admin_credentials(username: str, password: str) -> bool:
     if submitted_username.lower() != ADMIN_USERNAME.lower():
         return False
 
+    # When a hash is configured it is the only accepted credential. There is
+    # deliberately no plaintext fallback after a failed hash check.
     if ADMIN_PASSWORD_HASH:
         try:
-            if check_password_hash(ADMIN_PASSWORD_HASH, submitted_password):
-                return True
-        except Exception:
-            app.logger.warning(
-                "Invalid ADMIN_PASSWORD_HASH format. Falling back to plaintext admin password."
-            )
+            return check_password_hash(ADMIN_PASSWORD_HASH, submitted_password)
+        except (ValueError, TypeError):
+            app.logger.error("ADMIN_PASSWORD_HASH is malformed; admin login is disabled.")
+            return False
 
-    if ADMIN_PASSWORD:
-        return submitted_password == ADMIN_PASSWORD
-    return False
+    if IS_HOSTED or not ADMIN_PASSWORD:
+        return False
+    return hmac.compare_digest(submitted_password, ADMIN_PASSWORD)
 
 
 def _member_owner_key() -> Optional[str]:
@@ -464,9 +547,23 @@ def _progress_owner_key() -> str:
     return _member_owner_key() or _viewer_id()
 
 
+def _is_safe_local_path(target: Optional[str]) -> bool:
+    """True only for same-site paths like "/programs?x=1".
+
+    Rejects protocol-relative ("//evil.com"), backslash ("/\\evil.com") and
+    control-character tricks that browsers normalise into off-site URLs.
+    """
+    if not target or not target.startswith("/") or target.startswith("//"):
+        return False
+    if "\\" in target or any(ord(ch) < 32 or ord(ch) == 127 for ch in target):
+        return False
+    parsed = urlparse(target)
+    return not parsed.scheme and not parsed.netloc
+
+
 def _safe_next_url(default_endpoint: str = "home") -> str:
     nxt = (request.args.get("next") or request.form.get("next") or "").strip()
-    if nxt.startswith("/"):
+    if _is_safe_local_path(nxt):
         return nxt
     return url_for(default_endpoint)
 
@@ -541,30 +638,45 @@ def _migrate_guest_state_to_member(guest_viewer_id: str, member_key: str) -> Non
     db.program_week_progress.delete_many({"viewer_id": guest})
 
 
-FAILED_LOGINS: Dict[str, deque] = {}
+# Failed logins are stored in Mongo (TTL-expired) so every Gunicorn worker and
+# every restart share the same counters.
+LOGIN_FAIL_LIMIT = 5
+LOGIN_FAIL_WINDOW_SEC = 15 * 60
 
 
 def _client_ip() -> str:
+    # NOTE: the left-most X-Forwarded-For entry is client-supplied and can be
+    # spoofed. Kept as-is until Render's proxy chain is confirmed.
     fwd = request.headers.get("X-Forwarded-For", "")
     return fwd.split(",")[0].strip() if fwd else (request.remote_addr or "unknown")
 
 
-def _allowed_login_attempt(ip: str, limit: int = 5, window_sec: int = 900) -> bool:
-    now = time.time()
-    dq = FAILED_LOGINS.get(ip)
-    if dq is None:
+def _login_throttle_key(scope: str) -> str:
+    return f"{scope}:{_client_ip()}"
+
+
+def _allowed_login_attempt(key: str) -> bool:
+    since = datetime.datetime.utcnow() - datetime.timedelta(seconds=LOGIN_FAIL_WINDOW_SEC)
+    try:
+        failures = db.login_failures.count_documents({"key": key, "at": {"$gte": since}})
+    except PyMongoError as e:
+        app.logger.warning("Login throttle check failed open: %s", e)
         return True
-    while dq and now - dq[0] > window_sec:
-        dq.popleft()
-    return len(dq) < limit
+    return failures < LOGIN_FAIL_LIMIT
 
 
-def _record_failed_login(ip: str) -> None:
-    FAILED_LOGINS.setdefault(ip, deque()).append(time.time())
+def _record_failed_login(key: str) -> None:
+    try:
+        db.login_failures.insert_one({"key": key, "at": datetime.datetime.utcnow()})
+    except PyMongoError as e:
+        app.logger.warning("Could not record failed login: %s", e)
 
 
-def _clear_failed_logins(ip: str) -> None:
-    FAILED_LOGINS.pop(ip, None)
+def _clear_failed_logins(key: str) -> None:
+    try:
+        db.login_failures.delete_many({"key": key})
+    except PyMongoError as e:
+        app.logger.warning("Could not clear failed logins: %s", e)
 
 
 # -----------------------------------------------------------------------------
@@ -2771,6 +2883,11 @@ def _ensure_indexes() -> None:
         db.users.create_index([("username_lower", 1)], unique=True, sparse=True)
         db.users.create_index([("email_lower", 1)], unique=True, sparse=True)
         db.users.create_index([("created_at", -1)])
+
+        db.login_failures.create_index(
+            [("at", 1)], expireAfterSeconds=LOGIN_FAIL_WINDOW_SEC, name="login_failures_ttl"
+        )
+        db.login_failures.create_index([("key", 1), ("at", -1)])
     except Exception as e:
         app.logger.warning("Index initialization skipped: %s", e)
 
@@ -3072,7 +3189,7 @@ def program_favorite_toggle(slug):
         )
 
     next_url = (request.form.get("next") or "").strip()
-    if not next_url.startswith("/"):
+    if not _is_safe_local_path(next_url):
         next_url = url_for("programs_index")
     return redirect(next_url)
 
@@ -3576,10 +3693,10 @@ def workouts_browse():
     movement = request.args.get("movement") or ""
     equipment = request.args.get("equipment") or ""
     difficulty = request.args.get("difficulty") or ""
-    q = (request.args.get("q") or "").strip()
+    q = _clean_search_query(request.args.get("q"))
     sort_key = request.args.get("sort", "name")
-    page = max(int(request.args.get("page", 1)), 1)
-    per_page = min(max(int(request.args.get("per_page", 12)), 1), 100)
+    page = _safe_int(request.args.get("page"), default=1, min_value=1)
+    per_page = _safe_int(request.args.get("per_page"), default=12, min_value=1, max_value=100)
 
     and_clauses = []
     if level:
@@ -3599,7 +3716,7 @@ def workouts_browse():
     if sort_key == "favorites":
         and_clauses.append({"is_favorite": True})
     if q:
-        rx = Regex(q, "i")
+        rx = _search_regex(q)
         and_clauses.append(
             {
                 "$or": [
@@ -3757,14 +3874,14 @@ def recipes():
 
 @app.route("/search")
 def search():
-    q = (request.args.get("q") or "").strip()
+    q = _clean_search_query(request.args.get("q"))
     if not q:
         return redirect(url_for("home"))
 
-    page = max(int(request.args.get("page", 1)), 1)
-    per_page = min(max(int(request.args.get("per_page", 24)), 1), 100)
+    page = _safe_int(request.args.get("page"), default=1, min_value=1)
+    per_page = _safe_int(request.args.get("per_page"), default=24, min_value=1, max_value=100)
 
-    rx = Regex(q, "i")
+    rx = _search_regex(q)
     w_query = {
         "$or": [
             {"name": rx},
@@ -3815,24 +3932,23 @@ def search():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        ip = _client_ip()
+        throttle_key = _login_throttle_key("admin")
+        # Check the limit before verifying credentials; otherwise a locked-out
+        # client could keep guessing and still be let in on a correct guess.
+        if not _allowed_login_attempt(throttle_key):
+            flash("Too many failed login attempts. Try again in ~15 minutes.", "danger")
+            return render_template("login.html"), 429
+
         username = (request.form.get("username") or "").strip()
         password = (request.form.get("password") or "").strip()
-        is_valid = _check_admin_credentials(username, password)
 
-        # Allow successful sign-ins even if the IP is currently rate-limited due
-        # to earlier failures.
-        if not is_valid and not _allowed_login_attempt(ip):
-            flash("Too many failed login attempts. Try again in ~15 minutes.", "danger")
-            return render_template("login.html")
-
-        if is_valid:
-            _clear_failed_logins(ip)
+        if _check_admin_credentials(username, password):
+            _clear_failed_logins(throttle_key)
             login_user(User("admin", role="admin"))
             flash("Logged in.", "success")
             return redirect(_safe_next_url(default_endpoint="admin_index"))
 
-        _record_failed_login(ip)
+        _record_failed_login(throttle_key)
         flash("Invalid credentials.", "danger")
 
     return render_template("login.html")
@@ -3926,6 +4042,11 @@ def account_login():
         return redirect(url_for("admin_index"))
 
     if request.method == "POST":
+        throttle_key = _login_throttle_key("member")
+        if not _allowed_login_attempt(throttle_key):
+            flash("Too many failed sign-in attempts. Try again in ~15 minutes.", "danger")
+            return render_template("account_login.html"), 429
+
         identity = (request.form.get("identity") or "").strip().lower()
         password = (request.form.get("password") or "").strip()
 
@@ -3939,12 +4060,14 @@ def account_login():
             or not doc.get("password_hash")
             or not check_password_hash(doc["password_hash"], password)
         ):
+            _record_failed_login(throttle_key)
             flash("Invalid login.", "danger")
             return render_template("account_login.html")
         if doc.get("active") is False:
             flash("This account is inactive.", "danger")
             return render_template("account_login.html")
 
+        _clear_failed_logins(throttle_key)
         member_key = f"user:{doc['_id']}"
         _migrate_guest_state_to_member(_viewer_id(), member_key)
         login_user(
@@ -6541,16 +6664,20 @@ def server_error(e):
 
 @app.route("/healthz")
 def healthz():
+    # 503 when Mongo is unreachable so Render's health check (and zero-downtime
+    # deploys) see the real state instead of a misleading 200.
     try:
         client.admin.command("ping")
         return {"status": "ok", "mongo": "up"}, 200
-    except Exception as e:
+    except PyMongoError as e:
         app.logger.warning("Healthz DB ping failed: %s", e)
-        return {"status": "ok", "mongo": "down"}, 200
+        return {"status": "degraded", "mongo": "down"}, 503
 
 
 # -----------------------------------------------------------------------------
 # Main (dev only)
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)
+    # Debug defaults on for local `python app.py`, and can never be on when hosted.
+    _debug = (not IS_HOSTED) and os.getenv("FLASK_DEBUG", "1") == "1"
+    app.run(host="0.0.0.0", debug=_debug)
