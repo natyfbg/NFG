@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1600" width="900" height="1600" role="img" aria-label="Exercise image coming soon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#3A3A34"/>
+      <stop offset="1" stop-color="#1F1F1C"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1600" fill="url(#bg)"/>
+  <circle cx="860" cy="260" r="360" fill="#FFFFFF" fill-opacity="0.06"/>
+  <circle cx="760" cy="420" r="210" fill="#FFFFFF" fill-opacity="0.05"/>
+  <text x="80" y="1240" fill="#FFFFFF" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="84" font-weight="800">Exercise</text>
+  <line x1="80" y1="1430" x2="820" y2="1430" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="2"/>
+  <text x="80" y="1500" fill="#FFFFFF" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="44" font-weight="900" letter-spacing="4">NFG</text>
+  <text x="820" y="1500" text-anchor="end" fill="#FFFFFF" fill-opacity="0.6" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="30" font-weight="500">Demo image coming soon</text>
+</svg>

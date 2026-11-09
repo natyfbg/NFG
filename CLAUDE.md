@@ -68,8 +68,22 @@ main/dev/windows-dev and PRs into main/dev.
 ## Git flow
 
 `windows-dev` (active work) → `dev` (integration) → PR → `main` (Render auto-deploys).
-`main` is promoted with squash merges, so dev/main show phantom divergence; compare
-trees (`git diff dev main`), not commit counts.
+
+`main` has a GitHub rule forbidding merge commits, so promotions are **squash merges**.
+After every squash, re-link dev so the next PR doesn't show phantom conflicts:
+
+```bash
+git fetch origin
+git diff --quiet origin/main origin/dev && echo IDENTICAL   # must be identical first
+git checkout dev && git merge --ff-only origin/dev
+git merge -s ours origin/main -m "Record squash promotion #N as merged into dev history"
+git push origin dev
+git checkout windows-dev && git merge --ff-only dev && git push origin windows-dev
+```
+
+Before each promotion, tag main: `backup/main-pre-<what>-<date>`.
+Commits authored by Claude keep Nate as author and use `Claude <noreply@anthropic.com>`
+as committer, so GitHub shows them as Verified.
 
 ## Things that bite
 
@@ -80,7 +94,11 @@ trees (`git diff dev main`), not commit counts.
   `SECRET_KEY` and `ADMIN_PASSWORD_HASH`. Plaintext `ADMIN_PASSWORD` is local-only.
 - **Swipe navigation** (`base.html`) hijacks horizontal drags on home/workouts/
   programs/recipes. Any horizontal scroller must carry `data-no-page-swipe`
-  (or `.swipe-block`).
+  (or `.swipe-block`) — use the `ui.rail()` macro, which already does.
+- **UI components** live in `templates/_components.html` (`{% import "_components.html"
+  as ui %}`). Full-width pages override `{% block page %}` in `base.html`.
+- Grid layouts containing rails need `min-width: 0` on grid children, or the rail's
+  content stretches the page wider than the phone screen.
 - **`workouts` collection = the exercise library** (single exercises). Do not rename it
   or its `/workouts/<slug>` URLs; program items reference it by `workout_id`/`workout_slug`.
 - **`is_favorite` on a workout is a global admin flag**, not a per-user favorite.
@@ -125,6 +143,14 @@ trees (`git diff dev main`), not commit counts.
 - 2026-11-08 — Exercise images: `content/exercises` + `static/img/exercises/<slug>.svg`
   placeholders; real images go in the file's `images:` list. Muscle-group colours
   live in `taxonomy.MUSCLE_GROUPS`.
+- 2026-11-08 — Coach's Picks (and future shelves) are content files in
+  `backend/content/collections/<key>.yaml` (title, subtitle, exercise slugs), loaded at
+  startup by `curation.py`. Missing/draft slugs are skipped at render time.
+- 2026-11-08 — Favorites are generic: `favorites` collection keyed by viewer + item_type
+  + item_slug (only "exercise" so far); migrated guest→member. Program favorites still
+  use `program_favorites`.
+- 2026-11-08 — Training environment preference lives in the `nfg_env` cookie
+  (home/gym/hybrid; hybrid = no filtering).
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
@@ -135,5 +161,8 @@ trees (`git diff dev main`), not commit counts.
    existing 4 exercises migrated
 3. Starter exercise library: Nate approves the list, Claude drafts instructions in
    batches, Nate reviews and publishes
-4. Home redesign (discovery + continue training), then Mixer, My Workouts,
-   Coach's Picks, browse and detail redesigns
+4. ✅ Home v2: continue training (with %), environment switch, muscle-group tiles,
+   Muscle Mixer v1 (`/workouts/mix`), Coach's Picks, saved exercises, programs rail
+5. Content batches 2+ (Shoulders/Arms, Legs/Glutes, Core, Full body/Cardio/Mobility)
+6. Browse + exercise detail redesign (card macro replacing the 4 duplicated card blocks,
+   related-exercise cards), recently viewed, equipment chips in Quick setup

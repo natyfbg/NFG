@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}All Workouts (A–Z) – NFG{% endblock %}
+{% block title %}All Exercises (A–Z) – NFG{% endblock %}
 
 {% block sidebar %}
   {% include "quick_options.html" %}
@@ -10,7 +10,7 @@
   <div class="app-page-header">
     <div>
       <div class="app-page-kicker">Workout library</div>
-      <h1 class="page-title mb-1">All Workouts (A–Z)</h1>
+      <h1 class="page-title mb-1">All Exercises (A–Z)</h1>
       <p class="app-page-copy">{{ items|length }} workout{{ '' if (items|length)==1 else 's' }} in the library. Open any exercise for movement guidance and examples.</p>
     </div>
     <a class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact" href="{{ url_for('workouts_browse') }}">Browse filters</a>
@@ -29,7 +29,7 @@
           {% set thumbs = thumbs + [w.muscle_image] %}
         {% endif %}
         {% if not thumbs or thumbs|length == 0 %}
-          {% set thumbs = ['https://via.placeholder.com/900x1600?text=Workout'] %}
+          {% set thumbs = [url_for('static', filename='img/exercise-placeholder.svg')] %}
         {% endif %}
         {% if thumbs|length == 1 %}
           {% set thumbs = thumbs + [thumbs[0]] %}

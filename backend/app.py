@@ -13,6 +13,8 @@ from time import perf_counter
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
+import curation
+import taxonomy as tx
 from bson.objectid import ObjectId
 from bson.regex import Regex
 from dotenv import load_dotenv
@@ -40,7 +42,7 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf
 from jinja2 import TemplateNotFound
 from PIL import Image, UnidentifiedImageError
 from pymongo import ASCENDING, MongoClient
-from pymongo.errors import PyMongoError
+from pymongo.errors import DuplicateKeyError, PyMongoError
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
@@ -390,6 +392,16 @@ def _log_request(resp):
             secure=IS_HOSTED,
             httponly=True,
         )
+    env_to_set = getattr(g, "_set_env", None)
+    if env_to_set:
+        resp.set_cookie(
+            ENV_COOKIE,
+            env_to_set,
+            max_age=60 * 60 * 24 * 365,
+            samesite="Lax",
+            secure=IS_HOSTED,
+            httponly=True,
+        )
     return resp
 
 
@@ -636,6 +648,20 @@ def _migrate_guest_state_to_member(guest_viewer_id: str, member_key: str) -> Non
             upsert=True,
         )
     db.program_week_progress.delete_many({"viewer_id": guest})
+
+    for row in list(db.favorites.find({"viewer_id": guest})):
+        if not row.get("item_type") or not row.get("item_slug"):
+            continue
+        db.favorites.update_one(
+            {
+                "viewer_id": member_key,
+                "item_type": row["item_type"],
+                "item_slug": row["item_slug"],
+            },
+            {"$setOnInsert": {"created_at": row.get("created_at") or datetime.datetime.utcnow()}},
+            upsert=True,
+        )
+    db.favorites.delete_many({"viewer_id": guest})
 
 
 # Failed logins are stored in Mongo (TTL-expired) so every Gunicorn worker and
@@ -2823,12 +2849,19 @@ def _continue_plan_for_owner(owner_key: str) -> Optional[dict]:
     if resume_day_key:
         args["day"] = resume_day_key
 
+    total_days = sum(v.get("total", 0) for v in week_progress.values())
+    done_days = sum(v.get("done", 0) for v in week_progress.values())
+    percent = round(done_days * 100 / total_days) if total_days else None
+
     return {
         "track_title": track.get("title") or "Program",
         "week_number": resume_week_number,
         "day_label": resume_day_key.replace("-", " ").title() if resume_day_key else None,
         "url": url_for("program_hub_week_detail", **args),
         "completed_at": row.get("completed_at"),
+        "done_days": done_days,
+        "total_days": total_days,
+        "percent": percent,
     }
 
 
@@ -2910,6 +2943,11 @@ def _ensure_indexes() -> None:
             [("at", 1)], expireAfterSeconds=LOGIN_FAIL_WINDOW_SEC, name="login_failures_ttl"
         )
         db.login_failures.create_index([("key", 1), ("at", -1)])
+
+        db.favorites.create_index(
+            [("viewer_id", 1), ("item_type", 1), ("item_slug", 1)], unique=True
+        )
+        db.favorites.create_index([("viewer_id", 1), ("item_type", 1), ("created_at", -1)])
     except Exception as e:
         app.logger.warning("Index initialization skipped: %s", e)
 
@@ -3143,10 +3181,210 @@ def render_or_fallback(template_name: str, **ctx):
 
 
 # -----------------------------------------------------------------------------
+# Discovery: training environment, muscle groups, Muscle Mixer, favorites,
+# curated collections. Taxonomy keys come from taxonomy.py.
+# -----------------------------------------------------------------------------
+ENV_COOKIE = "nfg_env"
+DEFAULT_ENV = "hybrid"
+MIX_MAX_GROUPS = 6
+FAVORITE_ITEM_TYPES = {"exercise"}
+LEVEL_ORDER = {"Beginner": 0, "Intermediate": 1, "Advanced": 2}
+
+try:
+    CURATED = curation.load_collections()
+except curation.CurationError as e:
+    app.logger.warning("Curated collections not loaded: %s", e)
+    CURATED = {}
+
+ENV_NOTES = {
+    "home": "Showing exercises you can do with bodyweight and common home equipment.",
+    "gym": "Showing everything a typical gym can handle.",
+    "hybrid": "Showing everything — home and gym.",
+}
+
+
+def _current_env() -> str:
+    """Training environment from ?env=, else the remembered cookie, else hybrid."""
+    requested = _norm_choice(request.args.get("env"))
+    if requested in tx.ENVIRONMENTS:
+        if requested != _norm_choice(request.cookies.get(ENV_COOKIE)):
+            g._set_env = requested
+        return requested
+    saved = _norm_choice(request.cookies.get(ENV_COOKIE))
+    return saved if saved in tx.ENVIRONMENTS else DEFAULT_ENV
+
+
+def _env_filter(env: str) -> Optional[dict]:
+    """Mongo filter for an environment. Hybrid trains anywhere, so nothing is filtered."""
+    if env and env != "hybrid":
+        return {"environments": env}
+    return None
+
+
+def _with_metadata_fallbacks(w: dict) -> dict:
+    """Fill the legacy taxonomy fields for older documents that lack them."""
+    w["primary_muscle"] = w.get("primary_muscle") or _primary_muscle_from_doc(w)
+    w["movement_pattern"] = w.get("movement_pattern") or _infer_movement_from_primary_muscle(
+        w.get("primary_muscle")
+    )
+    w["equipment"] = w.get("equipment") or _infer_equipment_from_style(w.get("style"))
+    w["difficulty_tier"] = w.get("difficulty_tier") or _infer_difficulty_tier_from_level(
+        w.get("level")
+    )
+    return w
+
+
+def _group_counts(env: str) -> Dict[str, int]:
+    pipeline = [
+        {"$match": _public_workout_query(_env_filter(env))},
+        {"$unwind": "$primary_groups"},
+        {"$group": {"_id": "$primary_groups", "n": {"$sum": 1}}},
+    ]
+    try:
+        return {row["_id"]: row["n"] for row in db.workouts.aggregate(pipeline)}
+    except PyMongoError as e:
+        app.logger.warning("Group counts unavailable: %s", e)
+        return {}
+
+
+def _group_cards(env: str) -> List[dict]:
+    counts = _group_counts(env)
+    return [
+        {"key": key, "label": grp["label"], "color": grp["color"], "count": counts.get(key, 0)}
+        for key, grp in tx.MUSCLE_GROUPS.items()
+    ]
+
+
+def _selected_groups() -> List[str]:
+    selected: List[str] = []
+    for raw in request.args.getlist("g"):
+        key = _norm_choice(raw)
+        if key in tx.MUSCLE_GROUPS and key not in selected:
+            selected.append(key)
+    return selected[:MIX_MAX_GROUPS]
+
+
+def _mix_results(groups: List[str], env: str, limit: int = 60) -> List[dict]:
+    """Exercises hitting the selected groups, ranked by how many they train.
+
+    A selected group trained as a primary target scores 2, as a secondary 1.
+    Ties go to easier exercises first, then name.
+    """
+    if not groups:
+        return []
+    clauses = [{"muscle_groups": {"$in": groups}}]
+    env_clause = _env_filter(env)
+    if env_clause:
+        clauses.append(env_clause)
+    docs = list(db.workouts.find(_public_workout_query({"$and": clauses})).limit(500))
+    for doc in docs:
+        primary = set(doc.get("primary_groups") or [])
+        trained = set(doc.get("muscle_groups") or [])
+        doc["mix_primary"] = [gk for gk in groups if gk in primary]
+        doc["mix_secondary"] = [gk for gk in groups if gk in trained and gk not in primary]
+        doc["mix_score"] = 2 * len(doc["mix_primary"]) + len(doc["mix_secondary"])
+        _with_metadata_fallbacks(doc)
+    docs.sort(
+        key=lambda d: (-d["mix_score"], LEVEL_ORDER.get(d.get("level"), 3), d.get("name") or "")
+    )
+    return docs[:limit]
+
+
+def _favorite_slugs(owner_key: str, item_type: str, limit: int = 0) -> List[str]:
+    if not owner_key:
+        return []
+    cursor = db.favorites.find(
+        {"viewer_id": owner_key, "item_type": item_type}, {"item_slug": 1}
+    ).sort([("created_at", -1)])
+    if limit:
+        cursor = cursor.limit(limit)
+    return [row["item_slug"] for row in cursor if row.get("item_slug")]
+
+
+def _exercises_by_slugs(slugs: List[str], limit: int = 12) -> List[dict]:
+    """Published exercises for the given slugs, keeping the given order."""
+    if not slugs:
+        return []
+    docs = db.workouts.find(_public_workout_query({"slug": {"$in": list(slugs)}}))
+    by_slug = {d["slug"]: _with_metadata_fallbacks(d) for d in docs if d.get("slug")}
+    return [by_slug[s] for s in slugs if s in by_slug][:limit]
+
+
+def _saved_exercises(owner_key: str, limit: int = 12) -> List[dict]:
+    return _exercises_by_slugs(_favorite_slugs(owner_key, "exercise", limit * 2), limit)
+
+
+@app.route("/favorites/<item_type>/<slug>/toggle", methods=["POST"])
+def favorite_toggle(item_type, slug):
+    if item_type not in FAVORITE_ITEM_TYPES:
+        abort(404)
+    if not db.workouts.find_one(_public_workout_query({"slug": slug}), {"_id": 1}):
+        abort(404)
+    owner_key = _progress_owner_key()
+    key = {"viewer_id": owner_key, "item_type": item_type, "item_slug": slug}
+    if db.favorites.find_one(key):
+        db.favorites.delete_one(key)
+    else:
+        try:
+            db.favorites.insert_one(dict(key, created_at=datetime.datetime.utcnow()))
+        except DuplicateKeyError:
+            pass  # double-submit; already saved
+    next_url = (request.form.get("next") or "").strip()
+    if not _is_safe_local_path(next_url):
+        next_url = url_for("workout_detail", slug=slug)
+    return redirect(next_url)
+
+
+@app.route("/workouts/mix")
+def workouts_mix():
+    env = _current_env()
+    groups = _selected_groups()
+    group_cards = _group_cards(env)
+
+    chips = []
+    for card in group_cards:
+        selected = card["key"] in groups
+        if selected:
+            next_groups = [gk for gk in groups if gk != card["key"]]
+        else:
+            next_groups = (groups + [card["key"]])[-MIX_MAX_GROUPS:]
+        chips.append(
+            dict(
+                card,
+                selected=selected,
+                href=(
+                    url_for("workouts_mix", g=next_groups)
+                    if next_groups
+                    else url_for("workouts_mix")
+                ),
+            )
+        )
+
+    # Selected groups first (in the order picked) so they're visible without scrolling.
+    chips.sort(key=lambda c: groups.index(c["key"]) if c["selected"] else len(groups))
+
+    results = _mix_results(groups, env)
+    return render_template(
+        "mix.html",
+        env=env,
+        env_note=ENV_NOTES.get(env, ""),
+        environments=tx.ENVIRONMENTS,
+        muscle_groups=tx.MUSCLE_GROUPS,
+        groups=groups,
+        selected_labels=[tx.MUSCLE_GROUPS[gk]["label"] for gk in groups],
+        chips=chips,
+        group_cards=group_cards,
+        results=results,
+        saved_slugs=set(_favorite_slugs(_progress_owner_key(), "exercise")),
+    )
+
+
+# -----------------------------------------------------------------------------
 # Public pages
 # -----------------------------------------------------------------------------
 @app.route("/")
 def home():
+    env = _current_env()
     featured_programs = list(
         db.programs.find(_public_program_query({"show_on_home": True}))
         .sort([("order", 1), ("created_at", -1)])
@@ -3160,9 +3398,17 @@ def home():
     owner_key = _progress_owner_key()
     favorite_programs = _favorite_programs_for_viewer(owner_key, limit=6)
     continue_plan = _continue_plan_for_owner(owner_key)
+    picks = CURATED.get("coach-picks") or {}
     return render_template(
         "home.html",
         name="NFG",
+        env=env,
+        env_note=ENV_NOTES.get(env, ""),
+        environments=tx.ENVIRONMENTS,
+        group_cards=_group_cards(env),
+        coach_picks=_exercises_by_slugs(picks.get("items", []), limit=12),
+        coach_picks_meta=picks,
+        saved_exercises=_saved_exercises(owner_key),
         featured_programs=featured_programs,
         home_programs=featured_programs or hub_programs,
         favorite_programs=favorite_programs,
@@ -3774,14 +4020,7 @@ def workouts_browse():
     cursor = db.workouts.find(query).sort(sort).skip((page - 1) * per_page).limit(per_page)
     items = list(cursor)
     for w in items:
-        w["primary_muscle"] = w.get("primary_muscle") or _primary_muscle_from_doc(w)
-        w["movement_pattern"] = w.get("movement_pattern") or _infer_movement_from_primary_muscle(
-            w.get("primary_muscle")
-        )
-        w["equipment"] = w.get("equipment") or _infer_equipment_from_style(w.get("style"))
-        w["difficulty_tier"] = w.get("difficulty_tier") or _infer_difficulty_tier_from_level(
-            w.get("level")
-        )
+        _with_metadata_fallbacks(w)
 
     return render_template(
         "browse_workouts.html",
@@ -3812,14 +4051,7 @@ def workout_detail(slug):
     if not w:
         abort(404)
 
-    w["primary_muscle"] = w.get("primary_muscle") or _primary_muscle_from_doc(w)
-    w["movement_pattern"] = w.get("movement_pattern") or _infer_movement_from_primary_muscle(
-        w.get("primary_muscle")
-    )
-    w["equipment"] = w.get("equipment") or _infer_equipment_from_style(w.get("style"))
-    w["difficulty_tier"] = w.get("difficulty_tier") or _infer_difficulty_tier_from_level(
-        w.get("level")
-    )
+    _with_metadata_fallbacks(w)
 
     parts = w.get("body_parts") or ([w.get("body_part")] if w.get("body_part") else [])
     rel_or = []
@@ -3841,14 +4073,7 @@ def workout_detail(slug):
         .limit(6)
     )
     for r in related:
-        r["primary_muscle"] = r.get("primary_muscle") or _primary_muscle_from_doc(r)
-        r["movement_pattern"] = r.get("movement_pattern") or _infer_movement_from_primary_muscle(
-            r.get("primary_muscle")
-        )
-        r["equipment"] = r.get("equipment") or _infer_equipment_from_style(r.get("style"))
-        r["difficulty_tier"] = r.get("difficulty_tier") or _infer_difficulty_tier_from_level(
-            r.get("level")
-        )
+        _with_metadata_fallbacks(r)
 
     back_to_week_url = None
     hub_slug = (request.args.get("hub_slug") or "").strip()
@@ -3887,8 +4112,18 @@ def workout_detail(slug):
                         args["day"] = ref_day
                     back_to_week_url = url_for("program_hub_week_detail", **args)
 
+    is_saved = bool(
+        db.favorites.find_one(
+            {"viewer_id": _progress_owner_key(), "item_type": "exercise", "item_slug": w["slug"]},
+            {"_id": 1},
+        )
+    )
     return render_template(
-        "workout_detail.html", w=w, related=related, back_to_week_url=back_to_week_url
+        "workout_detail.html",
+        w=w,
+        related=related,
+        back_to_week_url=back_to_week_url,
+        is_saved=is_saved,
     )
 
 
@@ -3935,14 +4170,7 @@ def search():
         .limit(per_page)
     )
     for w in items:
-        w["primary_muscle"] = w.get("primary_muscle") or _primary_muscle_from_doc(w)
-        w["movement_pattern"] = w.get("movement_pattern") or _infer_movement_from_primary_muscle(
-            w.get("primary_muscle")
-        )
-        w["equipment"] = w.get("equipment") or _infer_equipment_from_style(w.get("style"))
-        w["difficulty_tier"] = w.get("difficulty_tier") or _infer_difficulty_tier_from_level(
-            w.get("level")
-        )
+        _with_metadata_fallbacks(w)
     rs = list(db.recipes.find({"name": rx}).sort([("name", ASCENDING)]))
 
     return render_template(
@@ -4199,14 +4427,7 @@ def admin_index():
         readiness = _workout_readiness_report(w)
         w["_quality_missing"] = readiness["missing_metadata"]
         w["_readiness"] = readiness
-        w["primary_muscle"] = w.get("primary_muscle") or _primary_muscle_from_doc(w)
-        w["movement_pattern"] = w.get("movement_pattern") or _infer_movement_from_primary_muscle(
-            w.get("primary_muscle")
-        )
-        w["equipment"] = w.get("equipment") or _infer_equipment_from_style(w.get("style"))
-        w["difficulty_tier"] = w.get("difficulty_tier") or _infer_difficulty_tier_from_level(
-            w.get("level")
-        )
+        _with_metadata_fallbacks(w)
     quality_summary = _workout_quality_summary(items)
     link_health = _program_link_health_report()
     readiness_by_program = {}
@@ -4720,14 +4941,7 @@ def admin_workout_edit(id):
             flash(f"Error: {e}", "danger")
 
     data = dict(w)
-    data["primary_muscle"] = data.get("primary_muscle") or _primary_muscle_from_doc(data)
-    data["movement_pattern"] = data.get("movement_pattern") or _infer_movement_from_primary_muscle(
-        data.get("primary_muscle")
-    )
-    data["equipment"] = data.get("equipment") or _infer_equipment_from_style(data.get("style"))
-    data["difficulty_tier"] = data.get("difficulty_tier") or _infer_difficulty_tier_from_level(
-        data.get("level")
-    )
+    _with_metadata_fallbacks(data)
     data["tags"] = ", ".join(data.get("tags", []))
     data["images"] = "\n".join(data.get("images", []))
     data["tips"] = "\n".join(data.get("tips", []))

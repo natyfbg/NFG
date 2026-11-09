@@ -198,6 +198,13 @@ def environments_for_equipment(required: Iterable[str]) -> List[str]:
     return [ek for ek, env in ENVIRONMENTS.items() if needed.issubset(env["equipment"])]
 
 
+def equipment_text(required: List[str]) -> str:
+    """Human label for what an exercise needs, e.g. "Dumbbells + Bench" or "Pull-Up Bar"."""
+    if not required:
+        return BODYWEIGHT_LABEL
+    return " + ".join(EQUIPMENT[k]["label"] for k in required)
+
+
 def legacy_equipment_label(required: List[str]) -> str:
     """Single legacy `equipment` value for the old browse filter and admin form."""
     if not required:

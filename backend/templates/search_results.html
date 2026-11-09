@@ -26,7 +26,7 @@
   <section>
     <div class="app-section-head">
       <div>
-        <div class="app-section-kicker">Workouts</div>
+        <div class="app-section-kicker">Exercises</div>
         <h2 class="h5 mb-1">Workout results</h2>
         <p class="text-muted small mb-0">“{{ q }}” matched {{ total }} workout{{ '' if total == 1 else 's' }}.</p>
       </div>
@@ -36,7 +36,7 @@
       <div class="app-note">
         No workouts matched “{{ q }}”. Try a broader term or open the workout library to browse by level, style, or body part.
         <div class="d-flex flex-wrap gap-2 mt-3">
-          <a class="btn btn-sm btn-dark app-btn-primary app-btn-compact" href="{{ url_for('workouts') }}">Open Workouts</a>
+          <a class="btn btn-sm btn-dark app-btn-primary app-btn-compact" href="{{ url_for('workouts') }}">Open Exercises</a>
           <a class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact" href="{{ url_for('programs_index') }}">Open Programs</a>
         </div>
       </div>
@@ -49,7 +49,7 @@
             {% set thumbs = thumbs + [w.muscle_image] %}
           {% endif %}
           {% if not thumbs or thumbs|length == 0 %}
-            {% set thumbs = ['https://via.placeholder.com/900x1600?text=Workout'] %}
+            {% set thumbs = [url_for('static', filename='img/exercise-placeholder.svg')] %}
           {% endif %}
           {% if thumbs|length == 1 %}
             {% set thumbs = thumbs + [thumbs[0]] %}

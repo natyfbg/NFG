@@ -7,7 +7,7 @@
     {% set thumbs = thumbs + [w.muscle_image] %}
   {% endif %}
   {% if not thumbs or thumbs|length == 0 %}
-    {% set thumbs = ['https://via.placeholder.com/900x1600?text=Workout'] %}
+    {% set thumbs = [url_for('static', filename='img/exercise-placeholder.svg')] %}
   {% endif %}
   {% set cid = 'car-' ~ (w.slug or w._id) %}
   {% set ratio_class = 'card-media-sm' if size=='sm' else ('card-media-md' if size=='md' else 'card-media-lg') %}

@@ -1,0 +1,89 @@
+{# Reusable UI building blocks. Import with: {% import "_components.html" as ui %} #}
+
+{% macro section_head(kicker, title, link_url=None, link_label="See all", copy=None) %}
+  <div class="nfg-section-head">
+    <div class="nfg-section-head-text">
+      {% if kicker %}<div class="app-section-kicker">{{ kicker }}</div>{% endif %}
+      <h2 class="nfg-section-title">{{ title }}</h2>
+      {% if copy %}<p class="nfg-section-copy">{{ copy }}</p>{% endif %}
+    </div>
+    {% if link_url %}<a class="nfg-section-link" href="{{ link_url }}">{{ link_label }}</a>{% endif %}
+  </div>
+{% endmacro %}
+
+{# Where-are-you-training switch. `extra` keeps other query params (e.g. selected groups). #}
+{% macro env_switch(current, environments, endpoint, extra={}) %}
+  <div class="nfg-env-switch" role="group" aria-label="Where are you training?">
+    {% for key, env in environments.items() %}
+      <a class="nfg-env-option{% if key == current %} is-active{% endif %}"
+         href="{{ url_for(endpoint, env=key, **extra) }}"
+         {% if key == current %}aria-current="true"{% endif %}>{{ env.label }}</a>
+    {% endfor %}
+  </div>
+{% endmacro %}
+
+{# Colour-coded muscle group tile. `group` has key/label/color/count. #}
+{% macro group_card(group, href) %}
+  <a class="nfg-group-card{% if not group.count %} is-empty{% endif %}" href="{{ href }}"
+     style="--group-color: {{ group.color }};">
+    <span class="nfg-group-label">{{ group.label }}</span>
+    <span class="nfg-group-count">
+      {% if group.count %}{{ group.count }} exercise{{ 's' if group.count != 1 }}{% else %}Coming soon{% endif %}
+    </span>
+  </a>
+{% endmacro %}
+
+{# Horizontal scroller. data-no-page-swipe stops the top-level swipe navigation from hijacking it. #}
+{% macro rail() %}
+  <div class="nfg-rail" data-no-page-swipe>
+    {{ caller() }}
+  </div>
+{% endmacro %}
+
+{% macro exercise_image(w) -%}
+  {{ w.images[0] if w.images else url_for('static', filename='img/exercise-placeholder.svg') }}
+{%- endmacro %}
+
+{# Compact portrait card for rails. #}
+{% macro exercise_rail_card(w) %}
+  <a class="nfg-rail-card" href="{{ url_for('workout_detail', slug=w.slug) }}">
+    <span class="nfg-rail-media"><img src="{{ exercise_image(w) }}" alt="" loading="lazy"></span>
+    <span class="nfg-rail-title">{{ w.name }}</span>
+    <span class="nfg-rail-meta">{{ w.equipment_label or w.equipment or '' }}{% if w.level %} · {{ w.level }}{% endif %}</span>
+  </a>
+{% endmacro %}
+
+{# Row used in result lists (Muscle Mixer). `groups_meta` maps group key -> {label, color}. #}
+{% macro exercise_row(w, groups_meta, saved=False) %}
+  <a class="nfg-ex-row" href="{{ url_for('workout_detail', slug=w.slug) }}">
+    <span class="nfg-ex-thumb"><img src="{{ exercise_image(w) }}" alt="" loading="lazy"></span>
+    <span class="nfg-ex-body">
+      <span class="nfg-ex-name">{{ w.name }}{% if saved %} <span class="nfg-saved-dot" title="Saved">♥</span>{% endif %}</span>
+      <span class="nfg-ex-meta">{{ w.equipment_label or w.equipment or '' }}{% if w.level %} · {{ w.level }}{% endif %}</span>
+      {% if w.mix_primary or w.mix_secondary %}
+        <span class="nfg-ex-hits">
+          {% for gk in w.mix_primary %}
+            <span class="nfg-hit is-primary" style="--group-color: {{ groups_meta[gk].color }};">{{ groups_meta[gk].label }}</span>
+          {% endfor %}
+          {% for gk in w.mix_secondary %}
+            <span class="nfg-hit" style="--group-color: {{ groups_meta[gk].color }};">{{ groups_meta[gk].label }}</span>
+          {% endfor %}
+        </span>
+      {% endif %}
+    </span>
+  </a>
+{% endmacro %}
+
+{# Compact program card for rails. #}
+{% macro program_rail_card(p, saved=False) %}
+  <a class="nfg-program-card" href="{{ url_for('program_detail', slug=p.slug) }}">
+    <span class="nfg-program-badges">
+      {% if p.category %}<span class="nfg-badge">{{ p.category }}</span>{% endif %}
+      {% if p.duration_label %}<span class="nfg-badge is-light">{{ p.duration_label }}</span>{% endif %}
+      {% if saved %}<span class="nfg-badge is-saved">Saved</span>{% endif %}
+    </span>
+    <span class="nfg-program-title">{{ p.title or 'Program' }}</span>
+    {% if p.summary %}<span class="nfg-program-copy">{{ p.summary }}</span>{% endif %}
+    <span class="nfg-program-cta">Open program →</span>
+  </a>
+{% endmacro %}

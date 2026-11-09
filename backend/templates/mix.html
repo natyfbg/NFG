@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+
+{% block title %}{{ selected_labels | join(' + ') if selected_labels else 'Muscle Mixer' }} – NFG{% endblock %}
+
+{% block page %}
+<div class="nfg-discover nfg-mix">
+
+  <header class="nfg-hero">
+    <div class="app-page-kicker">Muscle Mixer</div>
+    <h1 class="nfg-hero-title">{{ selected_labels | join(' + ') if selected_labels else 'Build your mix' }}</h1>
+    <p class="nfg-hero-copy">
+      {% if groups %}
+        Exercises that train {{ 'this group' if groups|length == 1 else 'these groups together' }}, best matches first.
+      {% else %}
+        Pick one or more muscle groups to see exercises that train them.
+      {% endif %}
+    </p>
+  </header>
+
+  <section class="nfg-section">
+    {{ ui.env_switch(env, environments, "workouts_mix", {"g": groups}) }}
+    <p class="nfg-env-note">{{ env_note }}</p>
+  </section>
+
+  <section class="nfg-section">
+    {% call ui.rail() %}
+      {% for chip in chips %}
+        <a class="nfg-chip{% if chip.selected %} is-selected{% endif %}" href="{{ chip.href }}"
+           style="--group-color: {{ chip.color }};" {% if chip.selected %}aria-pressed="true"{% endif %}>
+          {% if chip.selected %}✓ {% endif %}{{ chip.label }}
+        </a>
+      {% endfor %}
+    {% endcall %}
+  </section>
+
+  {% if not groups %}
+    <section class="nfg-section">
+      <div class="nfg-group-grid">
+        {% for card in group_cards %}
+          {{ ui.group_card(card, url_for("workouts_mix", g=card.key)) }}
+        {% endfor %}
+      </div>
+    </section>
+  {% else %}
+    <section class="nfg-section">
+      <div class="nfg-results-head">
+        {{ results | length }} exercise{{ 's' if results|length != 1 }}
+        {% if groups|length > 1 %}<span class="nfg-results-key"><span class="nfg-hit is-primary">Main target</span> <span class="nfg-hit">Also works</span></span>{% endif %}
+      </div>
+      {% if results %}
+        <div class="nfg-ex-list">
+          {% for w in results %}
+            {{ ui.exercise_row(w, muscle_groups, saved=(w.slug in saved_slugs)) }}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="nfg-empty">
+          Nothing for that mix {% if env != 'hybrid' %}at {{ environments[env].label | lower }} {% endif %}yet — the library is still growing.
+          {% if env != 'hybrid' %}
+            <a href="{{ url_for('workouts_mix', g=groups, env='hybrid') }}">Show home and gym exercises</a>.
+          {% endif %}
+        </div>
+      {% endif %}
+    </section>
+  {% endif %}
+
+</div>
+{% endblock %}

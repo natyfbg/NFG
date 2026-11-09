@@ -51,9 +51,7 @@ def primary_group_key(ex: dict) -> str:
 
 
 def equipment_text(equipment: List[str]) -> str:
-    if not equipment:
-        return tx.BODYWEIGHT_LABEL
-    return " + ".join(tx.EQUIPMENT[k]["label"] for k in equipment)
+    return tx.equipment_text(equipment)
 
 
 def render_exercise_svg(ex: dict) -> str:
