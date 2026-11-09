@@ -1,5 +1,8 @@
 """
-Seed the MongoDB with example workouts & recipes.
+Seed the MongoDB with example recipes.
+
+Exercises are NOT seeded here any more: they are content files in
+content/exercises/ synced by content_sync.py (see content/README.md).
 
 Usage (local):
   export MONGO_URI="mongodb://localhost:27017"
@@ -13,10 +16,9 @@ Usage (Render / production):
   (You can pass --drop only for development environments.)
 
 Flags:
-  -d, --drop            Drop collections (workouts, recipes) before seeding (DEV ONLY)
+  -d, --drop            Drop the recipes collection before seeding (DEV ONLY)
   -q, --quiet           Less verbose output
-  --no-placeholders     Don’t add placeholder images when missing
-  --keep-placeholders   Force placeholder images when missing (default)
+  --no-placeholders / --keep-placeholders   accepted for compatibility; no effect
 """
 
 import argparse
@@ -27,7 +29,6 @@ import sys
 
 from dotenv import load_dotenv
 from pymongo import ASCENDING, MongoClient
-from pymongo.errors import DuplicateKeyError
 
 load_dotenv()
 
@@ -66,72 +67,7 @@ def ensure_indexes(db, quiet=False):
         print("Warning: could not create indexes:", e)
 
 
-def make_default_image(name):
-    key = re.sub(r"\W+", "+", (name or "").strip()) or "Workout"
-    return f"https://via.placeholder.com/900x1600?text={key}"
-
-
-def seed_data(now, use_placeholders=True):
-    workouts = [
-        {
-            "name": "Push-Up",
-            "level": "Beginner",
-            "body_part": "Chest",
-            "style": "BodyWeight",
-            "is_favorite": True,
-            "rating": 4.6,
-            "tags": ["push", "chest", "bodyweight"],
-            "images": [],
-            "muscle_image": None,
-            "info": "Push-ups build chest, triceps, shoulders, and core. Great for endurance and stability.",
-            "tips": [
-                "Keep a straight line from head to heels.",
-                "Elbows ~45° from your torso.",
-                "Brace your core and squeeze glutes.",
-            ],
-            "youtube_id": "",  # optionally add a valid ID
-        },
-        {
-            "name": "Goblet Squat",
-            "level": "Beginner",
-            "body_part": "Legs",
-            "style": "Dumbbell",
-            "is_favorite": False,
-            "rating": 4.2,
-            "tags": ["squat", "legs", "dumbbell"],
-        },
-        {
-            "name": "Barbell Row",
-            "level": "Intermediate",
-            "body_part": "Back",
-            "style": "Barbell",
-            "is_favorite": False,
-            "rating": 4.5,
-            "tags": ["row", "back", "barbell", "lats"],
-        },
-        {
-            "name": "Deadlift",
-            "level": "Advanced",
-            "body_part": "Posterior Chain",
-            "style": "Barbell",
-            "is_favorite": True,
-            "rating": 4.9,
-            "tags": ["hinge", "back", "hamstrings", "barbell"],
-        },
-    ]
-
-    for w in workouts:
-        if use_placeholders:
-            if not w.get("images"):
-                w["images"] = [make_default_image(w["name"])]
-            if not w.get("muscle_image"):
-                w["muscle_image"] = make_default_image((w["name"] or "") + "+muscle")
-        w["created_at"] = now
-        w["slug"] = slugify(w["name"])
-        w.setdefault("tips", [])
-        w.setdefault("tags", [])
-        w.setdefault("youtube_id", "")
-
+def seed_data(now):
     recipes = [
         {"name": "Protein Pancakes", "url": "https://example.com/protein-pancakes"},
         {"name": "Avocado Toast", "url": "https://example.com/avocado-toast"},
@@ -141,7 +77,7 @@ def seed_data(now, use_placeholders=True):
         r["slug"] = slugify(r["name"])
         r["created_at"] = now
 
-    return workouts, recipes
+    return recipes
 
 
 def parse_args():
@@ -150,21 +86,18 @@ def parse_args():
         "-d",
         "--drop",
         action="store_true",
-        help="Drop collections (workouts, recipes) before seeding (DEV ONLY).",
+        help="Drop the recipes collection before seeding (DEV ONLY).",
     )
     p.add_argument("-q", "--quiet", action="store_true", help="Reduce output.")
     g = p.add_mutually_exclusive_group()
-    g.add_argument("--no-placeholders", action="store_true", help="Do NOT add placeholder images.")
-    g.add_argument(
-        "--keep-placeholders", action="store_true", help="Force placeholder images (default)."
-    )
+    g.add_argument("--no-placeholders", action="store_true", help="No effect (compatibility).")
+    g.add_argument("--keep-placeholders", action="store_true", help="No effect (compatibility).")
     return p.parse_args()
 
 
 def main():
     args = parse_args()
     quiet = args.quiet
-    use_placeholders = not args.no_placeholders  # default True
 
     db = get_db()
     if not quiet:
@@ -175,29 +108,21 @@ def main():
 
     if args.drop:
         if not quiet:
-            print("Dropping existing collections (workouts, recipes) — DEV RESET.")
+            print("Dropping recipes collection — DEV RESET (exercises are left alone).")
         try:
-            db.workouts.drop()
             db.recipes.drop()
         except Exception as e:
             print("Warning dropping collections:", e)
         ensure_indexes(db, quiet=quiet)
 
     now = datetime.datetime.utcnow()
-    workouts, recipes = seed_data(now, use_placeholders=use_placeholders)
+    recipes = seed_data(now)
 
-    # Upsert workouts by slug (safe default)
-    upserted_w = 0
-    for w in workouts:
-        try:
-            res = db.workouts.replace_one({"slug": w["slug"]}, w, upsert=True)
-            if res.upserted_id or res.modified_count:
-                upserted_w += 1
-        except DuplicateKeyError:
-            db.workouts.replace_one({"slug": w["slug"]}, w, upsert=True)
-            upserted_w += 1
-        except Exception as e:
-            print(f"Workout upsert failed ({w.get('name')}):", e)
+    # Exercises are no longer seeded here. They live in content/exercises/*.yaml
+    # and are synced with content_sync.py, which (unlike replace_one) never wipes
+    # admin edits or uploaded images.
+    if not quiet:
+        print("Exercises: skipped — use `python content_sync.py sync` (content/README.md).")
 
     # Upsert recipes by slug
     upserted_r = 0
@@ -210,7 +135,7 @@ def main():
             print(f"Recipe upsert failed ({r.get('name')}):", e)
 
     if not quiet:
-        print(f"Upserted/updated: {upserted_w} workouts, {upserted_r} recipes.")
+        print(f"Upserted/updated: {upserted_r} recipes.")
         print(
             f"Totals now: {db.workouts.count_documents({})} workouts, {db.recipes.count_documents({})} recipes."
         )

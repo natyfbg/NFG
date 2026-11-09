@@ -1,0 +1,22 @@
+slug: push-up
+name: Push-Up
+status: published
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [triceps, front_delts, abs]
+equipment: []
+summary: >-
+  Push-ups build chest, triceps, shoulders, and core. Great for endurance and stability.
+cues:
+  - Keep a straight line from head to heels.
+  - Elbows ~45° from your torso.
+  - Brace your core and squeeze glutes.
+tags: [push, chest, bodyweight]
+notes: >-
+  Migrated from the original seed content (already live). Full setup/steps/
+  mistakes are pending Nate's review in the first instruction batch.

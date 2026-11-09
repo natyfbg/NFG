@@ -50,6 +50,18 @@ python -m pytest -q                   # tests run against in-memory Mongo (mongo
 flake8 . && black --check . && isort --check-only .
 ```
 
+Exercise content (see `backend/content/README.md`):
+
+```bash
+python content_sync.py check                 # validate content/exercises/*.yaml
+python content_sync.py placeholders          # SVG placeholder for new exercises
+docker compose exec app python content_sync.py sync           # dry run (local DB)
+docker compose exec app python content_sync.py sync --apply   # write (local DB)
+```
+
+`sync --apply` refuses non-local databases unless `--allow-remote` is passed —
+production syncs need Nate's go-ahead every time.
+
 CI (`.github/workflows/ci.yml`) runs lint, tests and a Docker build on pushes to
 main/dev/windows-dev and PRs into main/dev.
 
@@ -79,8 +91,17 @@ trees (`git diff dev main`), not commit counts.
   use the same key and be added to that migration.
 - `/healthz` returns 503 when Mongo is unreachable (Render health check uses it).
 - Templates must tolerate missing fields (`x is defined and x is not none`).
-- `seed.py` uses `replace_one` (wipes admin edits) and a dead placeholder-image
-  service. Do not run it against production.
+- `seed.py` now seeds only the sample recipes; exercises come from content files.
+- `backend/taxonomy.py` is the single source of truth for muscle/group/equipment/
+  movement keys. Keys are stored in the DB and content files — never rename one
+  without a migration. It has no Flask/Mongo imports on purpose.
+- Content-synced exercise docs carry both new fields (`muscles`, `primary_groups`,
+  `muscle_groups`, `equipment_required`, `environments`, `movement`, `instructions`,
+  `publish_status`) and the legacy fields current templates/filters read
+  (`body_part(s)`, `primary_muscle`, `equipment`, `style`, `level`, `info`, `tips`).
+  New code should read the new fields.
+- Draft exercises are hidden from visitors via `_public_workout_query()` but visible
+  to a signed-in admin (with a Draft badge) for previewing.
 
 ## Decisions log
 
@@ -101,14 +122,17 @@ trees (`git diff dev main`), not commit counts.
   Exercises store primary + secondary muscle keys.
 - 2026-11-08 — Favorites become one generic collection (viewer, item type, item);
   composed workouts will reuse the program-day item shape (exercise + sets/reps/rest).
+- 2026-11-08 — Exercise images: `content/exercises` + `static/img/exercises/<slug>.svg`
+  placeholders; real images go in the file's `images:` list. Muscle-group colours
+  live in `taxonomy.MUSCLE_GROUPS`.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
 ## Roadmap (current)
 
-1. ✅ Phase 0: hardening + tests (this file's first decision entry)
-2. Content pipeline: taxonomy constants, YAML schema, sync script, SVG placeholders,
-   migrate the existing exercises
+1. ✅ Phase 0: hardening + tests
+2. ✅ Content pipeline: taxonomy module, YAML schema, sync script, SVG placeholders,
+   existing 4 exercises migrated
 3. Starter exercise library: Nate approves the list, Claude drafts instructions in
    batches, Nate reviews and publishes
 4. Home redesign (discovery + continue training), then Mixer, My Workouts,

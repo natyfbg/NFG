@@ -17,3 +17,6 @@ gunicorn==22.0.0
 
 # Image processing
 Pillow==10.4.0
+
+# Exercise content files (content/exercises/*.yaml, read by content_sync.py)
+PyYAML==6.0.2

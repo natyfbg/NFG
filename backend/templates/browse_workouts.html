@@ -166,6 +166,7 @@
           <div class="card-body workout-library-body">
             <div class="workout-library-title-row">
               <div>
+                {% if w.publish_status == 'draft' %}<span class="badge text-bg-warning mb-1">Draft</span>{% endif %}
                 <h2 class="workout-library-title">{{ w.name }}</h2>
               </div>
             </div>

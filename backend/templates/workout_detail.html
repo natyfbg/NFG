@@ -22,6 +22,9 @@
   <div class="app-page-header workout-detail-header">
     <div>
       <div class="app-page-kicker">Exercise guidance</div>
+      {% if w.publish_status == 'draft' %}
+        <span class="badge text-bg-warning mb-2">Draft · only visible to admin</span>
+      {% endif %}
       <h1 class="page-title mb-1">{{ w.name }}</h1>
       <p class="app-page-copy">Use this page to learn the movement, check form cues, and reference the exercise while following your plan.</p>
 

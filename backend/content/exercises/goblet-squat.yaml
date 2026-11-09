@@ -1,0 +1,16 @@
+slug: goblet-squat
+name: Goblet Squat
+status: published
+level: beginner
+category: strength
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [adductors, abs]
+equipment: [dumbbell]
+tags: [squat, legs, dumbbell]
+notes: >-
+  Migrated from the original seed (already live, no instructions yet). Text fields
+  are intentionally omitted so a sync never blanks content edited in admin.

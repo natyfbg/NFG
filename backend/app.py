@@ -1012,6 +1012,23 @@ def _public_program_query(extra: Optional[dict] = None) -> dict:
     return {"$and": filters}
 
 
+def _public_workout_query(extra: Optional[dict] = None) -> dict:
+    """Exercises visible on public pages.
+
+    Drafts (from content files) are hidden from visitors but shown to a signed-in
+    admin, so new exercises can be previewed in the real UI before publishing.
+    Documents with no publish_status (legacy/admin-created) count as published.
+    """
+    filters = []
+    if not getattr(current_user, "is_admin", False):
+        filters.append({"publish_status": {"$ne": "draft"}})
+    if extra:
+        filters.append(extra)
+    if not filters:
+        return {}
+    return filters[0] if len(filters) == 1 else {"$and": filters}
+
+
 def _canonical_choice(raw: Optional[str], options: List[str]) -> str:
     v = _norm_choice(raw)
     if not v:
@@ -2831,6 +2848,11 @@ def _ensure_indexes() -> None:
         db.workouts.create_index([("difficulty_tier", 1)])
         db.workouts.create_index([("created_at", -1)])
         db.workouts.create_index([("rating", -1)])
+        db.workouts.create_index([("publish_status", 1)])
+        db.workouts.create_index([("muscle_groups", 1)])
+        db.workouts.create_index([("primary_groups", 1)])
+        db.workouts.create_index([("environments", 1)])
+        db.workouts.create_index([("equipment_required", 1)])
 
         db.styles.create_index([("slug", 1)], unique=True, sparse=True)
 
@@ -3640,16 +3662,17 @@ def workouts():
             url_for("workouts_browse", sort=LEGACY_WORKOUT_FILTER_TO_SORT[legacy_filter])
         )
 
-    parts_single = set(db.workouts.distinct("body_part"))
-    parts_multi = set(db.workouts.distinct("body_parts"))
-    parts_primary = set(db.workouts.distinct("primary_muscle"))
+    visible = _public_workout_query()
+    parts_single = set(db.workouts.distinct("body_part", visible))
+    parts_multi = set(db.workouts.distinct("body_parts", visible))
+    parts_primary = set(db.workouts.distinct("primary_muscle", visible))
     parts_in_db = parts_single | parts_multi | parts_primary
 
     body_parts_featured = [
         p for p in FEATURED_BODY_PARTS if p in parts_in_db
     ] or FEATURED_BODY_PARTS[:]
 
-    all_ws = list(db.workouts.find({}).sort([("name", ASCENDING)]).limit(3))
+    all_ws = list(db.workouts.find(visible).sort([("name", ASCENDING)]).limit(3))
 
     return render_template(
         "workouts.html",
@@ -3663,14 +3686,16 @@ def workouts():
 
 @app.route("/workouts/all")
 def workouts_all():
-    items = list(db.workouts.find({}).sort([("name", ASCENDING)]))
+    items = list(db.workouts.find(_public_workout_query()).sort([("name", ASCENDING)]))
     return render_template("all_workouts_index.html", items=items)
 
 
 @app.route("/workouts/styles")
 def styles_index():
     styles = get_styles()
-    counts = {st: db.workouts.count_documents({"style": st}) for st in styles}
+    counts = {
+        st: db.workouts.count_documents(_public_workout_query({"style": st})) for st in styles
+    }
     return render_template("styles_index.html", styles=styles, counts=counts)
 
 
@@ -3678,7 +3703,9 @@ def styles_index():
 def body_parts_index():
     counts = {
         bp: db.workouts.count_documents(
-            {"$or": [{"body_part": bp}, {"body_parts": bp}, {"primary_muscle": bp}]}
+            _public_workout_query(
+                {"$or": [{"body_part": bp}, {"body_parts": bp}, {"primary_muscle": bp}]}
+            )
         )
         for bp in BODY_PARTS_MASTER
     }
@@ -3734,7 +3761,7 @@ def workouts_browse():
             }
         )
 
-    query = {"$and": and_clauses} if and_clauses else {}
+    query = _public_workout_query({"$and": and_clauses} if and_clauses else None)
 
     sort = [("name", ASCENDING)]
     if sort_key == "recent":
@@ -3781,7 +3808,7 @@ def workouts_browse():
 
 @app.route("/workouts/<slug>")
 def workout_detail(slug):
-    w = db.workouts.find_one({"slug": slug})
+    w = db.workouts.find_one(_public_workout_query({"slug": slug}))
     if not w:
         abort(404)
 
@@ -3809,7 +3836,9 @@ def workout_detail(slug):
         rel_q = {"slug": {"$ne": w["slug"]}}
 
     related = list(
-        db.workouts.find(rel_q).sort([("rating", -1), ("created_at", -1), ("name", 1)]).limit(6)
+        db.workouts.find(_public_workout_query(rel_q))
+        .sort([("rating", -1), ("created_at", -1), ("name", 1)])
+        .limit(6)
     )
     for r in related:
         r["primary_muscle"] = r.get("primary_muscle") or _primary_muscle_from_doc(r)
@@ -3897,6 +3926,7 @@ def search():
         ]
     }
 
+    w_query = _public_workout_query(w_query)
     total = db.workouts.count_documents(w_query)
     items = list(
         db.workouts.find(w_query)
@@ -4678,6 +4708,8 @@ def admin_workout_edit(id):
             "movement_pattern": metadata.get("movement_pattern"),
             "equipment": metadata.get("equipment"),
             "difficulty_tier": metadata.get("difficulty_tier"),
+            # Lets content_sync.py warn before overwriting an admin edit.
+            "updated_at": datetime.datetime.utcnow(),
         }
 
         try:

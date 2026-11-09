@@ -1,0 +1,16 @@
+slug: barbell-row
+name: Barbell Row
+status: published
+level: intermediate
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats, upper_back]
+  secondary: [rear_delts, biceps, lower_back]
+equipment: [barbell]
+tags: [row, back, barbell, lats]
+notes: >-
+  Migrated from the original seed (already live, no instructions yet). Text fields
+  are intentionally omitted so a sync never blanks content edited in admin.
