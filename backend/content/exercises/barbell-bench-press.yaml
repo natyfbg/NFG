@@ -1,6 +1,6 @@
 slug: barbell-bench-press
 name: Barbell Bench Press
-status: draft
+status: published
 level: intermediate
 category: strength
 movement: horizontal_push
@@ -34,7 +34,8 @@ mistakes:
   - Using a thumbless grip.
 safety:
   - Always use a spotter or a rack with safety arms set just below chest height.
-  - Never bench with clips off if you're training alone and can't roll the bar off safely.
+  - Training alone with no safety arms? Choose a weight you can finish every rep with, and
+    stop the set before you might fail.
 breathing: Breathe in and hold your brace as you lower; breathe out through the hardest part of the press.
 regressions: [dumbbell-bench-press]
 tags: [push, chest, barbell, strength]
