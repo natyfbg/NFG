@@ -82,6 +82,9 @@ MUSCLE_GROUPS: Dict[str, dict] = {
     "mobility": {"label": "Mobility", "color": "#3B8EA5", "muscles": [], "category": "mobility"},
 }
 
+# Where a muscle belongs to several groups, the group it should headline under.
+MUSCLE_HOME_GROUP = {"rear_delts": "shoulders"}
+
 # An exercise counts as full body when its primary muscles span this many groups,
 # or when it is explicitly tagged full_body.
 FULL_BODY_MIN_GROUPS = 3
@@ -177,8 +180,13 @@ def groups_for_muscles(muscle_keys: Iterable[str]) -> List[str]:
     """
     out: List[str] = []
     for mk in muscle_keys:
-        for gk, group in MUSCLE_GROUPS.items():
-            if mk in group["muscles"] and gk not in out:
+        candidates = [gk for gk, group in MUSCLE_GROUPS.items() if mk in group["muscles"]]
+        home = MUSCLE_HOME_GROUP.get(mk)
+        if home in candidates:
+            candidates.remove(home)
+            candidates.insert(0, home)
+        for gk in candidates:
+            if gk not in out:
                 out.append(gk)
     return out
 

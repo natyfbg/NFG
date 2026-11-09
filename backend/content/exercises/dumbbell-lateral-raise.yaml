@@ -1,0 +1,37 @@
+slug: dumbbell-lateral-raise
+name: Dumbbell Lateral Raise
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [side_delts]
+  secondary: [traps]
+equipment: [dumbbell]
+summary: >-
+  Raising light dumbbells out to your sides. It isolates the side delts, the part of
+  the shoulder that adds width.
+setup:
+  - Stand tall with a light dumbbell in each hand at your sides.
+  - Keep a slight bend in your elbows.
+  - Lean forward very slightly from the hips.
+steps:
+  - Raise the dumbbells out to the sides in a wide arc.
+  - Stop when your arms are about level with your shoulders.
+  - Pause for a moment at the top.
+  - Lower slowly back to your sides.
+cues:
+  - Lead with your elbows, not your hands.
+  - Think of pushing the weights out to the walls, not up to the ceiling.
+  - Go light — this muscle is small.
+mistakes:
+  - Swinging the body to get the weight up.
+  - Shrugging the shoulders toward the ears.
+  - Raising the hands higher than the elbows.
+safety:
+  - Stop at shoulder height if raising higher pinches the shoulder.
+breathing: Breathe out as you raise, in as you lower.
+progressions: [cable-lateral-raise]
+tags: [shoulders, side-delts, dumbbell, isolation]

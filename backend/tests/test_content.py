@@ -121,7 +121,8 @@ def test_environment_derivation():
 
 
 def test_muscle_belongs_to_multiple_groups():
-    assert tx.groups_for_muscles(["rear_delts"]) == ["back", "shoulders"]
+    # Rear delts headline under Shoulders but still count for Back.
+    assert tx.groups_for_muscles(["rear_delts"]) == ["shoulders", "back"]
     assert "rear_delts" in tx.muscles_for_groups(["shoulders"])
 
 

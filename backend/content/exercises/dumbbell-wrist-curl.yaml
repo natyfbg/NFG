@@ -1,0 +1,31 @@
+slug: dumbbell-wrist-curl
+name: Dumbbell Wrist Curl
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [forearms]
+equipment: [dumbbell, bench]
+summary: >-
+  Curling a light dumbbell with just your wrist while your forearm rests on a bench.
+  It directly trains the forearm muscles and grip.
+setup:
+  - Kneel beside a flat bench and rest your forearms on it, palms up.
+  - Hold a light dumbbell in each hand with your wrists just past the edge.
+steps:
+  - Let the dumbbells lower by bending your wrists down.
+  - Curl them back up as far as your wrists allow.
+  - Squeeze at the top, then lower slowly.
+cues:
+  - Forearms stay flat on the bench.
+  - Move only at the wrists.
+  - Slow and controlled; go light.
+mistakes:
+  - Lifting the forearms off the bench.
+  - Using momentum.
+  - Going too heavy and shortening the range.
+breathing: Breathe out as you curl up, in as you lower.
+tags: [forearms, grip, dumbbell]

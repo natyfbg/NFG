@@ -1,0 +1,33 @@
+slug: cable-curl
+name: Cable Curl
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [biceps]
+  secondary: [forearms]
+equipment: [cable]
+summary: >-
+  A biceps curl on a low cable. The cable keeps the biceps working through the whole
+  movement.
+setup:
+  - Attach a straight or EZ bar to a low pulley.
+  - Grip it underhand, shoulder-width apart, and stand facing the machine.
+  - Step back slightly so there's tension at the bottom.
+steps:
+  - Curl the bar toward your shoulders, elbows by your sides.
+  - Squeeze at the top.
+  - Lower slowly until your arms are straight.
+cues:
+  - Elbows stay pinned.
+  - Stand tall; don't lean back.
+  - Smooth, steady tempo.
+mistakes:
+  - Leaning back to move the stack.
+  - Elbows drifting forward.
+  - Letting the weight snap back down.
+breathing: Breathe out as you curl, in as you lower.
+tags: [biceps, arms, cable]

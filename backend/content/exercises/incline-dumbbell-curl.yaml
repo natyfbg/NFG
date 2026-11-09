@@ -1,0 +1,36 @@
+slug: incline-dumbbell-curl
+name: Incline Dumbbell Curl
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [biceps]
+equipment: [dumbbell, bench]
+summary: >-
+  A curl lying back on an incline bench. With your arms hanging behind your body, the
+  biceps work from a long stretch.
+setup:
+  - Set an adjustable bench to about 45–60°.
+  - Lie back with a dumbbell in each hand, arms hanging straight down.
+  - Palms face forward; shoulders stay against the bench.
+steps:
+  - Curl the dumbbells up without letting your elbows move forward.
+  - Squeeze at the top.
+  - Lower slowly until your arms are straight and you feel the stretch.
+cues:
+  - Keep your upper arms hanging straight down.
+  - Shoulders and head stay on the bench.
+  - Use a lighter weight than standing curls.
+mistakes:
+  - Lifting the shoulders off the bench.
+  - Swinging the elbows forward.
+  - Going so heavy the stretch at the bottom feels sharp.
+safety:
+  - Start light — the stretched position can strain the front of the shoulder if you
+    overload it.
+breathing: Breathe out as you curl, in as you lower.
+regressions: [dumbbell-curl]
+tags: [biceps, arms, dumbbell]

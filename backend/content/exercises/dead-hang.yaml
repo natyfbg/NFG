@@ -1,0 +1,36 @@
+slug: dead-hang
+name: Dead Hang
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [forearms]
+  secondary: [lats, abs]
+equipment: [pullup_bar]
+summary: >-
+  Simply hanging from a bar with straight arms. It builds grip strength and gently
+  stretches the shoulders and back — a great first step toward pull-ups.
+setup:
+  - Grab a pull-up bar with an overhand grip, about shoulder-width apart.
+  - Step off the box or floor so you're hanging freely.
+steps:
+  - Hang with your arms straight and shoulders relaxed.
+  - Keep your legs together and your core lightly braced so you don't swing.
+  - Hold for time.
+  - Step down with control at the end of the set.
+cues:
+  - Grip the bar firmly with your whole hand.
+  - Breathe slowly through the hold.
+  - Add time gradually, a few seconds per session.
+mistakes:
+  - Swinging or kicking.
+  - Dropping off the bar instead of stepping down.
+  - Holding your breath.
+safety:
+  - Use a box or step to get on and off the bar. Stop if you feel sharp shoulder pain.
+breathing: Breathe slowly and steadily throughout the hold.
+progressions: [pull-up]
+tags: [grip, forearms, hang, bodyweight]
