@@ -1,0 +1,41 @@
+slug: barbell-bench-press
+name: Barbell Bench Press
+status: published
+level: intermediate
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [front_delts, triceps]
+equipment: [barbell, bench]
+summary: >-
+  The classic heavy chest press. Lowering a barbell to your chest and pressing it back
+  up builds strength across the chest, shoulders and triceps.
+setup:
+  - Lie on the bench with your eyes under the bar.
+  - Grip the bar slightly wider than shoulder-width, wrapping your thumbs around it.
+  - Plant your feet, pull your shoulder blades back and down, and keep a natural arch.
+  - Set the safety arms or have a spotter ready.
+steps:
+  - Unrack the bar and hold it over your shoulders with straight arms.
+  - Lower it under control to your mid-chest, elbows about 45–70° from your body.
+  - Touch your chest lightly without bouncing.
+  - Press up and slightly back until the bar is over your shoulders again.
+cues:
+  - Keep your upper back tight against the bench throughout.
+  - Drive your feet into the floor as you press.
+  - Forearms vertical at the bottom.
+mistakes:
+  - Bouncing the bar off the chest.
+  - Flaring the elbows straight out to the sides.
+  - Lifting the hips off the bench.
+  - Using a thumbless grip.
+safety:
+  - Always use a spotter or a rack with safety arms set just below chest height.
+  - Training alone with no safety arms? Choose a weight you can finish every rep with, and
+    stop the set before you might fail.
+breathing: Breathe in and hold your brace as you lower; breathe out through the hardest part of the press.
+regressions: [dumbbell-bench-press]
+tags: [push, chest, barbell, strength]

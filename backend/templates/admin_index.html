@@ -290,7 +290,7 @@
                 • {{ w.movement_pattern or 'Movement ?' }}
                 • {{ w.equipment or 'Equipment ?' }}
                 • {{ w.difficulty_tier or 'Tier ?' }}
-                {% if w.rating is not none %}
+                {% if w.rating is defined and w.rating is not none %}
                   • ★ {{ '%.1f'|format(w.rating) }}
                 {% endif %}
               </div>

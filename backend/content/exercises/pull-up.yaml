@@ -1,0 +1,38 @@
+slug: pull-up
+name: Pull-Up
+status: published
+level: intermediate
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats]
+  secondary: [biceps, upper_back, forearms, abs]
+equipment: [pullup_bar]
+summary: >-
+  Pulling your whole body up to a bar. One of the best upper-body exercises for back
+  width and pulling strength.
+setup:
+  - Grab the bar with your palms facing away, hands slightly wider than shoulder-width.
+  - Hang with straight arms, legs together and slightly in front of you.
+  - Brace your core so your body doesn't swing.
+steps:
+  - Start by pulling your shoulder blades down, away from your ears.
+  - Drive your elbows down toward your ribs to pull your chest up to the bar.
+  - Get your chin over the bar without craning your neck.
+  - Lower yourself under control all the way back to a straight-arm hang.
+cues:
+  - Think "elbows to back pockets".
+  - Keep your ribs down and legs still — no kicking.
+  - Full hang at the bottom of every rep.
+mistakes:
+  - Kicking or swinging to get the chin over the bar.
+  - Half reps that never reach straight arms.
+  - Reaching the chin up instead of pulling the chest up.
+safety:
+  - Make sure a doorway bar is rated for your weight and fully secured before every session.
+  - Lower yourself down at the end of the set rather than dropping.
+breathing: Breathe out as you pull up, in as you lower.
+regressions: [lat-pulldown, inverted-row]
+tags: [pull, back, lats, bodyweight]

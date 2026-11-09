@@ -1,0 +1,17 @@
+slug: deadlift
+name: Deadlift
+status: published
+level: advanced
+category: strength
+movement: hinge
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [hamstrings, glutes]
+  secondary: [lower_back, upper_back, traps, forearms, quads]
+equipment: [barbell]
+tags: [hinge, back, hamstrings, barbell]
+notes: >-
+  Migrated from the original seed (already live, no instructions yet). Its old
+  body part "Posterior Chain" wasn't a valid taxonomy value; it now derives Legs /
+  Hamstrings from the muscles above.

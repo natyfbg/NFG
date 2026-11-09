@@ -1007,6 +1007,33 @@ a{
   line-height: 1.4;
 }
 
+/* Numbered steps (exercise instructions) */
+ol.workout-detail-tip-list{
+  counter-reset: nfg-step;
+}
+
+ol.workout-detail-tip-list li{
+  position: relative;
+  padding-left: 2.85rem;
+}
+
+ol.workout-detail-tip-list li::before{
+  counter-increment: nfg-step;
+  content: counter(nfg-step);
+  position: absolute;
+  left: .8rem;
+  top: .78rem;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  background: var(--app-text);
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.45rem;
+  text-align: center;
+}
+
 @media (max-width: 767.98px){
   .filter-toolbar{
     padding: .6rem;

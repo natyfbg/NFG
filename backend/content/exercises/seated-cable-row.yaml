@@ -1,0 +1,35 @@
+slug: seated-cable-row
+name: Seated Cable Row
+status: published
+level: beginner
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [upper_back, lats]
+  secondary: [rear_delts, biceps, lower_back]
+equipment: [cable]
+summary: >-
+  A seated row on a cable station. The constant tension and stable position make it a
+  reliable way to build the middle of the back.
+setup:
+  - Sit with your feet on the footplates and knees slightly bent.
+  - Grab the handle and sit tall with your arms straight and torso upright.
+steps:
+  - Pull your shoulder blades back, then row the handle to your lower ribs.
+  - Keep your elbows close to your body as they travel back.
+  - Squeeze your upper back for a moment.
+  - Let the handle go forward slowly until your arms are straight and your shoulders reach forward slightly.
+cues:
+  - Sit tall; your torso stays still.
+  - Lead with the elbows, not the hands.
+  - Chest proud at the finish.
+mistakes:
+  - Rocking back and forth to move the weight.
+  - Rounding the lower back at the start of each rep.
+  - Shrugging the handle toward the neck.
+safety:
+  - Keep a slight bend in the knees so your lower back isn't pulled into a rounded position.
+breathing: Breathe out as you row, in as you return.
+tags: [pull, back, cable]

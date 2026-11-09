@@ -1,0 +1,41 @@
+slug: barbell-row
+name: Barbell Row
+status: published
+level: intermediate
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats, upper_back]
+  secondary: [rear_delts, biceps, lower_back]
+equipment: [barbell]
+summary: >-
+  A bent-over row with a barbell. Holding a hinged position while you row builds a
+  thick, strong back and trains your trunk to stay rigid under load.
+setup:
+  - Stand with your feet hip-width apart and the bar over your mid-foot.
+  - Grip the bar just outside your knees, palms facing you.
+  - Hinge at the hips with soft knees until your torso is about 30–45° above parallel.
+  - Brace your core and keep your back flat.
+steps:
+  - Let the bar hang at arm's length below your shoulders.
+  - Row the bar to your lower ribs, driving your elbows back.
+  - Squeeze your shoulder blades together at the top.
+  - Lower the bar under control until your arms are straight.
+cues:
+  - Your torso angle stays the same for every rep.
+  - Pull to your belly button area, not your chest.
+  - Keep your neck in line with your back.
+mistakes:
+  - Standing up more each rep to swing the weight.
+  - Rounding the lower back.
+  - Yanking the bar with the arms instead of the back.
+safety:
+  - Use a weight you can row without your torso rising. If your lower back tires first,
+    switch to the chest-supported dumbbell row.
+breathing: Breathe in and brace before each rep; breathe out as the bar reaches your body.
+regressions: [chest-supported-dumbbell-row, one-arm-dumbbell-row]
+tags: [row, back, barbell, lats]
+notes: >-
+  Full instructions added in batch 1 (previously no text was live).

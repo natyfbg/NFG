@@ -1,0 +1,4 @@
+# Test/dev-only dependencies (not installed in the production image)
+-r requirements.txt
+pytest==9.2.0
+mongomock==4.3.0

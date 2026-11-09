@@ -1,0 +1,38 @@
+slug: one-arm-dumbbell-row
+name: One-Arm Dumbbell Row
+status: published
+level: beginner
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [lats, upper_back]
+  secondary: [rear_delts, biceps]
+equipment: [dumbbell, bench]
+summary: >-
+  A one-arm row with your other hand and knee supported on a bench. Working one side
+  at a time lets you pull heavy with a stable, flat back.
+setup:
+  - Put your left knee and left hand on a flat bench, with your hand under your shoulder.
+  - Plant your right foot on the floor out to the side.
+  - Hold the dumbbell in your right hand with your arm hanging straight down.
+  - Keep your back flat and roughly parallel to the floor.
+steps:
+  - Pull the dumbbell up and back toward your hip, elbow close to your side.
+  - Squeeze your shoulder blade toward your spine at the top.
+  - Lower slowly until your arm is straight and you feel a stretch in your lat.
+  - Finish all reps, then switch sides.
+cues:
+  - Row to your hip, not to your chest.
+  - Keep your shoulders level — don't twist your torso to lift the weight.
+  - Let the shoulder blade move forward at the bottom for a full stretch.
+mistakes:
+  - Rotating the whole torso to heave the weight up.
+  - Rounding the lower back.
+  - Pulling with the arm instead of the back.
+safety:
+  - Keep your neck in line with your spine; look at the floor just ahead of the bench.
+breathing: Breathe out as you row up, in as you lower.
+progressions: [barbell-row]
+tags: [pull, back, lats, dumbbell, unilateral]

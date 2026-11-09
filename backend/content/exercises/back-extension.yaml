@@ -1,0 +1,40 @@
+slug: back-extension
+name: Back Extension
+status: published
+level: beginner
+category: strength
+movement: hinge
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lower_back]
+  secondary: [glutes, hamstrings]
+equipment: [machine]
+summary: >-
+  Hinging over a 45° back-extension bench and lifting your torso back up. It builds
+  the lower back, glutes and hamstrings that support heavier lifts like deadlifts.
+setup:
+  - Adjust the pad so it sits just below your hip bones and your hips can bend freely.
+  - Hook your heels under the foot rollers.
+  - Cross your arms over your chest, or hold a plate there to make it harder.
+steps:
+  - Start with your body in a straight line from head to heels.
+  - Hinge at the hips to lower your torso toward the floor, keeping your back flat.
+  - Stop when you feel a stretch in your hamstrings.
+  - Squeeze your glutes to lift back up to a straight line.
+cues:
+  - Move at the hips, not by rounding the spine.
+  - Finish in a straight line; don't arch backward at the top.
+  - Squeeze the glutes to start each rep.
+mistakes:
+  - Hyperextending the lower back at the top.
+  - Pad set too high, which blocks the hips from bending.
+  - Swinging up with momentum.
+safety:
+  - Start with bodyweight only. If you have lower-back problems, check with a professional
+    before loading this exercise.
+breathing: Breathe in as you lower, out as you lift.
+tags: [hinge, lower-back, glutes, posterior-chain]
+notes: >-
+  Needs a 45° hyperextension bench / Roman chair, filed under "machine" for now.
+  Add a dedicated equipment key if we want to filter by it.

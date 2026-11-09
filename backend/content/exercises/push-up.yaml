@@ -1,0 +1,40 @@
+slug: push-up
+name: Push-Up
+status: published
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [triceps, front_delts, abs]
+equipment: []
+summary: >-
+  Push-ups build chest, triceps, shoulders, and core. Great for endurance and stability.
+setup:
+  - Place your hands on the floor slightly wider than shoulder-width, under your shoulders.
+  - Step your feet back so your body forms a straight line from head to heels.
+  - Brace your core and squeeze your glutes.
+steps:
+  - Bend your elbows to lower your chest toward the floor.
+  - Keep your body moving as one piece, hips level with your shoulders.
+  - Stop just before your chest touches the floor.
+  - Press the floor away to straighten your arms.
+cues:
+  - Keep a straight line from head to heels.
+  - Elbows ~45° from your torso.
+  - Brace your core and squeeze glutes.
+mistakes:
+  - Letting the hips sag or pike up.
+  - Flaring the elbows straight out to the sides.
+  - Doing half reps that never reach the bottom.
+safety:
+  - If your wrists hurt, try holding dumbbells or push-up handles so your wrists stay straight.
+breathing: Breathe in as you lower, out as you push up.
+regressions: [incline-push-up]
+progressions: [decline-push-up]
+tags: [push, chest, bodyweight]
+notes: >-
+  Summary and cues are the original live text, kept as-is. Setup, steps,
+  mistakes and safety added in batch 1.

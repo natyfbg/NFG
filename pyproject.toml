@@ -7,3 +7,11 @@ extend-exclude = "/(static|templates|migrations|node_modules)/"
 profile = "black"
 line_length = 100
 skip = ["static", "templates", "node_modules", "migrations"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+addopts = "-p no:cacheprovider"
+filterwarnings = [
+    # app.py uses naive utcnow() throughout; Python 3.12+ flags it.
+    "ignore:datetime.datetime.utcnow:DeprecationWarning",
+]

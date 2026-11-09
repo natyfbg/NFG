@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, dev, windows-dev ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, dev ]
 
 jobs:
   backend:
@@ -24,7 +24,7 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
           pip install black==24.4.2 isort==5.13.2 flake8==7.1.0
 
       - name: Lint (flake8)
@@ -35,6 +35,9 @@ jobs:
 
       - name: Imports (isort)
         run: isort --check-only .
+
+      - name: Tests (pytest, in-memory Mongo)
+        run: python -m pytest -q
 
       - name: Build Docker image (sanity)
         run: |

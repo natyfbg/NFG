@@ -1,0 +1,37 @@
+slug: lat-pulldown
+name: Lat Pulldown
+status: published
+level: beginner
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats]
+  secondary: [biceps, upper_back]
+equipment: [cable]
+summary: >-
+  A seated cable pull from overhead down to your chest. It trains the same pattern as
+  a pull-up with adjustable weight, so it's the main way to build toward pull-ups.
+setup:
+  - Adjust the thigh pad so your legs are locked in snugly.
+  - Grab the bar slightly wider than shoulder-width, palms facing away.
+  - Sit down with your arms straight overhead and lean back slightly.
+steps:
+  - Pull your shoulder blades down first.
+  - Drive your elbows down and back to bring the bar to your upper chest.
+  - Pause briefly with your chest up.
+  - Let the bar rise slowly until your arms are straight again.
+cues:
+  - Chest up toward the bar, not the bar down to your lap.
+  - Think "elbows to back pockets".
+  - Keep your torso still — only a slight lean back.
+mistakes:
+  - Leaning far back and turning it into a row.
+  - Pulling the bar behind the neck.
+  - Letting the weight yank your arms up at the top.
+safety:
+  - Avoid behind-the-neck pulldowns; they stress the shoulder for no extra benefit.
+breathing: Breathe out as you pull down, in as the bar rises.
+progressions: [pull-up]
+tags: [pull, back, lats, cable, beginner-friendly]
