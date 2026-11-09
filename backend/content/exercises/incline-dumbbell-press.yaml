@@ -1,0 +1,37 @@
+slug: incline-dumbbell-press
+name: Incline Dumbbell Press
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [upper_chest]
+  secondary: [front_delts, triceps]
+equipment: [dumbbell, bench]
+summary: >-
+  A dumbbell press on a bench set to a low incline. The angle targets the upper chest
+  more than a flat press does.
+setup:
+  - Set an adjustable bench to about 30°. Steeper angles turn it into a shoulder press.
+  - Sit back with the dumbbells on your thighs, then kick them up to your shoulders as you lie back.
+  - Plant your feet, pull your shoulder blades back and down.
+steps:
+  - Press the dumbbells up over your upper chest until your arms are straight.
+  - Lower them slowly to the sides of your upper chest, elbows about 45° from your body.
+  - Pause briefly when you feel the stretch.
+  - Press back up along the same path.
+cues:
+  - The dumbbells finish over your collarbones, not over your face.
+  - Keep your chest up and shoulders pinned back.
+  - Use a little less weight than on a flat press.
+mistakes:
+  - Setting the bench too steep.
+  - Letting the shoulders roll forward at the top.
+  - Shortening the range to lift heavier.
+safety:
+  - Check the bench is locked at its angle before you sit back.
+breathing: Breathe in as you lower, out as you press.
+regressions: [dumbbell-bench-press]
+tags: [push, chest, upper-chest, dumbbell]

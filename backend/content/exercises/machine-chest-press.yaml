@@ -1,0 +1,37 @@
+slug: machine-chest-press
+name: Machine Chest Press
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [front_delts, triceps]
+equipment: [machine]
+summary: >-
+  A seated chest press on a machine. The fixed path makes it easy to learn and safe
+  to push close to failure without a spotter.
+setup:
+  - Adjust the seat so the handles line up with the middle of your chest.
+  - Sit with your back against the pad and feet flat on the floor.
+  - Grab the handles and pull your shoulder blades back into the pad.
+steps:
+  - Press the handles forward until your arms are almost straight.
+  - Pause briefly without locking your elbows hard.
+  - Let the handles come back slowly until you feel a stretch across your chest.
+  - Repeat without letting the weight stack touch down between reps.
+cues:
+  - Keep your shoulders back against the pad.
+  - Elbows slightly below the handles, not flared up.
+  - Smooth and controlled in both directions.
+mistakes:
+  - Seat too high or low, so the press goes toward the neck or stomach.
+  - Shoulders rolling forward at the end of each rep.
+  - Letting the weights slam between reps.
+safety:
+  - Set the starting position so your shoulders aren't overstretched at the back of the rep.
+breathing: Breathe out as you press, in as the handles return.
+progressions: [dumbbell-bench-press]
+tags: [push, chest, machine, beginner-friendly]

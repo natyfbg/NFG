@@ -195,6 +195,31 @@
         </section>
       {% endif %}
 
+      {% set how = w.instructions if w.instructions is defined and w.instructions else {} %}
+      {% if how.setup or how.steps or how.breathing %}
+        <section class="card app-surface">
+          <div class="card-body">
+            <div class="workout-detail-section-label">How to do it</div>
+            {% if how.setup %}
+              <div class="workout-detail-meta-label mt-1">Setup</div>
+              <ul class="workout-detail-tip-list">
+                {% for line in how.setup %}<li>{{ line }}</li>{% endfor %}
+              </ul>
+            {% endif %}
+            {% if how.steps %}
+              <div class="workout-detail-meta-label mt-2">Steps</div>
+              <ol class="workout-detail-tip-list">
+                {% for line in how.steps %}<li>{{ line }}</li>{% endfor %}
+              </ol>
+            {% endif %}
+            {% if how.breathing %}
+              <div class="workout-detail-meta-label mt-2">Breathing</div>
+              <div class="workout-detail-copy">{{ how.breathing }}</div>
+            {% endif %}
+          </div>
+        </section>
+      {% endif %}
+
       {% if has_tips %}
         <section class="card app-surface">
           <div class="card-body">
@@ -203,6 +228,28 @@
               {% for tip in w.tips %}
                 <li>{{ tip }}</li>
               {% endfor %}
+            </ul>
+          </div>
+        </section>
+      {% endif %}
+
+      {% if w.mistakes is defined and w.mistakes %}
+        <section class="card app-surface">
+          <div class="card-body">
+            <div class="workout-detail-section-label">Common mistakes</div>
+            <ul class="workout-detail-tip-list">
+              {% for line in w.mistakes %}<li>{{ line }}</li>{% endfor %}
+            </ul>
+          </div>
+        </section>
+      {% endif %}
+
+      {% if w.safety is defined and w.safety %}
+        <section class="card app-surface">
+          <div class="card-body">
+            <div class="workout-detail-section-label">Safety</div>
+            <ul class="workout-detail-tip-list">
+              {% for line in w.safety %}<li>{{ line }}</li>{% endfor %}
             </ul>
           </div>
         </section>

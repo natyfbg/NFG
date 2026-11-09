@@ -1,0 +1,37 @@
+slug: decline-push-up
+name: Decline Push-Up
+status: draft
+level: intermediate
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [upper_chest, chest]
+  secondary: [front_delts, triceps, abs]
+equipment: []
+summary: >-
+  A push-up with your feet raised. Elevating the feet shifts more load onto your
+  upper chest and shoulders and makes the movement harder than a standard push-up.
+setup:
+  - Put your feet on a bench, box or sturdy step behind you.
+  - Place your hands on the floor slightly wider than shoulder-width, under your shoulders.
+  - Form a straight line from head to heels.
+steps:
+  - Brace your core and squeeze your glutes.
+  - Lower your chest toward the floor, elbows angled back about 45°.
+  - Pause just above the floor.
+  - Press back up to straight arms without letting your hips pike up or sag.
+cues:
+  - Keep your neck long; look slightly ahead of your hands.
+  - The higher the feet, the harder it gets. Start low.
+  - Keep your ribs down so your lower back doesn't arch.
+mistakes:
+  - Piking the hips up to make the rep easier.
+  - Letting the lower back sag as you tire.
+  - Starting with the feet too high.
+safety:
+  - Make sure the surface under your feet is stable and won't slide.
+breathing: Breathe in as you lower, out as you press up.
+regressions: [push-up]
+tags: [push, chest, upper-chest, bodyweight]

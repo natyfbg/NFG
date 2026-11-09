@@ -323,3 +323,26 @@ def test_apply_to_remote_db_refused_without_flag(monkeypatch, capsys):
     assert exc.value.code == 2
     out = capsys.readouterr()
     assert "secret" not in out.out + out.err
+
+
+def test_detail_page_renders_instructions(client, db):
+    data = {
+        **VALID,
+        "status": "published",
+        "setup": ["Set the bench flat."],
+        "breathing": "Breathe out as you press.",
+        "mistakes": ["Bouncing the weight."],
+        "safety": ["Use a spotter."],
+    }
+    _sync(db, [data])
+    html = client.get("/workouts/test-press").get_data(as_text=True)
+    for text in (
+        "How to do it",
+        "Set the bench flat.",
+        "Press up.",
+        "Breathe out as you press.",
+        "Common mistakes",
+        "Bouncing the weight.",
+        "Use a spotter.",
+    ):
+        assert text in html, text

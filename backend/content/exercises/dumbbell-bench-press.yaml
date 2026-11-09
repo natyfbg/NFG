@@ -1,0 +1,39 @@
+slug: dumbbell-bench-press
+name: Dumbbell Bench Press
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [front_delts, triceps]
+equipment: [dumbbell, bench]
+summary: >-
+  A flat-bench press with a dumbbell in each hand. Each arm works on its own, which
+  builds balanced strength and lets your wrists and elbows find a natural path.
+setup:
+  - Sit on the end of a flat bench with the dumbbells standing on your thighs.
+  - Lie back and use your knees to help bring the dumbbells up over your chest.
+  - Plant your feet flat, pull your shoulder blades back and down, and keep a slight arch.
+steps:
+  - Start with the dumbbells over your chest, arms straight, palms facing your feet.
+  - Lower them slowly to the sides of your chest, elbows about 45° from your body.
+  - Stop when you feel a stretch across your chest and your elbows are just below the bench.
+  - Press back up and slightly in until the dumbbells are over your chest again.
+cues:
+  - Keep your shoulder blades pinned to the bench the whole set.
+  - Wrists stacked over elbows, not bent back.
+  - Control the way down; don't drop the weight into the bottom.
+mistakes:
+  - Flaring the elbows straight out to the sides.
+  - Bouncing the weights at the bottom.
+  - Lifting the hips off the bench to finish a rep.
+safety:
+  - To finish, bring the dumbbells to your chest and roll up using your knees, or lower them
+    to the floor with control — don't drop them from straight arms.
+breathing: Breathe in as you lower, out as you press.
+regressions: [machine-chest-press]
+progressions: [barbell-bench-press]
+tags: [push, chest, dumbbell]
