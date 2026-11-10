@@ -1,0 +1,39 @@
+slug: dumbbell-shoulder-press
+name: Dumbbell Shoulder Press
+status: published
+level: beginner
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts, side_delts]
+  secondary: [triceps, upper_back]
+equipment: [dumbbell]
+summary: >-
+  Pressing dumbbells overhead, seated or standing. The main strength exercise for
+  shoulders, and easier on the joints than a barbell because each arm moves freely.
+setup:
+  - Sit on a bench with back support, or stand with feet hip-width apart.
+  - Hold the dumbbells at shoulder height, palms facing forward or slightly in.
+  - Brace your core and keep your ribs down.
+steps:
+  - Press the dumbbells straight up until your arms are almost straight.
+  - Let them come slightly together at the top without clanking.
+  - Lower them slowly back to shoulder height.
+  - Pause briefly, then press again.
+cues:
+  - Wrists stacked over elbows at the bottom.
+  - Keep your lower back neutral — don't lean back to finish the rep.
+  - Squeeze your glutes if you're standing.
+mistakes:
+  - Arching the lower back as the weight gets heavy.
+  - Stopping the dumbbells well above shoulder height.
+  - Pushing the dumbbells forward instead of straight up.
+safety:
+  - If you have shoulder pain overhead, press with palms facing each other and stop
+    short of lockout.
+breathing: Breathe out as you press, in as you lower.
+regressions: [pike-push-up]
+progressions: [barbell-overhead-press]
+tags: [push, shoulders, dumbbell]

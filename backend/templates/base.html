@@ -22,7 +22,7 @@
         {% set ep = request.endpoint or '' %}
 
         {# Public endpoints #}
-        {% set workouts_eps = ['workouts','workouts_browse','workouts_all','styles_index','body_parts_index','workout_detail'] %}
+        {% set workouts_eps = ['workouts','workouts_browse','workouts_all','styles_index','body_parts_index','workout_detail','workouts_mix'] %}
         {% set programs_eps = [
           'programs_index','program_detail',
           'program_hub_level','program_hub_environment','program_hub_weeks','program_hub_week_detail',
@@ -81,7 +81,7 @@
         <div class="w-100 d-flex d-lg-none nav-mobile-persist mt-2">
           <form class="d-flex nav-mobile-search" action="{{ url_for('workouts_browse') }}" method="get" role="search">
             <input class="form-control form-control-sm" type="search" name="q"
-                   placeholder="Search workouts…" value="{{ request.args.get('q','') }}">
+                   placeholder="Search exercises…" value="{{ request.args.get('q','') }}">
             <button class="btn btn-sm btn-outline-light" type="submit">Go</button>
           </form>
         </div>
@@ -89,7 +89,7 @@
         <div class="collapse navbar-collapse mt-2 mt-lg-0" id="navMain">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0 d-none d-lg-flex">
             <li class="nav-item">
-              <a class="nav-link {% if ep in workouts_eps %}active{% endif %}" href="{{ url_for('workouts') }}">Workouts</a>
+              <a class="nav-link {% if ep in workouts_eps %}active{% endif %}" href="{{ url_for('workouts') }}">Exercises</a>
             </li>
 
             <li class="nav-item">
@@ -110,7 +110,7 @@
           <!-- Search -->
           <form class="d-none d-lg-flex me-2" action="{{ url_for('workouts_browse') }}" method="get" role="search">
             <div class="input-group input-group-sm">
-              <input class="form-control" type="search" placeholder="Search workouts…" name="q"
+              <input class="form-control" type="search" placeholder="Search exercises…" name="q"
                      value="{{ request.args.get('q','') }}">
               <button class="btn btn-outline-light" type="submit">Search</button>
             </div>
@@ -168,6 +168,8 @@
     <!-- Swipe + slide animation zone -->
     <main class="container my-4 app-main-shell{% if ep in swipe_eps %} top-level-swipe-zone{% endif %}" id="swipe-zone">
       <div id="page-shell" class="app-page-shell">
+        {# Pages override `page` for a full-width layout (e.g. the discovery Home). #}
+        {% block page %}
         <div class="row g-4">
           <div class="col-lg-8">
             {% block content %}{% endblock %}
@@ -176,6 +178,7 @@
             {% block sidebar %}{% endblock %}
           </aside>
         </div>
+        {% endblock %}
       </div>
     </main>
 
@@ -200,9 +203,9 @@
           <span class="label">Home</span>
         </a>
 
-        <a href="{{ url_for('workouts') }}" class="{% if ep in workouts_eps %}active{% endif %}" data-nav="workouts" aria-label="Workouts"{% if ep in workouts_eps %} aria-current="page"{% endif %}>
+        <a href="{{ url_for('workouts') }}" class="{% if ep in workouts_eps %}active{% endif %}" data-nav="workouts" aria-label="Exercises"{% if ep in workouts_eps %} aria-current="page"{% endif %}>
           <span class="icon" aria-hidden="true"></span>
-          <span class="label">Workouts</span>
+          <span class="label">Exercises</span>
         </a>
 
         <a href="{{ url_for('programs_index') }}" class="{% if ep in programs_eps %}active{% endif %}" data-nav="programs" aria-label="Programs"{% if ep in programs_eps %} aria-current="page"{% endif %}>

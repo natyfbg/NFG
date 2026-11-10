@@ -1,0 +1,38 @@
+slug: pike-push-up
+name: Pike Push-Up
+status: published
+level: intermediate
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts]
+  secondary: [triceps, upper_chest, side_delts]
+equipment: []
+summary: >-
+  A push-up with your hips high so your body makes an upside-down V. It turns the
+  push-up into an overhead press, building shoulder strength with no equipment.
+setup:
+  - Start in a push-up position, then walk your feet in and lift your hips high.
+  - Hands slightly wider than shoulder-width, fingers spread.
+  - Your head should be between your arms, looking back toward your feet.
+steps:
+  - Bend your elbows to lower the top of your head toward the floor in front of your
+    hands.
+  - Keep your hips high as you lower.
+  - Stop just before your head touches the floor.
+  - Press back up until your arms are straight.
+cues:
+  - Your head travels forward of your hands, making a triangle with them.
+  - Elbows point back, not straight out to the sides.
+  - Raise your feet on a step or bench to make it harder.
+mistakes:
+  - Letting the hips drop, which turns it back into a regular push-up.
+  - Flaring the elbows wide.
+  - Lowering too fast and bumping the head.
+safety:
+  - Lower slowly and keep the range short at first if your shoulders feel pinched.
+breathing: Breathe in as you lower, out as you press up.
+progressions: [dumbbell-shoulder-press]
+tags: [push, shoulders, bodyweight]

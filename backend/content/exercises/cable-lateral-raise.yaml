@@ -1,0 +1,36 @@
+slug: cable-lateral-raise
+name: Cable Lateral Raise
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: unilateral
+muscles:
+  primary: [side_delts]
+equipment: [cable]
+summary: >-
+  A one-arm lateral raise with a low cable. The cable keeps tension on the side delt
+  even at the bottom, where dumbbells go slack.
+setup:
+  - Set a pulley at its lowest position with a single handle.
+  - Stand side-on to the machine and hold the handle in the hand farthest from it.
+  - Hold the machine with your other hand for balance.
+steps:
+  - Raise your arm out to the side in a wide arc, elbow slightly bent.
+  - Stop when your arm is about level with your shoulder.
+  - Lower slowly until your hand is in front of your hip.
+  - Finish the set, then switch sides.
+cues:
+  - Lead with the elbow.
+  - Keep your torso still — no leaning away to cheat.
+  - Slow on the way down.
+mistakes:
+  - Going too heavy and swinging.
+  - Shrugging the shoulder up.
+  - Raising well above shoulder height.
+safety:
+  - Stop at shoulder height if raising higher is uncomfortable.
+breathing: Breathe out as you raise, in as you lower.
+regressions: [dumbbell-lateral-raise]
+tags: [shoulders, side-delts, cable, isolation]

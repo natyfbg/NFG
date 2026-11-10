@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Workouts – NFG{% endblock %}
+{% block title %}Exercises – NFG{% endblock %}
 
 {% block content %}
   <div class="app-page">
   <div class="app-page-header">
     <div>
-      <div class="app-page-kicker">Workout library</div>
-      <h1 class="page-title mb-1">Workouts</h1>
+      <div class="app-page-kicker">Exercise library</div>
+      <h1 class="page-title mb-1">Exercises</h1>
       <p class="app-page-copy">Use the library to learn movements, form, and exercise guidance while following a program.</p>
     </div>
   </div>
@@ -16,7 +16,7 @@
     <div class="col-12 col-lg-6">
       <div class="card app-surface app-list-card h-100">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <strong>Workout levels</strong>
+          <strong>Levels</strong>
           <a class="small text-decoration-none" href="{{ url_for('workouts_browse') }}">View all</a>
         </div>
         <div class="list-group list-group-flush">
@@ -54,7 +54,7 @@
     <div class="col-12 col-lg-6">
       <div class="card app-surface app-list-card h-100">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <strong>Workout style</strong>
+          <strong>Style</strong>
           <a class="small text-decoration-none" href="{{ url_for('styles_index') }}">View all</a>
         </div>
         <div class="list-group list-group-flush">
@@ -73,7 +73,7 @@
     <div class="col-12 col-lg-6">
       <div class="card app-surface app-list-card h-100">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <strong>All workouts (A–Z)</strong>
+          <strong>All exercises (A–Z)</strong>
           <a class="small text-decoration-none" href="{{ url_for('workouts_browse') }}">View all</a>
         </div>
 
@@ -89,7 +89,7 @@
           </div>
         {% else %}
           <div class="card-body">
-            <p class="text-muted mb-0">No workouts yet.</p>
+            <p class="text-muted mb-0">No exercises yet.</p>
           </div>
         {% endif %}
 

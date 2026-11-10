@@ -1,0 +1,36 @@
+slug: barbell-curl
+name: Barbell Curl
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [biceps]
+  secondary: [forearms]
+equipment: [barbell]
+summary: >-
+  A standing curl with a barbell. Both arms work together, so it's easy to add weight
+  over time.
+setup:
+  - Stand tall holding the bar with an underhand grip, hands about shoulder-width apart.
+  - Arms straight, bar against your thighs.
+  - Elbows at your sides.
+steps:
+  - Curl the bar up toward your shoulders, keeping your elbows still.
+  - Squeeze your biceps at the top.
+  - Lower the bar slowly until your arms are straight.
+cues:
+  - Stay tall; your torso doesn't move.
+  - Elbows stay by your sides.
+  - Full range, top to bottom.
+mistakes:
+  - Leaning back to swing the bar up.
+  - Letting the elbows drift forward at the top.
+  - Dropping the bar quickly.
+safety:
+  - If a straight bar hurts your wrists, use an EZ bar or dumbbells.
+breathing: Breathe out as you curl, in as you lower.
+regressions: [dumbbell-curl]
+tags: [biceps, arms, barbell]

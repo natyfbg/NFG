@@ -1,0 +1,37 @@
+slug: rear-delt-fly
+name: Rear Delt Fly
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [rear_delts]
+  secondary: [upper_back]
+equipment: [dumbbell]
+summary: >-
+  A bent-over reverse fly with light dumbbells. It trains the back of the shoulders,
+  which helps posture and balances out all the pressing.
+setup:
+  - Hold light dumbbells and hinge at the hips until your torso is nearly parallel to
+    the floor.
+  - Let the dumbbells hang below your chest, palms facing each other.
+  - Keep a slight bend in the elbows and your back flat.
+steps:
+  - Raise the dumbbells out to the sides in a wide arc.
+  - Stop when your arms are in line with your body.
+  - Pause briefly and squeeze the backs of your shoulders.
+  - Lower slowly to the start.
+cues:
+  - Move at the shoulders; the elbow bend stays the same.
+  - Keep your neck long and look at the floor.
+  - Think of spreading the weights wide, not pinching your shoulder blades hard.
+mistakes:
+  - Using weights so heavy you have to swing.
+  - Standing up more with each rep.
+  - Turning it into a row by bending the elbows.
+safety:
+  - If your lower back tires, do it lying face-down on an incline bench instead.
+breathing: Breathe out as you raise, in as you lower.
+tags: [shoulders, rear-delts, dumbbell, posture]

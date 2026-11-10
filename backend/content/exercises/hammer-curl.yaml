@@ -1,0 +1,32 @@
+slug: hammer-curl
+name: Hammer Curl
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [biceps, forearms]
+equipment: [dumbbell]
+summary: >-
+  A curl with your palms facing each other, like holding a hammer. It trains the
+  biceps along with the forearm muscles, and is often easier on the elbows.
+setup:
+  - Stand tall with a dumbbell in each hand at your sides.
+  - Palms face your thighs.
+  - Elbows lightly against your sides.
+steps:
+  - Curl the dumbbells up, keeping your palms facing each other.
+  - Stop when the dumbbells are near your shoulders.
+  - Lower slowly to straight arms.
+cues:
+  - Thumbs point up the whole time.
+  - Elbows stay pinned.
+  - Slow on the way down.
+mistakes:
+  - Swinging the dumbbells up.
+  - Turning the wrists in or out during the curl.
+  - Letting the elbows travel forward.
+breathing: Breathe out as you curl, in as you lower.
+tags: [biceps, forearms, arms, dumbbell]

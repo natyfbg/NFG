@@ -1,0 +1,36 @@
+slug: dumbbell-curl
+name: Dumbbell Curl
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [biceps]
+  secondary: [forearms]
+equipment: [dumbbell]
+summary: >-
+  The basic biceps curl with a dumbbell in each hand. Simple, effective and easy to
+  load.
+setup:
+  - Stand tall with a dumbbell in each hand, arms straight at your sides.
+  - Palms face forward.
+  - Pin your elbows lightly against your sides.
+steps:
+  - Curl the dumbbells up toward your shoulders by bending your elbows.
+  - Squeeze your biceps at the top.
+  - Lower slowly until your arms are fully straight.
+cues:
+  - Only your forearms move; elbows stay by your sides.
+  - Control the way down — take about two seconds.
+  - Stand still; no rocking.
+mistakes:
+  - Swinging the body to lift heavier.
+  - Letting the elbows drift forward.
+  - Cutting the bottom of the rep short.
+safety:
+  - If your elbows ache, try hammer curls or a lighter weight.
+breathing: Breathe out as you curl, in as you lower.
+progressions: [incline-dumbbell-curl]
+tags: [biceps, arms, dumbbell, isolation]

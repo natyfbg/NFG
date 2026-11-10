@@ -1,0 +1,37 @@
+slug: chin-up
+name: Chin-Up
+status: published
+level: intermediate
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [biceps, lats]
+  secondary: [upper_back, forearms, abs]
+equipment: [pullup_bar]
+summary: >-
+  A pull-up with your palms facing you. The underhand grip brings the biceps in more,
+  making it one of the best bodyweight exercises for arms and back together.
+setup:
+  - Grab the bar with palms facing you, hands about shoulder-width apart.
+  - Hang with straight arms and your legs slightly in front of you.
+  - Brace your core so you don't swing.
+steps:
+  - Pull your shoulder blades down to start.
+  - Pull your chest up toward the bar, elbows driving down by your sides.
+  - Get your chin over the bar.
+  - Lower yourself slowly to a full hang.
+cues:
+  - Squeeze the bar hard — it helps your arms work.
+  - Chest to the bar, not chin reaching up.
+  - Full hang at the bottom of each rep.
+mistakes:
+  - Kicking or swinging to finish reps.
+  - Half reps that never reach straight arms.
+  - Dropping fast from the top.
+safety:
+  - Check that a doorway bar is rated for your weight and fully secured.
+breathing: Breathe out as you pull up, in as you lower.
+regressions: [lat-pulldown]
+tags: [pull, biceps, back, bodyweight]

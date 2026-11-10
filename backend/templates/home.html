@@ -1,221 +1,93 @@
 {% extends "base.html" %}
+{% import "_components.html" as ui %}
 
-{% block title %}Home – NFG{% endblock %}
+{% block title %}NFG – Train today{% endblock %}
 
-{% block content %}
-  <div class="app-page">
-  <section class="home-hero mb-0">
-    <div class="home-kicker">Structured fitness system</div>
-    <h1 class="page-title home-hero-title mb-2">Choose a program and follow a plan built week by week.</h1>
-    <p class="text-muted home-hero-copy mb-3">
-      Start with a program, pick your level and training environment, then use the workout library for exercise guidance as you go.
-    </p>
+{% block page %}
+<div class="nfg-discover">
 
-    <div class="d-grid d-sm-flex gap-2 home-hero-actions">
-      <a class="btn btn-dark btn-lg app-btn-primary" href="{{ url_for('programs_index') }}">Start a Program</a>
-      <a class="btn btn-outline-dark app-btn-secondary" href="{{ url_for('workouts') }}">Browse Workouts</a>
-    </div>
+  <header class="nfg-hero">
+    <div class="app-page-kicker">NFG</div>
+    <h1 class="nfg-hero-title">What are you training today?</h1>
+    <p class="nfg-hero-copy">Pick where you train and a muscle group — or pick up your program where you left off.</p>
+  </header>
 
-    <div class="home-path mt-4">
-      <div class="home-path-step">
-        <span class="home-path-number">1</span>
-        <div>
-          <div class="home-path-label">Choose a program</div>
-          <div class="home-path-copy">Pick the plan that matches your goal.</div>
-        </div>
-      </div>
-      <div class="home-path-step">
-        <span class="home-path-number">2</span>
-        <div>
-          <div class="home-path-label">Select level and environment</div>
-          <div class="home-path-copy">Beginner, intermediate, or advanced. Home, gym, or hybrid.</div>
-        </div>
-      </div>
-      <div class="home-path-step">
-        <span class="home-path-number">3</span>
-        <div>
-          <div class="home-path-label">Follow the weekly structure</div>
-          <div class="home-path-copy">Open each week and complete the programmed training days.</div>
-        </div>
-      </div>
-      <div class="home-path-step">
-        <span class="home-path-number">4</span>
-        <div>
-          <div class="home-path-label">Use workouts as guidance</div>
-          <div class="home-path-copy">Tap into the library anytime to learn the exercises.</div>
-        </div>
-      </div>
+  {% if continue_plan %}
+    <a class="nfg-continue" href="{{ continue_plan.url }}">
+      <span class="nfg-continue-kicker">Continue training</span>
+      <span class="nfg-continue-title">{{ continue_plan.track_title }}</span>
+      <span class="nfg-continue-meta">
+        Week {{ continue_plan.week_number }}{% if continue_plan.day_label %} · {{ continue_plan.day_label }}{% endif %}
+        {% if continue_plan.percent is not none %} · {{ continue_plan.percent }}% complete{% endif %}
+      </span>
+      {% if continue_plan.percent is not none %}
+        <span class="nfg-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+              aria-valuenow="{{ continue_plan.percent }}" aria-label="Program progress">
+          <span class="nfg-progress-bar" style="width: {{ continue_plan.percent }}%;"></span>
+        </span>
+      {% endif %}
+      <span class="nfg-continue-cta">Continue →</span>
+    </a>
+  {% endif %}
+
+  <section class="nfg-section">
+    {{ ui.section_head("Quick setup", "Where are you training?") }}
+    {{ ui.env_switch(env, environments, "home") }}
+    <p class="nfg-env-note">{{ env_note }}</p>
+  </section>
+
+  <section class="nfg-section">
+    {{ ui.section_head("Muscle groups", "Pick what to train", url_for("workouts_mix"), "Mix muscles") }}
+    <div class="nfg-group-grid">
+      {% for card in group_cards %}
+        {{ ui.group_card(card, url_for("workouts_mix", g=card.key)) }}
+      {% endfor %}
     </div>
   </section>
 
-  {% if continue_plan %}
-    <section class="card app-surface app-surface-muted">
-      <div class="card-body">
-        <div class="d-flex align-items-start justify-content-between gap-3">
-          <div>
-            <div class="app-page-kicker mb-1">Resume program</div>
-            <div class="fw-semibold">{{ continue_plan.track_title }}</div>
-            <div class="small text-muted mt-1">
-              Week {{ continue_plan.week_number }}{% if continue_plan.day_label %} • {{ continue_plan.day_label }}{% endif %}
-            </div>
-          </div>
-          <a class="btn btn-sm btn-primary app-btn-primary app-btn-compact" href="{{ continue_plan.url }}">Continue</a>
-        </div>
-      </div>
+  <section class="nfg-section">
+    <a class="nfg-mixer-cta" href="{{ url_for('workouts_mix') }}">
+      <span class="nfg-mixer-kicker">Muscle Mixer</span>
+      <span class="nfg-mixer-title">Chest + Triceps? Back + Biceps?</span>
+      <span class="nfg-mixer-copy">Combine muscle groups and get the exercises that train them together.</span>
+      <span class="nfg-mixer-btn">Open the Mixer →</span>
+    </a>
+  </section>
+
+  {% if coach_picks %}
+    <section class="nfg-section">
+      {{ ui.section_head("Coach's Picks", coach_picks_meta.title or "Coach's Picks", copy=coach_picks_meta.subtitle) }}
+      {% call ui.rail() %}
+        {% for w in coach_picks %}{{ ui.exercise_rail_card(w) }}{% endfor %}
+      {% endcall %}
     </section>
   {% endif %}
 
-  <section>
-    <div class="app-section-head">
-      <div>
-        <div class="app-section-kicker">Programs</div>
-        <h2 class="h5 mb-1">Featured Programs</h2>
-        <p class="text-muted small mb-0">Start with a guided plan and build consistency one week at a time.</p>
-      </div>
-      <a class="small text-decoration-none text-muted" href="{{ url_for('programs_index') }}">View all</a>
-    </div>
+  {% if saved_exercises %}
+    <section class="nfg-section">
+      {{ ui.section_head("My exercises", "Saved") }}
+      {% call ui.rail() %}
+        {% for w in saved_exercises %}{{ ui.exercise_rail_card(w) }}{% endfor %}
+      {% endcall %}
+    </section>
+  {% endif %}
 
-    {% if home_programs and home_programs|length > 0 %}
-      <div class="row g-3">
-        {% for p in home_programs %}
-          {% set is_hub = (p.get('kind') == 'hub') or ((p.get('slug') or '') == '8-week-challenge') %}
-          {% set program_url = url_for('program_detail', slug=p.slug) %}
-          <div class="col-12">
-            <a href="{{ program_url }}" class="home-program-card text-decoration-none">
-              <div class="card shadow-sm h-100">
-                <div class="card-body">
-                  <div class="d-flex align-items-start justify-content-between gap-3">
-                    <div class="flex-grow-1">
-                      <div class="d-flex flex-wrap gap-2 mb-2">
-                        {% if p.get('category') %}
-                          <span class="badge text-bg-dark">{{ p.get('category') }}</span>
-                        {% endif %}
-                        {% if p.get('duration_label') %}
-                          <span class="badge text-bg-light border text-dark">{{ p.get('duration_label') }}</span>
-                        {% endif %}
-                        {% if p.get('show_on_home') %}
-                          <span class="badge text-bg-success">Featured</span>
-                        {% endif %}
-                      </div>
-
-                      <div class="fw-semibold text-dark home-program-title">{{ p.get('title') or 'Program' }}</div>
-                      <div class="text-muted small mt-1">
-                        {{ p.get('summary') or 'Choose your setup, follow the weekly structure, and keep training simple.' }}
-                      </div>
-
-                      <div class="home-program-meta mt-3">
-                        <span class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact">Open Program</span>
-                        <span class="text-muted small">
-                          {% if is_hub %}
-                            Start with level selection
-                          {% else %}
-                            View program details
-                          {% endif %}
-                        </span>
-                      </div>
-                    </div>
-
-                    {% if p.get('cover_image') %}
-                      <img src="{{ p.get('cover_image') }}" alt=""
-                           class="home-program-image">
-                    {% else %}
-                      <div class="home-program-image home-program-image-placeholder"></div>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-            </a>
-          </div>
-        {% endfor %}
-      </div>
+  <section class="nfg-section">
+    {{ ui.section_head("Programs", "Follow a plan", url_for("programs_index"), "All programs") }}
+    {% set saved_slugs = favorite_programs | map(attribute='slug') | list %}
+    {% if home_programs %}
+      {% call ui.rail() %}
+        {% for p in home_programs %}{{ ui.program_rail_card(p, saved=(p.slug in saved_slugs)) }}{% endfor %}
+      {% endcall %}
     {% else %}
-      <div class="card app-surface">
-        <div class="card-body">
-          <div class="fw-semibold mb-1">No programs are featured yet.</div>
-          <p class="text-muted small mb-3">The Programs Hub is still the main place to begin.</p>
-          <a class="btn btn-dark btn-sm app-btn-primary app-btn-compact" href="{{ url_for('programs_index') }}">Open Programs Hub</a>
-        </div>
-      </div>
+      <p class="nfg-empty">No programs are featured yet.</p>
     {% endif %}
   </section>
 
-  {% if favorite_programs and favorite_programs|length > 0 %}
-    <section>
-      <div class="app-section-head">
-        <div>
-          <div class="app-section-kicker">Library</div>
-          <h2 class="h5 mb-1">Saved Programs</h2>
-          <p class="text-muted small mb-0">Quick access to the plans you want to keep close.</p>
-        </div>
-        <a class="small text-decoration-none text-muted" href="{{ url_for('programs_index') }}">Manage</a>
-      </div>
-
-      <div class="row g-3">
-        {% for p in favorite_programs %}
-          <div class="col-12">
-            <a href="{{ url_for('program_detail', slug=p.slug) }}" class="home-program-card text-decoration-none">
-              <div class="card shadow-sm border-warning-subtle h-100">
-                <div class="card-body">
-                  <div class="d-flex align-items-start justify-content-between gap-3">
-                    <div class="flex-grow-1">
-                      <div class="d-flex flex-wrap gap-2 mb-2">
-                        <span class="badge text-bg-warning">Saved</span>
-                        {% if p.get('duration_label') %}
-                          <span class="badge text-bg-light border text-dark">{{ p.get('duration_label') }}</span>
-                        {% endif %}
-                      </div>
-                      <div class="fw-semibold text-dark home-program-title">{{ p.get('title') or 'Program' }}</div>
-                      {% if p.get('summary') %}
-                        <div class="text-muted small mt-1">{{ p.get('summary') }}</div>
-                      {% endif %}
-                    </div>
-
-                    {% if p.get('cover_image') %}
-                      <img src="{{ p.get('cover_image') }}" alt=""
-                           class="home-program-image">
-                    {% else %}
-                      <div class="home-program-image home-program-image-placeholder"></div>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-            </a>
-          </div>
-        {% endfor %}
-      </div>
-    </section>
-  {% endif %}
-
-  <section class="home-library card border-0">
-    <div class="card-body">
-      <div class="home-library-kicker">Workout Library</div>
-      <h2 class="h5 mb-1">Browse workouts and learn exercises.</h2>
-      <p class="text-muted small mb-3">
-        Use the library to see how an exercise looks, how to perform it, and what to reference while following your program.
-      </p>
-      <a class="btn btn-outline-dark app-btn-secondary" href="{{ url_for('workouts') }}">Open Workout Library</a>
-    </div>
+  <section class="nfg-section nfg-browse-links">
+    <a class="nfg-browse-link" href="{{ url_for('workouts_browse') }}">Browse all exercises <span aria-hidden="true">→</span></a>
+    <a class="nfg-browse-link" href="{{ url_for('recipes') }}">Recipes <span aria-hidden="true">→</span></a>
   </section>
-  </div>
-{% endblock %}
 
-{% block sidebar %}
-  <div class="app-sidebar-stack">
-  <div class="card app-surface">
-    <div class="card-body">
-      <div class="app-page-kicker mb-2">How it works</div>
-      <div class="fw-semibold mb-2">Programs lead. Workouts support.</div>
-      <ul class="small text-muted ps-3 mb-3">
-        <li>Pick one program.</li>
-        <li>Choose your level and environment.</li>
-        <li>Complete the week in order.</li>
-        <li>Open workout pages when you need form guidance.</li>
-      </ul>
-      <div class="d-grid gap-2">
-        <a class="btn btn-dark app-btn-primary" href="{{ url_for('programs_index') }}">Start a Program</a>
-        <a class="btn btn-outline-dark app-btn-secondary" href="{{ url_for('workouts') }}">Workout Library</a>
-      </div>
-    </div>
-  </div>
-  </div>
+</div>
 {% endblock %}

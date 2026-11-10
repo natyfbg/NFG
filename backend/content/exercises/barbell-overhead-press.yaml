@@ -1,0 +1,40 @@
+slug: barbell-overhead-press
+name: Barbell Overhead Press
+status: published
+level: intermediate
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts, side_delts]
+  secondary: [triceps, upper_back, abs]
+equipment: [barbell]
+summary: >-
+  Pressing a barbell from your shoulders to overhead while standing. A classic
+  strength lift for the shoulders and a test of a strong, stable trunk.
+setup:
+  - Set the bar in a rack at upper-chest height.
+  - Grip it just outside shoulder-width, step under it, and rest it on your front
+    shoulders.
+  - Step back, feet hip-width apart, glutes and core braced.
+steps:
+  - Press the bar straight up, moving your head back slightly so the bar clears your
+    chin.
+  - Once it passes your forehead, move your head forward under the bar.
+  - Lock out with the bar over your mid-foot and your arms by your ears.
+  - Lower it under control back to your shoulders.
+cues:
+  - Squeeze your glutes to keep your lower back from arching.
+  - Forearms vertical at the bottom.
+  - Finish with the bar over the middle of your foot, not in front of you.
+mistakes:
+  - Leaning back to turn it into an incline press.
+  - Pressing the bar out in front instead of straight up.
+  - Bending the knees to drive the bar (that's a push press).
+safety:
+  - Use a rack to load and unload the bar. If a rep fails, step back and lower the bar
+    to your shoulders or the safeties.
+breathing: Breathe in and brace at the bottom; breathe out as you pass the hardest part.
+regressions: [dumbbell-shoulder-press]
+tags: [push, shoulders, barbell, strength]

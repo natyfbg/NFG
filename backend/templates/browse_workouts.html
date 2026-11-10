@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Browse Workouts – NFG{% endblock %}
+{% block title %}Browse Exercises – NFG{% endblock %}
 
 {% block sidebar %}
   {% include "quick_options.html" %}
@@ -9,8 +9,8 @@
 <div class="app-page">
   <div class="app-page-header">
     <div>
-      <div class="app-page-kicker">Workout library</div>
-      <h1 class="page-title mb-1">Browse Workouts</h1>
+      <div class="app-page-kicker">Exercise library</div>
+      <h1 class="page-title mb-1">Browse Exercises</h1>
       <p class="app-page-copy">Search and filter the library to find the exact movement you need for form, setup, and exercise guidance.</p>
     </div>
   </div>
@@ -22,7 +22,7 @@
     <input type="hidden" name="page" value="1">
 
     <div class="toolbar-top">
-      <input name="q" class="form-control toolbar-search" placeholder="Search workouts..." value="{{ q }}">
+      <input name="q" class="form-control toolbar-search" placeholder="Search exercises..." value="{{ q }}">
 
       <select name="sort" class="form-select form-select-sm">
         <option value="name" {{ 'selected' if sort=='name' else '' }}>A–Z</option>
@@ -129,7 +129,7 @@
           {% set thumbs = thumbs + [w.muscle_image] %}
         {% endif %}
         {% if not thumbs or thumbs|length == 0 %}
-          {% set thumbs = ['https://via.placeholder.com/900x1600?text=Workout'] %}
+          {% set thumbs = [url_for('static', filename='img/exercise-placeholder.svg')] %}
         {% endif %}
         {% if thumbs|length == 1 %}
           {% set thumbs = thumbs + [thumbs[0]] %}
@@ -189,7 +189,7 @@
     </div>
   {% else %}
     <div class="app-note workout-empty-state">
-      No workouts match that filter. Try a broader search or clear one of the active filters.
+      No exercises match that filter. Try a broader search or clear one of the active filters.
     </div>
   {% endif %}
 

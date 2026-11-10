@@ -45,6 +45,8 @@ PLACEHOLDER_URL = "/static/img/exercises/{slug}.svg"
 
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 YOUTUBE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+# Slugs that collide with fixed /workouts/<...> routes.
+RESERVED_SLUGS = {"all", "styles", "body-parts", "browse", "mix"}
 
 REQUIRED_KEYS = ("slug", "name", "status", "level", "category", "movement", "muscles", "equipment")
 TEXT_LIST_KEYS = ("setup", "steps", "cues", "mistakes", "safety", "tags")
@@ -106,6 +108,8 @@ def validate_exercise(raw, filename: str) -> Tuple[List[str], List[str]]:
         err(f"slug '{slug}' must be lowercase words joined by hyphens")
     elif slug != stem:
         err(f"slug '{slug}' must match the file name '{stem}.yaml'")
+    elif slug in RESERVED_SLUGS:
+        err(f"slug '{slug}' is reserved for a site page; pick another")
 
     if not isinstance(raw["name"], str) or not raw["name"].strip():
         err("name must be non-empty text")
@@ -258,6 +262,7 @@ def build_doc(ex: dict) -> dict:
         "primary_groups": primary_groups,
         "muscle_groups": muscle_groups,
         "equipment_required": equipment,
+        "equipment_label": tx.equipment_text(equipment),
         "environments": tx.environments_for_equipment(equipment),
         # Legacy fields the current templates, filters and admin form read.
         "level": level["label"],
@@ -438,8 +443,31 @@ def _load_or_exit() -> List[dict]:
     return exercises
 
 
+def collection_warnings(exercises: List[dict]) -> List[str]:
+    """Curated collections that reference missing or draft exercises."""
+    import curation
+
+    status = {ex["slug"]: ex["status"] for ex in exercises}
+    warnings = []
+    for key, col in curation.load_collections().items():
+        for slug in col["items"]:
+            if slug not in status:
+                warnings.append(f"collections/{key}.yaml: '{slug}' has no exercise file yet")
+            elif status[slug] != "published":
+                warnings.append(f"collections/{key}.yaml: '{slug}' is still a draft")
+    return warnings
+
+
 def cmd_check(_args) -> None:
+    import curation
+
     exercises = _load_or_exit()
+    try:
+        for w in collection_warnings(exercises):
+            print(f"warning: {w}")
+    except curation.CurationError as e:
+        print("Collection validation failed:\n" + str(e), file=sys.stderr)
+        sys.exit(1)
     drafts = sum(1 for ex in exercises if ex["status"] == "draft")
     print(
         f"OK: {len(exercises)} exercise files ({drafts} draft, {len(exercises) - drafts} published)"

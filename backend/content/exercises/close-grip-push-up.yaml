@@ -1,0 +1,37 @@
+slug: close-grip-push-up
+name: Close-Grip Push-Up
+status: published
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [triceps]
+  secondary: [chest, front_delts, abs]
+equipment: []
+summary: >-
+  A push-up with your hands close together and elbows tucked. It shifts the work onto
+  the triceps while still training the chest.
+setup:
+  - Start in a push-up position with your hands directly under your shoulders or
+    slightly closer.
+  - Form a straight line from head to heels.
+  - Brace your core.
+steps:
+  - Lower your chest toward your hands, keeping your elbows close to your sides.
+  - Stop just above the floor.
+  - Press back up to straight arms.
+cues:
+  - Elbows brush your ribs on the way down.
+  - Body moves as one plank.
+  - Elevate your hands on a bench to make it easier.
+mistakes:
+  - Flaring the elbows out.
+  - Hands so close together that the wrists hurt.
+  - Letting the hips sag.
+safety:
+  - If your wrists complain, turn your hands slightly out or use push-up handles.
+breathing: Breathe in as you lower, out as you push up.
+regressions: [incline-push-up]
+tags: [push, triceps, bodyweight]
