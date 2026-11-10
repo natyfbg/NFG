@@ -48,12 +48,16 @@ def library(nfg_app):
 # --------------------------------------------------------------------------
 
 
-def test_home_shows_discovery_sections(client, library):
+def test_home_shows_session_builder(client, library):
     html = client.get("/").get_data(as_text=True)
-    for text in ("What are you training today?", "Where are you training?", "Muscle Mixer"):
+    for text in ("What are you training today?", "Build a session", "Where are you training?"):
         assert text in html
-    # Group tiles carry counts of published exercises only (draft hidden).
-    assert "Chest" in html and "2 exercises" in html
+    # Inline Muscle Mixer chips; no duplicate muscle-group grid on Home.
+    assert 'name="g" value="chest"' in html
+    assert "nfg-group-grid" not in html
+    # Split tabs only for splits with exercises (library has push and pull, no lower).
+    assert 'id="split-tab-push"' in html and 'id="split-tab-pull"' in html
+    assert 'id="split-tab-lower"' not in html
 
 
 def test_env_choice_is_remembered_in_cookie(client, library):
@@ -125,7 +129,7 @@ def test_mixer_ignores_unknown_groups_and_caps_selection(client, library):
     resp = client.get("/workouts/mix?g=chest&g=wings&g=chest")
     html = resp.get_data(as_text=True)
     assert resp.status_code == 200
-    assert '<h1 class="nfg-hero-title">Chest</h1>' in html
+    assert '<h1 class="nfg-page-title">Chest</h1>' in html
 
 
 def test_mixer_chip_links_toggle_groups(client, library):

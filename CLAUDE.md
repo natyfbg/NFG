@@ -170,6 +170,16 @@ as committer, so GitHub shows them as Verified.
   (`group`, `eq`, `env`), legacy label params still work.
 - 2026-11-10 — Brand assets in `static/img/brand/` (see its README); navbar logo sits
   on a cream tile because the black glyph vanishes on the dark top bar.
+- 2026-11-10 — **Each page has one job.** Home = "what do I do today?" (continue,
+  build a session, Coach's Picks, programs). Exercises = the catalogue (search, muscle
+  group / equipment / level tiles → browse grid). Programs = plans + progress. Don't
+  duplicate a section across pages.
+- 2026-11-10 — Home "Build a session": Home/Gym/Hybrid in the card header; split tabs
+  Push / Pull / Lower / Core / Full body, each with focus presets (chest vs shoulder
+  push, vertical vs horizontal pull, quad vs glute/ham dominant) defined in
+  `taxonomy.SESSION_SPLITS`; presets open `/workouts/mix?p=<key>` (main lifts, then
+  accessories; add-ons like calves via `&g=`). Below, muscle chips feed the Mixer with
+  a live count. Empty presets/splits are hidden automatically.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 

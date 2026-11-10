@@ -58,32 +58,235 @@ REGION_LEGACY = {
 # Groups without muscles match on exercise `category` instead.
 # -----------------------------------------------------------------------------
 MUSCLE_GROUPS: Dict[str, dict] = {
-    "chest": {"label": "Chest", "color": "#B4532A", "muscles": ["chest", "upper_chest"]},
+    "chest": {
+        "label": "Chest",
+        "color": "#B4532A",
+        "muscles": ["chest", "upper_chest"],
+        "blurb": "Pecs and upper chest",
+    },
     "back": {
         "label": "Back",
         "color": "#2F5D8A",
         "muscles": ["lats", "upper_back", "traps", "lower_back", "rear_delts"],
+        "blurb": "Lats, upper back, traps, lower back",
     },
     "shoulders": {
         "label": "Shoulders",
         "color": "#6D4C9F",
         "muscles": ["front_delts", "side_delts", "rear_delts"],
+        "blurb": "Front, side and rear delts",
     },
-    "biceps": {"label": "Biceps", "color": "#B83B5E", "muscles": ["biceps"]},
-    "triceps": {"label": "Triceps", "color": "#4B4FA0", "muscles": ["triceps"]},
-    "forearms": {"label": "Forearms", "color": "#7A5C3E", "muscles": ["forearms"]},
-    "core": {"label": "Core", "color": "#B58A1E", "muscles": ["abs", "obliques"]},
-    "glutes": {"label": "Glutes", "color": "#9C3F8C", "muscles": ["glutes", "abductors"]},
-    "quads": {"label": "Quads", "color": "#2E7D5B", "muscles": ["quads", "adductors"]},
-    "hamstrings": {"label": "Hamstrings", "color": "#6B7A2A", "muscles": ["hamstrings"]},
-    "calves": {"label": "Calves", "color": "#2F7F7A", "muscles": ["calves"]},
-    "full_body": {"label": "Full Body", "color": "#2B2B27", "muscles": [], "category": None},
-    "cardio": {"label": "Cardio", "color": "#C0392B", "muscles": [], "category": "cardio"},
-    "mobility": {"label": "Mobility", "color": "#3B8EA5", "muscles": [], "category": "mobility"},
+    "biceps": {
+        "label": "Biceps",
+        "color": "#B83B5E",
+        "muscles": ["biceps"],
+        "blurb": "Front of the upper arm",
+    },
+    "triceps": {
+        "label": "Triceps",
+        "color": "#4B4FA0",
+        "muscles": ["triceps"],
+        "blurb": "Back of the upper arm",
+    },
+    "forearms": {
+        "label": "Forearms",
+        "color": "#7A5C3E",
+        "muscles": ["forearms"],
+        "blurb": "Grip and wrists",
+    },
+    "core": {
+        "label": "Core",
+        "color": "#B58A1E",
+        "muscles": ["abs", "obliques"],
+        "blurb": "Abs and obliques",
+    },
+    "glutes": {
+        "label": "Glutes",
+        "color": "#9C3F8C",
+        "muscles": ["glutes", "abductors"],
+        "blurb": "Glutes and outer hips",
+    },
+    "quads": {
+        "label": "Quads",
+        "color": "#2E7D5B",
+        "muscles": ["quads", "adductors"],
+        "blurb": "Front and inner thighs",
+    },
+    "hamstrings": {
+        "label": "Hamstrings",
+        "color": "#6B7A2A",
+        "muscles": ["hamstrings"],
+        "blurb": "Back of the thighs",
+    },
+    "calves": {
+        "label": "Calves",
+        "color": "#2F7F7A",
+        "muscles": ["calves"],
+        "blurb": "Lower legs",
+    },
+    "full_body": {
+        "label": "Full Body",
+        "color": "#2B2B27",
+        "muscles": [],
+        "category": None,
+        "blurb": "Whole-body movements",
+    },
+    "cardio": {
+        "label": "Cardio",
+        "color": "#C0392B",
+        "muscles": [],
+        "category": "cardio",
+        "blurb": "Heart rate and conditioning",
+    },
+    "mobility": {
+        "label": "Mobility",
+        "color": "#3B8EA5",
+        "muscles": [],
+        "category": "mobility",
+        "blurb": "Stretch, open up, move better",
+    },
 }
 
 # Where a muscle belongs to several groups, the group it should headline under.
 MUSCLE_HOME_GROUP = {"rear_delts": "shoulders"}
+
+# Session splits on Home. Each split has a "full" preset plus focus variants.
+# A preset selects exercises by movement pattern (the main lifts) and by target
+# muscles (accessories), e.g. Pull > Vertical pull = pull-ups/pulldowns first, then
+# biceps work. `exclude_movements` keeps a focus honest (no rows on a vertical day).
+SESSION_SPLITS = [
+    {
+        "key": "push",
+        "label": "Push",
+        "presets": [
+            {
+                "key": "push",
+                "label": "Full push",
+                "covers": "Chest · shoulders · triceps",
+                "movements": ["horizontal_push", "vertical_push"],
+                "muscles": ["chest", "upper_chest", "front_delts", "side_delts", "triceps"],
+            },
+            {
+                "key": "push-chest",
+                "label": "Chest focus",
+                "covers": "Flat & incline pressing · triceps",
+                "movements": ["horizontal_push"],
+                "muscles": ["chest", "upper_chest", "triceps"],
+                "exclude_movements": ["vertical_push"],
+            },
+            {
+                "key": "push-shoulders",
+                "label": "Shoulder focus",
+                "covers": "Overhead pressing · delts · upper chest",
+                "movements": ["vertical_push"],
+                "muscles": ["front_delts", "side_delts", "rear_delts", "upper_chest", "triceps"],
+            },
+        ],
+    },
+    {
+        "key": "pull",
+        "label": "Pull",
+        "presets": [
+            {
+                "key": "pull",
+                "label": "Full pull",
+                "covers": "Back · biceps · rear delts",
+                "movements": ["vertical_pull", "horizontal_pull"],
+                "muscles": ["lats", "upper_back", "traps", "rear_delts", "biceps", "forearms"],
+            },
+            {
+                "key": "pull-vertical",
+                "label": "Vertical pull",
+                "covers": "Pull-ups & pulldowns · lats · biceps",
+                "movements": ["vertical_pull"],
+                "muscles": ["lats", "biceps"],
+                "exclude_movements": ["horizontal_pull"],
+            },
+            {
+                "key": "pull-horizontal",
+                "label": "Horizontal pull",
+                "covers": "Rows · upper back · rear delts",
+                "movements": ["horizontal_pull"],
+                "muscles": ["upper_back", "traps", "rear_delts", "biceps"],
+                "exclude_movements": ["vertical_pull"],
+            },
+        ],
+    },
+    {
+        "key": "lower",
+        "label": "Lower",
+        "presets": [
+            {
+                "key": "lower",
+                "label": "Full lower",
+                "covers": "Quads · glutes · hamstrings · calves",
+                "movements": ["squat", "lunge", "hinge"],
+                "muscles": ["quads", "glutes", "hamstrings", "adductors", "abductors", "calves"],
+            },
+            {
+                "key": "lower-quad",
+                "label": "Quad dominant",
+                "covers": "Squats & lunges · quads",
+                "movements": ["squat", "lunge"],
+                "muscles": ["quads", "adductors", "calves"],
+                "exclude_movements": ["hinge"],
+            },
+            {
+                "key": "lower-hip",
+                "label": "Glute & ham dominant",
+                "covers": "Hinges & bridges · glutes · hamstrings",
+                "movements": ["hinge"],
+                "muscles": ["glutes", "hamstrings", "abductors", "calves"],
+                "exclude_movements": ["squat", "lunge"],
+            },
+        ],
+    },
+    {
+        "key": "core",
+        "label": "Core",
+        "presets": [
+            {
+                "key": "core",
+                "label": "Core",
+                "covers": "Abs · obliques · bracing",
+                "movements": ["core"],
+                "muscles": ["abs", "obliques"],
+            },
+        ],
+    },
+    {
+        "key": "full-body",
+        "label": "Full body",
+        "presets": [
+            {
+                "key": "full-body",
+                "label": "Full body",
+                "covers": "Big movements that train everything",
+                "movements": ["full_body"],
+                "muscles": [],
+                "groups": ["full_body"],
+            },
+        ],
+    },
+]
+
+SESSION_PRESETS: Dict[str, dict] = {
+    p["key"]: dict(p, split=split["key"], split_label=split["label"])
+    for split in SESSION_SPLITS
+    for p in split["presets"]
+}
+
+# Quick add-ons on a session page ("calves can go with any day").
+SESSION_ADDONS = ["calves", "core", "forearms"]
+
+
+def group_blurb(group_key: str) -> str:
+    """Short description of what a muscle group covers, e.g. "Lats, Upper Back, Traps"."""
+    group = MUSCLE_GROUPS[group_key]
+    if group.get("blurb"):
+        return group["blurb"]
+    return ", ".join(MUSCLES[m]["label"] for m in group["muscles"])
+
 
 # An exercise counts as full body when its primary muscles span this many groups,
 # or when it is explicitly tagged full_body.

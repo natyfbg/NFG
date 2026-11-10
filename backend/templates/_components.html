@@ -27,6 +27,7 @@
   <a class="nfg-group-card{% if not group.count %} is-empty{% endif %}" href="{{ href }}"
      style="--group-color: {{ group.color }};">
     <span class="nfg-group-label">{{ group.label }}</span>
+    {% if group.blurb %}<span class="nfg-group-blurb">{{ group.blurb }}</span>{% endif %}
     <span class="nfg-group-count">
       {% if group.count %}{{ group.count }} exercise{{ 's' if group.count != 1 }}{% else %}Coming soon{% endif %}
     </span>

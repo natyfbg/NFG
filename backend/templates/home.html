@@ -7,9 +7,7 @@
 <div class="nfg-discover">
 
   <header class="nfg-hero">
-    <div class="app-page-kicker">NFG</div>
     <h1 class="nfg-hero-title">What are you training today?</h1>
-    <p class="nfg-hero-copy">Pick where you train and a muscle group — or pick up your program where you left off.</p>
   </header>
 
   {% if continue_plan %}
@@ -30,28 +28,57 @@
     </a>
   {% endif %}
 
-  <section class="nfg-section">
-    {{ ui.section_head("Quick setup", "Where are you training?") }}
-    {{ ui.env_switch(env, environments, "home") }}
-    <p class="nfg-env-note">{{ env_note }}</p>
-  </section>
-
-  <section class="nfg-section">
-    {{ ui.section_head("Muscle groups", "Pick what to train", url_for("workouts_mix"), "Mix muscles") }}
-    <div class="nfg-group-grid">
-      {% for card in group_cards %}
-        {{ ui.group_card(card, url_for("workouts_mix", g=card.key)) }}
-      {% endfor %}
+  {# Today's session: the Muscle Mixer, inline. Home builds a session; the Exercises tab is the catalogue. #}
+  <section class="nfg-session" aria-labelledby="sessionTitle">
+    <div class="nfg-session-head">
+      <h2 class="nfg-session-title" id="sessionTitle">Build a session</h2>
+      <div class="nfg-env-mini" role="group" aria-label="Where are you training?">
+        {% for key, e in environments.items() %}
+          <a class="{% if key == env %}is-active{% endif %}" href="{{ url_for('home', env=key) }}"
+             {% if key == env %}aria-current="true"{% endif %}>{{ e.label }}</a>
+        {% endfor %}
+      </div>
     </div>
-  </section>
 
-  <section class="nfg-section">
-    <a class="nfg-mixer-cta" href="{{ url_for('workouts_mix') }}">
-      <span class="nfg-mixer-kicker">Muscle Mixer</span>
-      <span class="nfg-mixer-title">Chest + Triceps? Back + Biceps?</span>
-      <span class="nfg-mixer-copy">Combine muscle groups and get the exercises that train them together.</span>
-      <span class="nfg-mixer-btn">Open the Mixer →</span>
-    </a>
+    {% if splits %}
+      <div class="nfg-split-tabs" role="tablist" aria-label="Session type" data-no-page-swipe>
+        {% for sp in splits %}
+          <button class="nfg-split-tab{% if loop.first %} active{% endif %}" id="split-tab-{{ sp.key }}" type="button"
+                  role="tab" data-bs-toggle="tab" data-bs-target="#split-{{ sp.key }}" aria-controls="split-{{ sp.key }}"
+                  aria-selected="{{ 'true' if loop.first else 'false' }}">{{ sp.label }}</button>
+        {% endfor %}
+      </div>
+      <div class="tab-content">
+        {% for sp in splits %}
+          <div class="tab-pane fade{% if loop.first %} show active{% endif %}" id="split-{{ sp.key }}" role="tabpanel"
+               aria-labelledby="split-tab-{{ sp.key }}">
+            {% call ui.rail() %}
+              {% for p in sp.presets %}
+                <a class="nfg-preset" href="{{ p.href }}">
+                  <span class="nfg-preset-label">{{ p.label }}</span>
+                  <span class="nfg-preset-covers">{{ p.covers }}</span>
+                  <span class="nfg-preset-count">{{ p.count }} exercise{{ 's' if p.count != 1 }}</span>
+                </a>
+              {% endfor %}
+            {% endcall %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form class="nfg-session-form" action="{{ url_for('workouts_mix') }}" method="get" data-mix-max="{{ mix_max }}">
+      <div class="nfg-session-label">Or pick muscles</div>
+      <div class="nfg-session-chips">
+        {% for c in mix_chips %}
+          <label class="nfg-pick{% if not c.available %} is-off{% endif %}" style="--group-color: {{ c.color }};">
+            <input type="checkbox" name="g" value="{{ c.key }}" {% if not c.available %}disabled{% endif %}>
+            <span>{{ c.label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      <button class="nfg-btn nfg-session-go" type="submit">Show exercises</button>
+    </form>
+    <script type="application/json" id="sessionIndex">{{ session_index | tojson }}</script>
   </section>
 
   {% if coach_picks %}
@@ -84,10 +111,40 @@
     {% endif %}
   </section>
 
-  <section class="nfg-section nfg-browse-links">
-    <a class="nfg-browse-link" href="{{ url_for('workouts_browse') }}">Browse all exercises <span aria-hidden="true">→</span></a>
-    <a class="nfg-browse-link" href="{{ url_for('recipes') }}">Recipes <span aria-hidden="true">→</span></a>
-  </section>
 
 </div>
+{% endblock %}
+
+{% block overlays %}
+<script>
+  /* Live count on the session button. Without JS the form still submits normally. */
+  (function () {
+    var form = document.querySelector('.nfg-session-form');
+    var data = document.getElementById('sessionIndex');
+    if (!form || !data) return;
+    var index = JSON.parse(data.textContent || '[]');
+    var max = parseInt(form.dataset.mixMax || '6', 10);
+    var button = form.querySelector('.nfg-session-go');
+    var boxes = Array.prototype.slice.call(form.querySelectorAll('input[name="g"]'));
+    function update() {
+      var picked = boxes.filter(function (b) { return b.checked; }).map(function (b) { return b.value; });
+      boxes.forEach(function (b) {
+        if (b.closest('.is-off')) return;  // nothing to show for this group yet
+        b.disabled = !b.checked && picked.length >= max;
+      });
+      if (!picked.length) {
+        button.textContent = 'Pick a muscle group';
+        button.disabled = true;
+        return;
+      }
+      var n = index.filter(function (groups) {
+        return groups.some(function (g) { return picked.indexOf(g) !== -1; });
+      }).length;
+      button.disabled = false;
+      button.textContent = 'Show ' + n + ' exercise' + (n === 1 ? '' : 's');
+    }
+    form.addEventListener('change', update);
+    update();
+  })();
+</script>
 {% endblock %}

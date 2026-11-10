@@ -3311,6 +3311,72 @@ def _mix_results(groups: List[str], env: str, limit: int = 60) -> List[dict]:
     return docs[:limit]
 
 
+def _session_results(
+    preset: dict, extra_groups: List[str], env: str, limit: int = 60
+) -> List[dict]:
+    """Exercises for a session preset (e.g. Pull > Vertical pull), main lifts first.
+
+    Included: the preset's movement patterns, plus any exercise whose primary
+    muscles are preset targets (accessories), minus excluded patterns. Add-on
+    groups (e.g. calves) contribute their muscles as extra targets.
+    Each result gets `session_role` = "main" (a compound in the preset's
+    patterns) or "accessory".
+    """
+    movements = set(preset.get("movements") or [])
+    excluded = set(preset.get("exclude_movements") or [])
+    muscles = set(preset.get("muscles") or []) | set(tx.muscles_for_groups(extra_groups))
+    groups = set(preset.get("groups") or []) | {g for g in extra_groups if g in tx.MUSCLE_GROUPS}
+    ors = []
+    if movements:
+        ors.append({"movement": {"$in": sorted(movements)}})
+    if muscles:
+        ors.append({"muscles.primary": {"$in": sorted(muscles)}})
+    if groups:
+        ors.append({"primary_groups": {"$in": sorted(groups)}})
+    if not ors:
+        return []
+    clauses = [
+        {"$or": ors},
+        {"category": {"$nin": ["cardio", "mobility"]}},
+        _env_filter(env),
+    ]
+    if excluded:
+        clauses.append({"movement": {"$nin": sorted(excluded)}})
+    docs = list(db.workouts.find(_public_workout_query(_and(*clauses))).limit(500))
+
+    shown_groups = tx.groups_for_muscles(sorted(muscles)) + sorted(
+        g for g in groups if g not in tx.groups_for_muscles(sorted(muscles))
+    )
+    for doc in docs:
+        m = doc.get("muscles") or {}
+        primary_hits = set(m.get("primary") or []) & muscles
+        secondary_hits = set(m.get("secondary") or []) & muscles
+        main_pattern = doc.get("movement") in movements
+        doc["session_role"] = (
+            "main" if main_pattern and doc.get("mechanics") != "isolation" else "accessory"
+        )
+        doc["mix_score"] = (
+            (3 if main_pattern else 0)
+            + 2 * len(primary_hits)
+            + len(secondary_hits)
+            + (2 if groups & set(doc.get("primary_groups") or []) else 0)
+        )
+        pg = set(doc.get("primary_groups") or [])
+        mg = set(doc.get("muscle_groups") or [])
+        doc["mix_primary"] = [g for g in shown_groups if g in pg]
+        doc["mix_secondary"] = [g for g in shown_groups if g in mg and g not in pg]
+        _with_metadata_fallbacks(doc)
+    docs.sort(
+        key=lambda d: (
+            d["session_role"] != "main",
+            -d["mix_score"],
+            LEVEL_ORDER.get(d.get("level"), 3),
+            d.get("name") or "",
+        )
+    )
+    return docs[:limit]
+
+
 def _favorite_slugs(owner_key: str, item_type: str, limit: int = 0) -> List[str]:
     if not owner_key:
         return []
@@ -3359,6 +3425,9 @@ def favorite_toggle(item_type, slug):
 @app.route("/workouts/mix")
 def workouts_mix():
     env = _current_env()
+    preset = tx.SESSION_PRESETS.get(_norm_choice(request.args.get("p")))
+    if preset:
+        return _render_session(preset, env)
     groups = _selected_groups()
     group_cards = _group_cards(env)
 
@@ -3400,6 +3469,87 @@ def workouts_mix():
     )
 
 
+def _render_session(preset: dict, env: str):
+    """Mixer page for a session preset, e.g. /workouts/mix?p=pull-vertical&g=calves."""
+    split = next(s for s in tx.SESSION_SPLITS if s["key"] == preset["split"])
+    covered = set(tx.groups_for_muscles(preset.get("muscles") or [])) | set(
+        preset.get("groups") or []
+    )
+    addons = [g for g in tx.SESSION_ADDONS if g not in covered]
+    extra = [g for g in _selected_groups() if g in addons]
+    results = _session_results(preset, extra, env)
+
+    def session_url(key, groups):
+        return (
+            url_for("workouts_mix", p=key, g=groups) if groups else url_for("workouts_mix", p=key)
+        )
+
+    focus_options = [
+        {
+            "label": p["label"],
+            "href": session_url(p["key"], extra),
+            "active": p["key"] == preset["key"],
+        }
+        for p in split["presets"]
+    ]
+    addon_chips = []
+    for key in addons:
+        on = key in extra
+        nxt = [x for x in extra if x != key] if on else extra + [key]
+        addon_chips.append(
+            {
+                "key": key,
+                "label": tx.MUSCLE_GROUPS[key]["label"],
+                "color": tx.MUSCLE_GROUPS[key]["color"],
+                "selected": on,
+                "href": session_url(preset["key"], nxt),
+            }
+        )
+    title = (
+        preset["label"]
+        if preset["label"] == split["label"]
+        else (
+            split["label"]
+            if preset["label"].startswith("Full")
+            else f"{split['label']} · {preset['label']}"
+        )
+    )
+    return render_template(
+        "mix.html",
+        session=preset,
+        session_title=title,
+        focus_options=focus_options if len(focus_options) > 1 else [],
+        addon_chips=addon_chips,
+        env=env,
+        env_note=ENV_NOTES.get(env, ""),
+        environments=tx.ENVIRONMENTS,
+        env_extra={"p": preset["key"], "g": extra},
+        muscle_groups=tx.MUSCLE_GROUPS,
+        groups=[],
+        selected_labels=[title],
+        chips=[],
+        group_cards=[],
+        main_results=[r for r in results if r["session_role"] == "main"],
+        accessory_results=[r for r in results if r["session_role"] == "accessory"],
+        results=results,
+        saved_slugs=set(_favorite_slugs(_progress_owner_key(), "exercise")),
+    )
+
+
+def _home_splits(env: str) -> List[dict]:
+    """Session splits for Home, with exercise counts; empty presets and splits are hidden."""
+    splits = []
+    for split in tx.SESSION_SPLITS:
+        presets = []
+        for preset in split["presets"]:
+            n = len(_session_results(tx.SESSION_PRESETS[preset["key"]], [], env))
+            if n:
+                presets.append(dict(preset, count=n, href=url_for("workouts_mix", p=preset["key"])))
+        if presets:
+            splits.append({"key": split["key"], "label": split["label"], "presets": presets})
+    return splits
+
+
 # -----------------------------------------------------------------------------
 # Public pages
 # -----------------------------------------------------------------------------
@@ -3420,13 +3570,29 @@ def home():
     favorite_programs = _favorite_programs_for_viewer(owner_key, limit=6)
     continue_plan = _continue_plan_for_owner(owner_key)
     picks = CURATED.get("coach-picks") or {}
+
+    # Today's session (inline Muscle Mixer): which groups each available exercise trains,
+    # so the page can show live counts and hide presets with nothing behind them.
+    session_index = [
+        d.get("muscle_groups") or []
+        for d in db.workouts.find(
+            _public_workout_query(_env_filter(env)), {"muscle_groups": 1, "_id": 0}
+        )
+    ]
+    available = {gk for groups in session_index for gk in groups}
+    mix_chips = [
+        {"key": k, "label": g["label"], "color": g["color"], "available": k in available}
+        for k, g in tx.MUSCLE_GROUPS.items()
+    ]
     return render_template(
         "home.html",
         name="NFG",
         env=env,
-        env_note=ENV_NOTES.get(env, ""),
         environments=tx.ENVIRONMENTS,
-        group_cards=_group_cards(env),
+        splits=_home_splits(env),
+        mix_chips=mix_chips,
+        session_index=session_index,
+        mix_max=MIX_MAX_GROUPS,
         coach_picks=_exercises_by_slugs(picks.get("items", []), limit=12),
         coach_picks_meta=picks,
         saved_exercises=_saved_exercises(owner_key),
@@ -4015,12 +4181,12 @@ def workouts():
             }
         )
     total = db.workouts.count_documents(_public_workout_query(_env_filter(env)))
+    group_cards = [dict(card, blurb=tx.group_blurb(card["key"])) for card in _group_cards(env)]
     return render_template(
         "workouts.html",
         env=env,
-        env_note=ENV_NOTES.get(env, ""),
         environments=tx.ENVIRONMENTS,
-        group_cards=_group_cards(env),
+        group_cards=group_cards,
         equipment_tiles=equipment_tiles,
         level_tiles=level_tiles,
         total=total,

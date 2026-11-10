@@ -14,16 +14,18 @@
     </form>
   </header>
 
-  <section class="nfg-section">
-    {{ ui.env_switch(env, environments, "workouts") }}
-    <p class="nfg-env-note">{{ env_note }}</p>
-  </section>
+  {% if env != 'hybrid' %}
+    <div>
+      <a class="nfg-active-chip" href="{{ url_for('workouts', env='hybrid') }}"
+         aria-label="Show home and gym exercises">At {{ environments[env].label | lower }} {{ ui.icon('x-lg') }}</a>
+    </div>
+  {% endif %}
 
   <section class="nfg-section" id="muscles">
-    {{ ui.section_head(None, "Muscle groups", url_for("workouts_mix"), "Mix muscles") }}
+    {{ ui.section_head(None, "Muscle groups") }}
     <div class="nfg-group-grid">
       {% for card in group_cards %}
-        {{ ui.group_card(card, url_for("workouts_mix", g=card.key)) }}
+        {{ ui.group_card(card, url_for("workouts_browse", group=card.key)) }}
       {% endfor %}
     </div>
   </section>
