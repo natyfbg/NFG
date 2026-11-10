@@ -1,129 +1,53 @@
 {% extends "base.html" %}
+{% import "_components.html" as ui %}
+
 {% block title %}Exercises – NFG{% endblock %}
 
-{% block content %}
-  <div class="app-page">
-  <div class="app-page-header">
-    <div>
-      <div class="app-page-kicker">Exercise library</div>
-      <h1 class="page-title mb-1">Exercises</h1>
-      <p class="app-page-copy">Use the library to learn movements, form, and exercise guidance while following a program.</p>
+{% block page %}
+<div class="nfg-discover">
+
+  <header class="nfg-page-head">
+    <h1 class="nfg-page-title">Exercises</h1>
+    <form class="nfg-searchbar" action="{{ url_for('workouts_browse') }}" method="get" role="search">
+      {{ ui.icon('search') }}
+      <input type="search" name="q" placeholder="Search {{ total }} exercises" aria-label="Search exercises">
+    </form>
+  </header>
+
+  <section class="nfg-section">
+    {{ ui.env_switch(env, environments, "workouts") }}
+    <p class="nfg-env-note">{{ env_note }}</p>
+  </section>
+
+  <section class="nfg-section" id="muscles">
+    {{ ui.section_head(None, "Muscle groups", url_for("workouts_mix"), "Mix muscles") }}
+    <div class="nfg-group-grid">
+      {% for card in group_cards %}
+        {{ ui.group_card(card, url_for("workouts_mix", g=card.key)) }}
+      {% endfor %}
     </div>
-  </div>
+  </section>
 
-  <div class="row g-3">
-    <!-- Workout Levels -->
-    <div class="col-12 col-lg-6">
-      <div class="card app-surface app-list-card h-100">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <strong>Levels</strong>
-          <a class="small text-decoration-none" href="{{ url_for('workouts_browse') }}">View all</a>
-        </div>
-        <div class="list-group list-group-flush">
-          {% for level in workout_levels %}
-            <a class="list-group-item list-group-item-action app-list-row d-flex justify-content-between align-items-center"
-               href="{{ url_for('workouts_browse', level=level) }}">
-              <span>{{ level }}</span>
-              <span class="app-list-arrow">→</span>
-            </a>
-          {% endfor %}
-        </div>
+  {% if equipment_tiles %}
+    <section class="nfg-section" id="equipment">
+      {{ ui.section_head(None, "Equipment") }}
+      <div class="nfg-tile-grid">
+        {% for t in equipment_tiles %}{{ ui.tile(t.label, t.sub, t.href) }}{% endfor %}
       </div>
+    </section>
+  {% endif %}
+
+  <section class="nfg-section" id="levels">
+    {{ ui.section_head(None, "Level") }}
+    <div class="nfg-tile-grid is-three">
+      {% for t in level_tiles %}{{ ui.tile(t.label, t.sub, t.href) }}{% endfor %}
     </div>
+  </section>
 
-    <!-- Body Part -->
-    <div class="col-12 col-lg-6">
-      <div class="card app-surface app-list-card h-100">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <strong>Body part</strong>
-          <a class="small text-decoration-none" href="{{ url_for('body_parts_index') }}">View all</a>
-        </div>
-        <div class="list-group list-group-flush">
-          {% for part in body_parts_featured %}
-            <a class="list-group-item list-group-item-action app-list-row d-flex justify-content-between align-items-center"
-               href="{{ url_for('workouts_browse', body=part) }}">
-              <span>{{ part }}</span>
-              <span class="app-list-arrow">→</span>
-            </a>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
+  <section class="nfg-section nfg-browse-links">
+    <a class="nfg-browse-link" href="{{ url_for('workouts_browse') }}">Browse all exercises {{ ui.icon('arrow-right') }}</a>
+    <a class="nfg-browse-link" href="{{ url_for('workouts_all') }}">A–Z list {{ ui.icon('arrow-right') }}</a>
+  </section>
 
-    <!-- Workout Style -->
-    <div class="col-12 col-lg-6">
-      <div class="card app-surface app-list-card h-100">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <strong>Style</strong>
-          <a class="small text-decoration-none" href="{{ url_for('styles_index') }}">View all</a>
-        </div>
-        <div class="list-group list-group-flush">
-          {% for s in workout_styles_featured %}
-            <a class="list-group-item list-group-item-action app-list-row d-flex justify-content-between align-items-center"
-               href="{{ url_for('workouts_browse', style=s) }}">
-              <span>{{ s }}</span>
-              <span class="app-list-arrow">→</span>
-            </a>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-
-    <!-- All Workouts -->
-    <div class="col-12 col-lg-6">
-      <div class="card app-surface app-list-card h-100">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <strong>All exercises (A–Z)</strong>
-          <a class="small text-decoration-none" href="{{ url_for('workouts_browse') }}">View all</a>
-        </div>
-
-        {% if all_workouts %}
-          <div class="list-group list-group-flush">
-            {% for w in all_workouts %}
-              <a class="list-group-item list-group-item-action app-list-row d-flex justify-content-between align-items-center"
-                 href="{{ url_for('workout_detail', slug=w.slug) }}">
-                <span>{{ w.name }}</span>
-                <span class="app-list-arrow">→</span>
-              </a>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div class="card-body">
-            <p class="text-muted mb-0">No exercises yet.</p>
-          </div>
-        {% endif %}
-
-        <div class="card-footer text-end">
-          <a class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact" href="{{ url_for('workouts_all') }}">Browse all</a>
-        </div>
-      </div>
-    </div>
-  </div>
-  </div>
-{% endblock %}
-
-{% block sidebar %}
-  <div class="app-sidebar-stack">
-    <div class="card app-surface app-list-card">
-      <div class="card-header">
-        <strong>Quick options</strong>
-      </div>
-
-      <div class="list-group list-group-flush">
-        {% for item in quick_options %}
-          <a class="list-group-item list-group-item-action app-list-row d-flex justify-content-between align-items-center"
-             href="{{ item.url }}">
-            <span>{{ item.label }}</span>
-            <span class="app-list-arrow">→</span>
-          </a>
-        {% endfor %}
-      </div>
-
-      <div class="card-body">
-        <small class="text-muted">
-          Use the bottom nav first. Swipe is available across the main top-level pages when you want to move faster.
-        </small>
-      </div>
-    </div>
-  </div>
+</div>
 {% endblock %}

@@ -50,6 +50,10 @@ breathing: Exhale as you press.   # optional
 regressions: [incline-push-up]    # optional: easier variations (slugs)
 progressions: [barbell-bench-press]
 youtube_id: ""                    # 11-character id, optional
+videos:                           # optional; tiny icons under the image link here
+  youtube: https://www.youtube.com/watch?v=...
+  instagram: https://www.instagram.com/reel/...
+  tiktok: https://www.tiktok.com/@nfg/video/...
 images: []                        # optional; omit to use the generated placeholder
 tags: [push, chest]
 notes: free-form authoring notes  # never shown or synced
@@ -68,3 +72,18 @@ notes: free-form authoring notes  # never shown or synced
 Muscle groups (Chest, Back, Shoulders, …, Cardio, Mobility) and training
 environments (Home / Gym / Hybrid) are derived from these; don't set them by hand.
 The full definitions live in `backend/taxonomy.py`.
+
+## Images
+
+Exercise images are **4:5 portrait, 1080 × 1350 px** (JPEG or WebP, under ~250 KB),
+with the movement centred and a little margin on every side, since cards crop
+slightly. Put them in `static/img/exercises/` (e.g. `push-up-1.webp`) and list them:
+
+```yaml
+images:
+  - /static/img/exercises/push-up-1.webp
+  - /static/img/exercises/push-up-2.webp
+```
+
+Until then each exercise uses its generated placeholder
+(`static/img/exercises/<slug>.svg`, coloured by muscle group).

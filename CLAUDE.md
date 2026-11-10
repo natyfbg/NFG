@@ -99,6 +99,11 @@ as committer, so GitHub shows them as Verified.
   as ui %}`). Full-width pages override `{% block page %}` in `base.html`.
 - Grid layouts containing rails need `min-width: 0` on grid children, or the rail's
   content stretches the page wider than the phone screen.
+- **Bottom sheets / modals go in `{% block overlays %}`**, never inside `page`/`content`:
+  `#page-shell` has a transform (swipe animation), which traps `position: fixed`
+  children inside it and under the bottom nav.
+- Icons: `ui.icon('name')` inlines `templates/icons/<name>.svg` (Bootstrap Icons, MIT,
+  copied from the npm package). Add new ones by copying from `bootstrap-icons`.
 - **`workouts` collection = the exercise library** (single exercises). Do not rename it
   or its `/workouts/<slug>` URLs; program items reference it by `workout_id`/`workout_slug`.
 - **`is_favorite` on a workout is a global admin flag**, not a per-user favorite.
@@ -151,6 +156,20 @@ as committer, so GitHub shows them as Verified.
   use `program_favorites`.
 - 2026-11-08 — Training environment preference lives in the `nfg_env` cookie
   (home/gym/hybrid; hybrid = no filtering).
+- 2026-11-10 — Design language: cream surfaces, near-black text, muscle-group colour
+  as the accent (tiles, chips, step numbers), **brand gold for primary buttons**
+  (matches the black/gold logo). Lively, not cartoonish; no intro paragraphs.
+- 2026-11-10 — Exercise images are 4:5 (1080×1350). Placeholders carry no exercise
+  name and keep the bottom-right corner free for the "?" (how-to) button.
+- 2026-11-10 — Exercise page: chips row replaces the Overview block; instructions
+  live in a tabbed bottom sheet (Steps · Cues · Mistakes · Safety · Video) opened by
+  the "?" on the image or the "How to do it" button; per-exercise `videos:` links
+  (YouTube/Instagram/TikTok, https + allow-listed hosts only) show as small icons.
+- 2026-11-10 — One global search (top bar → `/search`: exercises, programs, recipes).
+  Browse has its own compact search + Filters sheet; filters use taxonomy keys
+  (`group`, `eq`, `env`), legacy label params still work.
+- 2026-11-10 — Brand assets in `static/img/brand/` (see its README); navbar logo sits
+  on a cream tile because the black glyph vanishes on the dark top bar.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
@@ -164,5 +183,6 @@ as committer, so GitHub shows them as Verified.
 4. ✅ Home v2: continue training (with %), environment switch, muscle-group tiles,
    Muscle Mixer v1 (`/workouts/mix`), Coach's Picks, saved exercises, programs rail
 5. Content batches 2+ (Shoulders/Arms, Legs/Glutes, Core, Full body/Cardio/Mobility)
-6. Browse + exercise detail redesign (card macro replacing the 4 duplicated card blocks,
-   related-exercise cards), recently viewed, equipment chips in Quick setup
+6. ✅ App shell + Exercises/browse/search/detail redesign (2026-11-10)
+7. Next: recently viewed, equipment chips in Quick setup, programs content
+   (8 Week Challenge weeks/days), optional native dark theme

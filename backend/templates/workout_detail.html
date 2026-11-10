@@ -1,379 +1,175 @@
 {% extends "base.html" %}
+{% import "_components.html" as ui %}
+
 {% block title %}{{ w.name }} – NFG{% endblock %}
 
-{% block sidebar %}
-  {% include "quick_options.html" %}
-{% endblock %}
+{% block page %}
+{% set images = w.images if w.images else [url_for('static', filename='img/exercise-placeholder.svg')] %}
+<article class="nfg-exercise" style="--accent: {{ accent.color }};">
 
-{% block content %}
-{% set gallery = (w.images if w.images else []) %}
-{% if w.muscle_image and (w.muscle_image not in gallery) %}
-  {% set gallery = gallery + [w.muscle_image] %}
-{% endif %}
-{% if not gallery or gallery|length == 0 %}
-  {% set gallery = [url_for('static', filename='img/exercise-placeholder.svg')] %}
-{% endif %}
-{% set cid = 'detail-car-' ~ w.slug %}
-{% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
-{% set info_copy = w.info or w.description or w.notes %}
-{% set has_tips = w.tips and w.tips|length %}
+  <div class="nfg-ex-topline">
+    {% if back_to_week_url %}
+      <a class="nfg-back" href="{{ back_to_week_url }}">{{ ui.icon('chevron-left') }} Back to your week</a>
+    {% else %}
+      <a class="nfg-back" href="{{ url_for('workouts') }}">{{ ui.icon('chevron-left') }} Exercises</a>
+    {% endif %}
+  </div>
 
-<div class="app-page workout-detail-page">
-  <div class="app-page-header workout-detail-header">
-    <div>
-      <div class="app-page-kicker">Exercise guidance</div>
+  <div class="nfg-ex-layout">
+    <div class="nfg-ex-media-col">
+      <div class="nfg-ex-media">
+        <div class="nfg-gallery" data-no-page-swipe>
+          {% for img in images %}
+            <img src="{{ img }}" alt="{{ w.name }}{% if images|length > 1 %} — image {{ loop.index }}{% endif %}"
+                 {% if not loop.first %}loading="lazy"{% endif %}>
+          {% endfor %}
+        </div>
+        {% if images|length > 1 %}<span class="nfg-gallery-count">{{ images|length }} photos · swipe</span>{% endif %}
+        {% if has_howto %}
+          <button class="nfg-help-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#howToSheet"
+                  aria-controls="howToSheet" aria-label="How to do {{ w.name }}">{{ ui.icon('question-lg') }}</button>
+        {% endif %}
+      </div>
+
+      {% if video_links %}
+        <div class="nfg-video-links" aria-label="Watch {{ w.name }}">
+          <span class="nfg-video-label">Watch</span>
+          {% for v in video_links %}
+            <a class="nfg-video-link is-{{ v.key }}" href="{{ v.url }}" target="_blank" rel="noopener noreferrer"
+               aria-label="{{ w.name }} on {{ v.label }}" title="{{ v.label }}">{{ ui.icon(v.key) }}</a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="nfg-ex-info">
       {% if w.publish_status == 'draft' %}
         <span class="badge text-bg-warning mb-2">Draft · only visible to admin</span>
       {% endif %}
       <div class="nfg-title-row">
-        <h1 class="page-title mb-1">{{ w.name }}</h1>
+        <h1 class="nfg-ex-title">{{ w.name }}</h1>
         <form method="post" action="{{ url_for('favorite_toggle', item_type='exercise', slug=w.slug) }}" class="nfg-save-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="next" value="{{ request.full_path if request.query_string else request.path }}">
-          <button type="submit" class="nfg-save-btn{% if is_saved %} is-saved{% endif %}" aria-pressed="{{ 'true' if is_saved else 'false' }}">
-            {% if is_saved %}♥ Saved{% else %}♡ Save{% endif %}
+          <button type="submit" class="nfg-save-btn{% if is_saved %} is-saved{% endif %}" aria-pressed="{{ 'true' if is_saved else 'false' }}"
+                  aria-label="{{ 'Saved — tap to remove' if is_saved else 'Save exercise' }}">
+            {{ ui.icon('heart-fill' if is_saved else 'heart') }}<span>{{ 'Saved' if is_saved else 'Save' }}</span>
           </button>
         </form>
       </div>
-      <p class="app-page-copy">Use this page to learn the movement, check form cues, and reference the exercise while following your plan.</p>
 
-      <div class="workout-detail-chip-row">
-        {% if w.level %}<span class="flow-chip">{{ w.level }}</span>{% endif %}
-        {% if w.style %}<span class="flow-chip">{{ w.style }}</span>{% endif %}
-        {% if parts %}<span class="flow-chip">{{ parts|join(', ') }}</span>{% endif %}
-        {% if w.movement_pattern %}<span class="flow-chip">{{ w.movement_pattern }}</span>{% endif %}
-      </div>
-    </div>
-
-    <div class="d-flex gap-2 flex-wrap justify-content-end">
-      {% if back_to_week_url %}
-        <a class="btn btn-sm btn-outline-secondary app-btn-secondary app-btn-compact" href="{{ back_to_week_url }}">Back to week</a>
-      {% endif %}
-      <a class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact" href="{{ url_for('workouts_browse') }}">Back to browse</a>
-    </div>
-  </div>
-
-  <div class="workout-detail-layout">
-    <section class="card app-surface workout-detail-media-panel">
-      <div class="card-body">
-        <div class="workout-detail-media-stack">
-          {% if w.youtube_id %}
-            <div>
-              <div class="workout-detail-section-label">Demo video</div>
-              <div class="ratio ratio-16x9 workout-detail-video-frame">
-                <iframe
-                  src="https://www.youtube.com/embed/{{ w.youtube_id }}"
-                  title="YouTube video"
-                  allowfullscreen
-                  loading="lazy"
-                  referrerpolicy="no-referrer-when-downgrade"></iframe>
-              </div>
-              <div class="mt-2">
-                <a class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact"
-                   href="https://www.youtube.com/watch?v={{ w.youtube_id }}"
-                   target="_blank"
-                   rel="noopener">
-                  Watch on YouTube
-                </a>
-              </div>
-            </div>
+      <div class="nfg-ex-chips">
+        {% for m in muscle_chips %}
+          {% if m.href %}
+            <a class="nfg-mchip{% if m.primary %} is-primary{% endif %}" style="--group-color: {{ m.color }};" href="{{ m.href }}">{{ m.label }}</a>
+          {% else %}
+            <span class="nfg-mchip{% if m.primary %} is-primary{% endif %}" style="--group-color: {{ m.color }};">{{ m.label }}</span>
           {% endif %}
-
-          <div>
-            <div class="workout-detail-section-label">Images</div>
-            <div class="workout-detail-gallery">
-              <div id="{{ cid }}" class="carousel slide workout-detail-carousel h-100" data-bs-ride="false" data-bs-touch="true" aria-label="Gallery for {{ w.name }}">
-                <div class="carousel-inner h-100">
-                  {% for img in gallery %}
-                    <div class="carousel-item {% if loop.first %}active{% endif %} h-100">
-                      <img src="{{ img }}"
-                           alt="{{ w.name }} image {{ loop.index }}"
-                           class="d-block w-100 h-100"
-                           {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
-                           decoding="async">
-                    </div>
-                  {% endfor %}
-                </div>
-
-                {% if gallery|length > 1 %}
-                  <button class="carousel-control-prev" type="button" data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous image">
-                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                  </button>
-                  <button class="carousel-control-next" type="button" data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next image">
-                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                  </button>
-                {% endif %}
-              </div>
-            </div>
-
-            {% if gallery|length > 1 %}
-              <div class="workout-detail-thumbscroller mt-2" id="{{ cid }}-thumbs">
-                {% for img in gallery %}
-                  <img src="{{ img }}"
-                       data-bs-target="#{{ cid }}"
-                       data-bs-slide-to="{{ loop.index0 }}"
-                       class="border workout-detail-thumb"
-                       alt="Thumbnail {{ loop.index }}"
-                       loading="lazy"
-                       decoding="async">
-                {% endfor %}
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <div class="workout-detail-stack">
-      <section class="card app-surface">
-        <div class="card-body">
-          <div class="workout-detail-section-label">Overview</div>
-          <div class="workout-detail-meta-grid">
-            {% if w.level %}
-              <div class="workout-detail-meta-item">
-                <div class="workout-detail-meta-label">Level</div>
-                <a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=w.level) }}">{{ w.level }}</a>
-              </div>
-            {% endif %}
-            {% if w.difficulty_tier %}
-              <div class="workout-detail-meta-item">
-                <div class="workout-detail-meta-label">Difficulty tier</div>
-                <a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', difficulty=w.difficulty_tier) }}">{{ w.difficulty_tier }}</a>
-              </div>
-            {% endif %}
-            {% if parts %}
-              <div class="workout-detail-meta-item">
-                <div class="workout-detail-meta-label">Body parts</div>
-                <div class="workout-detail-meta-tags">
-                  {% for p in parts %}
-                    <a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', body=p) }}">{{ p }}</a>
-                  {% endfor %}
-                </div>
-              </div>
-            {% endif %}
-            {% if w.primary_muscle %}
-              <div class="workout-detail-meta-item">
-                <div class="workout-detail-meta-label">Primary muscle</div>
-                <a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', body=w.primary_muscle) }}">{{ w.primary_muscle }}</a>
-              </div>
-            {% endif %}
-            {% if w.movement_pattern %}
-              <div class="workout-detail-meta-item">
-                <div class="workout-detail-meta-label">Movement</div>
-                <a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', movement=w.movement_pattern) }}">{{ w.movement_pattern }}</a>
-              </div>
-            {% endif %}
-            {% if w.equipment %}
-              <div class="workout-detail-meta-item">
-                <div class="workout-detail-meta-label">Equipment</div>
-                <a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', equipment=w.equipment) }}">{{ w.equipment }}</a>
-              </div>
-            {% endif %}
-            {% if w.style %}
-              <div class="workout-detail-meta-item">
-                <div class="workout-detail-meta-label">Style</div>
-                <a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', style=w.style) }}">{{ w.style }}</a>
-              </div>
-            {% endif %}
-            {% if w.rating is defined and w.rating is not none %}
-              <div class="workout-detail-meta-item">
-                <div class="workout-detail-meta-label">Rating</div>
-                <span class="flow-chip">★ {{ '%.1f'|format(w.rating) }}</span>
-              </div>
-            {% endif %}
-            {% if w.tags and w.tags|length %}
-              <div class="workout-detail-meta-item workout-detail-meta-item-wide">
-                <div class="workout-detail-meta-label">Tags</div>
-                <div class="workout-detail-meta-tags">
-                  {% for t in w.tags %}
-                    <a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', q=t) }}">{{ t }}</a>
-                  {% endfor %}
-                </div>
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      </section>
-
-      {% if info_copy %}
-        <section class="card app-surface">
-          <div class="card-body">
-            <div class="workout-detail-section-label">Description</div>
-            <div class="workout-detail-copy">{{ info_copy }}</div>
-          </div>
-        </section>
-      {% endif %}
-
-      {% set how = w.instructions if w.instructions is defined and w.instructions else {} %}
-      {% if how.setup or how.steps or how.breathing %}
-        <section class="card app-surface">
-          <div class="card-body">
-            <div class="workout-detail-section-label">How to do it</div>
-            {% if how.setup %}
-              <div class="workout-detail-meta-label mt-1">Setup</div>
-              <ul class="workout-detail-tip-list">
-                {% for line in how.setup %}<li>{{ line }}</li>{% endfor %}
-              </ul>
-            {% endif %}
-            {% if how.steps %}
-              <div class="workout-detail-meta-label mt-2">Steps</div>
-              <ol class="workout-detail-tip-list">
-                {% for line in how.steps %}<li>{{ line }}</li>{% endfor %}
-              </ol>
-            {% endif %}
-            {% if how.breathing %}
-              <div class="workout-detail-meta-label mt-2">Breathing</div>
-              <div class="workout-detail-copy">{{ how.breathing }}</div>
-            {% endif %}
-          </div>
-        </section>
-      {% endif %}
-
-      {% if has_tips %}
-        <section class="card app-surface">
-          <div class="card-body">
-            <div class="workout-detail-section-label">Form cues</div>
-            <ul class="workout-detail-tip-list">
-              {% for tip in w.tips %}
-                <li>{{ tip }}</li>
-              {% endfor %}
-            </ul>
-          </div>
-        </section>
-      {% endif %}
-
-      {% if w.mistakes is defined and w.mistakes %}
-        <section class="card app-surface">
-          <div class="card-body">
-            <div class="workout-detail-section-label">Common mistakes</div>
-            <ul class="workout-detail-tip-list">
-              {% for line in w.mistakes %}<li>{{ line }}</li>{% endfor %}
-            </ul>
-          </div>
-        </section>
-      {% endif %}
-
-      {% if w.safety is defined and w.safety %}
-        <section class="card app-surface">
-          <div class="card-body">
-            <div class="workout-detail-section-label">Safety</div>
-            <ul class="workout-detail-tip-list">
-              {% for line in w.safety %}<li>{{ line }}</li>{% endfor %}
-            </ul>
-          </div>
-        </section>
-      {% endif %}
-    </div>
-  </div>
-
-  {% if related and related|length %}
-    <section>
-      <div class="app-section-head">
-        <div>
-          <div class="app-section-kicker">Keep exploring</div>
-          <h2 class="h5 mb-1">Related Exercises</h2>
-          <p class="text-muted small mb-0">Similar movements and categories to keep your substitutions intentional.</p>
-        </div>
-      </div>
-
-      <div class="workout-library-grid">
-        {% for r in related %}
-          {% set r_parts = r.body_parts if r.body_parts else ([r.body_part] if r.body_part else []) %}
-          {% set thumbs = (r.images if r.images else []) %}
-          {% if r.muscle_image and (r.muscle_image not in thumbs) %}
-            {% set thumbs = thumbs + [r.muscle_image] %}
-          {% endif %}
-          {% if not thumbs or thumbs|length == 0 %}
-            {% set thumbs = [url_for('static', filename='img/exercise-placeholder.svg')] %}
-          {% endif %}
-          {% if thumbs|length == 1 %}
-            {% set thumbs = thumbs + [thumbs[0]] %}
-          {% endif %}
-          {% set rcid = 'rel-' ~ r.slug %}
-          {% set r_body_label = r_parts|join(', ') if r_parts else (r.primary_muscle or 'Full body') %}
-
-          <article class="card workout-library-card js-workout-card" data-href="{{ url_for('workout_detail', slug=r.slug) }}">
-            <div class="workout-library-media workout-library-media-short">
-              <div id="{{ rcid }}" class="carousel slide workout-library-carousel" data-bs-ride="false" data-bs-touch="true" aria-label="Images for {{ r.name }}">
-                <div class="carousel-inner">
-                  {% for img in thumbs %}
-                    <div class="carousel-item {% if loop.first %}active{% endif %}">
-                      <img src="{{ img }}" alt="{{ r.name }} image {{ loop.index }}" class="d-block w-100" loading="lazy" decoding="async">
-                    </div>
-                  {% endfor %}
-                </div>
-                {% if thumbs|length > 1 %}
-                  <button class="carousel-control-prev" type="button" data-bs-target="#{{ rcid }}" data-bs-slide="prev" aria-label="Previous image">
-                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                  </button>
-                  <button class="carousel-control-next" type="button" data-bs-target="#{{ rcid }}" data-bs-slide="next" aria-label="Next image">
-                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                  </button>
-                {% endif %}
-              </div>
-            </div>
-
-            <div class="card-body workout-library-body">
-              <div class="workout-library-title-row">
-                <div>
-                  <h3 class="workout-library-title">{{ r.name }}</h3>
-                  <div class="workout-library-subtitle">{{ r_body_label }}</div>
-                </div>
-                {% if r.level %}
-                  <span class="flow-chip">{{ r.level }}</span>
-                {% endif %}
-              </div>
-
-              <div class="workout-library-meta">
-                {% if r.style %}<span class="flow-chip">{{ r.style }}</span>{% endif %}
-                {% if r.movement_pattern %}<span class="flow-chip">{{ r.movement_pattern }}</span>{% endif %}
-                {% if r.equipment %}<span class="flow-chip">{{ r.equipment }}</span>{% endif %}
-              </div>
-
-              <div class="workout-library-actions">
-                <a class="btn btn-sm btn-dark app-btn-primary app-btn-compact" href="{{ url_for('workout_detail', slug=r.slug) }}">View exercise</a>
-              </div>
-            </div>
-          </article>
         {% endfor %}
+        {% if w.equipment_label or w.equipment %}<span class="nfg-mchip is-neutral">{{ w.equipment_label or w.equipment }}</span>{% endif %}
+        {% if w.level %}<span class="nfg-mchip is-neutral">{{ w.level }}</span>{% endif %}
       </div>
+
+      {% if w.info %}<p class="nfg-ex-summary">{{ w.info }}</p>{% endif %}
+
+      {% if has_howto %}
+        <button class="nfg-btn nfg-howto-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#howToSheet"
+                aria-controls="howToSheet">How to do it</button>
+      {% endif %}
+
+      {% if easier or harder %}
+        <div class="nfg-ex-variations">
+          {% for x in easier %}
+            <a class="nfg-variation" href="{{ url_for('workout_detail', slug=x.slug) }}">
+              <span class="nfg-variation-tag">Easier</span><span class="nfg-variation-name">{{ x.name }}</span>{{ ui.icon('chevron-right') }}
+            </a>
+          {% endfor %}
+          {% for x in harder %}
+            <a class="nfg-variation" href="{{ url_for('workout_detail', slug=x.slug) }}">
+              <span class="nfg-variation-tag is-harder">Harder</span><span class="nfg-variation-name">{{ x.name }}</span>{{ ui.icon('chevron-right') }}
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if related %}
+    <section class="nfg-more">
+      <h2 class="nfg-more-title">More like this</h2>
+      {% call ui.rail() %}
+        {% for r in related %}{{ ui.exercise_mini_card(r) }}{% endfor %}
+      {% endcall %}
     </section>
   {% endif %}
-</div>
+</article>
+{% endblock %}
 
-<script>
-  document.querySelectorAll('.workout-detail-thumb[data-bs-target][data-bs-slide-to]').forEach((el) => {
-    el.addEventListener('click', function () {
-      const target = this.dataset.bsTarget;
-      const idx = parseInt(this.dataset.bsSlideTo, 10);
-      const car = document.querySelector(target);
-      if (!car) return;
-      const instance = bootstrap.Carousel.getOrCreateInstance(car);
-      instance.to(idx);
+{% block overlays %}
+{% set how = how or {} %}
+{% if has_howto %}
+  {% set tabs = [] %}
+  {% if how.setup or how.steps or how.breathing %}{% set _ = tabs.append(('steps', 'Steps')) %}{% endif %}
+  {% if w.tips %}{% set _ = tabs.append(('cues', 'Cues')) %}{% endif %}
+  {% if w.mistakes %}{% set _ = tabs.append(('mistakes', 'Mistakes')) %}{% endif %}
+  {% if w.safety %}{% set _ = tabs.append(('safety', 'Safety')) %}{% endif %}
+  {% if w.youtube_id %}{% set _ = tabs.append(('video', 'Video')) %}{% endif %}
+
+  <div class="offcanvas offcanvas-bottom nfg-sheet nfg-howto" tabindex="-1" id="howToSheet" aria-labelledby="howToTitle"
+       style="--accent: {{ accent.color }};">
+    <div class="nfg-sheet-head">
+      <div>
+        <div class="nfg-ex-kicker">How to do it</div>
+        <h2 class="nfg-sheet-title" id="howToTitle">{{ w.name }}</h2>
+      </div>
+      <button type="button" class="nfg-iconbtn is-dark" data-bs-dismiss="offcanvas" aria-label="Close">{{ ui.icon('x-lg') }}</button>
+    </div>
+
+    <div class="nfg-tabs" role="tablist" data-no-page-swipe>
+      {% for key, label in tabs %}
+        <button class="nfg-tab{% if loop.first %} active{% endif %}" id="tab-{{ key }}" type="button" role="tab"
+                data-bs-toggle="tab" data-bs-target="#pane-{{ key }}" aria-controls="pane-{{ key }}"
+                aria-selected="{{ 'true' if loop.first else 'false' }}">{{ label }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="nfg-sheet-body tab-content">
+      {% for key, label in tabs %}
+        <div class="tab-pane fade{% if loop.first %} show active{% endif %}" id="pane-{{ key }}" role="tabpanel"
+             aria-labelledby="tab-{{ key }}" tabindex="0">
+          {% if key == 'steps' %}
+            {% if how.setup %}
+              <h3 class="nfg-howto-sub">Setup</h3>
+              <ul class="nfg-howto-list">{% for line in how.setup %}<li>{{ line }}</li>{% endfor %}</ul>
+            {% endif %}
+            {% if how.steps %}
+              <h3 class="nfg-howto-sub">Steps</h3>
+              <ol class="nfg-howto-steps">{% for line in how.steps %}<li>{{ line }}</li>{% endfor %}</ol>
+            {% endif %}
+            {% if how.breathing %}<p class="nfg-howto-note"><strong>Breathing:</strong> {{ how.breathing }}</p>{% endif %}
+          {% elif key == 'cues' %}
+            <ul class="nfg-howto-list is-cues">{% for line in w.tips %}<li>{{ line }}</li>{% endfor %}</ul>
+          {% elif key == 'mistakes' %}
+            <ul class="nfg-howto-list is-mistakes">{% for line in w.mistakes %}<li>{{ line }}</li>{% endfor %}</ul>
+          {% elif key == 'safety' %}
+            <ul class="nfg-howto-list is-safety">{% for line in w.safety %}<li>{{ line }}</li>{% endfor %}</ul>
+          {% elif key == 'video' %}
+            <div class="nfg-video-frame">
+              <iframe data-src="https://www.youtube-nocookie.com/embed/{{ w.youtube_id }}" title="{{ w.name }} video"
+                      allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  <script>
+    /* Load the YouTube embed only when its tab is opened. */
+    document.addEventListener('shown.bs.tab', function (e) {
+      if (!e.target || e.target.id !== 'tab-video') return;
+      var frame = document.querySelector('#pane-video iframe[data-src]');
+      if (frame && !frame.src) frame.src = frame.dataset.src;
     });
-  });
-
-  (function(){
-    const LOCK_W = 380;
-    function updateLock(){
-      const lock = window.innerWidth <= LOCK_W;
-      document.querySelectorAll('.workout-detail-carousel, .workout-library-carousel').forEach(carEl => {
-        const inst = bootstrap.Carousel.getOrCreateInstance(carEl, { ride:false });
-        if (lock){
-          carEl.classList.add('locked');
-          try { inst.pause(); } catch(e){}
-          carEl.dataset.bsTouch = "false";
-        } else {
-          carEl.classList.remove('locked');
-          carEl.dataset.bsTouch = "true";
-        }
-      });
-    }
-
-    let t;
-    window.addEventListener('resize', ()=>{ clearTimeout(t); t = setTimeout(updateLock, 120); }, { passive:true });
-    document.addEventListener('DOMContentLoaded', updateLock);
-    if (document.readyState !== 'loading') updateLock();
-  })();
-</script>
+  </script>
+{% endif %}
 {% endblock %}

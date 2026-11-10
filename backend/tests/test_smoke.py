@@ -7,8 +7,6 @@ PUBLIC_PAGES = [
     "/about",
     "/workouts",
     "/workouts/all",
-    "/workouts/styles",
-    "/workouts/body-parts",
     "/workouts/browse",
     "/workouts/browse?sort=favorites",
     "/recipes",
@@ -41,6 +39,15 @@ def test_workout_detail_renders(client, nfg_app):
 
 def test_unknown_workout_is_404(client):
     assert client.get("/workouts/does-not-exist").status_code == 404
+
+
+@pytest.mark.parametrize(
+    "path, target", [("/workouts/styles", "#equipment"), ("/workouts/body-parts", "#muscles")]
+)
+def test_old_index_pages_redirect_to_exercises_sections(client, path, target):
+    resp = client.get(path)
+    assert resp.status_code == 302
+    assert resp.headers["Location"].endswith("/workouts" + target)
 
 
 def test_hub_root_redirects_to_level_picker(client):

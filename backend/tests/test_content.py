@@ -167,7 +167,10 @@ def test_optional_text_fields_are_not_blanked():
 def test_placeholder_svg_is_abstract_and_escaped():
     svg = render_exercise_svg({**VALID, "name": "Press & <Hold>"})
     assert svg.startswith("<svg") and "Press &amp; &lt;Hold&gt;" in svg
-    assert "Demo image coming soon" in svg
+    assert "Demo coming soon" in svg
+    assert 'viewBox="0 0 1080 1350"' in svg  # 4:5, the standard exercise image size
+    # The name only appears in the accessible label, never drawn on the image.
+    assert svg.count("Press &amp; &lt;Hold&gt;") == 1
 
 
 # --------------------------------------------------------------------------
@@ -342,7 +345,7 @@ def test_detail_page_renders_instructions(client, db):
         "Set the bench flat.",
         "Press up.",
         "Breathe out as you press.",
-        "Common mistakes",
+        "Mistakes",
         "Bouncing the weight.",
         "Use a spotter.",
     ):

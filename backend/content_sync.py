@@ -34,6 +34,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from urllib.parse import urlparse
 
 import taxonomy as tx
 import yaml
@@ -45,6 +46,11 @@ PLACEHOLDER_URL = "/static/img/exercises/{slug}.svg"
 
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 YOUTUBE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+VIDEO_HOSTS = {
+    "youtube": ("youtube.com", "youtu.be"),
+    "instagram": ("instagram.com",),
+    "tiktok": ("tiktok.com",),
+}
 # Slugs that collide with fixed /workouts/<...> routes.
 RESERVED_SLUGS = {"all", "styles", "body-parts", "browse", "mix"}
 
@@ -61,6 +67,7 @@ OPTIONAL_KEYS = (
         "style",
         "youtube_id",
         "images",
+        "videos",
         "notes",  # free-form authoring notes; never synced
     )
     + TEXT_LIST_KEYS
@@ -80,6 +87,16 @@ class ContentError(Exception):
 # -----------------------------------------------------------------------------
 def _is_text_list(value) -> bool:
     return isinstance(value, list) and all(isinstance(v, str) and v.strip() for v in value)
+
+
+def _is_video_url(platform: str, url) -> bool:
+    if not isinstance(url, str):
+        return False
+    parsed = urlparse(url.strip())
+    host = (parsed.hostname or "").lower()
+    return parsed.scheme == "https" and any(
+        host == h or host.endswith("." + h) for h in VIDEO_HOSTS[platform]
+    )
 
 
 def validate_exercise(raw, filename: str) -> Tuple[List[str], List[str]]:
@@ -168,6 +185,14 @@ def validate_exercise(raw, filename: str) -> Tuple[List[str], List[str]]:
             err(f"{key} must be a list of exercise slugs")
     if "images" in raw and not _is_text_list(raw["images"]):
         err("images must be a list of image paths/URLs")
+    videos = raw.get("videos")
+    if videos is not None:
+        if not isinstance(videos, dict) or set(videos) - set(VIDEO_HOSTS):
+            err(f"videos must map {sorted(VIDEO_HOSTS)} to links")
+        else:
+            for platform, url in videos.items():
+                if not _is_video_url(platform, url):
+                    err(f"videos.{platform} must be an https link on {VIDEO_HOSTS[platform][0]}")
     youtube_id = raw.get("youtube_id")
     if youtube_id and not (isinstance(youtube_id, str) and YOUTUBE_ID_RE.match(youtube_id)):
         err("youtube_id must be the 11-character video id (or empty)")
@@ -295,6 +320,8 @@ def build_doc(ex: dict) -> dict:
             doc[key] = list(ex[key])
     if "youtube_id" in ex:
         doc["youtube_id"] = ex["youtube_id"] or ""
+    if "videos" in ex:
+        doc["videos"] = {k: v.strip() for k, v in ex["videos"].items()}
     return doc
 
 

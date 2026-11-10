@@ -145,7 +145,7 @@ def test_guest_can_save_and_unsave_exercise(client, library):
     assert resp.status_code == 302
     assert library.favorites.count_documents({"viewer_id": "guest-1"}) == 1
     assert "BW Press" in client.get("/").get_data(as_text=True).split("Saved")[-1]
-    assert "♥ Saved" in client.get("/workouts/bw-press").get_data(as_text=True)
+    assert "nfg-save-btn is-saved" in client.get("/workouts/bw-press").get_data(as_text=True)
 
     client.post("/favorites/exercise/bw-press/toggle")
     assert library.favorites.count_documents({"viewer_id": "guest-1"}) == 0

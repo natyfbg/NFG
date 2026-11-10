@@ -1,99 +1,41 @@
 {% extends "base.html" %}
-{% block title %}All Exercises (A–Z) – NFG{% endblock %}
+{% import "_components.html" as ui %}
 
-{% block sidebar %}
-  {% include "quick_options.html" %}
-{% endblock %}
+{% block title %}All exercises (A–Z) – NFG{% endblock %}
 
-{% block content %}
-<div class="app-page">
-  <div class="app-page-header">
-    <div>
-      <div class="app-page-kicker">Workout library</div>
-      <h1 class="page-title mb-1">All Exercises (A–Z)</h1>
-      <p class="app-page-copy">{{ items|length }} workout{{ '' if (items|length)==1 else 's' }} in the library. Open any exercise for movement guidance and examples.</p>
-    </div>
-    <a class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact" href="{{ url_for('workouts_browse') }}">Browse filters</a>
-  </div>
+{% block page %}
+<div class="nfg-discover">
 
-  {% if not items %}
-    <div class="app-note">
-      No workouts yet. Try <a class="text-decoration-none" href="{{ url_for('workouts_browse') }}">Browse</a> or add some in Admin.
-    </div>
+  <header class="nfg-page-head">
+    <h1 class="nfg-page-title">All exercises</h1>
+    <p class="nfg-env-note">{{ total }} exercise{{ 's' if total != 1 }}, A–Z</p>
+  </header>
+
+  {% if letters %}
+    {% call ui.rail() %}
+      {% for letter in letters %}<a class="nfg-letter" href="#letter-{{ letter }}">{{ letter }}</a>{% endfor %}
+    {% endcall %}
+
+    {% for letter, items in letters.items() %}
+      <section class="nfg-section" id="letter-{{ letter }}">
+        <h2 class="nfg-letter-head">{{ letter }}</h2>
+        <div class="nfg-list">
+          {% for w in items %}
+            <a class="nfg-list-row" href="{{ url_for('workout_detail', slug=w.slug) }}">
+              <span class="nfg-list-thumb"><img src="{{ ui.exercise_image(w) }}" alt="" loading="lazy"></span>
+              <span class="nfg-list-main">
+                <span class="nfg-list-title">{{ w.name }}</span>
+                <span class="nfg-list-meta">{{ w.equipment_label or w.equipment or '' }}{% if w.level %} · {{ w.level }}{% endif %}</span>
+              </span>
+              {{ ui.icon('chevron-right') }}
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
   {% else %}
-    <div class="workout-library-grid workout-library-grid-az">
-      {% for w in items %}
-        {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
-        {% set thumbs = (w.images if w.images else []) %}
-        {% if w.muscle_image and (w.muscle_image not in thumbs) %}
-          {% set thumbs = thumbs + [w.muscle_image] %}
-        {% endif %}
-        {% if not thumbs or thumbs|length == 0 %}
-          {% set thumbs = [url_for('static', filename='img/exercise-placeholder.svg')] %}
-        {% endif %}
-        {% if thumbs|length == 1 %}
-          {% set thumbs = thumbs + [thumbs[0]] %}
-        {% endif %}
-        {% set cid = 'car-all-' ~ w.slug %}
-        {% set body_chip = parts[0] if parts else (w.primary_muscle or 'Full body') %}
-
-        <article class="card workout-library-card js-workout-card" data-href="{{ url_for('workout_detail', slug=w.slug) }}">
-          <div class="workout-library-media workout-library-media-short">
-            <div id="{{ cid }}" class="carousel slide fast-carousel workout-library-carousel" data-bs-ride="false" data-bs-touch="true" aria-label="Images for {{ w.name }}">
-              <div class="carousel-inner">
-                {% for img in thumbs %}
-                  <div class="carousel-item {% if loop.first %}active{% endif %}">
-                    <img src="{{ img }}"
-                         class="d-block w-100"
-                         alt="{{ w.name }} image {{ loop.index }}"
-                         {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
-                         decoding="async">
-                  </div>
-                {% endfor %}
-              </div>
-
-              {% if thumbs|length > 1 %}
-                <button class="carousel-control-prev" type="button" data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous">
-                  <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next">
-                  <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                </button>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="card-body workout-library-body">
-            <div class="workout-library-title-row">
-              <div>
-                <h2 class="workout-library-title">{{ w.name }}</h2>
-              </div>
-            </div>
-
-            <div class="workout-library-meta">
-              {% if w.level %}<span class="workout-library-chip workout-library-chip-level">{{ w.level }}</span>{% endif %}
-              <span class="workout-library-chip workout-library-chip-body">{{ body_chip }}</span>
-              {% if w.style %}<span class="workout-library-chip workout-library-chip-style">{{ w.style }}</span>{% endif %}
-            </div>
-
-            <div class="workout-library-actions">
-              <a class="btn workout-library-cta" href="{{ url_for('workout_detail', slug=w.slug) }}">
-                <span>View exercise</span>
-                <span aria-hidden="true">↗</span>
-              </a>
-            </div>
-          </div>
-        </article>
-      {% endfor %}
-    </div>
+    <div class="nfg-empty">No exercises yet.</div>
   {% endif %}
-</div>
 
-<script>
-  (function(){
-    document.querySelectorAll('.workout-library-carousel').forEach(carEl => {
-      bootstrap.Carousel.getOrCreateInstance(carEl, { ride:false });
-    });
-  })();
-</script>
+</div>
 {% endblock %}

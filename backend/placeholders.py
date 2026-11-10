@@ -1,20 +1,25 @@
 """SVG placeholder art for exercises that don't have real images yet.
 
-Placeholders are deliberately abstract: colour-coded by muscle group with the
-exercise name and equipment. They never depict a body or technique, so nobody
-mistakes them for form guidance. Real photos/illustrations replace them by
-listing `images:` in the exercise file.
+Placeholders are deliberately abstract: the muscle group's colour, its label and
+a soft pattern that varies per exercise. They never depict a body or technique,
+so nobody mistakes them for form guidance, and they carry no exercise name
+(the page and cards already show it).
+
+Size matches the standard for real exercise images: 1080 x 1350 (4:5 portrait).
+Real photos/illustrations replace a placeholder by listing `images:` in the
+exercise's content file.
 """
 
 from __future__ import annotations
 
+import hashlib
 from typing import List
 from xml.sax.saxutils import escape
 
 import taxonomy as tx
 
-WIDTH, HEIGHT = 900, 1600  # 9:16, matches the portrait workout cards
-MARGIN = 80
+WIDTH, HEIGHT = 1080, 1350  # 4:5, the standard exercise image ratio
+MARGIN = 88
 FONT = "Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
 
 
@@ -23,21 +28,6 @@ def _shade(hex_color: str, factor: float) -> str:
     h = hex_color.lstrip("#")
     r, g, b = (int(h[i : i + 2], 16) for i in (0, 2, 4))
     return "#{:02X}{:02X}{:02X}".format(*(max(0, min(255, int(c * factor))) for c in (r, g, b)))
-
-
-def _wrap(text: str, max_chars: int) -> List[str]:
-    lines: List[str] = []
-    current = ""
-    for word in text.split():
-        candidate = f"{current} {word}".strip()
-        if len(candidate) <= max_chars or not current:
-            current = candidate
-        else:
-            lines.append(current)
-            current = word
-    if current:
-        lines.append(current)
-    return lines
 
 
 def primary_group_key(ex: dict) -> str:
@@ -54,53 +44,46 @@ def equipment_text(equipment: List[str]) -> str:
     return tx.equipment_text(equipment)
 
 
-def render_exercise_svg(ex: dict) -> str:
-    group = tx.MUSCLE_GROUPS[primary_group_key(ex)]
-    base = group["color"]
-    deep = _shade(base, 0.55)
+def _seeded(slug: str, count: int) -> List[float]:
+    """Deterministic numbers in [0, 1) from the slug, so each placeholder differs a bit."""
+    digest = hashlib.sha256(slug.encode("utf-8")).digest()
+    return [digest[i] / 256 for i in range(count)]
 
-    name = ex["name"].strip()
-    font_size, max_chars = (108, 13)
-    lines = _wrap(name, max_chars)
-    if len(lines) > 3:
-        font_size, max_chars = (84, 17)
-        lines = _wrap(name, max_chars)
-    line_h = int(font_size * 1.08)
-    name_bottom = 1240
-    name_top = name_bottom - line_h * (len(lines) - 1)
 
-    name_tspans = "".join(
-        f'<tspan x="{MARGIN}" y="{name_top + i * line_h}">{escape(line)}</tspan>'
-        for i, line in enumerate(lines)
-    )
-    muscles = " · ".join(tx.MUSCLES[m]["label"] for m in ex["muscles"]["primary"])
-    meta = f"{equipment_text(ex['equipment'])} · {tx.LEVELS[ex['level']]['label']}"
-
+def render_svg(label: str, color: str, seed: str, aria: str) -> str:
+    deep = _shade(color, 0.52)
+    a, b, c, d = _seeded(seed, 4)
+    cx1, cy1, r1 = int(WIDTH * (0.62 + 0.3 * a)), int(HEIGHT * (0.18 + 0.2 * b)), int(300 + 140 * c)
+    cx2, cy2, r2 = int(WIDTH * (0.1 + 0.3 * d)), int(HEIGHT * (0.78 + 0.12 * a)), int(220 + 120 * b)
     return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {WIDTH} {HEIGHT}" \
-width="{WIDTH}" height="{HEIGHT}" role="img" aria-label="{escape(name)} (placeholder image)">
+width="{WIDTH}" height="{HEIGHT}" role="img" aria-label="{escape(aria, {'"': '&quot;'})}">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
-      <stop offset="0" stop-color="{base}"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="{color}"/>
       <stop offset="1" stop-color="{deep}"/>
     </linearGradient>
   </defs>
   <rect width="{WIDTH}" height="{HEIGHT}" fill="url(#bg)"/>
-  <circle cx="{WIDTH - 40}" cy="260" r="360" fill="#FFFFFF" fill-opacity="0.07"/>
-  <circle cx="{WIDTH - 140}" cy="420" r="210" fill="#FFFFFF" fill-opacity="0.06"/>
-  <circle cx="120" cy="{HEIGHT - 120}" r="260" fill="#000000" fill-opacity="0.10"/>
-  <text x="{MARGIN}" y="170" fill="#FFFFFF" fill-opacity="0.78" font-family="{FONT}" \
-font-size="40" font-weight="700" letter-spacing="6">{escape(group["label"].upper())}</text>
-  <text x="{MARGIN}" y="226" fill="#FFFFFF" fill-opacity="0.62" font-family="{FONT}" \
-font-size="32" font-weight="500">{escape(muscles)}</text>
-  <text fill="#FFFFFF" font-family="{FONT}" font-size="{font_size}" font-weight="800" \
-letter-spacing="-1">{name_tspans}</text>
-  <text x="{MARGIN}" y="{name_bottom + 90}" fill="#FFFFFF" fill-opacity="0.85" \
-font-family="{FONT}" font-size="40" font-weight="600">{escape(meta)}</text>
-  <line x1="{MARGIN}" y1="{HEIGHT - 170}" x2="{WIDTH - MARGIN}" y2="{HEIGHT - 170}" \
-stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="2"/>
-  <text x="{MARGIN}" y="{HEIGHT - 100}" fill="#FFFFFF" font-family="{FONT}" font-size="44" \
-font-weight="900" letter-spacing="4">NFG</text>
-  <text x="{WIDTH - MARGIN}" y="{HEIGHT - 100}" text-anchor="end" fill="#FFFFFF" \
-fill-opacity="0.6" font-family="{FONT}" font-size="30" font-weight="500">Demo image coming soon</text>
+  <circle cx="{cx1}" cy="{cy1}" r="{r1}" fill="#FFFFFF" fill-opacity="0.08"/>
+  <circle cx="{cx1}" cy="{cy1}" r="{int(r1 * 0.62)}" fill="#FFFFFF" fill-opacity="0.06"/>
+  <circle cx="{cx2}" cy="{cy2}" r="{r2}" fill="#000000" fill-opacity="0.10"/>
+  <text x="{MARGIN}" y="{MARGIN + 40}" fill="#FFFFFF" fill-opacity="0.82" font-family="{FONT}" \
+font-size="44" font-weight="800" letter-spacing="7">{escape(label.upper())}</text>
+  <text x="{MARGIN}" y="{MARGIN + 92}" fill="#FFFFFF" fill-opacity="0.6" font-family="{FONT}" \
+font-size="30" font-weight="500">Demo coming soon</text>
+  <text x="{MARGIN}" y="{HEIGHT - MARGIN}" fill="#FFFFFF" fill-opacity="0.9" font-family="{FONT}" \
+font-size="40" font-weight="900" letter-spacing="5">NFG</text>
 </svg>
 """
+
+
+def render_exercise_svg(ex: dict) -> str:
+    group = tx.MUSCLE_GROUPS[primary_group_key(ex)]
+    return render_svg(
+        group["label"], group["color"], ex["slug"], f"{ex['name'].strip()} (placeholder image)"
+    )
+
+
+def render_generic_svg() -> str:
+    """Fallback for exercises with no image and no generated placeholder."""
+    return render_svg("Exercise", "#3A3A34", "generic", "Exercise image coming soon")
