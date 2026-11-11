@@ -1,15 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" width="1080" height="1350" role="img" aria-label="Exercise image coming soon">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920" role="img" aria-label="Exercise image coming soon">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0.4" y2="1">
       <stop offset="0" stop-color="#3A3A34"/>
       <stop offset="1" stop-color="#1E1E1B"/>
     </linearGradient>
   </defs>
-  <rect width="1080" height="1350" fill="url(#bg)"/>
-  <circle cx="743" cy="291" r="374" fill="#FFFFFF" fill-opacity="0.08"/>
-  <circle cx="743" cy="291" r="231" fill="#FFFFFF" fill-opacity="0.06"/>
-  <circle cx="214" cy="1089" r="241" fill="#000000" fill-opacity="0.10"/>
-  <text x="88" y="128" fill="#FFFFFF" fill-opacity="0.82" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="7">EXERCISE</text>
-  <text x="88" y="180" fill="#FFFFFF" fill-opacity="0.6" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="30" font-weight="500">Demo coming soon</text>
-  <text x="88" y="1262" fill="#FFFFFF" fill-opacity="0.9" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="40" font-weight="900" letter-spacing="5">NFG</text>
+  <rect width="1080" height="1920" fill="url(#bg)"/>
+  <circle cx="743" cy="414" r="374" fill="#FFFFFF" fill-opacity="0.06"/>
+  <circle cx="214" cy="1549" r="241" fill="#000000" fill-opacity="0.10"/>
+  
+  <text x="88" y="413" fill="#FFFFFF" fill-opacity="0.82" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="7">EXERCISE</text>
+  <text x="88" y="465" fill="#FFFFFF" fill-opacity="0.6" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="30" font-weight="500">Image coming soon</text>
+  <text x="88" y="1547" fill="#FFFFFF" fill-opacity="0.9" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="40" font-weight="900" letter-spacing="5">NFG</text>
 </svg>

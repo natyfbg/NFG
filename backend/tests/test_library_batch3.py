@@ -71,8 +71,8 @@ def test_placeholder_keeps_label_and_corner_free():
         }
     )
     assert "QUADS" in svg and "NFG" in svg and "muscles worked" in svg
-    # Figures end above the bottom margin, leaving the "?" corner clear.
-    assert placeholders.MAP_TOP + placeholders.MAP_HEIGHT < placeholders.HEIGHT - 150
+    # Figures sit inside the centre 4:5 band that cards crop to, above the NFG mark.
+    assert placeholders.MAP_TOP + placeholders.MAP_HEIGHT < placeholders.SAFE_BOTTOM - 100
 
 
 def test_generic_placeholder_has_no_body():

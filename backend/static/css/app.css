@@ -3673,28 +3673,61 @@ html[data-nav-dir="prev"]::view-transition-new(root){ animation: nfgInLeft 260ms
   text-decoration: none;
 }
 
-.nfg-ex-layout{ display: grid; gap: 1.1rem; }
+/* Phone: name and chips, then the viewer, then the rest. Desktop: viewer on the
+   left (sticky), everything else on the right. */
+.nfg-ex-layout{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "head" "media" "info";
+  gap: 1rem;
+}
+
+.nfg-ex-head{ grid-area: head; }
+.nfg-ex-media-col{ grid-area: media; }
+.nfg-ex-info{ grid-area: info; }
+.nfg-ex-head .nfg-ex-chips{ margin-top: .65rem; }
 
 @media (min-width: 992px){
   .nfg-ex-layout{
-    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-    gap: 2rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "media head" "media info";
+    column-gap: 2.5rem;
+    row-gap: 1rem;
     align-items: start;
   }
   .nfg-ex-media-col{ position: sticky; top: 76px; }
 }
 
-.nfg-ex-media{ border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+/* 9:16, the shape of a phone held upright. Height is capped so the whole frame
+   fits on screen; on a typical phone it's nearly full width. */
+.nfg-ex-media{
+  aspect-ratio: 9 / 16;
+  width: min(100%, calc(78vh * 9 / 16));
+  width: min(100%, calc(78svh * 9 / 16));
+  margin-inline: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+@media (min-width: 992px){
+  .nfg-ex-media{
+    width: min(380px, calc((100vh - 150px) * 9 / 16));
+    width: min(380px, calc((100svh - 150px) * 9 / 16));
+  }
+}
 
 .nfg-gallery{
   display: flex;
   height: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
 }
 
 .nfg-gallery::-webkit-scrollbar{ display: none; }
+.nfg-gallery:focus-visible{ outline: 3px solid var(--accent); outline-offset: -3px; }
 
 .nfg-gallery img{
   flex: 0 0 100%;
@@ -3702,24 +3735,82 @@ html[data-nav-dir="prev"]::view-transition-new(root){ animation: nfgInLeft 260ms
   height: 100%;
   object-fit: cover;
   scroll-snap-align: start;
+  scroll-snap-stop: always;
+  user-select: none;
 }
 
-.nfg-gallery-count{
+/* Story-style steps along the top: visible straight away (the bottom of a tall
+   frame can sit under the phone nav), and the number of bars says how many images. */
+.nfg-ex-media.has-steps::before{
+  content: "";
   position: absolute;
-  left: .75rem;
-  bottom: .75rem;
-  padding: .15rem .55rem;
+  inset: 0 0 auto;
+  z-index: 1;
+  height: 72px;
+  background: linear-gradient(rgba(0,0,0,.32), rgba(0,0,0,0));
+  pointer-events: none;
+}
+
+.nfg-gallery-steps{
+  position: absolute;
+  top: .35rem;
+  left: .6rem;
+  right: .6rem;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+}
+
+/* Each bar is a 22px-tall tap target around a 3px line. */
+.nfg-gallery-step{
+  flex: 1 1 0;
+  display: grid;
+  align-items: center;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.nfg-gallery-step::before{
+  content: "";
+  height: 3px;
   border-radius: 999px;
-  background: rgba(0,0,0,.55);
-  color: #fff;
-  font-size: .72rem;
-  font-weight: 600;
+  background: rgba(255,255,255,.42);
+  transition: background-color .2s ease;
+}
+
+.nfg-gallery-step.is-active::before{ background: #fff; }
+
+.nfg-gallery-arrow{
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  display: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,.9);
+  color: #171714;
+  box-shadow: 0 6px 16px rgba(0,0,0,.25);
+  transform: translateY(-50%);
+}
+
+.nfg-gallery-arrow.is-prev{ left: .6rem; }
+.nfg-gallery-arrow.is-next{ right: .6rem; }
+
+@media (hover: hover) and (pointer: fine){
+  .nfg-gallery-arrow{ display: grid; }
+  .nfg-gallery-arrow[hidden]{ display: none; }
 }
 
 .nfg-help-btn{
   position: absolute;
-  right: .75rem;
-  bottom: .75rem;
+  z-index: 2;
+  top: 2.1rem;
+  right: .6rem;
   display: inline-grid;
   place-items: center;
   width: 44px;
@@ -3732,34 +3823,39 @@ html[data-nav-dir="prev"]::view-transition-new(root){ animation: nfgInLeft 260ms
   box-shadow: 0 6px 16px rgba(0,0,0,.25);
 }
 
+.nfg-ex-media:not(.has-steps) .nfg-help-btn{ top: .6rem; }
+
 .nfg-video-links{
   display: flex;
-  align-items: center;
-  gap: .4rem;
-  margin-top: .65rem;
-}
-
-.nfg-video-label{
-  font-size: .75rem;
-  font-weight: 700;
-  color: var(--app-text-soft);
-  margin-right: .2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .45rem;
+  width: min(100%, calc(78svh * 9 / 16));
+  margin: .75rem auto 0;
 }
 
 .nfg-video-link{
-  display: inline-grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  height: 40px;
+  padding: 0 1rem;
+  border-radius: 999px;
   background: var(--app-surface-strong);
   border: 1px solid var(--app-border);
   color: var(--app-text);
-  font-size: 1rem;
+  font-size: .86rem;
+  font-weight: 700;
   text-decoration: none;
 }
 
+.nfg-video-link:first-child{ flex: 1 1 auto; justify-content: center; }
+.nfg-video-link.is-youtube .nfg-icon{ color: #FF0033; font-size: 1.15rem; }
 .nfg-video-link:hover{ color: var(--app-text); border-color: var(--app-text); }
+
+@media (min-width: 992px){
+  .nfg-video-links{ width: min(380px, calc((100svh - 150px) * 9 / 16)); }
+}
 
 .nfg-ex-kicker{
   font-size: .74rem;
@@ -3802,18 +3898,14 @@ a.nfg-mchip:hover{ color: var(--app-text); }
 a.nfg-mchip.is-primary:hover{ color: #fff; }
 .nfg-mchip.is-neutral{ border-color: var(--app-border-strong); background: var(--app-surface-strong); }
 
+.nfg-ex-info > :first-child{ margin-top: 0; }
+
 .nfg-ex-summary{
   margin: 1rem 0 0;
   padding-left: .85rem;
   border-left: 3px solid var(--accent);
   color: var(--app-text);
   line-height: 1.55;
-}
-
-.nfg-howto-btn{ width: 100%; margin-top: 1.1rem; }
-
-@media (min-width: 992px){
-  .nfg-howto-btn{ width: auto; }
 }
 
 .nfg-ex-variations{ display: grid; gap: .45rem; margin-top: 1.1rem; }

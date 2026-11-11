@@ -51,11 +51,12 @@ breathing: Exhale as you press.   # optional
 regressions: [incline-push-up]    # optional: easier variations (slugs)
 progressions: [barbell-bench-press]
 youtube_id: ""                    # 11-character id, optional
-videos:                           # optional; tiny icons under the image link here
-  youtube: https://www.youtube.com/watch?v=...
+videos:                           # "Watch on YouTube" under the viewer; the YouTube
+  youtube: https://www.youtube.com/watch?v=...   # link also fills the how-to Video tab
   instagram: https://www.instagram.com/reel/...
   tiktok: https://www.tiktok.com/@nfg/video/...
-images: []                        # optional; omit to use the generated placeholder
+images: [...]                     # optional; form photos (see Images). [] clears
+                                  # admin photos back to the muscle map
 tags: [push, chest]
 notes: free-form authoring notes  # never shown or synced
 ```
@@ -76,19 +77,26 @@ The full definitions live in `backend/taxonomy.py`.
 
 ## Images
 
-Exercise images are **4:5 portrait, 1080 × 1350 px** (JPEG or WebP, under ~250 KB),
-with the movement centred and a little margin on every side, since cards crop
-slightly. Put them in `static/img/exercises/` (e.g. `push-up-1.webp`) and list them:
+Exercise images are **9:16 portrait, 1080 × 1920 px** (JPEG or WebP, under ~300 KB),
+the shape of a phone held upright. Cards and thumbnails crop the **centre 4:5 band**
+(1080 × 1350, i.e. 285 px off the top and bottom), so keep the body and the
+movement inside it. Put them in `static/img/exercises/` (e.g. `push-up-1.webp`) and
+list them in order, one per position of the movement:
 
 ```yaml
 images:
-  - /static/img/exercises/push-up-1.webp
-  - /static/img/exercises/push-up-2.webp
+  - /static/img/exercises/push-up-1.webp   # start
+  - /static/img/exercises/push-up-2.webp   # bottom
 ```
 
-Until then each exercise uses its generated placeholder
-(`static/img/exercises/<slug>.svg`): the muscle group's colour plus a front/back
-muscle map drawn from `muscles:` (primary bright, secondary dimmer; `musclemap.py`).
+On the exercise page the viewer shows these photos first (swipe or tap the bars at
+the top) and the generated muscle map last. `images: []` clears photos uploaded in
+admin and leaves just the muscle map.
+
+The muscle map (`static/img/exercises/<slug>.svg`, from `python content_sync.py
+placeholders`) is the muscle group's colour plus a front/back figure drawn from
+`muscles:` (primary bright, secondary dimmer; `musclemap.py`). It's also the card
+image until an exercise has photos.
 
 ## Programs (`programs/<hub-slug>.yaml`)
 

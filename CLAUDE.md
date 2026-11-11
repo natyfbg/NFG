@@ -180,16 +180,15 @@ as committer, so GitHub shows them as Verified.
 - 2026-11-10 — Design language: cream surfaces, near-black text, muscle-group colour
   as the accent (tiles, chips, step numbers), **brand gold for primary buttons**
   (matches the black/gold logo). Lively, not cartoonish; no intro paragraphs.
-- 2026-11-10 — Exercise images are 4:5 (1080×1350). Placeholders carry no exercise
-  name and keep the bottom-right corner free for the "?" (how-to) button.
+- 2026-11-10 — Placeholders carry no exercise name (the page and cards show it).
 - 2026-11-10 — Placeholders carry a front/back muscle map (`musclemap.py`, regions keyed
   by taxonomy muscle keys): anatomy only, never technique. Session pages lead with
   bilateral compounds in the preset's movement order; isometric holds (`tags:
   [isometric]`) count as accessories.
 - 2026-11-10 — Exercise page: chips row replaces the Overview block; instructions
-  live in a tabbed bottom sheet (Steps · Cues · Mistakes · Safety · Video) opened by
-  the "?" on the image or the "How to do it" button; per-exercise `videos:` links
-  (YouTube/Instagram/TikTok, https + allow-listed hosts only) show as small icons.
+  live in a tabbed popup (Steps · Cues · Mistakes · Safety · Video) opened by the "?"
+  on the image; per-exercise `videos:` links (YouTube/Instagram/TikTok, https +
+  allow-listed hosts only) show under the image.
 - 2026-11-10 — One global search (top bar → `/search`: exercises, programs, recipes).
   Browse has its own compact search + Filters sheet; filters use taxonomy keys
   (`group`, `eq`, `env`), legacy label params still work.
@@ -227,6 +226,18 @@ as committer, so GitHub shows them as Verified.
 - 2026-11-11 — 8 Week Challenge (Nate): goal "lose fat, keep muscle"; Beginner 3 days
   (full body), Intermediate 4 (upper/lower), Advanced 5 (push/pull/legs/upper/lower);
   ~45-minute sessions; phases Foundation (wk 1–2), Build (3–5), Push (6–7), Peak (8).
+- 2026-11-11 — **Exercise media is 9:16** (1080×1920), with everything that matters in
+  the centre 4:5 band, which cards and thumbnails crop to. Exercise page: name, Save
+  and chips first, then a 9:16 viewer (height-capped, centred; sticky left column on
+  desktop) with form photos in order and the muscle map always last; story-style bars
+  at the top show the count and position (tap to jump; arrows on desktop). The "?" is
+  the only how-to entry (the bottom "How to do it" button is gone). In content files
+  `images: []` clears admin photos back to the muscle map (used for Push-Up's stand-in
+  EZ-bar photos). Placeholder subline reads "Muscles worked".
+- 2026-11-11 — Every exercise gets a YouTube demo (`videos.youtube`) → "Watch on
+  YouTube" under the viewer and the how-to Video tab (id derived from the link when
+  `youtube_id` is empty). Picks favour one consistent, credible library (NASM's
+  "Proper Form & Technique" series) over influencer videos; Nate can swap any link.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 

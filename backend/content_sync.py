@@ -17,9 +17,10 @@ Sync rules:
 - Optional text fields are written only when the file defines them, so the file
   never blanks out content that only exists in the database.
 - rating, is_favorite and other admin-only fields are never touched.
-- Images: a file's explicit `images` always win. Otherwise the SVG placeholder is
-  used only when the document has no real images (admin uploads are kept), and
-  dead via.placeholder.com links are cleaned up.
+- Images: a file's explicit `images` always win, and `images: []` clears photos back
+  to the generated placeholder. Otherwise the SVG placeholder is used only when the
+  document has no real images (admin uploads are kept), and dead
+  via.placeholder.com links are cleaned up.
 - If an exercise was edited in admin after its last sync, it is skipped unless
   --force is given (the dry run shows which fields would be overwritten).
 - The connection string is never printed; only host and database name.
@@ -339,7 +340,9 @@ def image_fields(ex: dict, existing: Optional[dict]) -> dict:
     """Image fields to write, respecting real images already in the database."""
     out: dict = {}
     if "images" in ex:
-        out["images"] = list(ex["images"])
+        # An explicit list always wins. `images: []` means "no photos": it clears
+        # admin uploads and puts the generated muscle map back.
+        out["images"] = list(ex["images"]) or [PLACEHOLDER_URL.format(slug=ex["slug"])]
     else:
         current = (existing or {}).get("images") or []
         if all(is_placeholder_image(u) for u in current):

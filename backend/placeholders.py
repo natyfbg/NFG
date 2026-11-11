@@ -5,9 +5,10 @@ map (main muscles bright, supporting muscles dimmer; see musclemap.py). They sho
 anatomy, never technique, so nobody mistakes them for form guidance, and they carry
 no exercise name (the page and cards already show it).
 
-Size matches the standard for real exercise images: 1080 x 1350 (4:5 portrait).
-Real photos/illustrations replace a placeholder by listing `images:` in the
-exercise's content file.
+Size matches the standard for real exercise images: 1080 x 1920 (9:16 portrait),
+with everything important inside the centre 4:5 band that cards crop to. Real
+photos sit in front of the muscle map on the exercise page once they're listed
+under `images:` in the exercise's content file.
 """
 
 from __future__ import annotations
@@ -19,9 +20,13 @@ from xml.sax.saxutils import escape
 import musclemap
 import taxonomy as tx
 
-WIDTH, HEIGHT = 1080, 1350  # 4:5, the standard exercise image ratio
+# 9:16 portrait (phone-native, the exercise viewer's frame). Cards crop the centre to
+# 4:5, so everything that matters sits inside SAFE_TOP..SAFE_BOTTOM.
+WIDTH, HEIGHT = 1080, 1920
+SAFE_TOP = (HEIGHT - WIDTH * 5 // 4) // 2  # 285
+SAFE_BOTTOM = HEIGHT - SAFE_TOP  # 1635
 MARGIN = 88
-MAP_TOP, MAP_HEIGHT, MAP_GAP = 250, 900, 96  # muscle map placement
+MAP_TOP, MAP_HEIGHT, MAP_GAP = SAFE_TOP + 250, 880, 96  # muscle map placement
 FONT = "Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
 
 
@@ -59,6 +64,7 @@ def render_svg(
     aria: str,
     primary: Iterable[str] = (),
     secondary: Iterable[str] = (),
+    subline: str = "Muscles worked",
 ) -> str:
     deep = _shade(color, 0.52)
     a, b, c, d = _seeded(seed, 4)
@@ -86,12 +92,12 @@ width="{WIDTH}" height="{HEIGHT}" role="img" aria-label="{escape(aria, {'"': '&q
   <circle cx="{cx1}" cy="{cy1}" r="{r1}" fill="#FFFFFF" fill-opacity="0.06"/>
   <circle cx="{cx2}" cy="{cy2}" r="{r2}" fill="#000000" fill-opacity="0.10"/>
   {figures}
-  <text x="{MARGIN}" y="{MARGIN + 40}" fill="#FFFFFF" fill-opacity="0.82" font-family="{FONT}" \
-font-size="44" font-weight="800" letter-spacing="7">{escape(label.upper())}</text>
-  <text x="{MARGIN}" y="{MARGIN + 92}" fill="#FFFFFF" fill-opacity="0.6" font-family="{FONT}" \
-font-size="30" font-weight="500">Demo coming soon</text>
-  <text x="{MARGIN}" y="{HEIGHT - MARGIN}" fill="#FFFFFF" fill-opacity="0.9" font-family="{FONT}" \
-font-size="40" font-weight="900" letter-spacing="5">NFG</text>
+  <text x="{MARGIN}" y="{SAFE_TOP + MARGIN + 40}" fill="#FFFFFF" fill-opacity="0.82" \
+font-family="{FONT}" font-size="44" font-weight="800" letter-spacing="7">{escape(label.upper())}</text>
+  <text x="{MARGIN}" y="{SAFE_TOP + MARGIN + 92}" fill="#FFFFFF" fill-opacity="0.6" \
+font-family="{FONT}" font-size="30" font-weight="500">{escape(subline)}</text>
+  <text x="{MARGIN}" y="{SAFE_BOTTOM - MARGIN}" fill="#FFFFFF" fill-opacity="0.9" \
+font-family="{FONT}" font-size="40" font-weight="900" letter-spacing="5">NFG</text>
 </svg>
 """
 
@@ -103,7 +109,7 @@ def render_exercise_svg(ex: dict) -> str:
         group["label"],
         group["color"],
         ex["slug"],
-        f"{ex['name'].strip()}: muscles worked (placeholder image)",
+        f"{ex['name'].strip()}: muscles worked",
         primary=muscles.get("primary") or [],
         secondary=muscles.get("secondary") or [],
     )
@@ -111,4 +117,6 @@ def render_exercise_svg(ex: dict) -> str:
 
 def render_generic_svg() -> str:
     """Fallback for exercises with no image and no generated placeholder."""
-    return render_svg("Exercise", "#3A3A34", "generic", "Exercise image coming soon")
+    return render_svg(
+        "Exercise", "#3A3A34", "generic", "Exercise image coming soon", subline="Image coming soon"
+    )

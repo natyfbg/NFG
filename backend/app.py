@@ -4653,6 +4653,73 @@ def _video_links(w: dict) -> List[dict]:
     ]
 
 
+YOUTUBE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+
+
+def _youtube_id_from_url(url: str) -> str:
+    """The 11-character id from a youtube.com/watch, youtu.be, shorts or embed link."""
+    parsed = urlparse(url or "")
+    host = (parsed.hostname or "").lower()
+    candidate = ""
+    if host == "youtu.be":
+        candidate = parsed.path.lstrip("/").split("/")[0]
+    elif host == "youtube.com" or host.endswith(".youtube.com"):
+        if parsed.path == "/watch":
+            candidate = (parse_qs(parsed.query).get("v") or [""])[0]
+        else:
+            match = re.match(r"^/(?:shorts|embed|live)/([^/?#]+)", parsed.path)
+            candidate = match.group(1) if match else ""
+    return candidate if YOUTUBE_ID_RE.match(candidate) else ""
+
+
+def _youtube_id(w: dict) -> str:
+    """Video for the in-app Video tab: the stored id, else the YouTube link's id."""
+    stored = (w.get("youtube_id") or "").strip()
+    if YOUTUBE_ID_RE.match(stored):
+        return stored
+    return _youtube_id_from_url((w.get("videos") or {}).get("youtube") or "")
+
+
+def _is_placeholder_image(url: str) -> bool:
+    u = (url or "").lower()
+    return (
+        not u
+        or "via.placeholder.com" in u
+        or "placehold.co" in u
+        or (u.startswith("/static/img/exercises/") and u.endswith(".svg"))
+        or u.endswith("/exercise-placeholder.svg")
+    )
+
+
+_MUSCLE_MAP_FILES: Dict[str, bool] = {}
+
+
+def _has_muscle_map(slug: str) -> bool:
+    if slug not in _MUSCLE_MAP_FILES:
+        path = os.path.join(app.static_folder, "img", "exercises", f"{slug}.svg")
+        _MUSCLE_MAP_FILES[slug] = bool(slug) and os.path.isfile(path)
+    return _MUSCLE_MAP_FILES[slug]
+
+
+def _exercise_slides(w: dict) -> List[dict]:
+    """The exercise viewer: real photos first (form, in order), the muscle map last."""
+    slides = [
+        {"src": u, "kind": "photo"}
+        for u in (w.get("images") or [])
+        if isinstance(u, str) and not _is_placeholder_image(u)
+    ]
+    slug = w.get("slug") or ""
+    if _has_muscle_map(slug):
+        slides.append(
+            {"src": url_for("static", filename=f"img/exercises/{slug}.svg"), "kind": "map"}
+        )
+    if not slides:
+        slides.append(
+            {"src": url_for("static", filename="img/exercise-placeholder.svg"), "kind": "map"}
+        )
+    return slides
+
+
 def _is_safe_video_url(url: str) -> bool:
     parsed = urlparse(url or "")
     host = (parsed.hostname or "").lower()
@@ -4755,7 +4822,9 @@ def workout_detail(slug):
         w=w,
         accent=_accent_for(w),
         muscle_chips=_muscle_chips(w),
+        slides=_exercise_slides(w),
         video_links=_video_links(w),
+        youtube_id=_youtube_id(w),
         how=how,
         has_howto=has_howto,
         easier=easier,

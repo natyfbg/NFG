@@ -43,7 +43,7 @@ def test_repo_content_files_are_valid():
 def test_every_exercise_without_images_has_a_placeholder_file():
     exercises, _ = cs.load_exercises()
     for ex in exercises:
-        if "images" not in ex:
+        if not ex.get("images"):
             assert (cs.PLACEHOLDER_DIR / f"{ex['slug']}.svg").exists(), ex["slug"]
 
 
@@ -167,8 +167,8 @@ def test_optional_text_fields_are_not_blanked():
 def test_placeholder_svg_is_abstract_and_escaped():
     svg = render_exercise_svg({**VALID, "name": "Press & <Hold>"})
     assert svg.startswith("<svg") and "Press &amp; &lt;Hold&gt;" in svg
-    assert "Demo coming soon" in svg
-    assert 'viewBox="0 0 1080 1350"' in svg  # 4:5, the standard exercise image size
+    assert "Muscles worked" in svg
+    assert 'viewBox="0 0 1080 1920"' in svg  # 9:16, the standard exercise image size
     # The name only appears in the accessible label, never drawn on the image.
     assert svg.count("Press &amp; &lt;Hold&gt;") == 1
 
