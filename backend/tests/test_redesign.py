@@ -71,10 +71,33 @@ def test_landing_shows_tiles_without_bloat(client, library):
     assert 'placeholder="Search 5 exercises"' in html
 
 
-def test_landing_equipment_counts_follow_environment(client, library):
-    html = client.get("/workouts?env=home").get_data(as_text=True)
-    assert "Barbell" not in html and "Cables" not in html
-    assert "Dumbbells" in html
+def test_landing_ignores_remembered_environment(client, library):
+    # Picking "Home" on the Home page must not follow people into the catalogue.
+    client.set_cookie("nfg_env", "home")
+    resp = client.get("/workouts?env=home")
+    html = resp.get_data(as_text=True)
+    assert "Barbell" in html and "Cables" in html and "Dumbbells" in html
+    assert "At home" not in html
+    assert not any(c.startswith("nfg_env") for c in resp.headers.getlist("Set-Cookie"))
+
+
+def test_landing_sections(client, library):
+    html = client.get("/workouts").get_data(as_text=True)
+    assert "New in the library" in html
+    for text in ("Simple, stable moves", "More load, balance", "Heavy, technical"):
+        assert text in html
+    assert "Home &amp; gym" in html  # equipment tiles say where it works
+    # 14 muscle groups: six shown, the rest behind "Show all".
+    assert "Show all 14 muscle groups" in html and 'data-more-visible="6"' in html
+
+
+def test_landing_puts_groups_with_exercises_first(nfg_app, library):
+    with nfg_app.app.test_request_context("/"):
+        cards = nfg_app._ordered_group_cards("hybrid")
+    keys = [c["key"] for c in cards]
+    filled = [c["key"] for c in cards if c["count"]]
+    assert keys[: len(filled)] == filled
+    assert keys.index("chest") < keys.index("back")  # curated order kept
 
 
 # --------------------------------------------------------------------------
@@ -231,13 +254,15 @@ def test_top_bar_has_global_search_and_icons(client):
     assert "About NFG" in html
 
 
-def test_brand_logo_only_when_file_exists(client, nfg_app, monkeypatch, tmp_path):
+def test_navbar_wordmark_and_icons_only_when_files_exist(client, nfg_app, monkeypatch, tmp_path):
     monkeypatch.setattr(nfg_app, "BRAND_DIR", str(tmp_path))
-    assert "nfg-brand-logo" not in client.get("/").get_data(as_text=True)
+    html = client.get("/").get_data(as_text=True)
+    assert 'class="nfg-brand-word">NFG<' in html and 'rel="icon"' not in html
     (tmp_path / "logo-128.png").write_bytes(b"png")
     (tmp_path / "favicon-32.png").write_bytes(b"png")
     html = client.get("/").get_data(as_text=True)
-    assert "nfg-brand-logo" in html and 'rel="icon"' in html
+    assert 'rel="icon"' in html
+    assert "nfg-brand-logo" not in html  # wordmark in the bar for now
 
 
 # --------------------------------------------------------------------------
@@ -357,3 +382,47 @@ def test_session_page_shows_focus_options_and_sections(client, sessions):
 def test_unknown_preset_falls_back_to_mixer(client, sessions):
     html = client.get("/workouts/mix?p=nope").get_data(as_text=True)
     assert "Build your mix" in html
+
+
+# --------------------------------------------------------------------------
+# Sprint: environment scope, popup how-to, top bar, swipe prefetch
+# --------------------------------------------------------------------------
+
+
+def test_browse_ignores_remembered_environment(client, library):
+    client.set_cookie("nfg_env", "home")
+    resp = client.get("/workouts/browse")
+    html = resp.get_data(as_text=True)
+    assert _names(html) == ["Floor Press", "Wall Press", "Bench Press", "DB Row", "Cable Row"]
+    assert not any(c.startswith("nfg_env") for c in resp.headers.getlist("Set-Cookie"))
+
+
+def test_browse_env_filter_is_explicit_and_kept_across_pages(client, library):
+    resp = client.get("/workouts/browse?env=home&per_page=1")
+    html = resp.get_data(as_text=True)
+    assert not any(c.startswith("nfg_env") for c in resp.headers.getlist("Set-Cookie"))
+    assert "At home" in html
+    assert "env=home" in html and "page=2" in html  # pager keeps the filter
+
+
+def test_howto_is_a_small_popup(client, library):
+    html = client.get("/workouts/floor-press").get_data(as_text=True)
+    assert 'class="modal fade nfg-howto"' in html
+    assert 'data-bs-toggle="modal" data-bs-target="#howToSheet"' in html
+    assert "offcanvas-bottom nfg-sheet nfg-howto" not in html
+
+
+def test_top_bar_for_guests(client):
+    html = client.get("/").get_data(as_text=True)
+    assert ">Sign in</a>" in html and ">Join</a>" in html
+    assert 'id="appMenu"' in html and 'data-bs-target="#appMenu"' in html
+    assert 'id="topSearchDrawer"' in html
+
+
+def test_swipe_pages_prefetch_their_neighbours(client, library):
+    home = client.get("/").get_data(as_text=True)
+    assert '<script type="speculationrules">' in home and '["/workouts"]' in home
+    exercises = client.get("/workouts").get_data(as_text=True)
+    assert '["/", "/programs"]' in exercises
+    detail = client.get("/workouts/floor-press").get_data(as_text=True)
+    assert "speculationrules" not in detail

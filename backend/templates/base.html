@@ -10,6 +10,22 @@
           crossorigin="anonymous">
 
     <meta name="theme-color" content="#121512">
+    <meta name="view-transition" content="same-origin">
+    <script>
+      /* Direction of a swipe/tab change, set by the previous page, so the view
+         transition slides the right way. Cleared once the page is shown. */
+      (function () {
+        try {
+          var d = sessionStorage.getItem('nfgNavDir');
+          if (d) { document.documentElement.dataset.navDir = d; sessionStorage.removeItem('nfgNavDir'); }
+        } catch (e) {}
+        var clear = function () { delete document.documentElement.dataset.navDir; };
+        window.addEventListener('pagereveal', function (e) {
+          if (e.viewTransition) e.viewTransition.finished.finally(clear); else setTimeout(clear, 50);
+        });
+        window.addEventListener('load', function () { setTimeout(clear, 900); });
+      })();
+    </script>
     {% if brand_icon_32 %}<link rel="icon" type="image/png" sizes="32x32" href="{{ brand_icon_32 }}">{% endif %}
     {% if brand_icon_180 %}<link rel="apple-touch-icon" href="{{ brand_icon_180 }}">{% endif %}
 
@@ -50,16 +66,16 @@
 
     <header class="nfg-topbar">
       <div class="container nfg-topbar-inner">
+        {# Wordmark for now; the logo is used for the browser and home-screen icons. #}
         <a class="nfg-brand" href="{{ url_for('home') }}" aria-label="NFG home">
-          {% if brand_logo %}<img class="nfg-brand-logo" src="{{ brand_logo }}" alt="" width="34" height="34">{% endif %}
           <span class="nfg-brand-word">NFG</span>
         </a>
 
         <nav class="nfg-topnav" aria-label="Main">
-          <a class="{% if ep == 'home' %}is-active{% endif %}" href="{{ url_for('home') }}">Home</a>
-          <a class="{% if ep in workouts_eps %}is-active{% endif %}" href="{{ url_for('workouts') }}">Exercises</a>
-          <a class="{% if ep in programs_eps %}is-active{% endif %}" href="{{ url_for('programs_index') }}">Programs</a>
-          <a class="{% if ep in recipes_eps %}is-active{% endif %}" href="{{ url_for('recipes') }}">Recipes</a>
+          <a class="{% if ep == 'home' %}is-active{% endif %}" href="{{ url_for('home') }}" data-nav-index="0">Home</a>
+          <a class="{% if ep in workouts_eps %}is-active{% endif %}" href="{{ url_for('workouts') }}" data-nav-index="1">Exercises</a>
+          <a class="{% if ep in programs_eps %}is-active{% endif %}" href="{{ url_for('programs_index') }}" data-nav-index="2">Programs</a>
+          <a class="{% if ep in recipes_eps %}is-active{% endif %}" href="{{ url_for('recipes') }}" data-nav-index="3">Recipes</a>
         </nav>
 
         <form class="nfg-topsearch" action="{{ url_for('search') }}" method="get" role="search">
@@ -69,23 +85,71 @@
         </form>
 
         <div class="nfg-topactions">
-          <a class="nfg-iconbtn nfg-search-btn{% if ep == 'search' %} is-active{% endif %}" href="{{ url_for('search') }}" aria-label="Search">{{ ui.icon('search') }}</a>
+          <a class="nfg-iconbtn nfg-search-btn{% if ep == 'search' %} is-active{% endif %}" href="{{ url_for('search') }}"
+             data-bs-toggle="collapse" data-bs-target="#topSearchDrawer" aria-controls="topSearchDrawer"
+             aria-expanded="false" aria-label="Search">{{ ui.icon('search') }}</a>
           {% if current_user.is_authenticated %}
             {% if current_user.is_admin %}
               <a class="nfg-pill{% if ep in admin_eps %} is-active{% endif %}" href="{{ url_for('admin_index') }}">Admin</a>
-              <form action="{{ url_for('logout') }}" method="post" class="m-0">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="nfg-iconbtn" type="submit" aria-label="Log out" title="Log out">{{ ui.icon('box-arrow-right') }}</button>
-              </form>
             {% else %}
               <a class="nfg-iconbtn{% if ep in account_eps %} is-active{% endif %}" href="{{ url_for('account_profile') }}" aria-label="Your account" title="Your account">{{ ui.icon('person-circle') }}</a>
             {% endif %}
           {% else %}
-            <a class="nfg-pill{% if ep in account_eps %} is-active{% endif %}" href="{{ url_for('account_login') }}">Sign in</a>
+            <a class="nfg-pill is-quiet{% if ep == 'account_login' %} is-active{% endif %}" href="{{ url_for('account_login') }}">Sign in</a>
+            <a class="nfg-pill is-solid{% if ep == 'account_register' %} is-active{% endif %}" href="{{ url_for('account_register') }}">Join</a>
           {% endif %}
+          <button class="nfg-iconbtn nfg-menu-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#appMenu"
+                  aria-controls="appMenu" aria-label="Menu">{{ ui.icon('list') }}</button>
         </div>
       </div>
+
+      {# Mobile: search opens in place under the bar (falls back to the search page without JS). #}
+      <div class="collapse nfg-search-drawer" id="topSearchDrawer">
+        <form class="container" action="{{ url_for('search') }}" method="get" role="search">
+          <div class="nfg-drawer-field">
+            {{ ui.icon('search') }}
+            <input type="search" name="q" placeholder="Exercises, programs, recipes" aria-label="Search NFG"
+                   value="{{ request.args.get('q', '') if ep == 'search' else '' }}">
+          </div>
+        </form>
+      </div>
     </header>
+
+    <div class="offcanvas offcanvas-end nfg-menu" tabindex="-1" id="appMenu" aria-labelledby="appMenuTitle">
+      <div class="nfg-menu-head">
+        <span class="nfg-brand-word" id="appMenuTitle">NFG</span>
+        <button type="button" class="nfg-iconbtn is-dark" data-bs-dismiss="offcanvas" aria-label="Close menu">{{ ui.icon('x-lg') }}</button>
+      </div>
+      <nav class="nfg-menu-body" aria-label="Menu">
+        <a class="nfg-menu-link{% if ep == 'home' %} is-active{% endif %}" href="{{ url_for('home') }}">{{ ui.icon('house-door') }} Home</a>
+        <a class="nfg-menu-link{% if ep in workouts_eps %} is-active{% endif %}" href="{{ url_for('workouts') }}">{{ ui.icon('grid') }} Exercises</a>
+        <a class="nfg-menu-link{% if ep in programs_eps %} is-active{% endif %}" href="{{ url_for('programs_index') }}">{{ ui.icon('calendar-week') }} Programs</a>
+        <a class="nfg-menu-link{% if ep in recipes_eps %} is-active{% endif %}" href="{{ url_for('recipes') }}">{{ ui.icon('egg-fried') }} Recipes</a>
+        <a class="nfg-menu-link" href="{{ url_for('workouts_mix') }}">{{ ui.icon('shuffle') }} Muscle Mixer</a>
+        <a class="nfg-menu-link" href="{{ url_for('search') }}">{{ ui.icon('search') }} Search</a>
+        <div class="nfg-menu-sep"></div>
+        {% if current_user.is_authenticated %}
+          {% if current_user.is_admin %}
+            <a class="nfg-menu-link" href="{{ url_for('admin_index') }}">{{ ui.icon('gear') }} Admin</a>
+            <form action="{{ url_for('logout') }}" method="post" class="m-0">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="nfg-menu-link" type="submit">{{ ui.icon('box-arrow-right') }} Log out</button>
+            </form>
+          {% else %}
+            <a class="nfg-menu-link" href="{{ url_for('account_profile') }}">{{ ui.icon('person-circle') }} Your account</a>
+            <form action="{{ url_for('account_logout') }}" method="post" class="m-0">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="nfg-menu-link" type="submit">{{ ui.icon('box-arrow-right') }} Sign out</button>
+            </form>
+          {% endif %}
+        {% else %}
+          <a class="nfg-menu-link" href="{{ url_for('account_login') }}">{{ ui.icon('box-arrow-in-right') }} Sign in</a>
+          <a class="nfg-menu-link" href="{{ url_for('account_register') }}">{{ ui.icon('person-plus') }} Create an account</a>
+        {% endif %}
+        <div class="nfg-menu-sep"></div>
+        <a class="nfg-menu-link" href="{{ url_for('about_page') }}">{{ ui.icon('info-circle') }} About NFG</a>
+      </nav>
+    </div>
 
     <!-- Flash alerts -->
     <div class="container mt-3">
@@ -147,27 +211,37 @@
     <!-- Bottom navigation (mobile floating pill) -->
     <nav class="bottom-nav" aria-label="Primary">
       <div class="nav-wrap">
-        <a href="{{ url_for('home') }}" class="{% if ep == 'home' %}active{% endif %}" data-nav="home" aria-label="Home"{% if ep == 'home' %} aria-current="page"{% endif %}>
+        <a href="{{ url_for('home') }}" class="{% if ep == 'home' %}active{% endif %}" data-nav="home" data-nav-index="0" aria-label="Home"{% if ep == 'home' %} aria-current="page"{% endif %}>
           <span class="icon" aria-hidden="true">{{ ui.icon('house-door-fill' if ep == 'home' else 'house-door') }}</span>
           <span class="label">Home</span>
         </a>
 
-        <a href="{{ url_for('workouts') }}" class="{% if ep in workouts_eps %}active{% endif %}" data-nav="workouts" aria-label="Exercises"{% if ep in workouts_eps %} aria-current="page"{% endif %}>
+        <a href="{{ url_for('workouts') }}" class="{% if ep in workouts_eps %}active{% endif %}" data-nav="workouts" data-nav-index="1" aria-label="Exercises"{% if ep in workouts_eps %} aria-current="page"{% endif %}>
           <span class="icon" aria-hidden="true">{{ ui.icon('grid-fill' if ep in workouts_eps else 'grid') }}</span>
           <span class="label">Exercises</span>
         </a>
 
-        <a href="{{ url_for('programs_index') }}" class="{% if ep in programs_eps %}active{% endif %}" data-nav="programs" aria-label="Programs"{% if ep in programs_eps %} aria-current="page"{% endif %}>
+        <a href="{{ url_for('programs_index') }}" class="{% if ep in programs_eps %}active{% endif %}" data-nav="programs" data-nav-index="2" aria-label="Programs"{% if ep in programs_eps %} aria-current="page"{% endif %}>
           <span class="icon" aria-hidden="true">{{ ui.icon('calendar-week-fill' if ep in programs_eps else 'calendar-week') }}</span>
           <span class="label">Programs</span>
         </a>
 
-        <a href="{{ url_for('recipes') }}" class="{% if ep in recipes_eps %}active{% endif %}" data-nav="recipes" aria-label="Recipes"{% if ep in recipes_eps %} aria-current="page"{% endif %}>
+        <a href="{{ url_for('recipes') }}" class="{% if ep in recipes_eps %}active{% endif %}" data-nav="recipes" data-nav-index="3" aria-label="Recipes"{% if ep in recipes_eps %} aria-current="page"{% endif %}>
           <span class="icon" aria-hidden="true">{{ ui.icon('egg-fried' if ep in recipes_eps else 'egg-fried') }}</span>
           <span class="label">Recipes</span>
         </a>
       </div>
     </nav>
+
+    {% if ep in swipe_eps %}
+      {# Fetch the neighbouring tabs ahead of time so a swipe opens them instantly. #}
+      {% set nav_urls = [url_for('home'), url_for('workouts'), url_for('programs_index'), url_for('recipes')] %}
+      {% set here = swipe_eps.index(ep) %}
+      {% set neighbours = [] %}
+      {% if here > 0 %}{% set _ = neighbours.append(nav_urls[here - 1]) %}{% endif %}
+      {% if here < nav_urls|length - 1 %}{% set _ = neighbours.append(nav_urls[here + 1]) %}{% endif %}
+      <script type="speculationrules">{"prefetch": [{"source": "list", "urls": {{ neighbours | tojson }}, "eagerness": "immediate"}]}</script>
+    {% endif %}
 
     <!-- Bootstrap JS (bundle includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
@@ -175,250 +249,157 @@
             crossorigin="anonymous"></script>
 
     <script>
-      /* Top-level route swipe stays subtle because this shell still performs full Flask route navigations. */
-      (function(){
+      /* Top-level swipe navigation: Home <-> Exercises <-> Programs <-> Recipes.
+         Smoothness comes from three things: neighbouring pages are prefetched
+         (speculation rules below), the page follows your finger while dragging,
+         and the browser's cross-document View Transitions slide the next page in
+         while the top bar and bottom nav stay still (see app.css). */
+      (function () {
+        const root = document.documentElement;
+        const routes = [
+          { endpoint: 'home',           url: "{{ url_for('home') }}" },
+          { endpoint: 'workouts',       url: "{{ url_for('workouts') }}" },
+          { endpoint: 'programs_index', url: "{{ url_for('programs_index') }}" },
+          { endpoint: 'recipes',        url: "{{ url_for('recipes') }}" }
+        ];
+        const active = routes.findIndex((r) => r.endpoint === "{{ ep }}");
+
+        function setDirection(dir) {
+          root.dataset.navDir = dir;
+          try { sessionStorage.setItem('nfgNavDir', dir); } catch (e) {}
+        }
+
+        // Back/forward cache: forget a direction left over from leaving this page.
+        window.addEventListener('pageshow', (e) => { if (e.persisted) delete root.dataset.navDir; });
+
+        // Taps on the main nav slide in the right direction too.
+        if (active >= 0) {
+          document.querySelectorAll('.bottom-nav a[data-nav-index], .nfg-topnav a[data-nav-index]').forEach((link) => {
+            link.addEventListener('click', () => {
+              const idx = parseInt(link.dataset.navIndex, 10);
+              if (idx !== active) setDirection(idx > active ? 'next' : 'prev');
+            });
+          });
+        }
+
         const zone = document.getElementById('swipe-zone');
-        const rail = document.getElementById('mobile-swipe-rail');
         const shell = document.getElementById('page-shell');
-        const swipeEnabled = document.body.dataset.topLevelSwipe === 'true';
-        if (!zone || !shell || !swipeEnabled) return;
+        const rail = document.getElementById('mobile-swipe-rail');
+        if (!zone || !shell || active < 0 || document.body.dataset.topLevelSwipe !== 'true') return;
 
         const isMobile = () => window.matchMedia('(max-width: 991.98px)').matches;
-        const ep = "{{ ep }}";
-        const routes = [
-          { key: 'home',     endpoint: 'home',           url: "{{ url_for('home') }}" },
-          { key: 'workouts', endpoint: 'workouts',       url: "{{ url_for('workouts') }}" },
-          { key: 'programs', endpoint: 'programs_index', url: "{{ url_for('programs_index') }}" },
-          { key: 'recipes',  endpoint: 'recipes',        url: "{{ url_for('recipes') }}" }
-        ];
+        const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        const activeRouteIndex = routes.findIndex((route) => route.endpoint === ep);
-        if (activeRouteIndex < 0) return;
-
-        const HARD_BLOCK_SELECTOR = [
-          'a',
-          'button',
-          'input',
-          'textarea',
-          'select',
-          'label',
-          'summary',
-          '[role="link"]',
-          '[role="button"]',
-          '[contenteditable="true"]',
-          '[draggable="true"]',
-          '.navbar',
-          '.bottom-nav',
-          '.carousel',
-          '.swipe-block',
-          '.overflow-auto',
-          '.day-chip-row',
-          '.rail-hit',
-          '.dropdown-menu',
-          '.modal',
-          '.offcanvas',
-          '.accordion-button',
-          '.page-link',
-          'form',
-          '.btn',
-          '.js-workout-card',
-          '.form-control',
-          '.form-select',
-          '.form-check-input',
-          '[data-no-page-swipe]'
+        // Only places where a sideways drag already means something else.
+        const BLOCK = [
+          'input', 'textarea', 'select', '[contenteditable="true"]',
+          '[data-no-page-swipe]', '.nfg-rail', '.carousel', '.overflow-auto', '.swipe-block',
+          '.modal', '.offcanvas', '.bottom-nav', '.nfg-topbar', '.dropdown-menu'
         ].join(',');
 
-        const SOFT_BLOCK_SELECTOR = [
-          '.js-workout-card .carousel',
-          '.js-workout-card [data-no-page-swipe]'
-        ].join(',');
-
-        const EDGE_GUARD = 14;
-        const SWIPE_MIN_X = 50;
-        const SWIPE_LOCK_X = 14;
-        const SWIPE_MAX_Y = 68;
-        const SWIPE_LOCK_RATIO = 1.2;
-        const SWIPE_RATIO = 1.38;
-        const FLICK_MAX_MS = 260;
-        const NAV_COOLDOWN = 440;
-        const MAX_DRAG = 112;
-        let lastNavAt = 0;
-        let navInFlight = false;
+        const LOCK_PX = 12;          // movement before we decide horizontal vs vertical
+        const COMMIT_RATIO = 0.22;   // share of screen width that commits a swipe
+        const FLICK_SPEED = 0.45;    // px per ms that commits a quick flick
+        const EDGE_GUARD = 12;       // leave the OS back-gesture edges alone
         let state = null;
-        let framePending = false;
-        let pendingDrag = 0;
-        let pendingOpacity = 1;
+        let swiped = false;
+        let navigating = false;
 
-        const commitSwipeFrame = () => {
-          framePending = false;
-          shell.style.setProperty('--swipe-x', `${pendingDrag}px`);
-          shell.style.setProperty('--swipe-opacity', pendingOpacity.toFixed(3));
-        };
+        function setDrag(px) {
+          shell.style.setProperty('--swipe-x', px + 'px');
+          shell.style.setProperty('--swipe-opacity', String(Math.max(0.6, 1 - Math.abs(px) / 600)));
+        }
 
-        const renderSwipeFrame = (drag, opacity) => {
-          pendingDrag = drag;
-          pendingOpacity = opacity;
-          if (framePending) return;
-          framePending = true;
-          window.requestAnimationFrame(commitSwipeFrame);
-        };
-
-        const resetGesture = () => {
-          if (state && state.captureEl && state.pointerId != null && state.captureEl.hasPointerCapture && state.captureEl.hasPointerCapture(state.pointerId)) {
-            try { state.captureEl.releasePointerCapture(state.pointerId); } catch (err) {}
-          }
-          state = null;
+        function clearDrag(animated) {
+          shell.classList.toggle('is-settling', !!animated);
           shell.classList.remove('is-swiping');
           shell.style.removeProperty('--swipe-x');
           shell.style.removeProperty('--swipe-opacity');
-        };
+          if (animated) setTimeout(() => shell.classList.remove('is-settling'), 220);
+        }
 
-        const isHardBlocked = (el) => {
-          if (!el) return false;
-          return !!el.closest(HARD_BLOCK_SELECTOR);
-        };
+        function go(nextIdx, dir) {
+          if (navigating) return;
+          navigating = true;
+          setDirection(dir);
+          const link = document.querySelector(`.bottom-nav a[data-nav-index="${nextIdx}"]`);
+          if (link) link.classList.add('is-pending');
+          if (reduceMotion()) { window.location.href = routes[nextIdx].url; return; }
+          // Finish the drag off-screen, then let the view transition bring the next page in.
+          shell.classList.add('is-leaving');
+          setDrag(dir === 'next' ? -window.innerWidth * 0.35 : window.innerWidth * 0.35);
+          setTimeout(() => { window.location.href = routes[nextIdx].url; }, 90);
+        }
 
-        const isSoftBlocked = (el) => {
-          if (!el) return false;
-          return !!el.closest(SOFT_BLOCK_SELECTOR);
-        };
-
-        const getStartContext = (target) => {
-          if (!target) return null;
-          /* Deeper program pages are excluded so route-swipe never competes with setup/day interactions. */
-          const inRail = rail && rail.contains(target);
-          const inZone = zone.contains(target);
-          if (!inRail && !inZone) return null;
-          return {
-            fromRail: !!inRail,
-            captureEl: inRail ? rail : zone
-          };
-        };
-
-        const startGesture = (e) => {
-          if (!isMobile()) return;
-          if (navInFlight) return;
+        document.addEventListener('pointerdown', (e) => {
+          if (!isMobile() || navigating) return;
           if (e.pointerType === 'mouse' && e.button !== 0) return;
           if (e.pointerType === 'touch' && !e.isPrimary) return;
+          const fromRail = rail && rail.contains(e.target);
+          if (!fromRail && !zone.contains(e.target)) return;
+          if (!fromRail && e.target.closest(BLOCK)) return;
+          if (e.clientX < EDGE_GUARD || window.innerWidth - e.clientX < EDGE_GUARD) return;
+          swiped = false;
+          state = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), dx: 0, locked: fromRail, lastX: e.clientX, lastT: performance.now(), v: 0 };
+        }, { passive: true, capture: true });
 
-          const context = getStartContext(e.target);
-          if (!context) return;
-          if (!context.fromRail && isHardBlocked(e.target)) return;
-          if (!context.fromRail && isSoftBlocked(e.target)) return;
-          if (e.clientX < EDGE_GUARD || (window.innerWidth - e.clientX) < EDGE_GUARD) return;
-
-          state = {
-            pointerId: e.pointerId,
-            startX: e.clientX,
-            startY: e.clientY,
-            lastX: e.clientX,
-            lastY: e.clientY,
-            startedAt: Date.now(),
-            locked: context.fromRail,
-            captureEl: context.captureEl,
-            fromRail: context.fromRail,
-            swiping: false
-          };
-
-          if (state.captureEl && state.captureEl.setPointerCapture) {
-            try { state.captureEl.setPointerCapture(e.pointerId); } catch (err) {}
-          }
-        };
-
-        const moveGesture = (e) => {
-          if (!state || e.pointerId !== state.pointerId) return;
-
-          const dx = e.clientX - state.startX;
-          const dy = e.clientY - state.startY;
-          const absX = Math.abs(dx);
-          const absY = Math.abs(dy);
-
-          state.lastX = e.clientX;
-          state.lastY = e.clientY;
-
+        window.addEventListener('pointermove', (e) => {
+          if (!state || e.pointerId !== state.id) return;
+          const dx = e.clientX - state.x;
+          const dy = e.clientY - state.y;
           if (!state.locked) {
-            if (absY > 14 && absY > absX * .92) {
-              resetGesture();
-              return;
-            }
-            if (absX >= SWIPE_LOCK_X && absX > absY * SWIPE_LOCK_RATIO) {
-              state.locked = true;
-            }
+            if (Math.abs(dy) > LOCK_PX && Math.abs(dy) > Math.abs(dx)) { state = null; return; }  // scrolling
+            if (Math.abs(dx) < LOCK_PX || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+            state.locked = true;
+            shell.classList.add('is-swiping');
           }
-
-          if (!state.locked) return;
           if (e.cancelable) e.preventDefault();
-          state.swiping = true;
+          swiped = true;
+          const now = performance.now();
+          state.v = (e.clientX - state.lastX) / Math.max(1, now - state.lastT);
+          state.lastX = e.clientX; state.lastT = now;
+          state.dx = dx;
+          const atEdge = (dx > 0 && active === 0) || (dx < 0 && active === routes.length - 1);
+          setDrag(atEdge ? dx * 0.18 : dx * 0.6);  // resistance when there's no page that way
+        }, { passive: false });
 
-          const drag = Math.max(-MAX_DRAG, Math.min(MAX_DRAG, dx * .32));
-          const opacity = Math.max(.84, 1 - Math.abs(drag) / 420);
-          shell.classList.add('is-swiping');
-          renderSwipeFrame(drag, opacity);
-        };
-
-        const navigateTo = (nextIdx, dx) => {
-          if (nextIdx === activeRouteIndex) return;
-
-          const now = Date.now();
-          if (navInFlight || now - lastNavAt < NAV_COOLDOWN) return;
-          lastNavAt = now;
-          navInFlight = true;
-
-          const route = routes[nextIdx];
-          const targetLink = document.querySelector(`.bottom-nav a[data-nav="${route.key}"]`);
-          document.querySelectorAll('.bottom-nav a').forEach((link) => link.classList.remove('is-pending'));
-          if (targetLink) targetLink.classList.add('is-pending');
-          document.body.classList.add('is-route-navigating');
-
-          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            window.location.href = route.url;
-            return;
+        function end(e) {
+          if (!state || (e && e.pointerId !== state.id)) return;
+          const { dx, v, locked } = state;
+          state = null;
+          if (!locked) return;
+          const far = Math.abs(dx) > window.innerWidth * COMMIT_RATIO;
+          const fast = Math.abs(v) > FLICK_SPEED && Math.abs(dx) > 30;
+          const nextIdx = dx < 0 ? active + 1 : active - 1;
+          if ((far || fast) && nextIdx >= 0 && nextIdx < routes.length) {
+            go(nextIdx, dx < 0 ? 'next' : 'prev');
+          } else {
+            clearDrag(true);
           }
+        }
+        window.addEventListener('pointerup', end, { passive: true });
+        window.addEventListener('pointercancel', () => { if (state) { state = null; clearDrag(true); } }, { passive: true });
 
-          shell.classList.remove('is-swiping');
-          shell.style.removeProperty('--swipe-x');
-          shell.style.removeProperty('--swipe-opacity');
-          shell.style.setProperty('--nav-out-x', dx < 0 ? '-18px' : '18px');
-          window.setTimeout(() => { window.location.href = route.url; }, 86);
-        };
-
-        const endGesture = (e) => {
-          if (!state || e.pointerId !== state.pointerId) return;
-
-          const dx = state.lastX - state.startX;
-          const dy = state.lastY - state.startY;
-          const absX = Math.abs(dx);
-          const absY = Math.abs(dy);
-          const elapsed = Date.now() - state.startedAt;
-          const isFlick = elapsed <= FLICK_MAX_MS && absX >= 36 && absX > absY * 1.35;
-          const isSwipe = absX >= SWIPE_MIN_X && absY <= SWIPE_MAX_Y && absX > absY * SWIPE_RATIO;
-
-          let nextIdx = activeRouteIndex;
-          if (isFlick || isSwipe) {
-            if (dx < 0) nextIdx = Math.min(routes.length - 1, activeRouteIndex + 1);
-            if (dx > 0) nextIdx = Math.max(0, activeRouteIndex - 1);
-          }
-
-          if (nextIdx !== activeRouteIndex) {
-            navigateTo(nextIdx, dx);
-            state = null;
-            return;
-          }
-
-          resetGesture();
-        };
-
-        document.addEventListener('pointerdown', startGesture, { passive: true, capture: true });
-        window.addEventListener('pointermove', moveGesture, { passive: false });
-        window.addEventListener('pointerup', endGesture, { passive: true });
-        window.addEventListener('pointercancel', resetGesture, { passive: true });
+        // A swipe that started on a card must not also open that card.
         document.addEventListener('click', (e) => {
-          if (!navInFlight && !(state && state.swiping)) return;
-          const target = e.target;
-          if (target && target.closest && target.closest('.bottom-nav')) return;
+          if (!swiped && !navigating) return;
+          if (e.target.closest && e.target.closest('.bottom-nav')) return;
           e.preventDefault();
           e.stopPropagation();
+          swiped = false;
         }, true);
+      })();
+    </script>
+
+    <script>
+      /* Mobile search drawer: put the cursor in the field as soon as it opens. */
+      (function () {
+        var drawer = document.getElementById('topSearchDrawer');
+        if (!drawer) return;
+        drawer.addEventListener('shown.bs.collapse', function () {
+          var input = drawer.querySelector('input');
+          if (input) input.focus();
+        });
       })();
     </script>
 

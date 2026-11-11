@@ -95,12 +95,17 @@ as committer, so GitHub shows them as Verified.
 - **Swipe navigation** (`base.html`) hijacks horizontal drags on home/workouts/
   programs/recipes. Any horizontal scroller must carry `data-no-page-swipe`
   (or `.swipe-block`) — use the `ui.rail()` macro, which already does.
+  Smoothness: the page follows the finger, neighbouring tabs are prefetched
+  (`<script type="speculationrules">`), and cross-document View Transitions slide the
+  next page in (`@view-transition` + `html[data-nav-dir]` in app.css). The top bar,
+  bottom nav and swipe rail have their own `view-transition-name` so they stay still —
+  keep those names unique on the page.
 - **UI components** live in `templates/_components.html` (`{% import "_components.html"
   as ui %}`). Full-width pages override `{% block page %}` in `base.html`.
 - Grid layouts containing rails need `min-width: 0` on grid children, or the rail's
   content stretches the page wider than the phone screen.
 - **Bottom sheets / modals go in `{% block overlays %}`**, never inside `page`/`content`:
-  `#page-shell` has a transform (swipe animation), which traps `position: fixed`
+  `#page-shell` gets a transform while being swiped, which traps `position: fixed`
   children inside it and under the bottom nav.
 - Icons: `ui.icon('name')` inlines `templates/icons/<name>.svg` (Bootstrap Icons, MIT,
   copied from the npm package). Add new ones by copying from `bootstrap-icons`.
@@ -168,18 +173,29 @@ as committer, so GitHub shows them as Verified.
 - 2026-11-10 — One global search (top bar → `/search`: exercises, programs, recipes).
   Browse has its own compact search + Filters sheet; filters use taxonomy keys
   (`group`, `eq`, `env`), legacy label params still work.
-- 2026-11-10 — Brand assets in `static/img/brand/` (see its README); navbar logo sits
-  on a cream tile because the black glyph vanishes on the dark top bar.
+- 2026-11-10 — Brand assets in `static/img/brand/` (see its README). The black/gold
+  glyph needs a cream tile on dark backgrounds; the navbar currently uses the wordmark.
 - 2026-11-10 — **Each page has one job.** Home = "what do I do today?" (continue,
   build a session, Coach's Picks, programs). Exercises = the catalogue (search, muscle
   group / equipment / level tiles → browse grid). Programs = plans + progress. Don't
   duplicate a section across pages.
-- 2026-11-10 — Home "Build a session": Home/Gym/Hybrid in the card header; split tabs
-  Push / Pull / Lower / Core / Full body, each with focus presets (chest vs shoulder
-  push, vertical vs horizontal pull, quad vs glute/ham dominant) defined in
-  `taxonomy.SESSION_SPLITS`; presets open `/workouts/mix?p=<key>` (main lifts, then
-  accessories; add-ons like calves via `&g=`). Below, muscle chips feed the Mixer with
-  a live count. Empty presets/splits are hidden automatically.
+- 2026-11-10 — Home "Build a session": full-width Home/Gym/Hybrid switch, then one
+  colour card per split (Push / Pull / Lower / Core / Full body, colour in
+  `taxonomy.SESSION_SPLITS`) opening its full session `/workouts/mix?p=<key>`; focus
+  variants (chest vs shoulder push, vertical vs horizontal pull, quad vs glute/ham
+  dominant) are named on the card and switched on the session page. Below, tinted
+  muscle chips (only groups with exercises) feed the Mixer with a live count. No tabs.
+  Continue training stays at the top, compact, only when there is progress.
+- 2026-11-10 — The Home/Gym preference (`nfg_env`) applies to Home, the Mixer and
+  session pages only. The Exercises page always shows the whole library; browse takes
+  an explicit `?env=` filter that is kept in pager links but never saved.
+- 2026-11-10 — Exercises page: muscle groups (groups with exercises first, curated
+  order) and equipment show 6 with "Show all"; equipment tiles are tinted and say
+  where they work; level cards have difficulty bars + who they suit; "New in the
+  library" rail.
+- 2026-11-10 — Top bar: "NFG" wordmark (logo kept for favicon/home-screen icons),
+  search (drawer on mobile), Sign in / Join for guests, hamburger menu (`#appMenu`).
+  The exercise how-to is a small centred modal, not a bottom sheet.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 

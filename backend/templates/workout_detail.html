@@ -26,7 +26,7 @@
         </div>
         {% if images|length > 1 %}<span class="nfg-gallery-count">{{ images|length }} photos · swipe</span>{% endif %}
         {% if has_howto %}
-          <button class="nfg-help-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#howToSheet"
+          <button class="nfg-help-btn" type="button" data-bs-toggle="modal" data-bs-target="#howToSheet"
                   aria-controls="howToSheet" aria-label="How to do {{ w.name }}">{{ ui.icon('question-lg') }}</button>
         {% endif %}
       </div>
@@ -73,7 +73,7 @@
       {% if w.info %}<p class="nfg-ex-summary">{{ w.info }}</p>{% endif %}
 
       {% if has_howto %}
-        <button class="nfg-btn nfg-howto-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#howToSheet"
+        <button class="nfg-btn nfg-howto-btn" type="button" data-bs-toggle="modal" data-bs-target="#howToSheet"
                 aria-controls="howToSheet">How to do it</button>
       {% endif %}
 
@@ -115,14 +115,17 @@
   {% if w.safety %}{% set _ = tabs.append(('safety', 'Safety')) %}{% endif %}
   {% if w.youtube_id %}{% set _ = tabs.append(('video', 'Video')) %}{% endif %}
 
-  <div class="offcanvas offcanvas-bottom nfg-sheet nfg-howto" tabindex="-1" id="howToSheet" aria-labelledby="howToTitle"
+  {# A small centred popup (not a full-screen sheet): quick to read, quick to close. #}
+  <div class="modal fade nfg-howto" tabindex="-1" id="howToSheet" aria-labelledby="howToTitle" aria-hidden="true"
        style="--accent: {{ accent.color }};">
-    <div class="nfg-sheet-head">
+    <div class="modal-dialog modal-dialog-centered nfg-howto-dialog">
+    <div class="modal-content nfg-howto-card">
+    <div class="nfg-howto-head">
       <div>
         <div class="nfg-ex-kicker">How to do it</div>
-        <h2 class="nfg-sheet-title" id="howToTitle">{{ w.name }}</h2>
+        <h2 class="nfg-howto-title" id="howToTitle">{{ w.name }}</h2>
       </div>
-      <button type="button" class="nfg-iconbtn is-dark" data-bs-dismiss="offcanvas" aria-label="Close">{{ ui.icon('x-lg') }}</button>
+      <button type="button" class="nfg-iconbtn is-dark" data-bs-dismiss="modal" aria-label="Close">{{ ui.icon('x-lg') }}</button>
     </div>
 
     <div class="nfg-tabs" role="tablist" data-no-page-swipe>
@@ -133,7 +136,7 @@
       {% endfor %}
     </div>
 
-    <div class="nfg-sheet-body tab-content">
+    <div class="nfg-howto-body tab-content">
       {% for key, label in tabs %}
         <div class="tab-pane fade{% if loop.first %} show active{% endif %}" id="pane-{{ key }}" role="tabpanel"
              aria-labelledby="tab-{{ key }}" tabindex="0">
@@ -162,14 +165,28 @@
         </div>
       {% endfor %}
     </div>
+    </div>
+    </div>
   </div>
   <script>
-    /* Load the YouTube embed only when its tab is opened. */
+    /* Load the YouTube embed only when its tab is opened; stop it when the popup closes. */
     document.addEventListener('shown.bs.tab', function (e) {
       if (!e.target || e.target.id !== 'tab-video') return;
       var frame = document.querySelector('#pane-video iframe[data-src]');
-      if (frame && !frame.src) frame.src = frame.dataset.src;
+      if (frame && !frame.getAttribute('src')) frame.src = frame.dataset.src;
     });
+    var howTo = document.getElementById('howToSheet');
+    if (howTo) {
+      howTo.addEventListener('hidden.bs.modal', function () {
+        var frame = howTo.querySelector('#pane-video iframe[data-src]');
+        if (frame && frame.getAttribute('src')) frame.removeAttribute('src');
+        var tab = document.getElementById('tab-video');
+        if (tab && tab.classList.contains('active')) {
+          var first = howTo.querySelector('.nfg-tab');
+          if (first && window.bootstrap) bootstrap.Tab.getOrCreateInstance(first).show();
+        }
+      });
+    }
   </script>
 {% endif %}
 {% endblock %}

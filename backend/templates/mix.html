@@ -23,7 +23,7 @@
 
 {% if session %}
   {# ---------------- Session preset (Push / Pull / Lower / Core) ---------------- #}
-  <header class="nfg-page-head">
+  <header class="nfg-page-head nfg-session-head" style="--split-color: {{ session.split_color }};">
     <div class="app-page-kicker">Session</div>
     <h1 class="nfg-page-title">{{ session_title }}</h1>
     <p class="nfg-env-note">{{ session.covers }}</p>
@@ -32,7 +32,7 @@
   {% if focus_options %}
     {% call ui.rail() %}
       {% for f in focus_options %}
-        <a class="nfg-focus{% if f.active %} is-active{% endif %}" href="{{ f.href }}"
+        <a class="nfg-focus{% if f.active %} is-active{% endif %}" href="{{ f.href }}" style="--split-color: {{ session.split_color }};"
            {% if f.active %}aria-current="true"{% endif %}>{{ f.label }}</a>
       {% endfor %}
     {% endcall %}

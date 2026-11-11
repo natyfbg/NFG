@@ -41,7 +41,7 @@ from flask_login import (
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from jinja2 import TemplateNotFound
 from PIL import Image, UnidentifiedImageError
-from pymongo import ASCENDING, MongoClient
+from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -3537,7 +3537,12 @@ def _render_session(preset: dict, env: str):
 
 
 def _home_splits(env: str) -> List[dict]:
-    """Session splits for Home, with exercise counts; empty presets and splits are hidden."""
+    """One card per session split for Home (Push, Pull, Lower, Core, Full body).
+
+    The card opens the split's first preset that has exercises (normally the full
+    session); its focus variants are listed on the card and switchable on the session
+    page. Splits with nothing behind them are hidden.
+    """
     splits = []
     for split in tx.SESSION_SPLITS:
         presets = []
@@ -3545,8 +3550,21 @@ def _home_splits(env: str) -> List[dict]:
             n = len(_session_results(tx.SESSION_PRESETS[preset["key"]], [], env))
             if n:
                 presets.append(dict(preset, count=n, href=url_for("workouts_mix", p=preset["key"])))
-        if presets:
-            splits.append({"key": split["key"], "label": split["label"], "presets": presets})
+        if not presets:
+            continue
+        lead = presets[0]
+        splits.append(
+            {
+                "key": split["key"],
+                "label": split["label"],
+                "color": split["color"],
+                "covers": lead["covers"],
+                "count": lead["count"],
+                "href": lead["href"],
+                "focus": [p["short"] for p in presets if p.get("short")],
+                "presets": presets,
+            }
+        )
     return splits
 
 
@@ -3580,9 +3598,11 @@ def home():
         )
     ]
     available = {gk for groups in session_index for gk in groups}
+    # Only groups with exercises behind them; the list grows as the library does.
     mix_chips = [
-        {"key": k, "label": g["label"], "color": g["color"], "available": k in available}
+        {"key": k, "label": g["label"], "color": g["color"], "available": True}
         for k, g in tx.MUSCLE_GROUPS.items()
+        if k in available
     ]
     return render_template(
         "home.html",
@@ -4148,6 +4168,36 @@ def _count_label(n: int) -> str:
     return f"{n} exercise{'s' if n != 1 else ''}" if n else "Coming soon"
 
 
+# Order of muscle groups on the Exercises page. Groups with exercises come first,
+# so the six visible tiles are never "Coming soon" while others have content.
+GROUP_ORDER = [
+    "chest",
+    "back",
+    "shoulders",
+    "quads",
+    "glutes",
+    "core",
+    "biceps",
+    "triceps",
+    "hamstrings",
+    "calves",
+    "forearms",
+    "full_body",
+    "cardio",
+    "mobility",
+]
+LANDING_VISIBLE = 6
+HOME_EQUIPMENT = {"bodyweight", *tx.ENVIRONMENTS["home"]["equipment"]}
+
+
+def _ordered_group_cards(env: str) -> List[dict]:
+    cards = {c["key"]: dict(c, blurb=tx.group_blurb(c["key"])) for c in _group_cards(env)}
+    keys = [k for k in GROUP_ORDER if k in cards] + [k for k in cards if k not in GROUP_ORDER]
+    ordered = [cards[k] for k in keys]
+    # Stable sort: keeps the curated order inside "has exercises" / "coming soon".
+    return sorted(ordered, key=lambda c: c["count"] == 0)
+
+
 @app.route("/workouts")
 def workouts():
     # Backwards compatibility for old /workouts?filter=... links.
@@ -4157,12 +4207,17 @@ def workouts():
             url_for("workouts_browse", sort=LEGACY_WORKOUT_FILTER_TO_SORT[legacy_filter])
         )
 
-    env = _current_env()
+    # The catalogue always shows the whole library. The Home/Gym preference applies
+    # to Home and session pages, not here (it used to follow people in and hide things).
+    env = "hybrid"
     eq_counts = _equipment_counts(env)
     equipment_tiles = [
         {
+            "key": key,
             "label": _equipment_label(key),
-            "sub": _count_label(eq_counts.get(key, 0)),
+            "count": eq_counts[key],
+            "where": "Home & gym" if key in HOME_EQUIPMENT else "Gym",
+            "color": tx.BODYWEIGHT_COLOR if key == "bodyweight" else tx.EQUIPMENT[key]["color"],
             "href": url_for("workouts_browse", eq=key),
         }
         for key in EQUIPMENT_CHOICES
@@ -4170,25 +4225,31 @@ def workouts():
     ]
     level_tiles = []
     for key, lvl in tx.LEVELS.items():
-        n = db.workouts.count_documents(
-            _public_workout_query(_and(_env_filter(env), {"level": lvl["label"]}))
-        )
+        n = db.workouts.count_documents(_public_workout_query({"level": lvl["label"]}))
         level_tiles.append(
             {
+                "key": key,
                 "label": lvl["label"],
-                "sub": _count_label(n),
+                "blurb": lvl["blurb"],
+                "rank": lvl["rank"],
+                "count": n,
                 "href": url_for("workouts_browse", level=lvl["label"]),
             }
         )
-    total = db.workouts.count_documents(_public_workout_query(_env_filter(env)))
-    group_cards = [dict(card, blurb=tx.group_blurb(card["key"])) for card in _group_cards(env)]
+    newest = [
+        _with_metadata_fallbacks(w)
+        for w in db.workouts.find(_public_workout_query())
+        .sort([("created_at", DESCENDING), ("name", ASCENDING)])
+        .limit(10)
+    ]
+    total = db.workouts.count_documents(_public_workout_query())
     return render_template(
         "workouts.html",
-        env=env,
-        environments=tx.ENVIRONMENTS,
-        group_cards=group_cards,
+        group_cards=_ordered_group_cards(env),
         equipment_tiles=equipment_tiles,
         level_tiles=level_tiles,
+        newest=newest,
+        visible=LANDING_VISIBLE,
         total=total,
     )
 
@@ -4230,14 +4291,21 @@ def _browse_args() -> Dict[str, str]:
         "equipment",
         "difficulty",
         "per_page",
+        "env",
     )
     return {k: request.args.get(k) for k in keys if (request.args.get(k) or "").strip()}
 
 
 @app.route("/workouts/browse")
 def workouts_browse():
-    env = _current_env()
     args = _browse_args()
+    # Browse shows everything unless a Home/Gym filter is picked here; it does not
+    # read or change the remembered Home preference.
+    env = _norm_choice(args.pop("env", ""))
+    if env in tx.ENVIRONMENTS and env != "hybrid":
+        args["env"] = env
+    else:
+        env = "hybrid"
     q = _clean_search_query(args.get("q"))
     group = _norm_choice(args.get("group"))
     group = group if group in tx.MUSCLE_GROUPS else ""
@@ -4317,7 +4385,7 @@ def workouts_browse():
     active = []
     if env != "hybrid":
         active.append(
-            {"label": f"At {tx.ENVIRONMENTS[env]['label'].lower()}", "href": without(env="hybrid")}
+            {"label": f"At {tx.ENVIRONMENTS[env]['label'].lower()}", "href": without("env")}
         )
     if group:
         active.append({"label": tx.MUSCLE_GROUPS[group]["label"], "href": without("group")})

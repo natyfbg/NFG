@@ -47,7 +47,7 @@
     {% else %}
       <div class="nfg-empty">
         Nothing matches yet — the library is still growing.
-        {% if active_filters or q %}<a href="{{ url_for('workouts_browse', env='hybrid') }}">Clear filters</a>.{% endif %}
+        {% if active_filters or q %}<a href="{{ url_for('workouts_browse') }}">Clear filters</a>.{% endif %}
       </div>
     {% endif %}
   </section>
@@ -104,7 +104,7 @@
       </fieldset>
     </div>
     <div class="nfg-sheet-foot">
-      <a class="nfg-btn is-ghost" href="{{ url_for('workouts_browse', env='hybrid') }}">Clear all</a>
+      <a class="nfg-btn is-ghost" href="{{ url_for('workouts_browse') }}">Clear all</a>
       <button class="nfg-btn" type="submit">Show results</button>
     </div>
   </form>

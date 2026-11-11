@@ -1,6 +1,7 @@
 """Discovery Home, training environment, Muscle Mixer, favorites and curation."""
 
 import datetime
+import re
 
 import content_sync as cs
 import curation
@@ -50,23 +51,39 @@ def library(nfg_app):
 
 def test_home_shows_session_builder(client, library):
     html = client.get("/").get_data(as_text=True)
-    for text in ("What are you training today?", "Build a session", "Where are you training?"):
+    for text in ("What are you training today?", "Pick a session", "Where are you training?"):
         assert text in html
     # Inline Muscle Mixer chips; no duplicate muscle-group grid on Home.
     assert 'name="g" value="chest"' in html
     assert "nfg-group-grid" not in html
-    # Split tabs only for splits with exercises (library has push and pull, no lower).
-    assert 'id="split-tab-push"' in html and 'id="split-tab-pull"' in html
-    assert 'id="split-tab-lower"' not in html
+    # One card per split with exercises (library has push and pull, no lower); no tabs.
+    assert 'href="/workouts/mix?p=push"' in html and 'href="/workouts/mix?p=pull"' in html
+    assert "p=lower" not in html and "nfg-split-tab" not in html
+    # Chips only for groups that have exercises behind them.
+    assert 'value="quads"' not in html
+
+
+def test_home_split_card_lists_focus_options(client, library):
+    html = client.get("/").get_data(as_text=True)
+    push = html[html.index('href="/workouts/mix?p=push"') :]
+    push = push[: push.index("</a>")]
+    assert "Push" in push and "Chest · shoulders · triceps" in push
+    assert "Focus: Chest" in push  # the chest-focus variant has an exercise
+
+
+def _push_count(html):
+    return int(re.search(r'p=push".*?nfg-split-count">(\d+) exercise', html, re.S).group(1))
 
 
 def test_env_choice_is_remembered_in_cookie(client, library):
+    everywhere = _push_count(client.get("/").get_data(as_text=True))
     resp = client.get("/?env=home")
     assert any(c.startswith("nfg_env=home") for c in resp.headers.getlist("Set-Cookie"))
     # Next visit without ?env= keeps "home": barbell press no longer counted.
     html = client.get("/").get_data(as_text=True)
     assert 'aria-current="true">Home<' in html
-    assert "1 exercise<" in html or "1 exercise\n" in html
+    assert _push_count(html) == everywhere - 1
+    assert 'p=pull"' not in html  # the only pull exercise needs a gym
 
 
 def test_invalid_env_falls_back_to_hybrid(client, library):
