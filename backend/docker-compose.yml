@@ -39,6 +39,8 @@ services:
       # Keep SECRET_KEY from .env if present; else fallback.
       SECRET_KEY: ${SECRET_KEY:-dev-secret}
       PORT: 8000
+      # Pick up code/template changes without a restart (local only).
+      DEV_RELOAD: "1"
 
     ports:
       - "5050:8000"  # host:container

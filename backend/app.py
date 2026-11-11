@@ -76,6 +76,12 @@ UPLOAD_FOLDER_LEGACY = os.getenv("UPLOAD_FOLDER", "static/uploads").strip()
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
+# Local Docker only (docker-compose sets DEV_RELOAD=1; Render never does): re-read
+# templates when they change, so pulled code and the live CSS can't get out of step.
+DEV_RELOAD = os.getenv("DEV_RELOAD") == "1" and not IS_HOSTED
+if DEV_RELOAD:
+    app.config["TEMPLATES_AUTO_RELOAD"] = True
+
 # Safer cookies in hosted envs (Render sets RENDER=true)
 if IS_HOSTED:
     app.config.update(
@@ -3456,6 +3462,7 @@ def workouts_mix():
     results = _mix_results(groups, env)
     return render_template(
         "mix.html",
+        preset=None,
         env=env,
         env_note=ENV_NOTES.get(env, ""),
         environments=tx.ENVIRONMENTS,
@@ -3516,7 +3523,8 @@ def _render_session(preset: dict, env: str):
     )
     return render_template(
         "mix.html",
-        session=preset,
+        # Not "session": that name is Flask's session object in every template.
+        preset=preset,
         session_title=title,
         focus_options=focus_options if len(focus_options) > 1 else [],
         addon_chips=addon_chips,

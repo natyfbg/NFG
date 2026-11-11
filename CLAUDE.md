@@ -42,8 +42,9 @@ migrate this app to Next.js/React or that project's architecture.
 ```bash
 docker compose up -d --build          # app on http://localhost:5050
 docker compose logs -f app
-docker compose restart app            # pick up code changes (bind-mounted)
 docker compose down
+# Code + templates are bind-mounted and reload on their own (DEV_RELOAD=1 in compose).
+# Rebuild only when requirements.txt or the Dockerfile change.
 
 pip install -r requirements-dev.txt   # once, in a venv
 python -m pytest -q                   # tests run against in-memory Mongo (mongomock)
@@ -90,6 +91,9 @@ as committer, so GitHub shows them as Verified.
 - **Import-time side effects:** importing `app.py` pings Mongo, creates indexes and
   inserts default styles + the 8-week hub/tracks if missing — in every Gunicorn
   worker, on every deploy. Deleting the 8-week programs in admin is undone on deploy.
+- **Local reload:** `DEV_RELOAD=1` (compose only) runs gunicorn with `--reload` and
+  `TEMPLATES_AUTO_RELOAD`. Without it, pulled code shows the *old* templates with the
+  *new* CSS (CSS is read live, templates are cached at start) and pages look broken.
 - **Hosted config fails fast:** on Render the app refuses to start without a real
   `SECRET_KEY` and `ADMIN_PASSWORD_HASH`. Plaintext `ADMIN_PASSWORD` is local-only.
 - **Swipe navigation** (`base.html`) hijacks horizontal drags on home/workouts/

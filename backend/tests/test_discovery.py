@@ -248,3 +248,14 @@ def test_reserved_slug_rejected(tmp_path):
 def test_nav_says_exercises(client):
     html = client.get("/").get_data(as_text=True)
     assert '<span class="label">Exercises</span>' in html
+
+
+def test_mixer_works_when_the_visitor_has_a_session(client, library):
+    # Regression: the template used a variable called "session", which is also Flask's
+    # session object; any visitor with session data (CSRF token, sign-in) got a 500.
+    with client.session_transaction() as s:
+        s["csrf_token"] = "x"
+    assert client.get("/workouts/mix").status_code == 200
+    resp = client.get("/workouts/mix?g=chest&g=back")
+    assert resp.status_code == 200 and "Build your mix" not in resp.get_data(as_text=True)
+    assert client.get("/workouts/mix?p=push").status_code == 200
