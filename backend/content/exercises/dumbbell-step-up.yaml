@@ -1,0 +1,37 @@
+slug: dumbbell-step-up
+name: Dumbbell Step-Up
+status: published
+level: beginner
+category: strength
+movement: lunge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [hamstrings, calves]
+equipment: [dumbbell, box]
+summary: >-
+  Stepping up onto a box or bench while holding dumbbells. It builds single-leg
+  strength that carries straight over to stairs and hills.
+setup:
+  - Stand facing a sturdy box or bench about knee height.
+  - Hold a dumbbell in each hand at your sides.
+  - Place one whole foot on the box.
+steps:
+  - Push through the foot on the box to step up until you're standing on it.
+  - Bring the other foot up to meet it, or keep it hovering.
+  - Step down slowly with the trailing leg.
+  - Finish all reps on one side, then switch.
+cues:
+  - Drive through the heel of the top foot.
+  - Don't push off the bottom foot.
+  - Lower down slowly; don't drop.
+mistakes:
+  - Bouncing off the floor with the back leg.
+  - Box so high that your hips sink below your knee to start.
+  - Leaning far forward to get up.
+safety:
+  - Use a stable box that won't slide or tip. Start lower if your balance is shaky.
+breathing: Breathe out as you step up, in as you step down.
+regressions: [split-squat]
+tags: [lunge, legs, dumbbell, unilateral]

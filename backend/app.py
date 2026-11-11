@@ -3467,8 +3467,12 @@ def _session_results(
         primary_hits = set(m.get("primary") or []) & muscles
         secondary_hits = set(m.get("secondary") or []) & muscles
         main_pattern = doc.get("movement") in movements
+        # Holds (wall sit, planks) are finishers, not main lifts.
+        holds = "isometric" in (doc.get("tags") or [])
         doc["session_role"] = (
-            "main" if main_pattern and doc.get("mechanics") != "isolation" else "accessory"
+            "main"
+            if main_pattern and doc.get("mechanics") != "isolation" and not holds
+            else "accessory"
         )
         doc["mix_score"] = (
             (3 if main_pattern else 0)
@@ -3481,9 +3485,15 @@ def _session_results(
         doc["mix_primary"] = [g for g in shown_groups if g in pg]
         doc["mix_secondary"] = [g for g in shown_groups if g in mg and g not in pg]
         _with_metadata_fallbacks(doc)
+    # Main lifts lead with two-legged/two-armed compounds, grouped in the preset's
+    # movement order (a lower day: squats, then hinges, then lunges), so the anchor
+    # lifts come first instead of whatever is tagged with the most muscles.
+    order = {m: i for i, m in enumerate(preset.get("movements") or [])}
     docs.sort(
         key=lambda d: (
             d["session_role"] != "main",
+            d["session_role"] == "main" and d.get("laterality") == "unilateral",
+            order.get(d.get("movement"), len(order)) if d["session_role"] == "main" else 0,
             -d["mix_score"],
             LEVEL_ORDER.get(d.get("level"), 3),
             d.get("name") or "",

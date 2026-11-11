@@ -1,0 +1,42 @@
+slug: barbell-back-squat
+name: Barbell Back Squat
+status: published
+level: intermediate
+category: strength
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [adductors, hamstrings, lower_back, abs]
+equipment: [barbell]
+summary: >-
+  Squatting with a barbell across your upper back. It's the classic lower-body
+  strength lift and lets you load your legs heavier than almost anything else.
+setup:
+  - Set the bar in a rack at about armpit height.
+  - Step under it and rest it on your upper back, across the meaty part below your neck.
+  - Grip the bar just outside your shoulders and pull your shoulder blades together.
+  - Stand up to lift it off, take two or three steps back and set your feet about
+    shoulder-width apart.
+steps:
+  - Take a big breath and brace your core.
+  - Bend at the hips and knees together and sit down between your heels.
+  - Lower until your thighs are at least parallel to the floor, if you can keep your
+    back flat.
+  - Drive up through your whole foot until you're standing tall.
+cues:
+  - Keep the bar over the middle of your foot.
+  - Spread the floor apart with your feet so your knees track out.
+  - Chest and hips rise together.
+mistakes:
+  - Hips shooting up first so the lift turns into a good morning.
+  - Knees caving inward on the way up.
+  - Losing the brace and rounding the lower back at the bottom.
+safety:
+  - Always squat inside a rack with the safety arms set just below your lowest point.
+  - Learn the pattern with the goblet squat first.
+breathing: Breathe in and brace before you lower. Hold the brace, then breathe out near the top.
+regressions: [goblet-squat]
+progressions: [barbell-front-squat]
+tags: [squat, legs, barbell, strength]

@@ -1,0 +1,39 @@
+slug: cable-pull-through
+name: Cable Pull-Through
+status: published
+level: beginner
+category: strength
+movement: hinge
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [glutes, hamstrings]
+  secondary: [lower_back]
+equipment: [cable]
+summary: >-
+  Pulling a low cable rope through your legs by driving your hips forward. It teaches
+  the hip hinge with steady tension and little strain on the back.
+setup:
+  - Attach a rope to a low cable pulley.
+  - Face away from the machine and hold the rope between your legs with both hands.
+  - Walk forward two or three steps and stand with your feet a little wider than
+    hip-width.
+steps:
+  - Push your hips back, letting the rope pull your hands back between your legs.
+  - Keep your back flat and knees softly bent.
+  - Drive your hips forward to stand tall.
+  - Squeeze your glutes at the top.
+cues:
+  - Hips back, then hips through.
+  - Arms stay long; they're just hooks.
+  - Finish tall, not leaning back.
+mistakes:
+  - Pulling the rope with the arms.
+  - Squatting down instead of hinging.
+  - Leaning back at the top.
+safety:
+  - Step far enough from the machine that the weight stack doesn't touch down between
+    reps.
+breathing: Breathe in as you hinge back, out as you stand.
+progressions: [romanian-deadlift]
+tags: [hinge, glutes, hamstrings, cable]

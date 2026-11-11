@@ -1,0 +1,36 @@
+slug: standing-calf-raise
+name: Standing Calf Raise
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [calves]
+equipment: []
+summary: >-
+  Rising up onto the balls of your feet. It strengthens the calves and ankles, and you
+  can do it anywhere.
+setup:
+  - Stand with the balls of your feet on the edge of a step, heels hanging off.
+  - Hold a wall or rail for balance.
+  - Hold a dumbbell in your free hand to make it harder.
+steps:
+  - Lower your heels below the step until you feel a stretch in your calves.
+  - Rise up onto the balls of your feet as high as you can.
+  - Pause for a moment at the top.
+  - Lower slowly back to the stretch.
+cues:
+  - "Full range: deep stretch, high finish."
+  - Pause at the top.
+  - Push through the big toe.
+mistakes:
+  - Bouncing quickly through short reps.
+  - Rolling out onto the little toes.
+  - Bending the knees to help.
+safety:
+  - Use a step with a rail or wall nearby so you can't slip off.
+breathing: Breathe out as you rise, in as you lower.
+progressions: [seated-calf-raise]
+tags: [calves, bodyweight, isolation]

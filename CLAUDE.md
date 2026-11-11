@@ -182,6 +182,10 @@ as committer, so GitHub shows them as Verified.
   (matches the black/gold logo). Lively, not cartoonish; no intro paragraphs.
 - 2026-11-10 — Exercise images are 4:5 (1080×1350). Placeholders carry no exercise
   name and keep the bottom-right corner free for the "?" (how-to) button.
+- 2026-11-10 — Placeholders carry a front/back muscle map (`musclemap.py`, regions keyed
+  by taxonomy muscle keys): anatomy only, never technique. Session pages lead with
+  bilateral compounds in the preset's movement order; isometric holds (`tags:
+  [isometric]`) count as accessories.
 - 2026-11-10 — Exercise page: chips row replaces the Overview block; instructions
   live in a tabbed bottom sheet (Steps · Cues · Mistakes · Safety · Video) opened by
   the "?" on the image or the "How to do it" button; per-exercise `videos:` links
@@ -225,10 +229,11 @@ Home (session cards, Mixer chips, Continue training) · app shell, Exercises, br
 search, exercise page.
 
 Next six sprints, in order:
-1. ✅ Ship and tidy (code done 2026-11-10; promotion of PR #11 pending Nate's phone check) —
+1. ✅ Ship and tidy (promoted in PR #11, 2026-11-10) —
    visitor-facing placeholder/admin copy removed, Sign in pill, versioned stylesheet,
    library snapshot (Home 20 → 5 DB calls, Exercises 11 → 0).
-2. Library: legs and glutes (~25) + finish deadlift/goblet squat; muscle-map placeholders.
+2. ✅ Library: legs and glutes (27 new, 67 total) + deadlift/goblet squat text;
+   muscle-map placeholders (code done 2026-11-10; awaiting PR review + production sync).
 3. Programs v2 — programs as content files + sync; one-screen setup remembering level and
    Home/Gym; current week, day view (sets/reps/rest), "Start today"; old URLs keep working.
 4. 8 Week Challenge content (3 levels, authored home swaps) + core exercises (~15).

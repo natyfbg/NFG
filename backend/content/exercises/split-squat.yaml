@@ -1,0 +1,37 @@
+slug: split-squat
+name: Split Squat
+status: published
+level: beginner
+category: strength
+movement: lunge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [adductors, hamstrings]
+equipment: []
+summary: >-
+  A lunge where your feet stay planted, one in front of the other. It builds
+  single-leg strength and balance without stepping.
+setup:
+  - Stand tall and take a long step forward with one foot.
+  - Keep your feet hip-width apart, like standing on train tracks, not a tightrope.
+  - Lift your back heel so you're on the ball of that foot.
+steps:
+  - Bend both knees to lower straight down.
+  - Stop when your back knee is just above the floor.
+  - Push through your front foot to rise back up.
+  - Finish all reps on one side, then switch.
+cues:
+  - Go straight down, like an elevator.
+  - Front knee tracks over the toes.
+  - Stay tall through the torso.
+mistakes:
+  - Feet in a straight line, which kills your balance.
+  - Pushing off the back leg instead of the front.
+  - Front heel lifting.
+safety:
+  - Hold onto a wall or chair for balance while you learn.
+breathing: Breathe in as you lower, out as you rise.
+progressions: [dumbbell-reverse-lunge, bulgarian-split-squat]
+tags: [lunge, legs, bodyweight, unilateral]

@@ -1,0 +1,33 @@
+slug: banded-lateral-walk
+name: Banded Lateral Walk
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [abductors, glutes]
+equipment: [bands]
+summary: >-
+  Stepping sideways in a half squat with a band around your legs. It strengthens the
+  side glutes that keep your knees and hips stable.
+setup:
+  - Place a mini band just above your knees or around your ankles.
+  - Stand with your feet hip-width apart and bend into a quarter squat.
+steps:
+  - Step sideways with one foot, pushing against the band.
+  - Bring the other foot in, keeping tension on the band.
+  - Take the given number of steps, then walk back the other way.
+cues:
+  - Stay low the whole time.
+  - Toes point forward.
+  - Never let the band go slack.
+mistakes:
+  - Standing up between steps.
+  - Swaying the upper body side to side.
+  - Letting the knees cave in.
+safety:
+  - Choose a band that lets you keep good form for every step.
+breathing: Breathe steadily as you step.
+tags: [glutes, abductors, bands, activation]

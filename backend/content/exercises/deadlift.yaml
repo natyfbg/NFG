@@ -10,8 +10,31 @@ muscles:
   primary: [hamstrings, glutes]
   secondary: [lower_back, upper_back, traps, forearms, quads]
 equipment: [barbell]
-tags: [hinge, back, hamstrings, barbell]
-notes: >-
-  Migrated from the original seed (already live, no instructions yet). Its old
-  body part "Posterior Chain" wasn't a valid taxonomy value; it now derives Legs /
-  Hamstrings from the muscles above.
+summary: >-
+  Lifting a loaded barbell from the floor to standing. It trains the whole back of the
+  body, from grip to hamstrings, and is one of the best tests of total strength.
+setup:
+  - Stand with your feet hip-width apart, the bar over the middle of your feet.
+  - Hinge down and grip the bar just outside your shins.
+  - Bring your shins to the bar, lift your chest and flatten your back.
+  - Pull the slack out of the bar until you feel your whole body tighten.
+steps:
+  - Take a big breath and brace your core.
+  - Push the floor away with your legs, keeping the bar against your shins.
+  - Once the bar passes your knees, drive your hips forward to stand tall.
+  - "Lower it the same way: hips back first, then bend the knees once the bar passes
+    them."
+cues:
+  - Bar stays in contact with your legs.
+  - Chest up, back flat, arms long.
+  - Finish tall with the glutes; don't lean back.
+mistakes:
+  - Rounding the back off the floor.
+  - Jerking the bar instead of pulling the slack out first.
+  - Hips shooting up so the legs straighten before the bar moves.
+safety:
+  - Learn the hinge with the Romanian deadlift and keep the weight moderate until your
+    back stays flat on every rep. Stop if you feel sharp pain in your lower back.
+breathing: Breathe in and brace before each rep. Breathe out at the top, reset, repeat.
+regressions: [romanian-deadlift, dumbbell-romanian-deadlift]
+tags: [hinge, back, hamstrings, barbell, strength]

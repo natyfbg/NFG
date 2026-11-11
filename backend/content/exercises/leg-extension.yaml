@@ -1,0 +1,35 @@
+slug: leg-extension
+name: Leg Extension
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [quads]
+equipment: [machine]
+summary: >-
+  Straightening your knees against a padded lever while seated. It isolates the quads
+  with no load on the back.
+setup:
+  - Adjust the back pad so your knees line up with the machine's pivot point.
+  - Set the shin pad just above your ankles.
+  - Hold the side handles and sit tall.
+steps:
+  - Straighten your knees to lift the pad until your legs are straight.
+  - Squeeze your quads for a moment at the top.
+  - Lower slowly back to the start.
+cues:
+  - Move only at the knees.
+  - Pause and squeeze at the top.
+  - Take two to three seconds on the way down.
+mistakes:
+  - Swinging the weight up with momentum.
+  - Lifting your hips off the seat.
+  - Dropping the weight back down.
+safety:
+  - Use a moderate weight and a smooth pace. Stop if you feel pain at the front of the
+    knee.
+breathing: Breathe out as you lift, in as you lower.
+tags: [quads, machine, isolation]

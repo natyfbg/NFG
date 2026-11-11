@@ -1,0 +1,39 @@
+slug: leg-press
+name: Leg Press
+status: published
+level: beginner
+category: strength
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [adductors, hamstrings]
+equipment: [machine]
+summary: >-
+  Pushing a weighted sled away with your legs while seated. It loads the quads and
+  glutes heavily without a bar on your back.
+setup:
+  - Sit with your back and hips flat against the pad.
+  - Place your feet in the middle of the platform, about shoulder-width apart.
+  - Push the platform up slightly and release the safety handles.
+steps:
+  - Bend your knees to lower the platform toward you under control.
+  - Stop when your knees are at about 90 degrees or just before your hips start to lift
+    off the seat.
+  - Press through your whole foot to straighten your legs.
+  - Stop just short of locking your knees.
+cues:
+  - Lower back stays glued to the pad.
+  - Knees in line with your toes.
+  - Push through your heels and midfoot.
+mistakes:
+  - Lowering so far that your hips roll up off the seat.
+  - Snapping the knees straight at the top.
+  - Letting the knees fall inward.
+safety:
+  - Always lock the safety handles back in place before you get out.
+  - Never lock your knees out under a heavy load.
+breathing: Breathe in as you lower, out as you press.
+progressions: [hack-squat]
+tags: [squat, legs, machine]
