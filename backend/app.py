@@ -9,7 +9,7 @@ import os
 import re
 import uuid
 from logging.handlers import RotatingFileHandler
-from time import perf_counter
+from time import monotonic, perf_counter
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
@@ -41,7 +41,7 @@ from flask_login import (
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from jinja2 import TemplateNotFound
 from PIL import Image, UnidentifiedImageError
-from pymongo import ASCENDING, DESCENDING, MongoClient
+from pymongo import ASCENDING, MongoClient
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -420,6 +420,15 @@ def _security_headers(resp):
     resp.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     if IS_HOSTED:
         resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
+    # Versioned static links (?v=<commit>) change on every deploy, so they can be
+    # cached for a year; unversioned files keep the default revalidation.
+    if (
+        request.path.startswith("/static/")
+        and request.args.get("v")
+        and resp.status_code == 200
+        and not DEV_RELOAD
+    ):
+        resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
     return resp
 
 
@@ -1042,6 +1051,20 @@ def _public_program_query(extra: Optional[dict] = None) -> dict:
     if extra:
         filters.append(extra)
     return {"$and": filters}
+
+
+# Sentences written for Admin that older seeds stored in public fields (e.g. track
+# summaries). Hidden at render time, so production data needs no migration.
+ADMIN_ONLY_SENTENCES = ("Add weeks/workouts next in Admin.",)
+
+
+@app.template_filter("visitor_text")
+def visitor_text(value):
+    """Strip Admin-only sentences from stored copy shown to visitors."""
+    text = value or ""
+    for sentence in ADMIN_ONLY_SENTENCES:
+        text = text.replace(sentence, "")
+    return " ".join(text.split())
 
 
 def _public_workout_query(extra: Optional[dict] = None) -> dict:
@@ -3085,10 +3108,7 @@ def _ensure_8_week_programs_seed_once() -> None:
                     "track_env": _norm_choice(env),
                     "category": f"{level} • {env}",
                     "duration_label": "8 weeks",
-                    "summary": (
-                        "Week-by-week plan with exercise options. "
-                        "Add weeks/workouts next in Admin."
-                    ),
+                    "summary": "Week-by-week plan with exercise options.",
                     "cover_image": None,
                     "order": order,
                     "active": True,
@@ -3137,12 +3157,54 @@ if MEDIA_ROOT:
 # -----------------------------------------------------------------------------
 # Context processors
 # -----------------------------------------------------------------------------
+class _LazySet:
+    """A set that is only loaded when a template actually looks inside it, so pages
+    that never use it don't pay for the query."""
+
+    def __init__(self, loader):
+        self._loader = loader
+        self._value = None
+
+    def _get(self) -> set:
+        if self._value is None:
+            self._value = self._loader()
+        return self._value
+
+    def __contains__(self, item) -> bool:
+        return item in self._get()
+
+    def __iter__(self):
+        return iter(self._get())
+
+    def __len__(self) -> int:
+        return len(self._get())
+
+
+APP_CSS = os.path.join(BACKEND_DIR, "static", "css", "app.css")
+
+
+def _asset_version() -> str:
+    """Cache-busting token for the stylesheet link: the deployed commit on Render, else
+    the file's modified time, so a phone never pairs new pages with an old stylesheet."""
+    commit = (os.getenv("RENDER_GIT_COMMIT") or "").strip()
+    if commit and not DEV_RELOAD:
+        return commit[:8]
+    try:
+        return str(int(os.path.getmtime(APP_CSS)))
+    except OSError:
+        return "0"
+
+
+ASSET_VERSION = _asset_version()
+
+
 @app.context_processor
 def inject_globals():
     return {
         "quick_options": QUICK_OPTIONS,
         "csrf_token": generate_csrf,
-        "program_favorite_slugs": _favorite_slug_set_for_request(),
+        "program_favorite_slugs": _LazySet(_favorite_slug_set_for_request),
+        "asset_v": _asset_version() if DEV_RELOAD else ASSET_VERSION,
         **_brand_assets(),
     }
 
@@ -3241,6 +3303,59 @@ def _current_env() -> str:
     return saved if saved in tx.ENVIRONMENTS else DEFAULT_ENV
 
 
+# -----------------------------------------------------------------------------
+# Library snapshot: Home and the Exercises page read the whole public library many
+# times per request (one pass per session preset, counts per group/equipment/level).
+# One query per worker per minute serves all of them. Admins (who also see drafts)
+# always read fresh; any admin POST clears the snapshot; content syncs from the CLI
+# show up within LIBRARY_CACHE_SECONDS.
+# -----------------------------------------------------------------------------
+LIBRARY_CACHE_SECONDS = int(os.getenv("LIBRARY_CACHE_SECONDS", "60"))
+_library_snapshot: Dict[str, object] = {"at": 0.0, "docs": None}
+
+
+def _invalidate_library_cache() -> None:
+    _library_snapshot["at"] = 0.0
+    _library_snapshot["docs"] = None
+
+
+def _public_library() -> List[dict]:
+    """Every exercise this viewer may see. Treat the docs as read-only: copy before
+    adding keys (``dict(doc)``), because visitors share one cached list."""
+    if getattr(current_user, "is_admin", False) or LIBRARY_CACHE_SECONDS <= 0:
+        return list(db.workouts.find(_public_workout_query()))
+    now = monotonic()
+    docs = _library_snapshot["docs"]
+    if docs is None or now - float(_library_snapshot["at"]) > LIBRARY_CACHE_SECONDS:
+        try:
+            docs = list(db.workouts.find(_public_workout_query()))
+        except PyMongoError as e:
+            app.logger.warning("Library snapshot unavailable: %s", e)
+            return []
+        _library_snapshot["docs"] = docs
+        _library_snapshot["at"] = now
+    return docs  # type: ignore[return-value]
+
+
+def _in_env(doc: dict, env: str) -> bool:
+    """Python twin of _env_filter: hybrid trains anywhere."""
+    if not env or env == "hybrid":
+        return True
+    envs = doc.get("environments")
+    return env in envs if isinstance(envs, list) else envs == env
+
+
+def _library_for_env(env: str) -> List[dict]:
+    return [d for d in _public_library() if _in_env(d, env)]
+
+
+@app.after_request
+def _clear_library_after_admin_write(resp):
+    if request.method == "POST" and request.path.startswith("/admin"):
+        _invalidate_library_cache()
+    return resp
+
+
 def _env_filter(env: str) -> Optional[dict]:
     """Mongo filter for an environment. Hybrid trains anywhere, so nothing is filtered."""
     if env and env != "hybrid":
@@ -3262,16 +3377,11 @@ def _with_metadata_fallbacks(w: dict) -> dict:
 
 
 def _group_counts(env: str) -> Dict[str, int]:
-    pipeline = [
-        {"$match": _public_workout_query(_env_filter(env))},
-        {"$unwind": "$primary_groups"},
-        {"$group": {"_id": "$primary_groups", "n": {"$sum": 1}}},
-    ]
-    try:
-        return {row["_id"]: row["n"] for row in db.workouts.aggregate(pipeline)}
-    except PyMongoError as e:
-        app.logger.warning("Group counts unavailable: %s", e)
-        return {}
+    counts: Dict[str, int] = {}
+    for doc in _library_for_env(env):
+        for key in doc.get("primary_groups") or []:
+            counts[key] = counts.get(key, 0) + 1
+    return counts
 
 
 def _group_cards(env: str) -> List[dict]:
@@ -3332,23 +3442,22 @@ def _session_results(
     excluded = set(preset.get("exclude_movements") or [])
     muscles = set(preset.get("muscles") or []) | set(tx.muscles_for_groups(extra_groups))
     groups = set(preset.get("groups") or []) | {g for g in extra_groups if g in tx.MUSCLE_GROUPS}
-    ors = []
-    if movements:
-        ors.append({"movement": {"$in": sorted(movements)}})
-    if muscles:
-        ors.append({"muscles.primary": {"$in": sorted(muscles)}})
-    if groups:
-        ors.append({"primary_groups": {"$in": sorted(groups)}})
-    if not ors:
+    if not (movements or muscles or groups):
         return []
-    clauses = [
-        {"$or": ors},
-        {"category": {"$nin": ["cardio", "mobility"]}},
-        _env_filter(env),
-    ]
-    if excluded:
-        clauses.append({"movement": {"$nin": sorted(excluded)}})
-    docs = list(db.workouts.find(_public_workout_query(_and(*clauses))).limit(500))
+
+    def wanted(doc: dict) -> bool:
+        if doc.get("category") in ("cardio", "mobility"):
+            return False
+        if excluded and doc.get("movement") in excluded:
+            return False
+        primary = set((doc.get("muscles") or {}).get("primary") or [])
+        return (
+            doc.get("movement") in movements
+            or bool(primary & muscles)
+            or bool(set(doc.get("primary_groups") or []) & groups)
+        )
+
+    docs = [dict(d) for d in _library_for_env(env) if wanted(d)][:500]
 
     shown_groups = tx.groups_for_muscles(sorted(muscles)) + sorted(
         g for g in groups if g not in tx.groups_for_muscles(sorted(muscles))
@@ -3398,9 +3507,8 @@ def _exercises_by_slugs(slugs: List[str], limit: int = 12) -> List[dict]:
     """Published exercises for the given slugs, keeping the given order."""
     if not slugs:
         return []
-    docs = db.workouts.find(_public_workout_query({"slug": {"$in": list(slugs)}}))
-    by_slug = {d["slug"]: _with_metadata_fallbacks(d) for d in docs if d.get("slug")}
-    return [by_slug[s] for s in slugs if s in by_slug][:limit]
+    by_slug = {d["slug"]: d for d in _public_library() if d.get("slug")}
+    return [_with_metadata_fallbacks(dict(by_slug[s])) for s in slugs if s in by_slug][:limit]
 
 
 def _saved_exercises(owner_key: str, limit: int = 12) -> List[dict]:
@@ -3582,16 +3690,14 @@ def _home_splits(env: str) -> List[dict]:
 @app.route("/")
 def home():
     env = _current_env()
-    featured_programs = list(
-        db.programs.find(_public_program_query({"show_on_home": True}))
+    # One query for both shelves (featured, else hubs), split here in the same order.
+    home_candidates = list(
+        db.programs.find(_public_program_query({"$or": [{"show_on_home": True}, {"kind": "hub"}]}))
         .sort([("order", 1), ("created_at", -1)])
-        .limit(6)
+        .limit(50)
     )
-    hub_programs = list(
-        db.programs.find(_public_program_query({"kind": "hub"}))
-        .sort([("order", 1), ("created_at", -1)])
-        .limit(6)
-    )
+    featured_programs = [p for p in home_candidates if p.get("show_on_home") is True][:6]
+    hub_programs = [p for p in home_candidates if p.get("kind") == "hub"][:6]
     owner_key = _progress_owner_key()
     favorite_programs = _favorite_programs_for_viewer(owner_key, limit=6)
     continue_plan = _continue_plan_for_owner(owner_key)
@@ -3599,12 +3705,7 @@ def home():
 
     # Today's session (inline Muscle Mixer): which groups each available exercise trains,
     # so the page can show live counts and hide presets with nothing behind them.
-    session_index = [
-        d.get("muscle_groups") or []
-        for d in db.workouts.find(
-            _public_workout_query(_env_filter(env)), {"muscle_groups": 1, "_id": 0}
-        )
-    ]
+    session_index = [d.get("muscle_groups") or [] for d in _library_for_env(env)]
     available = {gk for groups in session_index for gk in groups}
     # Only groups with exercises behind them; the list grows as the library does.
     mix_chips = [
@@ -3919,7 +4020,9 @@ def program_hub_week_detail(hub_slug, week_number: int):
 
         day_groups = [by_day[k] for k in sorted(by_day.keys(), key=_day_sort_key)]
 
-    if not day_groups:
+    # An unbuilt week: admins get a sample split to judge the layout; visitors get
+    # "coming soon" rather than auto-picked exercises that may not fit the track.
+    if not day_groups and getattr(current_user, "is_admin", False):
         day_groups, preview_workout_map = _placeholder_day_groups_for_track(track)
         workout_map.update(preview_workout_map)
         is_template_preview = True
@@ -4155,20 +4258,15 @@ def _and(*clauses) -> Optional[dict]:
 
 
 def _equipment_counts(env: str) -> Dict[str, int]:
-    base = _public_workout_query(_env_filter(env))
-    counts: Dict[str, int] = {}
-    try:
-        pipeline = [
-            {"$match": base},
-            {"$unwind": "$equipment_required"},
-            {"$group": {"_id": "$equipment_required", "n": {"$sum": 1}}},
-        ]
-        counts = {row["_id"]: row["n"] for row in db.workouts.aggregate(pipeline)}
-        counts["bodyweight"] = db.workouts.count_documents(
-            _public_workout_query(_and(_env_filter(env), _equipment_clause("bodyweight")))
-        )
-    except PyMongoError as e:
-        app.logger.warning("Equipment counts unavailable: %s", e)
+    counts: Dict[str, int] = {"bodyweight": 0}
+    for doc in _library_for_env(env):
+        required = doc.get("equipment_required")
+        if not isinstance(required, list):
+            continue  # legacy docs without the field count for neither
+        if not required:
+            counts["bodyweight"] += 1
+        for key in required:
+            counts[key] = counts.get(key, 0) + 1
     return counts
 
 
@@ -4231,9 +4329,10 @@ def workouts():
         for key in EQUIPMENT_CHOICES
         if eq_counts.get(key)
     ]
+    library = _public_library()
     level_tiles = []
     for key, lvl in tx.LEVELS.items():
-        n = db.workouts.count_documents(_public_workout_query({"level": lvl["label"]}))
+        n = sum(1 for d in library if d.get("level") == lvl["label"])
         level_tiles.append(
             {
                 "key": key,
@@ -4244,13 +4343,19 @@ def workouts():
                 "href": url_for("workouts_browse", level=lvl["label"]),
             }
         )
-    newest = [
-        _with_metadata_fallbacks(w)
-        for w in db.workouts.find(_public_workout_query())
-        .sort([("created_at", DESCENDING), ("name", ASCENDING)])
-        .limit(10)
-    ]
-    total = db.workouts.count_documents(_public_workout_query())
+    # Newest first, then A–Z; documents without a date go last (as Mongo sorts them).
+    by_name = sorted(library, key=lambda d: d.get("name") or "")
+    by_date = sorted(
+        by_name,
+        key=lambda d: (
+            d["created_at"]
+            if isinstance(d.get("created_at"), datetime.datetime)
+            else datetime.datetime.min
+        ),
+        reverse=True,
+    )
+    newest = [_with_metadata_fallbacks(dict(w)) for w in by_date[:10]]
+    total = len(library)
     return render_template(
         "workouts.html",
         group_cards=_ordered_group_cards(env),

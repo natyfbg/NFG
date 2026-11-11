@@ -121,6 +121,15 @@ as committer, so GitHub shows them as Verified.
   `_progress_owner_key()` (`user:<id>` for members, the cookie for guests) and migrated
   on login/register by `_migrate_guest_state_to_member()`. Any new per-user data must
   use the same key and be added to that migration.
+- **Library snapshot:** Home, Exercises and session pages read exercises from
+  `_public_library()` (one query per worker, cached `LIBRARY_CACHE_SECONDS`=60; admins
+  read fresh; any `/admin` POST clears it). Treat its docs as read-only — `dict(doc)`
+  before adding keys. A CLI content sync shows up within a minute. Tests run with the
+  cache off (conftest) except `tests/test_tidy.py`.
+- Stylesheet link carries `?v=<commit>` (`RENDER_GIT_COMMIT`, else file mtime) and is
+  cached for a year; add `v=asset_v` to any new static link that changes on deploy.
+- Admin-only sentences stored in public fields are hidden with the `visitor_text`
+  filter (`ADMIN_ONLY_SENTENCES`), so production data needs no migration.
 - `/healthz` returns 503 when Mongo is unreachable (Render health check uses it).
 - Templates must tolerate missing fields (`x is defined and x is not none`).
 - Never pass a template variable named `session`, `request`, `g`, `config` or
@@ -216,9 +225,9 @@ Home (session cards, Mixer chips, Continue training) · app shell, Exercises, br
 search, exercise page.
 
 Next six sprints, in order:
-1. Ship and tidy — promote PR #11; remove visitor-facing placeholder/admin copy (About,
-   Programs notes, "Sample week", Recipes); Sign in pill fix; versioned stylesheet URL;
-   cached library snapshot (Home ≤ 5 DB calls).
+1. ✅ Ship and tidy (code done 2026-11-10; promotion of PR #11 pending Nate's phone check) —
+   visitor-facing placeholder/admin copy removed, Sign in pill, versioned stylesheet,
+   library snapshot (Home 20 → 5 DB calls, Exercises 11 → 0).
 2. Library: legs and glutes (~25) + finish deadlift/goblet squat; muscle-map placeholders.
 3. Programs v2 — programs as content files + sync; one-screen setup remembering level and
    Home/Gym; current week, day view (sets/reps/rest), "Start today"; old URLs keep working.

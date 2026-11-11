@@ -30,7 +30,7 @@
     {% if brand_icon_180 %}<link rel="apple-touch-icon" href="{{ brand_icon_180 }}">{% endif %}
 
     <!-- App CSS (moved out of base.html for maintainability) -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v=asset_v) }}">
   </head>
 
   {% import "_components.html" as ui %}

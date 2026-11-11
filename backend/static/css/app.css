@@ -4576,3 +4576,42 @@ body:has(.offcanvas.showing) .mobile-swipe-rail{ z-index: 1030; }
 
 /* Home hero: tighter now the kicker is back. */
 .nfg-home .nfg-hero-title{ margin-bottom: 0; }
+
+/* Sign in / Join on their own pages: keep the active pill readable. */
+.nfg-pill.is-quiet.is-active{ color: #121512; background: #F7FBF2; }
+
+/* =====================================================================
+   About
+   ===================================================================== */
+.nfg-about{ max-width: 720px; }
+.nfg-about .nfg-page-head .app-page-kicker{ margin-bottom: -.55rem; }
+.nfg-about-lead{ margin: 0; color: var(--app-text-muted); font-size: 1.02rem; line-height: 1.5; }
+
+.nfg-about-list{ display: grid; gap: .6rem; margin: .8rem 0 0; padding: 0; list-style: none; }
+
+.nfg-about-list li{
+  display: grid;
+  gap: .15rem;
+  padding: .85rem 1rem .85rem 1.15rem;
+  border-radius: var(--radius-md);
+  background: var(--app-surface-strong);
+  border: 1px solid var(--app-border);
+  border-left: 4px solid var(--group-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.nfg-about-list strong{ font-weight: 800; }
+.nfg-about-list span{ color: var(--app-text-muted); font-size: .92rem; line-height: 1.4; }
+
+.nfg-about-note{
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius-md);
+  background: var(--app-surface-muted);
+  border: 1px solid var(--app-border);
+}
+
+.nfg-about-note-title{ font-size: 1rem; font-weight: 800; margin: 0 0 .35rem; }
+.nfg-about-note p{ margin: 0; color: var(--app-text-muted); font-size: .92rem; line-height: 1.5; }
+
+.nfg-about-actions{ display: flex; flex-wrap: wrap; gap: .6rem; }
+.nfg-about-actions .nfg-btn{ flex: 1 1 180px; }

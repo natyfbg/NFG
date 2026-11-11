@@ -95,7 +95,7 @@
         <h1 class="page-title mb-1">{{ program.get('title', 'Program') }}</h1>
 
         {% if program.get('summary') %}
-          <p class="text-muted mb-0">{{ program.get('summary') }}</p>
+          <p class="text-muted mb-0">{{ program.get('summary') | visitor_text }}</p>
         {% endif %}
 
         <div class="small text-muted mt-1">
