@@ -2,7 +2,6 @@
 # Beginner 3 days (full body), Intermediate 4 (upper/lower), Advanced 5
 # (push/pull/legs/upper/lower). Phases set sets/reps/rest for every week; an item's
 # own sets/reps/rest override them. `home:` names the swap used in the Home track.
-# Core work is listed as custom items until the core exercise batch lands.
 slug: 8-week-challenge
 title: 8 Week Challenge
 status: published
@@ -54,7 +53,7 @@ levels:
           - exercise: glute-bridge
             role: accessory
           - exercise: dumbbell-lateral-raise
-          - custom: Plank
+          - exercise: plank
             sets: 3
             reps: "20–40 s"
             rest: 30s
@@ -68,7 +67,7 @@ levels:
           - exercise: dumbbell-reverse-lunge
             role: accessory
           - exercise: dumbbell-curl
-          - custom: Side Plank
+          - exercise: side-plank
             sets: 2
             reps: "20–30 s each side"
             rest: 30s
@@ -119,7 +118,7 @@ levels:
           - exercise: lying-leg-curl
             home: single-leg-glute-bridge
           - exercise: standing-calf-raise
-          - custom: Plank
+          - exercise: plank
             sets: 3
             reps: "30–45 s"
             rest: 30s
@@ -148,7 +147,7 @@ levels:
             role: accessory
           - exercise: seated-calf-raise
             home: standing-calf-raise
-          - custom: Side Plank
+          - exercise: side-plank
             sets: 3
             reps: "30 s each side"
             rest: 30s
@@ -219,7 +218,7 @@ levels:
             role: accessory
           - exercise: hip-abduction-machine
             home: banded-lateral-walk
-          - custom: Plank
+          - exercise: plank
             sets: 3
             reps: "45–60 s"
             rest: 30s

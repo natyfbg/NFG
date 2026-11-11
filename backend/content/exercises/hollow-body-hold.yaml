@@ -1,0 +1,39 @@
+slug: hollow-body-hold
+name: Hollow Body Hold
+status: published
+level: intermediate
+category: strength
+movement: core
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [hip_flexors, obliques]
+equipment: []
+summary: >-
+  Lying on your back with your shoulders and legs just off the floor, lower back
+  pressed down. A gymnastics staple that builds serious front-core strength.
+setup:
+  - Lie on your back with your arms by your sides and legs straight.
+  - Press your lower back firmly into the floor.
+steps:
+  - Lift your shoulders, arms and legs a few inches off the floor.
+  - Reach your arms toward your feet, or overhead to make it harder.
+  - Hold the shape while keeping your lower back on the floor.
+  - Lower everything down slowly to finish.
+cues:
+  - Keep your lower back glued to the floor.
+  - Point your toes and squeeze your legs together.
+  - Tuck your chin slightly.
+mistakes:
+  - Letting the lower back arch off the floor.
+  - Lifting the legs too high, which makes it too easy.
+  - Straining the neck by pulling the head forward.
+safety:
+  - If your lower back lifts, bend your knees or raise your legs higher until it stays
+    down.
+breathing: Take short, steady breaths while keeping your core tight.
+regressions: [dead-bug]
+videos:
+  youtube: https://www.youtube.com/watch?v=qcwAB98I2Gc
+tags: [core, abs, bodyweight, isometric]

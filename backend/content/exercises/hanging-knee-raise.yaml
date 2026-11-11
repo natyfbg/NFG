@@ -1,0 +1,39 @@
+slug: hanging-knee-raise
+name: Hanging Knee Raise
+status: published
+level: intermediate
+category: strength
+movement: core
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [hip_flexors, forearms]
+equipment: [pullup_bar]
+summary: >-
+  Hanging from a bar and pulling your knees up toward your chest. It builds strong abs
+  and grip at the same time.
+setup:
+  - Grab a pull-up bar with an overhand grip, hands shoulder-width apart.
+  - Hang with your arms straight and your feet off the floor.
+  - Pull your shoulders down slightly so you're not hanging loose.
+steps:
+  - Bring your knees up toward your chest, curling your hips forward.
+  - Pause at the top.
+  - Lower your legs slowly until they're straight below you.
+cues:
+  - Curl your hips up, don't just lift your knees.
+  - Stay still; avoid swinging.
+  - Lower with control.
+mistakes:
+  - Swinging to build momentum.
+  - Only lifting the knees to hip height without curling the pelvis.
+  - Dropping the legs quickly.
+safety:
+  - If your grip gives out first, rest between reps or use straps. Step down carefully,
+    don't drop.
+breathing: Breathe out as you raise your knees, in as you lower.
+regressions: [lying-leg-raise]
+videos:
+  youtube: https://www.youtube.com/watch?v=dPwg1E_ygjc
+tags: [core, abs, pull-up bar]

@@ -1,0 +1,39 @@
+slug: dead-bug
+name: Dead Bug
+status: published
+level: beginner
+category: strength
+movement: core
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [hip_flexors, obliques]
+equipment: []
+summary: >-
+  Lying on your back and slowly lowering opposite arm and leg while your lower back
+  stays flat. It trains your core to stay steady while your limbs move.
+setup:
+  - Lie on your back with your arms pointing straight up at the ceiling.
+  - Lift your legs with your knees bent at 90 degrees, shins parallel to the floor.
+  - Press your lower back into the floor.
+steps:
+  - Slowly lower your right arm overhead and your left leg toward the floor.
+  - Stop just before they touch the floor.
+  - Bring them back to the start.
+  - Repeat with the left arm and right leg.
+cues:
+  - Keep your lower back pressed into the floor the whole time.
+  - Move slowly. Control matters more than speed.
+  - Exhale as your arm and leg reach away.
+mistakes:
+  - Letting the lower back arch as the leg lowers.
+  - Rushing through the reps.
+  - Moving the arm and leg on the same side.
+safety:
+  - Shorten the reach if your lower back starts to lift off the floor.
+breathing: Breathe out as you reach away, in as you return.
+progressions: [hollow-body-hold]
+videos:
+  youtube: https://www.youtube.com/watch?v=bxn9FBrt4-A
+tags: [core, abs, bodyweight]

@@ -1,0 +1,38 @@
+slug: suitcase-carry
+name: Suitcase Carry
+status: published
+level: beginner
+category: strength
+movement: carry
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [obliques]
+  secondary: [forearms, abs, traps]
+equipment: [dumbbell]
+summary: >-
+  Walking with a heavy weight in one hand, like carrying a suitcase, without leaning.
+  It builds the sides of your core and your grip.
+setup:
+  - Place a heavy dumbbell or kettlebell beside one foot.
+  - Squat down with a flat back, grab it, and stand up tall.
+steps:
+  - Walk forward with short, steady steps.
+  - Keep your shoulders level and your body upright.
+  - Walk for a set distance or time.
+  - Set the weight down with a flat back, then repeat with the other hand.
+cues:
+  - Stand tall, as if a string pulls the top of your head up.
+  - Don't lean away from the weight or toward it.
+  - Squeeze the handle hard.
+mistakes:
+  - Leaning to one side.
+  - Letting the shoulder holding the weight drop.
+  - Rounding the back to pick up or set down the weight.
+safety:
+  - Clear your walking path first, and set the weight down before your grip gives out.
+breathing: Breathe steadily while keeping your core braced.
+regressions: [farmers-carry]
+videos:
+  youtube: https://www.youtube.com/watch?v=QX6jSs_1M2Q
+tags: [carry, core, obliques, grip]

@@ -1,0 +1,39 @@
+slug: plank
+name: Plank
+status: published
+level: beginner
+category: strength
+movement: core
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [obliques, front_delts, glutes]
+equipment: []
+summary: >-
+  Holding a straight line from head to heels on your forearms and toes. It teaches you
+  to brace your core, which protects your back in every other lift.
+setup:
+  - Lie face down and place your forearms on the floor, elbows under your shoulders.
+  - Step your feet back so you're on your toes, feet about hip-width apart.
+steps:
+  - Lift your hips so your body forms a straight line from head to heels.
+  - Squeeze your glutes and pull your belly button in toward your spine.
+  - Hold the position, breathing steadily.
+  - Lower your knees to the floor to finish.
+cues:
+  - Push the floor away with your forearms.
+  - Squeeze your glutes to keep your hips level.
+  - Look at the floor just ahead of your hands.
+mistakes:
+  - Letting the hips sag toward the floor.
+  - Pushing the hips up into a pike.
+  - Holding your breath.
+safety:
+  - Stop the set when your hips start to sag. A shorter, clean hold beats a long, saggy
+    one.
+breathing: Breathe slowly and steadily without letting your core relax.
+progressions: [hollow-body-hold]
+videos:
+  youtube: https://www.youtube.com/watch?v=mwlp75MS6Rg
+tags: [core, abs, bodyweight, isometric]

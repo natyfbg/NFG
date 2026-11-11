@@ -1,0 +1,37 @@
+slug: bird-dog
+name: Bird Dog
+status: published
+level: beginner
+category: strength
+movement: core
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [abs, lower_back]
+  secondary: [glutes, obliques]
+equipment: []
+summary: >-
+  On hands and knees, reaching one arm forward and the opposite leg back while your
+  back stays still. It builds core control and is gentle on the lower back.
+setup:
+  - Kneel on all fours with your hands under your shoulders and knees under your hips.
+  - Keep your back flat and your neck in line with your spine.
+steps:
+  - Reach your right arm forward and your left leg back until both are straight.
+  - Pause for a second without letting your hips tip.
+  - Bring them back under you.
+  - Repeat with the left arm and right leg.
+cues:
+  - Imagine a glass of water on your lower back. Don't spill it.
+  - Reach long rather than high.
+  - Squeeze the glute of the leg that's reaching back.
+mistakes:
+  - Rotating the hips as the leg lifts.
+  - Arching the lower back by lifting the leg too high.
+  - Rushing instead of pausing at full reach.
+safety:
+  - Use a mat or cushion under your knees if kneeling is uncomfortable.
+breathing: Breathe out as you reach, in as you return.
+videos:
+  youtube: https://www.youtube.com/watch?v=ZdAHe9_HeEw
+tags: [core, abs, lower back, bodyweight]

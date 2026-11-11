@@ -1,0 +1,38 @@
+slug: lying-leg-raise
+name: Lying Leg Raise
+status: published
+level: intermediate
+category: strength
+movement: core
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [hip_flexors]
+equipment: []
+summary: >-
+  Lying on your back and lifting straight legs up and down under control. It works the
+  lower abs and teaches you to keep your back flat under load.
+setup:
+  - Lie on your back with your legs straight and arms by your sides, palms down.
+  - Press your lower back into the floor.
+steps:
+  - Keeping your legs straight, lift them until they point at the ceiling.
+  - Slowly lower them back down.
+  - Stop just before your heels touch the floor, then lift again.
+cues:
+  - Keep your lower back pressed down the whole time.
+  - Lower slowly. That's where the work is.
+  - Keep your legs together.
+mistakes:
+  - Letting the lower back arch as the legs go down.
+  - Dropping the legs quickly.
+  - Bending the knees more and more as you tire.
+safety:
+  - Bend your knees or shorten the range if your lower back lifts off the floor.
+breathing: Breathe out as you lift, in as you lower.
+regressions: [reverse-crunch]
+progressions: [hanging-knee-raise]
+videos:
+  youtube: https://www.youtube.com/watch?v=SuIxXbKnwx4
+tags: [core, abs, bodyweight]

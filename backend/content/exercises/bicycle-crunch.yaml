@@ -1,0 +1,39 @@
+slug: bicycle-crunch
+name: Bicycle Crunch
+status: published
+level: beginner
+category: strength
+movement: core
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [abs, obliques]
+  secondary: [hip_flexors]
+equipment: []
+summary: >-
+  Bringing opposite elbow and knee together while the other leg extends, like
+  pedalling a bike. It works the abs and obliques together.
+setup:
+  - Lie on your back with your fingertips lightly behind your ears.
+  - Lift your shoulders off the floor and raise your knees to 90 degrees.
+steps:
+  - Rotate your torso to bring your right elbow toward your left knee.
+  - At the same time, straighten your right leg out in front.
+  - Switch sides, bringing your left elbow toward your right knee.
+  - Keep alternating in a smooth, controlled rhythm.
+cues:
+  - Rotate from your ribs, not just your elbows.
+  - Extend the straight leg fully.
+  - Go slowly enough to feel each twist.
+mistakes:
+  - Pulling on the neck with your hands.
+  - Pedalling too fast, so momentum does the work.
+  - Only moving the elbows without turning the torso.
+safety:
+  - Keep your lower back pressed down. Extend the leg higher if your back starts to
+    arch.
+breathing: Breathe out each time you twist.
+regressions: [crunch]
+videos:
+  youtube: https://www.youtube.com/watch?v=uNmNvaNsu7w
+tags: [core, abs, obliques, bodyweight]

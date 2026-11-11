@@ -261,8 +261,10 @@ Next six sprints, in order:
 2. ✅ Library: legs and glutes (27 new, 67 total) + deadlift/goblet squat text;
    muscle-map placeholders (promoted in PR #12, 2026-11-11; production content sync by Nate).
 3. ✅ Programs v2 — content files + sync, program page, day page, redirects (2026-11-11).
-4. 8 Week Challenge content: ✅ drafted (all levels, home swaps, phases) — awaiting Nate's
-   review; core exercises (~15) still to add, then link the program's custom core lines.
+4. 8 Week Challenge content: ✅ drafted (all levels, home swaps, phases; promoted in PR #13)
+   — awaiting Nate's review. ✅ Core batch (15 new, 82 total): holds, crunches, leg raises,
+   Pallof press, woodchop, suitcase carry; the program's Plank/Side Plank lines now link
+   to real exercises and Coach's Picks resolves fully.
 5. Accounts and trust — new design for auth/account; password reset (email); delete account
    + export; privacy/terms; skippable training profile; error alerts; backups confirmed.
 6. Workouts + session mode — saved workouts (exercise + sets/reps/rest), "Save as workout",
