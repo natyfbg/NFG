@@ -12,9 +12,8 @@ PUBLIC_PAGES = [
     "/recipes",
     "/search?q=push",
     "/programs",
-    "/programs/8-week-challenge/level",
-    "/programs/8-week-challenge/environment?level=beginner",
-    "/programs/8-week-challenge/weeks?level=beginner&env=home",
+    "/programs/8-week-challenge",
+    "/programs/8-week-challenge?level=advanced&env=home",
     "/programs/8-week-challenge/week/1?level=beginner&env=home",
     "/account/login",
     "/account/register",
@@ -50,10 +49,28 @@ def test_old_index_pages_redirect_to_exercises_sections(client, path, target):
     assert resp.headers["Location"].endswith("/workouts" + target)
 
 
-def test_hub_root_redirects_to_level_picker(client):
-    resp = client.get("/programs/8-week-challenge")
+@pytest.mark.parametrize(
+    "path, target",
+    [
+        ("/programs/8-week-challenge/level", "/programs/8-week-challenge"),
+        (
+            "/programs/8-week-challenge/environment?level=beginner",
+            "/programs/8-week-challenge?level=beginner",
+        ),
+        (
+            "/programs/8-week-challenge/weeks?level=beginner&env=home",
+            "/programs/8-week-challenge?level=beginner&env=home",
+        ),
+        (
+            "/programs/8-week-challenge-intermediate-gym",
+            "/programs/8-week-challenge?level=intermediate&env=gym",
+        ),
+    ],
+)
+def test_old_program_steps_redirect_to_the_program_page(client, path, target):
+    resp = client.get(path)
     assert resp.status_code == 302
-    assert resp.headers["Location"].endswith("/programs/8-week-challenge/level")
+    assert resp.headers["Location"].endswith(target)
 
 
 @pytest.mark.parametrize("path", ["/admin", "/admin/workouts/new", "/admin/programs"])

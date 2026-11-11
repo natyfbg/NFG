@@ -6,6 +6,7 @@ See backend/content/README.md for the file format.
 Usage (from backend/, or `docker compose exec app python content_sync.py ...`):
 
     python content_sync.py check                   # validate files only
+    python content_sync.py check-videos            # look up every YouTube link (internet)
     python content_sync.py placeholders            # write missing SVG placeholders
     python content_sync.py sync                    # DRY RUN: show what would change
     python content_sync.py sync --apply            # write changes (local DB)
@@ -17,9 +18,10 @@ Sync rules:
 - Optional text fields are written only when the file defines them, so the file
   never blanks out content that only exists in the database.
 - rating, is_favorite and other admin-only fields are never touched.
-- Images: a file's explicit `images` always win. Otherwise the SVG placeholder is
-  used only when the document has no real images (admin uploads are kept), and
-  dead via.placeholder.com links are cleaned up.
+- Images: a file's explicit `images` always win, and `images: []` clears photos back
+  to the generated placeholder. Otherwise the SVG placeholder is used only when the
+  document has no real images (admin uploads are kept), and dead
+  via.placeholder.com links are cleaned up.
 - If an exercise was edited in admin after its last sync, it is skipped unless
   --force is given (the dry run shows which fields would be overwritten).
 - The connection string is never printed; only host and database name.
@@ -339,7 +341,9 @@ def image_fields(ex: dict, existing: Optional[dict]) -> dict:
     """Image fields to write, respecting real images already in the database."""
     out: dict = {}
     if "images" in ex:
-        out["images"] = list(ex["images"])
+        # An explicit list always wins. `images: []` means "no photos": it clears
+        # admin uploads and puts the generated muscle map back.
+        out["images"] = list(ex["images"]) or [PLACEHOLDER_URL.format(slug=ex["slug"])]
     else:
         current = (existing or {}).get("images") or []
         if all(is_placeholder_image(u) for u in current):
@@ -485,6 +489,17 @@ def collection_warnings(exercises: List[dict]) -> List[str]:
     return warnings
 
 
+def _load_programs_or_exit(exercises: List[dict]) -> List[dict]:
+    import program_content
+
+    try:
+        programs, _ = program_content.load_programs(exercises)
+    except program_content.ProgramError as e:
+        print("Program validation failed:\n" + str(e), file=sys.stderr)
+        sys.exit(1)
+    return programs
+
+
 def cmd_check(_args) -> None:
     import curation
 
@@ -495,10 +510,63 @@ def cmd_check(_args) -> None:
     except curation.CurationError as e:
         print("Collection validation failed:\n" + str(e), file=sys.stderr)
         sys.exit(1)
+    programs = _load_programs_or_exit(exercises)
     drafts = sum(1 for ex in exercises if ex["status"] == "draft")
     print(
         f"OK: {len(exercises)} exercise files ({drafts} draft, {len(exercises) - drafts} published)"
+        f", {len(programs)} program file(s)"
     )
+
+
+OEMBED_URL = "https://www.youtube.com/oembed?format=json&url={url}"
+
+
+def _oembed(url: str) -> dict:
+    """Title and channel of a YouTube video (network; no API key)."""
+    import json
+    import urllib.parse
+    import urllib.request
+
+    api = OEMBED_URL.format(url=urllib.parse.quote(url, safe=""))
+    with urllib.request.urlopen(api, timeout=10) as resp:  # noqa: S310 (fixed https host)
+        return json.load(resp)
+
+
+def check_videos(exercises: List[dict], lookup=_oembed) -> Tuple[int, int]:
+    """Print each exercise's YouTube demo (channel and title) and flag broken links.
+
+    Returns (broken, not_embeddable). A 401 means the owner turned off embedding: the
+    Watch link still works but the in-app Video tab can't play it.
+    """
+    import urllib.error
+
+    broken = no_embed = 0
+    for ex in exercises:
+        url = (ex.get("videos") or {}).get("youtube")
+        if not url:
+            print(f"  -     {ex['slug']:32} no YouTube link")
+            continue
+        try:
+            data = lookup(url)
+            print(f"  ok    {ex['slug']:32} {data.get('author_name')} | {data.get('title')}")
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                no_embed += 1
+                print(f"  !     {ex['slug']:32} embedding is off (Watch link still works) {url}")
+            else:
+                broken += 1
+                print(f"  FAIL  {ex['slug']:32} HTTP {e.code} (removed or private?) {url}")
+        except Exception as e:  # network trouble: report, keep going
+            broken += 1
+            print(f"  FAIL  {ex['slug']:32} {type(e).__name__}: {e} {url}")
+    return broken, no_embed
+
+
+def cmd_check_videos(_args) -> None:
+    exercises = _load_or_exit()
+    broken, no_embed = check_videos(exercises)
+    print(f"{len(exercises)} exercises: {broken} broken, {no_embed} not embeddable")
+    sys.exit(1 if broken else 0)
 
 
 def cmd_placeholders(args) -> None:
@@ -528,6 +596,18 @@ def cmd_sync(args) -> None:
     plan = plan_sync(db, exercises, only_slug=args.slug)
     for line in describe_plan(plan, args.force) or ["  nothing to do"]:
         print(line)
+
+    # Programs run after exercises so new exercise slugs resolve. Skipped with --slug.
+    program_plan = []
+    if not args.slug:
+        import program_content
+
+        programs = _load_programs_or_exit(exercises)
+        program_plan = program_content.plan_program_sync(db, programs, exercises)
+        if program_plan:
+            print("Programs:")
+            for line in program_content.describe_program_plan(program_plan, args.force_programs):
+                print(line)
     if not args.apply:
         print("Dry run only. Re-run with --apply to write these changes.")
         return
@@ -538,12 +618,18 @@ def cmd_sync(args) -> None:
         f"{len(plan['updates']) + (len(plan['drifted']) if args.force else 0)} updated, "
         f"{skipped} skipped (admin-edited)."
     )
+    if program_plan:
+        import program_content
+
+        program_content.apply_program_sync(db, program_plan, force=args.force_programs)
+        print("Programs applied.")
 
 
 def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description="NFG exercise content tools")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("check", help="validate content files")
+    sub.add_parser("check-videos", help="look up every YouTube demo link (needs internet)")
     p_ph = sub.add_parser("placeholders", help="write SVG placeholders for exercises")
     p_ph.add_argument("--overwrite", action="store_true", help="regenerate existing files")
     p_sync = sub.add_parser("sync", help="sync content files into MongoDB (dry run by default)")
@@ -551,10 +637,21 @@ def main(argv=None) -> None:
     p_sync.add_argument("--slug", help="only this exercise")
     p_sync.add_argument("--force", action="store_true", help="overwrite admin-edited exercises")
     p_sync.add_argument(
+        "--force-programs",
+        action="store_true",
+        help="replace program weeks that were built by hand in Admin",
+    )
+    p_sync.add_argument(
         "--allow-remote", action="store_true", help="permit --apply against a non-local DB"
     )
     args = parser.parse_args(argv)
-    {"check": cmd_check, "placeholders": cmd_placeholders, "sync": cmd_sync}[args.command](args)
+    commands = {
+        "check": cmd_check,
+        "check-videos": cmd_check_videos,
+        "placeholders": cmd_placeholders,
+        "sync": cmd_sync,
+    }
+    commands[args.command](args)
 
 
 if __name__ == "__main__":

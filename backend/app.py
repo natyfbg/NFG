@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
 import curation
+import program_content
 import taxonomy as tx
 from bson.objectid import ObjectId
 from bson.regex import Regex
@@ -398,16 +399,19 @@ def _log_request(resp):
             secure=IS_HOSTED,
             httponly=True,
         )
-    env_to_set = getattr(g, "_set_env", None)
-    if env_to_set:
-        resp.set_cookie(
-            ENV_COOKIE,
-            env_to_set,
-            max_age=60 * 60 * 24 * 365,
-            samesite="Lax",
-            secure=IS_HOSTED,
-            httponly=True,
-        )
+    for cookie, value in (
+        (ENV_COOKIE, getattr(g, "_set_env", None)),
+        (LEVEL_COOKIE, getattr(g, "_set_level", None)),
+    ):
+        if value:
+            resp.set_cookie(
+                cookie,
+                value,
+                max_age=60 * 60 * 24 * 365,
+                samesite="Lax",
+                secure=IS_HOSTED,
+                httponly=True,
+            )
     return resp
 
 
@@ -2882,8 +2886,10 @@ def _continue_plan_for_owner(owner_key: str) -> Optional[dict]:
     done_days = sum(v.get("done", 0) for v in week_progress.values())
     percent = round(done_days * 100 / total_days) if total_days else None
 
+    # "8 Week Challenge — Beginner • Home" -> "8 Week Challenge": the setup is implied.
+    title = (track.get("title") or "Program").split(" — ")[0].strip() or "Program"
     return {
-        "track_title": track.get("title") or "Program",
+        "track_title": title,
         "week_number": resume_week_number,
         "day_label": resume_day_key.replace("-", " ").title() if resume_day_key else None,
         "url": url_for("program_hub_week_detail", **args),
@@ -3274,6 +3280,7 @@ def render_or_fallback(template_name: str, **ctx):
 # curated collections. Taxonomy keys come from taxonomy.py.
 # -----------------------------------------------------------------------------
 ENV_COOKIE = "nfg_env"
+LEVEL_COOKIE = "nfg_level"
 DEFAULT_ENV = "hybrid"
 MIX_MAX_GROUPS = 6
 FAVORITE_ITEM_TYPES = {"exercise"}
@@ -3795,7 +3802,18 @@ def program_detail(slug):
         abort(404)
 
     if program.get("kind") == "hub":
-        return redirect(url_for("program_hub_level", hub_slug=program["slug"]))
+        return _render_program_page(program)
+
+    # A track's own page now lives on its hub, opened with that track's setup.
+    if program.get("kind") == "track" and program.get("hub_slug"):
+        return redirect(
+            url_for(
+                "program_detail",
+                slug=program["hub_slug"],
+                level=_track_level_for_url(program),
+                env=_track_env_for_url(program),
+            )
+        )
 
     weeks = list(
         db.program_weeks.find({"program_id": program["_id"]}).sort(
@@ -3832,88 +3850,226 @@ def program_detail(slug):
 
 
 # -----------------------------------------------------------------------------
-# Public: Dynamic Hub -> Tracks flow
+# Programs v2: one page per program (setup, progress, next session, weeks) and a
+# day page per program day. Level and Home/Gym are remembered (nfg_level and the
+# shared nfg_env cookie); the old level -> environment -> weeks steps redirect here.
 # -----------------------------------------------------------------------------
+def _program_setup(hub_slug: str) -> Tuple[str, str]:
+    """Level and environment for this visit: the URL, else where the viewer last
+    trained in this program, else their saved preferences, else sensible defaults."""
+    levels = _levels_for_hub(hub_slug)
+    asked_level = _norm_choice(request.args.get("level"))
+    asked_env = _norm_choice(request.args.get("env"))
+
+    last = {}
+    owner_key = _progress_owner_key()
+    if owner_key and not (asked_level in levels and asked_env):
+        last = (
+            db.program_day_progress.find_one(
+                {"viewer_id": owner_key, "hub_slug": hub_slug},
+                {"level": 1, "env": 1},
+                sort=[("completed_at", -1)],
+            )
+            or {}
+        )
+
+    if asked_level in levels:
+        level = asked_level
+        if asked_level != _norm_choice(request.cookies.get(LEVEL_COOKIE)):
+            g._set_level = asked_level
+    else:
+        saved = _norm_choice(request.cookies.get(LEVEL_COOKIE))
+        level = next(
+            (lv for lv in (_norm_choice(last.get("level")), saved) if lv in levels), levels[0]
+        )
+
+    envs = _envs_for_hub_level(hub_slug, level)
+    if asked_env in envs:
+        env = asked_env
+        if asked_env != _norm_choice(request.cookies.get(ENV_COOKIE)):
+            g._set_env = asked_env
+    else:
+        saved = _norm_choice(request.cookies.get(ENV_COOKIE))
+        fallback = "gym" if "gym" in envs else envs[0]
+        env = next((e for e in (_norm_choice(last.get("env")), saved) if e in envs), fallback)
+    return level, env
+
+
+def _track_plan(track: dict, duration_weeks: int) -> List[dict]:
+    """Every week of a track with its days and items, in two queries."""
+    week_docs = list(
+        db.program_weeks.find({"program_id": track["_id"]}).sort([("week_number", 1), ("order", 1)])
+    )
+    by_id = {w["_id"]: w for w in week_docs}
+    items = []
+    if by_id:
+        items = list(
+            db.program_items.find({"week_id": {"$in": list(by_id)}}).sort(
+                [("order", 1), ("created_at", 1)]
+            )
+        )
+    library = _public_library()
+    by_slug = {d["slug"]: d for d in library if d.get("slug")}
+    by_oid = {d["_id"]: d for d in library if d.get("_id") is not None}
+
+    weeks: Dict[int, dict] = {}
+    for w in week_docs:
+        try:
+            wn = int(w.get("week_number") or 0)
+        except (TypeError, ValueError):
+            continue
+        if wn >= 1 and wn not in weeks:
+            weeks[wn] = {
+                "number": wn,
+                "title": w.get("title") or "",
+                "notes": w.get("notes") or "",
+                "doc": w,
+                "days": {},
+            }
+    index_in_week: Dict[int, int] = {}
+    for it in items:
+        week = by_id.get(it.get("week_id"))
+        wn = int(week.get("week_number") or 0) if week else 0
+        if wn not in weeks:
+            continue
+        index_in_week[wn] = index_in_week.get(wn, 0) + 1
+        key = _day_key_from_program_item(it, index_in_week[wn])
+        raw_label = it.get("day") or it.get("day_label") or it.get("label") or it.get("title")
+        day = weeks[wn]["days"].setdefault(
+            key,
+            {
+                "key": key,
+                "label": _normalize_week_day_label(raw_label) or key.replace("-", " ").title(),
+                "focus": it.get("day_focus") or "",
+                "items": [],
+            },
+        )
+        ex = by_slug.get(it.get("workout_slug")) or by_oid.get(it.get("workout_id"))
+        name = (
+            it.get("custom_name") or (ex or {}).get("name") or it.get("workout_name") or "Exercise"
+        )
+        day["items"].append(
+            {
+                "name": name,
+                "exercise": _with_metadata_fallbacks(dict(ex)) if ex else None,
+                "sets": it.get("sets"),
+                "reps": it.get("reps"),
+                "rest": it.get("rest"),
+                "notes": it.get("notes") or it.get("note") or "",
+                "role": it.get("role") or "",
+            }
+        )
+
+    plan = []
+    for wn in range(1, max([duration_weeks] + list(weeks)) + 1):
+        week = weeks.get(wn) or {"number": wn, "title": "", "notes": "", "doc": None, "days": {}}
+        days = list(week["days"].values())
+        for day in days:
+            day["minutes"] = program_content.estimate_minutes(
+                [
+                    {"sets": _safe_int(str(i["sets"] or 0), default=0), "rest": i["rest"]}
+                    for i in day["items"]
+                ]
+            )
+        plan.append(dict(week, days=days))
+    return plan
+
+
+def _plan_progress(owner_key: str, track: dict, plan: List[dict]) -> dict:
+    """Done days per week, which weeks are open, and the next day to train."""
+    numbers = [w["number"] for w in plan]
+    done = _done_day_keys_by_week(owner_key, track.get("slug"), numbers) if owner_key else {}
+    unlocked, open_so_far = {}, True
+    total = finished = 0
+    for week in plan:
+        keys = [d["key"] for d in week["days"]]
+        week_done = len(set(keys) & done.get(week["number"], set()))
+        week["done_count"] = week_done
+        week["complete"] = bool(keys) and week_done >= len(keys)
+        unlocked[week["number"]] = open_so_far
+        week["unlocked"] = open_so_far
+        for day in week["days"]:
+            day["done"] = day["key"] in done.get(week["number"], set())
+        total += len(keys)
+        finished += week_done
+        open_so_far = open_so_far and (not keys or week["complete"])
+
+    next_week, next_day = None, None
+    for week in plan:
+        if not week["unlocked"]:
+            break
+        pending = [d for d in week["days"] if not d["done"]]
+        if pending:
+            next_week, next_day = week, pending[0]
+            break
+    if next_week is None:  # finished, or nothing written yet: point at the first day
+        first = next((w for w in plan if w["days"]), None)
+        if first:
+            next_week, next_day = first, first["days"][0]
+    return {
+        "total_days": total,
+        "done_days": finished,
+        "percent": round(finished * 100 / total) if total else 0,
+        "started": finished > 0,
+        "finished": bool(total) and finished >= total,
+        "next_week": next_week,
+        "next_day": next_day,
+    }
+
+
+def _render_program_page(hub: dict):
+    hub_slug = hub["slug"]
+    level, env = _program_setup(hub_slug)
+    track = _pick_track_for(hub_slug, level, env)
+    if not track:
+        abort(404)
+    duration = _week_count_from_duration_label(
+        track.get("duration_label") or hub.get("duration_label")
+    )
+    plan = _track_plan(track, duration)
+    progress = _plan_progress(_progress_owner_key(), track, plan)
+    focus_week = progress["next_week"] or (plan[0] if plan else None)
+    levels = _levels_for_hub(hub_slug)
+    return render_template(
+        "program_page.html",
+        hub=hub,
+        track=track,
+        level=level,
+        env=env,
+        levels=levels,
+        envs=_envs_for_hub_level(hub_slug, level),
+        plan=plan,
+        progress=progress,
+        focus_week=focus_week,
+        environments=tx.ENVIRONMENTS,
+        level_meta=tx.LEVELS,
+        is_saved=hub_slug in _favorite_slug_set_for_request(),
+    )
+
+
 @app.route("/programs/<hub_slug>/level")
 def program_hub_level(hub_slug):
-    hub = _get_hub_or_404(hub_slug)
-    levels = _levels_for_hub(hub_slug)
-    return render_or_fallback("program_level.html", hub=hub, levels=levels)
+    _get_hub_or_404(hub_slug)
+    return redirect(url_for("program_detail", slug=hub_slug))
 
 
 @app.route("/programs/<hub_slug>/environment")
 def program_hub_environment(hub_slug):
-    hub = _get_hub_or_404(hub_slug)
-
+    _get_hub_or_404(hub_slug)
     level = _norm_choice(request.args.get("level"))
-    levels = _levels_for_hub(hub_slug)
-    if level not in levels:
-        return redirect(url_for("program_hub_level", hub_slug=hub_slug))
-
-    envs = _envs_for_hub_level(hub_slug, level)
-    return render_or_fallback("program_environment.html", hub=hub, level=level, envs=envs)
+    args = {"level": level} if level else {}
+    return redirect(url_for("program_detail", slug=hub_slug, **args))
 
 
 @app.route("/programs/<hub_slug>/weeks")
 def program_hub_weeks(hub_slug):
-    hub = _get_hub_or_404(hub_slug)
-
-    level = _norm_choice(request.args.get("level"))
-    env = _norm_choice(request.args.get("env"))
-
-    levels = _levels_for_hub(hub_slug)
-    if level not in levels:
-        return redirect(url_for("program_hub_level", hub_slug=hub_slug))
-
-    envs = _envs_for_hub_level(hub_slug, level)
-    if env not in envs:
-        return redirect(url_for("program_hub_environment", hub_slug=hub_slug, level=level))
-
-    track = _pick_track_for(hub_slug, level, env)
-    if not track:
-        flash(
-            "That track isn't set up yet. Create a Track program in Admin for this Hub.",
-            "warning",
-        )
-        return redirect(url_for("program_hub_environment", hub_slug=hub_slug, level=level))
-
-    weeks = list(
-        db.program_weeks.find({"program_id": track["_id"]}).sort([("week_number", 1), ("order", 1)])
-    )
-    if not weeks:
-        n = _week_count_from_duration_label(
-            track.get("duration_label") or hub.get("duration_label")
-        )
-        weeks = [{"week_number": i, "title": None} for i in range(1, n + 1)]
-
-    owner_key = _progress_owner_key()
-    week_progress = _week_progress_for_track(owner_key, track, weeks)
-    week_unlock_map = _week_unlock_map(weeks, week_progress)
-    week_numbers = _ordered_week_numbers(weeks)
-    week_completed_at_map = _week_completion_map(owner_key, track.get("slug"), week_numbers)
-    resume_week_number, resume_day_key = _resume_target_for_track(
-        owner_key, track, weeks, week_progress
-    )
-
-    total_days = sum(v.get("total", 0) for v in week_progress.values())
-    completed_days = sum(v.get("done", 0) for v in week_progress.values())
-    completed_weeks = sum(1 for v in week_progress.values() if v.get("all_done"))
-
-    return render_or_fallback(
-        "program_weeks.html",
-        track=track,
-        level=level,
-        env=env,
-        weeks=weeks,
-        week_progress=week_progress,
-        week_unlock_map=week_unlock_map,
-        week_completed_at_map=week_completed_at_map,
-        resume_week_number=resume_week_number,
-        resume_day_key=resume_day_key,
-        total_days=total_days,
-        completed_days=completed_days,
-        completed_weeks=completed_weeks,
-    )
+    _get_hub_or_404(hub_slug)
+    args = {
+        k: _norm_choice(request.args.get(k))
+        for k in ("level", "env")
+        if _norm_choice(request.args.get(k))
+    }
+    return redirect(url_for("program_detail", slug=hub_slug, **args))
 
 
 @app.route("/programs/<hub_slug>/progress/reset", methods=["POST"])
@@ -3944,163 +4100,61 @@ def program_hub_reset_progress(hub_slug):
     else:
         flash("No progress found to reset.", "warning")
 
-    return redirect(url_for("program_hub_weeks", hub_slug=hub_slug, level=level, env=env))
+    return redirect(url_for("program_detail", slug=hub_slug, level=level, env=env))
 
 
 @app.route("/programs/<hub_slug>/week/<int:week_number>")
 def program_hub_week_detail(hub_slug, week_number: int):
+    """One training day: the week's day switcher, the exercises with sets, reps and
+    rest, and "Mark day done"."""
     hub = _get_hub_or_404(hub_slug)
-    requested_day_key = slugify(request.args.get("day") or "")
-
-    level = _norm_choice(request.args.get("level")) or "beginner"
-    env = _norm_choice(request.args.get("env")) or "home"
-
     levels = _levels_for_hub(hub_slug)
-    if level not in levels:
-        level = levels[0] if levels else "beginner"
-
+    level = _norm_choice(request.args.get("level"))
+    level = level if level in levels else (levels[0] if levels else "beginner")
     envs = _envs_for_hub_level(hub_slug, level)
-    if env not in envs:
-        env = envs[0] if envs else "home"
+    env = _norm_choice(request.args.get("env"))
+    env = env if env in envs else (envs[0] if envs else "home")
 
     track = _pick_track_for(hub_slug, level, env)
     if not track:
         abort(404)
-
-    week = db.program_weeks.find_one({"program_id": track["_id"], "week_number": week_number})
-
-    items = []
-    workout_map = {}
-    day_groups = []
-    is_template_preview = False
-    if week:
-        items = list(
-            db.program_items.find({"week_id": week["_id"]}).sort([("order", 1), ("created_at", 1)])
-        )
-        workout_ids = [it.get("workout_id") for it in items if it.get("workout_id")]
-        workout_slugs = [
-            it.get("workout_slug") for it in items if (it.get("workout_slug") or "").strip()
-        ]
-        ws = []
-        if workout_ids or workout_slugs:
-            ws = list(
-                db.workouts.find(
-                    {
-                        "$or": [
-                            {"_id": {"$in": workout_ids}},
-                            {"slug": {"$in": workout_slugs}},
-                        ]
-                    },
-                    {"name": 1, "slug": 1},
-                )
-            )
-        if ws:
-            workout_map = {}
-            for w in ws:
-                if w.get("_id") is not None:
-                    workout_map[w["_id"]] = w
-                if w.get("slug"):
-                    workout_map[w["slug"]] = w
-
-        by_day = {}
-        day_index = {}
-        for i, it in enumerate(items):
-            raw_day = (
-                it.get("day")
-                or it.get("day_label")
-                or it.get("label")
-                or it.get("title")
-                or it.get("custom_name")
-                or f"Day {i + 1}"
-            )
-            label = _normalize_week_day_label(raw_day) or f"Day {i + 1}"
-            key = slugify(label) or f"day-{i + 1}"
-
-            if key not in by_day:
-                by_day[key] = {"key": key, "label": label, "items": []}
-                day_index[key] = i
-            by_day[key]["items"].append(it)
-
-        # Keep first-seen order, but nudge common day labels into a predictable order.
-        def _day_sort_key(k):
-            label = (by_day[k]["label"] or "").lower()
-            if label in DEFAULT_WEEK_DAY_ORDER:
-                return (0, DEFAULT_WEEK_DAY_ORDER.index(label), day_index[k])
-            return (1, day_index[k], label)
-
-        day_groups = [by_day[k] for k in sorted(by_day.keys(), key=_day_sort_key)]
-
-    # An unbuilt week: admins get a sample split to judge the layout; visitors get
-    # "coming soon" rather than auto-picked exercises that may not fit the track.
-    if not day_groups and getattr(current_user, "is_admin", False):
-        day_groups, preview_workout_map = _placeholder_day_groups_for_track(track)
-        workout_map.update(preview_workout_map)
-        is_template_preview = True
-
-    weeks_in_track = list(
-        db.program_weeks.find({"program_id": track["_id"]}, {"week_number": 1}).sort(
-            [("week_number", 1)]
-        )
+    duration = _week_count_from_duration_label(
+        track.get("duration_label") or hub.get("duration_label")
     )
-    week_numbers = [w.get("week_number") for w in weeks_in_track if w.get("week_number")]
-    owner_key = _progress_owner_key()
-    week_progress = _week_progress_for_track(owner_key, track, weeks_in_track)
-    week_unlock_map = _week_unlock_map(weeks_in_track, week_progress)
-    if week_unlock_map and not week_unlock_map.get(week_number, True):
-        flash("Finish previous weeks before opening this week.", "warning")
-        return redirect(url_for("program_hub_weeks", hub_slug=hub_slug, level=level, env=env))
+    plan = _track_plan(track, duration)
+    progress = _plan_progress(_progress_owner_key(), track, plan)
+    week = next((w for w in plan if w["number"] == week_number), None)
+    if week is None:
+        abort(404)
+    if not week["unlocked"]:
+        flash("Finish the earlier weeks first. This one opens after them.", "warning")
+        return redirect(url_for("program_detail", slug=hub_slug, level=level, env=env))
 
-    next_week_number = next((n for n in week_numbers if n > week_number), None)
-    if not next_week_number:
-        max_weeks = _week_count_from_duration_label(
-            track.get("duration_label") or hub.get("duration_label")
-        )
-        if week_number < max_weeks:
-            next_week_number = week_number + 1
+    days = week["days"]
+    asked = slugify(request.args.get("day") or "")
+    day = next((d for d in days if d["key"] == asked), None)
+    if day is None and days:
+        day = next((d for d in days if not d["done"]), days[0])
+    position = days.index(day) if day else -1
+    next_day = days[position + 1] if day and position + 1 < len(days) else None
+    later = [w for w in plan if w["number"] > week_number and w["days"]]
+    next_week = later[0] if later and (week["complete"] or not next_day) else None
 
-    day_keys = [g.get("key") for g in day_groups if g.get("key")]
-    viewer_id = owner_key
-    completed_day_keys = set()
-    if viewer_id and track.get("slug") and day_keys:
-        rows = list(
-            db.program_day_progress.find(
-                {
-                    "viewer_id": viewer_id,
-                    "track_slug": track.get("slug"),
-                    "week_number": week_number,
-                    "day_key": {"$in": day_keys},
-                },
-                {"day_key": 1},
-            )
-        )
-        completed_day_keys = {r.get("day_key") for r in rows if r.get("day_key")}
-
-    completed_days_count = len([k for k in day_keys if k in completed_day_keys])
-    all_days_completed = bool(day_keys) and completed_days_count == len(day_keys)
-    initial_day_key = (
-        requested_day_key if requested_day_key in day_keys else (day_keys[0] if day_keys else "")
-    )
-
-    return render_or_fallback(
+    return render_template(
         "program_week_detail.html",
+        hub=hub,
         track=track,
         level=level,
         env=env,
-        week_number=week_number,
         week=week,
-        items=items,
-        day_groups=day_groups,
-        is_template_preview=is_template_preview,
-        total_days=len(day_groups),
-        workout_map=workout_map,
-        completed_day_keys=completed_day_keys,
-        completed_days_count=completed_days_count,
-        all_days_completed=all_days_completed,
-        initial_day_key=initial_day_key,
-        levels=levels or DEFAULT_LEVELS,
-        envs=envs or DEFAULT_ENVS,
-        next_week_number=next_week_number,
-        hub=hub,
+        week_number=week_number,
+        day=day,
+        next_day=next_day,
+        next_week=next_week,
+        progress=progress,
+        environments=tx.ENVIRONMENTS,
+        level_meta=tx.LEVELS,
+        muscle_groups=tx.MUSCLE_GROUPS,
     )
 
 
@@ -4221,7 +4275,8 @@ def program_hub_week_day_status(hub_slug, week_number: int):
 # -----------------------------------------------------------------------------
 @app.route("/programs/8-week-challenge")
 def eight_week_hub_redirect():
-    return redirect(url_for("program_hub_level", hub_slug=EIGHT_WEEK_HUB_SLUG))
+    # This static route shadows /programs/<slug> for the 8-week hub; serve the same page.
+    return program_detail(EIGHT_WEEK_HUB_SLUG)
 
 
 # -----------------------------------------------------------------------------
@@ -4598,6 +4653,73 @@ def _video_links(w: dict) -> List[dict]:
     ]
 
 
+YOUTUBE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+
+
+def _youtube_id_from_url(url: str) -> str:
+    """The 11-character id from a youtube.com/watch, youtu.be, shorts or embed link."""
+    parsed = urlparse(url or "")
+    host = (parsed.hostname or "").lower()
+    candidate = ""
+    if host == "youtu.be":
+        candidate = parsed.path.lstrip("/").split("/")[0]
+    elif host == "youtube.com" or host.endswith(".youtube.com"):
+        if parsed.path == "/watch":
+            candidate = (parse_qs(parsed.query).get("v") or [""])[0]
+        else:
+            match = re.match(r"^/(?:shorts|embed|live)/([^/?#]+)", parsed.path)
+            candidate = match.group(1) if match else ""
+    return candidate if YOUTUBE_ID_RE.match(candidate) else ""
+
+
+def _youtube_id(w: dict) -> str:
+    """Video for the in-app Video tab: the stored id, else the YouTube link's id."""
+    stored = (w.get("youtube_id") or "").strip()
+    if YOUTUBE_ID_RE.match(stored):
+        return stored
+    return _youtube_id_from_url((w.get("videos") or {}).get("youtube") or "")
+
+
+def _is_placeholder_image(url: str) -> bool:
+    u = (url or "").lower()
+    return (
+        not u
+        or "via.placeholder.com" in u
+        or "placehold.co" in u
+        or (u.startswith("/static/img/exercises/") and u.endswith(".svg"))
+        or u.endswith("/exercise-placeholder.svg")
+    )
+
+
+_MUSCLE_MAP_FILES: Dict[str, bool] = {}
+
+
+def _has_muscle_map(slug: str) -> bool:
+    if slug not in _MUSCLE_MAP_FILES:
+        path = os.path.join(app.static_folder, "img", "exercises", f"{slug}.svg")
+        _MUSCLE_MAP_FILES[slug] = bool(slug) and os.path.isfile(path)
+    return _MUSCLE_MAP_FILES[slug]
+
+
+def _exercise_slides(w: dict) -> List[dict]:
+    """The exercise viewer: real photos first (form, in order), the muscle map last."""
+    slides = [
+        {"src": u, "kind": "photo"}
+        for u in (w.get("images") or [])
+        if isinstance(u, str) and not _is_placeholder_image(u)
+    ]
+    slug = w.get("slug") or ""
+    if _has_muscle_map(slug):
+        slides.append(
+            {"src": url_for("static", filename=f"img/exercises/{slug}.svg"), "kind": "map"}
+        )
+    if not slides:
+        slides.append(
+            {"src": url_for("static", filename="img/exercise-placeholder.svg"), "kind": "map"}
+        )
+    return slides
+
+
 def _is_safe_video_url(url: str) -> bool:
     parsed = urlparse(url or "")
     host = (parsed.hostname or "").lower()
@@ -4700,7 +4822,9 @@ def workout_detail(slug):
         w=w,
         accent=_accent_for(w),
         muscle_chips=_muscle_chips(w),
+        slides=_exercise_slides(w),
         video_links=_video_links(w),
+        youtube_id=_youtube_id(w),
         how=how,
         has_howto=has_howto,
         easier=easier,

@@ -38,4 +38,6 @@ safety:
     stop the set before you might fail.
 breathing: Breathe in and hold your brace as you lower; breathe out through the hardest part of the press.
 regressions: [dumbbell-bench-press]
+videos:
+  youtube: https://www.youtube.com/watch?v=rT7DgCr-3pg
 tags: [push, chest, barbell, strength]

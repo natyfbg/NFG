@@ -35,4 +35,6 @@ safety:
 breathing: Breathe in as you step back and lower, out as you stand.
 regressions: [split-squat]
 progressions: [walking-lunge, bulgarian-split-squat]
+videos:
+  youtube: https://www.youtube.com/watch?v=UoQcIFYTN_o
 tags: [lunge, legs, dumbbell, unilateral]

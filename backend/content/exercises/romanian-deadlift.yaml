@@ -38,4 +38,6 @@ safety:
 breathing: Breathe in and brace before you lower; breathe out as you stand.
 regressions: [dumbbell-romanian-deadlift]
 progressions: [deadlift]
+videos:
+  youtube: https://www.youtube.com/watch?v=xgusDooVfKU
 tags: [hinge, hamstrings, glutes, barbell]

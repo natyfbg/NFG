@@ -34,4 +34,6 @@ safety:
   - Check that a doorway bar is rated for your weight and fully secured.
 breathing: Breathe out as you pull up, in as you lower.
 regressions: [lat-pulldown]
+videos:
+  youtube: https://www.youtube.com/watch?v=TUPvXqv0Mt8
 tags: [pull, biceps, back, bodyweight]

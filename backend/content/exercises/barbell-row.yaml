@@ -36,6 +36,8 @@ safety:
     switch to the chest-supported dumbbell row.
 breathing: Breathe in and brace before each rep; breathe out as the bar reaches your body.
 regressions: [chest-supported-dumbbell-row, one-arm-dumbbell-row]
+videos:
+  youtube: https://www.youtube.com/watch?v=bm0_q9bR_HA
 tags: [row, back, barbell, lats]
 notes: >-
   Full instructions added in batch 1 (previously no text was live).

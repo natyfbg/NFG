@@ -36,4 +36,6 @@ safety:
 breathing: Breathe out as you press, in as you lower.
 regressions: [pike-push-up]
 progressions: [barbell-overhead-press]
+videos:
+  youtube: https://www.youtube.com/watch?v=8kwDkC8JhdY
 tags: [push, shoulders, dumbbell]

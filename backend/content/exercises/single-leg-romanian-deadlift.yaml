@@ -34,4 +34,6 @@ safety:
   - Hold a wall or rack with your free hand until your balance is reliable.
 breathing: Breathe in as you hinge forward, out as you stand.
 regressions: [dumbbell-romanian-deadlift]
+videos:
+  youtube: https://www.youtube.com/watch?v=6pEL3KxnlEo
 tags: [hinge, hamstrings, glutes, dumbbell, unilateral, balance]

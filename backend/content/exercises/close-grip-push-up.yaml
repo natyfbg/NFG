@@ -34,4 +34,6 @@ safety:
   - If your wrists complain, turn your hands slightly out or use push-up handles.
 breathing: Breathe in as you lower, out as you push up.
 regressions: [incline-push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=zGEkpb42jhU
 tags: [push, triceps, bodyweight]

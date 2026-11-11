@@ -39,4 +39,6 @@ safety:
 breathing: Breathe in and brace before you lower. Hold the brace, then breathe out near the top.
 regressions: [goblet-squat]
 progressions: [barbell-front-squat]
+videos:
+  youtube: https://www.youtube.com/watch?v=-bJIpOq-LWk
 tags: [squat, legs, barbell, strength]

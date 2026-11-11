@@ -34,6 +34,11 @@ safety:
 breathing: Breathe in as you lower, out as you push up.
 regressions: [incline-push-up]
 progressions: [decline-push-up]
+# The four EZ-bar photos uploaded in admin were stand-ins; [] clears them back to the
+# muscle map until real push-up photos exist.
+images: []
+videos:
+  youtube: https://www.youtube.com/watch?v=WDIpL0pjun0
 tags: [push, chest, bodyweight]
 notes: >-
   Summary and cues are the original live text, kept as-is. Setup, steps,

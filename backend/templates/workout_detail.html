@@ -4,7 +4,6 @@
 {% block title %}{{ w.name }} – NFG{% endblock %}
 
 {% block page %}
-{% set images = w.images if w.images else [url_for('static', filename='img/exercise-placeholder.svg')] %}
 <article class="nfg-exercise" style="--accent: {{ accent.color }};">
 
   <div class="nfg-ex-topline">
@@ -16,33 +15,8 @@
   </div>
 
   <div class="nfg-ex-layout">
-    <div class="nfg-ex-media-col">
-      <div class="nfg-ex-media">
-        <div class="nfg-gallery" data-no-page-swipe>
-          {% for img in images %}
-            <img src="{{ img }}" alt="{{ w.name }}{% if images|length > 1 %} — image {{ loop.index }}{% endif %}"
-                 {% if not loop.first %}loading="lazy"{% endif %}>
-          {% endfor %}
-        </div>
-        {% if images|length > 1 %}<span class="nfg-gallery-count">{{ images|length }} photos · swipe</span>{% endif %}
-        {% if has_howto %}
-          <button class="nfg-help-btn" type="button" data-bs-toggle="modal" data-bs-target="#howToSheet"
-                  aria-controls="howToSheet" aria-label="How to do {{ w.name }}">{{ ui.icon('question-lg') }}</button>
-        {% endif %}
-      </div>
-
-      {% if video_links %}
-        <div class="nfg-video-links" aria-label="Watch {{ w.name }}">
-          <span class="nfg-video-label">Watch</span>
-          {% for v in video_links %}
-            <a class="nfg-video-link is-{{ v.key }}" href="{{ v.url }}" target="_blank" rel="noopener noreferrer"
-               aria-label="{{ w.name }} on {{ v.label }}" title="{{ v.label }}">{{ ui.icon(v.key) }}</a>
-          {% endfor %}
-        </div>
-      {% endif %}
-    </div>
-
-    <div class="nfg-ex-info">
+    {# Name, save and what it works come first, so the tall viewer below never hides them. #}
+    <header class="nfg-ex-head">
       {% if w.publish_status == 'draft' %}
         <span class="badge text-bg-warning mb-2">Draft · only visible to admin</span>
       {% endif %}
@@ -69,13 +43,48 @@
         {% if w.equipment_label or w.equipment %}<span class="nfg-mchip is-neutral">{{ w.equipment_label or w.equipment }}</span>{% endif %}
         {% if w.level %}<span class="nfg-mchip is-neutral">{{ w.level }}</span>{% endif %}
       </div>
+    </header>
 
-      {% if w.info %}<p class="nfg-ex-summary">{{ w.info }}</p>{% endif %}
+    <div class="nfg-ex-media-col">
+      {# 9:16 viewer: form photos in order, the muscle map last. Swipe, tap a bar, or use the arrows. #}
+      <div class="nfg-ex-media{% if slides|length > 1 %} has-steps{% endif %}" data-gallery>
+        <div class="nfg-gallery" data-no-page-swipe tabindex="0"
+             aria-label="{{ w.name }} images{% if slides|length > 1 %}, {{ slides|length }} in all{% endif %}">
+          {% for s in slides %}
+            <img class="nfg-slide is-{{ s.kind }}" src="{{ s.src }}"
+                 alt="{% if s.kind == 'map' %}{{ w.name }}: muscles worked{% else %}{{ w.name }} form, photo {{ loop.index }}{% endif %}"
+                 {% if not loop.first %}loading="lazy"{% endif %} draggable="false">
+          {% endfor %}
+        </div>
+        {% if slides|length > 1 %}
+          <button class="nfg-gallery-arrow is-prev" type="button" data-gallery-step="-1" aria-label="Previous image" hidden>{{ ui.icon('chevron-left') }}</button>
+          <button class="nfg-gallery-arrow is-next" type="button" data-gallery-step="1" aria-label="Next image">{{ ui.icon('chevron-right') }}</button>
+          <div class="nfg-gallery-steps">
+            {% for s in slides %}
+              <button class="nfg-gallery-step{% if loop.first %} is-active{% endif %}" type="button" data-gallery-to="{{ loop.index0 }}"
+                      aria-label="{% if s.kind == 'map' %}Muscles worked{% else %}Photo {{ loop.index }}{% endif %}"
+                      {% if loop.first %}aria-current="true"{% endif %}></button>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% if has_howto %}
+          <button class="nfg-help-btn" type="button" data-bs-toggle="modal" data-bs-target="#howToSheet"
+                  aria-controls="howToSheet" aria-label="How to do {{ w.name }}">{{ ui.icon('question-lg') }}</button>
+        {% endif %}
+      </div>
 
-      {% if has_howto %}
-        <button class="nfg-btn nfg-howto-btn" type="button" data-bs-toggle="modal" data-bs-target="#howToSheet"
-                aria-controls="howToSheet">How to do it</button>
+      {% if video_links %}
+        <div class="nfg-video-links" aria-label="Watch {{ w.name }}">
+          {% for v in video_links %}
+            <a class="nfg-video-link is-{{ v.key }}" href="{{ v.url }}" target="_blank" rel="noopener noreferrer"
+               aria-label="Watch {{ w.name }} on {{ v.label }}">{{ ui.icon(v.key) }}<span>{% if loop.first %}Watch on {% endif %}{{ v.label }}</span></a>
+          {% endfor %}
+        </div>
       {% endif %}
+    </div>
+
+    <div class="nfg-ex-info">
+      {% if w.info %}<p class="nfg-ex-summary">{{ w.info }}</p>{% endif %}
 
       {% if easier or harder %}
         <div class="nfg-ex-variations">
@@ -103,6 +112,47 @@
     </section>
   {% endif %}
 </article>
+<script>
+  /* Exercise viewer: keep the step bars and arrows in line with the swipe. */
+  (function () {
+    document.querySelectorAll('[data-gallery]').forEach(function (root) {
+      var track = root.querySelector('.nfg-gallery');
+      var count = track ? track.children.length : 0;
+      if (count < 2) return;
+      var dots = root.querySelectorAll('[data-gallery-to]');
+      var prev = root.querySelector('.nfg-gallery-arrow.is-prev');
+      var next = root.querySelector('.nfg-gallery-arrow.is-next');
+      var smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function current() {
+        return Math.max(0, Math.min(count - 1, Math.round(track.scrollLeft / Math.max(1, track.clientWidth))));
+      }
+      function go(i) {
+        i = Math.max(0, Math.min(count - 1, i));
+        track.scrollTo({ left: i * track.clientWidth, behavior: smooth ? 'smooth' : 'auto' });
+      }
+      function sync() {
+        var i = current();
+        dots.forEach(function (d, k) {
+          d.classList.toggle('is-active', k === i);
+          if (k === i) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current');
+        });
+        if (prev) prev.hidden = i === 0;
+        if (next) next.hidden = i === count - 1;
+      }
+      var frame = 0;
+      track.addEventListener('scroll', function () {
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(sync);
+      }, { passive: true });
+      dots.forEach(function (d) {
+        d.addEventListener('click', function () { go(Number(d.dataset.galleryTo)); });
+      });
+      root.querySelectorAll('[data-gallery-step]').forEach(function (b) {
+        b.addEventListener('click', function () { go(current() + Number(b.dataset.galleryStep)); });
+      });
+    });
+  })();
+</script>
 {% endblock %}
 
 {% block overlays %}
@@ -113,7 +163,7 @@
   {% if w.tips %}{% set _ = tabs.append(('cues', 'Cues')) %}{% endif %}
   {% if w.mistakes %}{% set _ = tabs.append(('mistakes', 'Mistakes')) %}{% endif %}
   {% if w.safety %}{% set _ = tabs.append(('safety', 'Safety')) %}{% endif %}
-  {% if w.youtube_id %}{% set _ = tabs.append(('video', 'Video')) %}{% endif %}
+  {% if youtube_id %}{% set _ = tabs.append(('video', 'Video')) %}{% endif %}
 
   {# A small centred popup (not a full-screen sheet): quick to read, quick to close. #}
   <div class="modal fade nfg-howto" tabindex="-1" id="howToSheet" aria-labelledby="howToTitle" aria-hidden="true"
@@ -158,7 +208,7 @@
             <ul class="nfg-howto-list is-safety">{% for line in w.safety %}<li>{{ line }}</li>{% endfor %}</ul>
           {% elif key == 'video' %}
             <div class="nfg-video-frame">
-              <iframe data-src="https://www.youtube-nocookie.com/embed/{{ w.youtube_id }}" title="{{ w.name }} video"
+              <iframe data-src="https://www.youtube-nocookie.com/embed/{{ youtube_id }}" title="{{ w.name }} video"
                       allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
           {% endif %}

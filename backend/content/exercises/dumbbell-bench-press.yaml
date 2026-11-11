@@ -36,4 +36,6 @@ safety:
 breathing: Breathe in as you lower, out as you press.
 regressions: [machine-chest-press]
 progressions: [barbell-bench-press]
+videos:
+  youtube: https://www.youtube.com/watch?v=AuNRCrdhquE
 tags: [push, chest, dumbbell]

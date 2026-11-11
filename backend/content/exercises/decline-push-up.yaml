@@ -34,4 +34,6 @@ safety:
   - Make sure the surface under your feet is stable and won't slide.
 breathing: Breathe in as you lower, out as you press up.
 regressions: [push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=DBz85WuXqMk
 tags: [push, chest, upper-chest, bodyweight]

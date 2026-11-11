@@ -35,4 +35,6 @@ safety:
 breathing: Breathe out as you lift, in as you lower.
 regressions: [glute-bridge]
 progressions: [barbell-hip-thrust]
+videos:
+  youtube: https://www.youtube.com/watch?v=lHXShY-FivU
 tags: [hinge, glutes, bodyweight, unilateral]
