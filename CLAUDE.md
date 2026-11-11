@@ -123,6 +123,9 @@ as committer, so GitHub shows them as Verified.
   use the same key and be added to that migration.
 - `/healthz` returns 503 when Mongo is unreachable (Render health check uses it).
 - Templates must tolerate missing fields (`x is defined and x is not none`).
+- Never pass a template variable named `session`, `request`, `g`, `config` or
+  `current_user`: Flask/Flask-Login already define them in every template, so a missing
+  value silently falls back to theirs (this caused the Mixer 500, f0df57e).
 - `seed.py` now seeds only the sample recipes; exercises come from content files.
 - `backend/taxonomy.py` is the single source of truth for muscle/group/equipment/
   movement keys. Keys are stored in the DB and content files — never rename one
@@ -205,14 +208,30 @@ as committer, so GitHub shows them as Verified.
 
 ## Roadmap (current)
 
-1. ✅ Phase 0: hardening + tests
-2. ✅ Content pipeline: taxonomy module, YAML schema, sync script, SVG placeholders,
-   existing 4 exercises migrated
-3. Starter exercise library: Nate approves the list, Claude drafts instructions in
-   batches, Nate reviews and publishes
-4. ✅ Home v2: continue training (with %), environment switch, muscle-group tiles,
-   Muscle Mixer v1 (`/workouts/mix`), Coach's Picks, saved exercises, programs rail
-5. Content batches 2+ (Shoulders/Arms, Legs/Glutes, Core, Full body/Cardio/Mobility)
-6. ✅ App shell + Exercises/browse/search/detail redesign (2026-11-10)
-7. Next: recently viewed, equipment chips in Quick setup, programs content
-   (8 Week Challenge weeks/days), optional native dark theme
+Full assessment and plan: the "NFG — Assessment & Plan" doc (2026-11-10, Nate's claude.ai
+docs). Summary:
+
+Done: Phase 0 hardening + tests · content pipeline (taxonomy, YAML, sync, placeholders) ·
+Home (session cards, Mixer chips, Continue training) · app shell, Exercises, browse,
+search, exercise page.
+
+Next six sprints, in order:
+1. Ship and tidy — promote PR #11; remove visitor-facing placeholder/admin copy (About,
+   Programs notes, "Sample week", Recipes); Sign in pill fix; versioned stylesheet URL;
+   cached library snapshot (Home ≤ 5 DB calls).
+2. Library: legs and glutes (~25) + finish deadlift/goblet squat; muscle-map placeholders.
+3. Programs v2 — programs as content files + sync; one-screen setup remembering level and
+   Home/Gym; current week, day view (sets/reps/rest), "Start today"; old URLs keep working.
+4. 8 Week Challenge content (3 levels, authored home swaps) + core exercises (~15).
+5. Accounts and trust — new design for auth/account; password reset (email); delete account
+   + export; privacy/terms; skippable training profile; error alerts; backups confirmed.
+6. Workouts + session mode — saved workouts (exercise + sets/reps/rest), "Save as workout",
+   set logging, rest timer, swap exercise, history (guests and members).
+Alongside: full body (S3), cardio + mobility (S5), first 12 recipes (S6).
+Later, each gated: progress analytics · PWA · personalised Home · nutrition · AI coach ·
+native/wearables research · paid tier.
+
+Standing decisions: workouts/session mode is the signature feature; programs and recipes
+are content-as-code (Claude drafts, Nate approves); no AI-generated form images (Nate films,
+Claude processes); admin is frozen (no new features); guests stay first-class; analytics
+cookie-free.
