@@ -1,0 +1,225 @@
+# The 8 Week Challenge. Goal: lose fat, keep muscle. ~45-minute sessions.
+# Beginner 3 days (full body), Intermediate 4 (upper/lower), Advanced 5
+# (push/pull/legs/upper/lower). Phases set sets/reps/rest for every week; an item's
+# own sets/reps/rest override them. `home:` names the swap used in the Home track.
+# Core work is listed as custom items until the core exercise batch lands.
+slug: 8-week-challenge
+title: 8 Week Challenge
+status: published
+goal: Lose fat, keep muscle
+summary: >-
+  Eight weeks to lose fat and keep your muscle: three to five 45-minute strength
+  sessions a week, steady cardio on rest days and simple food rules.
+weeks: 8
+session_minutes: 45
+rules:
+  - "Train 3 (Beginner), 4 (Intermediate) or 5 (Advanced) days a week, about 45 minutes each."
+  - "Cardio: 20–30 min at a steady, conversational pace on 2–3 rest days."
+  - "Diet: low or no added sugar, 3–6 L of water a day, protein at every meal, mostly whole foods."
+  - "Finish most sets with 2–3 reps left in the tank. Clean form beats heavier weight."
+  - "Hit the top of the rep range on every set? Add a little weight next time."
+
+phases:
+  - name: Foundation
+    weeks: [1, 2]
+    note: Learn every movement and find your working weights.
+    main: {sets: 3, reps: "10–12", rest: 75s}
+    accessory: {sets: 2, reps: "12–15", rest: 45s}
+  - name: Build
+    weeks: [3, 4, 5]
+    note: One more set on the big lifts. Add weight when the reps feel easy.
+    main: {sets: 4, reps: "8–10", rest: 90s}
+    accessory: {sets: 3, reps: "12–15", rest: 45s}
+  - name: Push
+    weeks: [6, 7]
+    note: Heavier main lifts, same clean form.
+    main: {sets: 4, reps: "6–8", rest: 2 min}
+    accessory: {sets: 3, reps: "10–12", rest: 60s}
+  - name: Peak and reset
+    weeks: [8]
+    note: Less volume. Match or beat your week 1 weights.
+    main: {sets: 3, reps: "8", rest: 90s}
+    accessory: {sets: 2, reps: "12", rest: 45s}
+
+levels:
+  beginner:
+    summary: Three full-body days a week. Leave a rest day between sessions.
+    days:
+      - label: Full Body A
+        focus: Squat · press · row
+        items:
+          - exercise: goblet-squat
+          - exercise: dumbbell-bench-press
+          - exercise: one-arm-dumbbell-row
+          - exercise: glute-bridge
+            role: accessory
+          - exercise: dumbbell-lateral-raise
+          - custom: Plank
+            sets: 3
+            reps: "20–40 s"
+            rest: 30s
+      - label: Full Body B
+        focus: Hinge · overhead · pull
+        items:
+          - exercise: dumbbell-romanian-deadlift
+          - exercise: dumbbell-shoulder-press
+          - exercise: lat-pulldown
+            home: inverted-row
+          - exercise: dumbbell-reverse-lunge
+            role: accessory
+          - exercise: dumbbell-curl
+          - custom: Side Plank
+            sets: 2
+            reps: "20–30 s each side"
+            rest: 30s
+      - label: Full Body C
+        focus: Legs · push-up · row
+        items:
+          - exercise: leg-press
+            home: split-squat
+          - exercise: push-up
+          - exercise: seated-cable-row
+            home: chest-supported-dumbbell-row
+          - exercise: dumbbell-step-up
+            role: accessory
+          - exercise: cable-pushdown
+            home: overhead-dumbbell-extension
+          - exercise: farmers-carry
+            role: accessory
+            sets: 3
+            reps: "30–40 m"
+            rest: 60s
+
+  intermediate:
+    summary: Four days a week, upper and lower body twice each.
+    days:
+      - label: Upper A
+        focus: Chest · back · shoulders
+        items:
+          - exercise: barbell-bench-press
+            home: dumbbell-bench-press
+          - exercise: barbell-row
+            home: one-arm-dumbbell-row
+          - exercise: dumbbell-shoulder-press
+          - exercise: lat-pulldown
+            home: chin-up
+            role: accessory
+          - exercise: dumbbell-lateral-raise
+          - exercise: cable-pushdown
+            home: overhead-dumbbell-extension
+      - label: Lower A
+        focus: Squat · hinge · single leg
+        items:
+          - exercise: barbell-back-squat
+            home: goblet-squat
+          - exercise: romanian-deadlift
+            home: dumbbell-romanian-deadlift
+          - exercise: bulgarian-split-squat
+            role: accessory
+          - exercise: lying-leg-curl
+            home: single-leg-glute-bridge
+          - exercise: standing-calf-raise
+          - custom: Plank
+            sets: 3
+            reps: "30–45 s"
+            rest: 30s
+      - label: Upper B
+        focus: Incline · rows · overhead
+        items:
+          - exercise: incline-dumbbell-press
+          - exercise: seated-cable-row
+            home: chest-supported-dumbbell-row
+          - exercise: barbell-overhead-press
+            home: dumbbell-shoulder-press
+          - exercise: pull-up
+            role: accessory
+          - exercise: band-face-pull
+          - exercise: dumbbell-curl
+      - label: Lower B
+        focus: Deadlift · glutes · lunges
+        items:
+          - exercise: deadlift
+            home: kettlebell-swing
+          - exercise: leg-press
+            home: bulgarian-split-squat
+          - exercise: barbell-hip-thrust
+            home: single-leg-glute-bridge
+          - exercise: walking-lunge
+            role: accessory
+          - exercise: seated-calf-raise
+            home: standing-calf-raise
+          - custom: Side Plank
+            sets: 3
+            reps: "30 s each side"
+            rest: 30s
+
+  advanced:
+    summary: Five days a week. Push, pull and legs, then upper and lower.
+    days:
+      - label: Push
+        focus: Chest · shoulders · triceps
+        items:
+          - exercise: barbell-bench-press
+            home: dumbbell-bench-press
+          - exercise: barbell-overhead-press
+            home: dumbbell-shoulder-press
+          - exercise: incline-dumbbell-press
+          - exercise: cable-lateral-raise
+            home: dumbbell-lateral-raise
+          - exercise: cable-pushdown
+            home: overhead-dumbbell-extension
+          - exercise: decline-push-up
+            role: accessory
+      - label: Pull
+        focus: Back · biceps · rear delts
+        items:
+          - exercise: pull-up
+          - exercise: barbell-row
+            home: one-arm-dumbbell-row
+          - exercise: seated-cable-row
+            home: inverted-row
+          - exercise: rear-delt-fly
+          - exercise: barbell-curl
+            home: dumbbell-curl
+          - exercise: hammer-curl
+      - label: Legs
+        focus: Squat · hinge · lunge
+        items:
+          - exercise: barbell-back-squat
+            home: bulgarian-split-squat
+          - exercise: romanian-deadlift
+            home: single-leg-romanian-deadlift
+          - exercise: walking-lunge
+            role: accessory
+          - exercise: leg-extension
+            home: wall-sit
+          - exercise: lying-leg-curl
+            home: nordic-hamstring-curl
+          - exercise: standing-calf-raise
+      - label: Upper
+        focus: Incline · rows · arms
+        items:
+          - exercise: incline-dumbbell-press
+          - exercise: chest-supported-dumbbell-row
+          - exercise: dumbbell-shoulder-press
+          - exercise: chin-up
+            role: accessory
+          - exercise: dumbbell-lateral-raise
+          - exercise: dumbbell-skull-crusher
+      - label: Lower
+        focus: Deadlift · front squat · glutes
+        items:
+          - exercise: deadlift
+            home: kettlebell-swing
+          - exercise: barbell-front-squat
+            home: goblet-squat
+          - exercise: barbell-hip-thrust
+            home: single-leg-glute-bridge
+          - exercise: dumbbell-step-up
+            role: accessory
+          - exercise: hip-abduction-machine
+            home: banded-lateral-walk
+          - custom: Plank
+            sets: 3
+            reps: "45–60 s"
+            rest: 30s

@@ -89,3 +89,27 @@ images:
 Until then each exercise uses its generated placeholder
 (`static/img/exercises/<slug>.svg`): the muscle group's colour plus a front/back
 muscle map drawn from `muscles:` (primary bright, secondary dimmer; `musclemap.py`).
+
+## Programs (`programs/<hub-slug>.yaml`)
+
+One file per program (e.g. `programs/8-week-challenge.yaml`). It holds the program's
+goal, rules and `phases` (which weeks use which sets/reps/rest for `main` and
+`accessory` work), and for each level its training `days`, each with `items`:
+
+```yaml
+- exercise: barbell-back-squat     # an exercise slug
+  home: goblet-squat               # swap used in the Home track (needed for gym-only gear)
+  role: accessory                  # optional; default comes from the exercise
+  sets: 3                          # optional overrides of the phase's numbers
+  reps: "30–45 s"
+- custom: Plank                    # a line without an exercise page (needs sets + reps)
+  sets: 3
+  reps: "20–40 s"
+```
+
+`content_sync.py check` validates programs too: every slug must exist, Home tracks may
+only use home equipment, and phases must cover every week once. `sync` writes one track
+per level × Home/Gym/Hybrid (Hybrid uses the gym version) and replaces their weeks; it
+never touches weeks built by hand in Admin unless you pass `--force-programs`. Progress
+is keyed by track + week + day label, so re-syncing keeps everyone's progress — but
+renaming a day label resets that day's ticks.

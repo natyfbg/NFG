@@ -485,6 +485,17 @@ def collection_warnings(exercises: List[dict]) -> List[str]:
     return warnings
 
 
+def _load_programs_or_exit(exercises: List[dict]) -> List[dict]:
+    import program_content
+
+    try:
+        programs, _ = program_content.load_programs(exercises)
+    except program_content.ProgramError as e:
+        print("Program validation failed:\n" + str(e), file=sys.stderr)
+        sys.exit(1)
+    return programs
+
+
 def cmd_check(_args) -> None:
     import curation
 
@@ -495,9 +506,11 @@ def cmd_check(_args) -> None:
     except curation.CurationError as e:
         print("Collection validation failed:\n" + str(e), file=sys.stderr)
         sys.exit(1)
+    programs = _load_programs_or_exit(exercises)
     drafts = sum(1 for ex in exercises if ex["status"] == "draft")
     print(
         f"OK: {len(exercises)} exercise files ({drafts} draft, {len(exercises) - drafts} published)"
+        f", {len(programs)} program file(s)"
     )
 
 
@@ -528,6 +541,18 @@ def cmd_sync(args) -> None:
     plan = plan_sync(db, exercises, only_slug=args.slug)
     for line in describe_plan(plan, args.force) or ["  nothing to do"]:
         print(line)
+
+    # Programs run after exercises so new exercise slugs resolve. Skipped with --slug.
+    program_plan = []
+    if not args.slug:
+        import program_content
+
+        programs = _load_programs_or_exit(exercises)
+        program_plan = program_content.plan_program_sync(db, programs, exercises)
+        if program_plan:
+            print("Programs:")
+            for line in program_content.describe_program_plan(program_plan, args.force_programs):
+                print(line)
     if not args.apply:
         print("Dry run only. Re-run with --apply to write these changes.")
         return
@@ -538,6 +563,11 @@ def cmd_sync(args) -> None:
         f"{len(plan['updates']) + (len(plan['drifted']) if args.force else 0)} updated, "
         f"{skipped} skipped (admin-edited)."
     )
+    if program_plan:
+        import program_content
+
+        program_content.apply_program_sync(db, program_plan, force=args.force_programs)
+        print("Programs applied.")
 
 
 def main(argv=None) -> None:
@@ -550,6 +580,11 @@ def main(argv=None) -> None:
     p_sync.add_argument("--apply", action="store_true", help="write changes")
     p_sync.add_argument("--slug", help="only this exercise")
     p_sync.add_argument("--force", action="store_true", help="overwrite admin-edited exercises")
+    p_sync.add_argument(
+        "--force-programs",
+        action="store_true",
+        help="replace program weeks that were built by hand in Admin",
+    )
     p_sync.add_argument(
         "--allow-remote", action="store_true", help="permit --apply against a non-local DB"
     )

@@ -1,141 +1,45 @@
 {% extends "base.html" %}
+{% import "_components.html" as ui %}
+
 {% block title %}Programs – NFG{% endblock %}
 
-{% block sidebar %}
-<div class="app-sidebar-stack">
-  <div class="card app-surface app-list-card">
-    <div class="app-surface-header">
-      <strong>Explore</strong>
-    </div>
-    <div class="list-group list-group-flush">
-      <a class="list-group-item list-group-item-action app-list-row d-flex justify-content-between align-items-center" href="{{ url_for('home') }}"><span>Home</span><span class="app-list-arrow">→</span></a>
-      <a class="list-group-item list-group-item-action app-list-row d-flex justify-content-between align-items-center" href="{{ url_for('workouts') }}"><span>Exercises</span><span class="app-list-arrow">→</span></a>
-      <a class="list-group-item list-group-item-action app-list-row d-flex justify-content-between align-items-center" href="{{ url_for('recipes') }}"><span>Recipes</span><span class="app-list-arrow">→</span></a>
-      <a class="list-group-item list-group-item-action app-list-row active d-flex justify-content-between align-items-center" href="{{ url_for('programs_index') }}"><span>Programs</span><span class="app-list-arrow">→</span></a>
-    </div>
-  </div>
+{% block page %}
+<div class="nfg-discover nfg-prog">
 
-  <div class="card app-surface app-surface-muted">
-    <div class="card-body">
-      <div class="app-page-kicker mb-2">Tip</div>
-      <div class="text-muted small">
-        Save a program to Favorites and it will appear on your Home page for quick access.
-        Sign in to sync favorites and progress across devices.
-      </div>
-    </div>
-  </div>
-</div>
-{% endblock %}
+  <header class="nfg-page-head">
+    <h1 class="nfg-page-title">Programs</h1>
+    <p class="nfg-prog-summary">A plan for every week, so you don't have to decide what to train each day.</p>
+  </header>
 
-{% block content %}
-<div class="app-page">
-  <div class="app-page-header">
-    <div>
-      <div class="app-page-kicker">Programs hub</div>
-      <h1 class="page-title mb-1">Programs</h1>
-      <p class="app-page-copy">
-        Start with the main challenge, choose your setup, and move into the week-by-week plan without extra clutter.
-      </p>
+  {% if programs %}
+    <div class="nfg-prog-cards">
+      {% for p in programs %}
+        <a class="nfg-prog-card" href="{{ url_for('program_detail', slug=p.slug) }}">
+          <span class="nfg-prog-card-kicker">
+            {% if p.slug in program_favorite_slugs %}{{ ui.icon('heart-fill') }} Saved · {% endif %}{{ p.goal or 'Program' }}
+          </span>
+          <span class="nfg-prog-card-title">{{ p.title or 'Program' }}</span>
+          {% if p.summary %}<span class="nfg-prog-card-copy">{{ p.summary | visitor_text }}</span>{% endif %}
+          <span class="nfg-prog-facts is-dark">
+            {% if p.duration_label %}<span>{{ p.duration_label }}</span>{% endif %}
+            {% set dpw = p.days_per_week %}
+            {% if dpw %}<span>{% if dpw is iterable and dpw is not string %}{{ dpw|first }}{% if dpw|length > 1 %}–{{ dpw|last }}{% endif %}{% else %}{{ dpw }}{% endif %} days a week</span>{% endif %}
+            {% if p.session_minutes %}<span>~{{ p.session_minutes }} min</span>{% endif %}
+          </span>
+          <span class="nfg-prog-card-cta">Open program {{ ui.icon('arrow-right') }}</span>
+        </a>
+      {% endfor %}
     </div>
-
-    <div class="d-flex align-items-center gap-2">
+  {% else %}
+    <section class="nfg-prog-empty">
+      <h2>Programs are on the way</h2>
+      <p>Until then, pick a session on Home.</p>
+      <a class="nfg-btn is-ghost" href="{{ url_for('home') }}">Pick a session</a>
       {% if current_user.is_authenticated and current_user.is_admin %}
-        <a class="btn btn-sm btn-outline-secondary app-btn-secondary app-btn-compact" href="{{ url_for('admin_programs') }}">Manage (Admin)</a>
+        <p class="small mt-2">In <strong>Admin → Programs</strong>, create a program with type <code>Hub</code> and set it Active.</p>
       {% endif %}
-    </div>
-  </div>
-
-{# -----------------------------------------------------------------------------
-   Show ONLY the hub program.
-   Today we key off slug == '8-week-challenge'.
-   Later you can add p.kind == 'hub' or p.is_hub == True and it will still work.
------------------------------------------------------------------------------ #}
-
-{% set ns = namespace(hub=none) %}
-{% if programs and programs|length > 0 %}
-  {% for p in programs %}
-    {% set slug = (p.get('slug') or '') %}
-    {% if slug == '8-week-challenge' %}
-      {% set ns.hub = p %}
-    {% endif %}
-  {% endfor %}
-  {% if not ns.hub %}
-    {% set ns.hub = programs[0] %}
+    </section>
   {% endif %}
-{% endif %}
-{% set hub = ns.hub %}
 
-{% if hub %}
-  <div class="row g-3">
-    <div class="col-12">
-      <div class="card app-surface">
-        <div class="card-body">
-          <div class="d-flex align-items-start justify-content-between gap-3">
-            <div class="me-2 flex-grow-1">
-              <div class="fw-semibold text-dark">{{ hub.get('title', 'Program') }}</div>
-
-              {% if hub.get('summary') %}
-                <div class="text-muted small mt-1">{{ hub.get('summary') }}</div>
-              {% else %}
-                <div class="text-muted small mt-1">
-                  Pick your level and training environment. Follow the weekly plan and build momentum.
-                </div>
-              {% endif %}
-
-              <div class="d-flex flex-wrap gap-2 mt-2">
-                <span class="flow-chip">{{ hub.get('category') or 'Challenge' }}</span>
-                <span class="flow-chip">{{ hub.get('duration_label') or '8 weeks' }}</span>
-
-                {% if hub.get('show_on_home') %}
-                  <span class="flow-chip flow-chip-accent">Featured</span>
-                {% endif %}
-                {% if hub.get('slug') in program_favorite_slugs %}
-                  <span class="flow-chip flow-chip-accent">Favorite</span>
-                {% endif %}
-              </div>
-
-              <div class="mt-3 d-flex align-items-center gap-2">
-                <a class="btn btn-sm btn-dark app-btn-primary app-btn-compact"
-                   href="{{ url_for('program_detail', slug=hub.get('slug')) }}">
-                  Open
-                </a>
-                <form method="post"
-                      action="{{ url_for('program_favorite_toggle', slug=hub.get('slug')) }}"
-                      class="d-inline">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <input type="hidden" name="next" value="{{ request.full_path }}">
-                  {% if hub.get('slug') in program_favorite_slugs %}
-                    <button class="btn btn-sm btn-warning app-btn-compact" type="submit">Unfavorite</button>
-                  {% else %}
-                    <button class="btn btn-sm btn-outline-warning app-btn-compact" type="submit">Favorite</button>
-                  {% endif %}
-                </form>
-              </div>
-            </div>
-
-            {% if hub.get('cover_image') %}
-              <img src="{{ hub.get('cover_image') }}" alt=""
-                   style="width:120px;height:68px;object-fit:cover;border-radius:.75rem;">
-            {% else %}
-              <div class="bg-body-secondary"
-                   style="width:120px;height:68px;border-radius:.75rem;"></div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-{% else %}
-  <div class="app-note">
-    Programs are on the way.
-    {% if current_user.is_authenticated and current_user.is_admin %}
-      <div class="small text-muted mt-1">
-        In <strong>Admin → Programs</strong>, create a program with type <code>Hub</code> and set it Active.
-      </div>
-    {% endif %}
-  </div>
-{% endif %}
 </div>
 {% endblock %}

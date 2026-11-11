@@ -216,6 +216,17 @@ as committer, so GitHub shows them as Verified.
 - 2026-11-10 — Top bar: "NFG" wordmark (logo kept for favicon/home-screen icons),
   search (drawer on mobile), Sign in / Join for guests, hamburger menu (`#appMenu`).
   The exercise how-to is a small centred modal, not a bottom sheet.
+- 2026-11-11 — **Programs v2.** Programs are content files (`content/programs/*.yaml`,
+  `program_content.py`) synced into the existing hub/track/week/item collections (one
+  track per level × Home/Gym/Hybrid; Hybrid = gym version; home swaps named per item).
+  One program page per hub (`/programs/<hub>`: next session, setup, week strip, this
+  week's days, how it works); the day page keeps the old week URL
+  (`/programs/<hub>/week/<n>?level&env&day=`). The old level → environment → weeks steps
+  and track URLs redirect. Level is remembered in `nfg_level`, Home/Gym in `nfg_env`;
+  otherwise the last progress row for that hub decides.
+- 2026-11-11 — 8 Week Challenge (Nate): goal "lose fat, keep muscle"; Beginner 3 days
+  (full body), Intermediate 4 (upper/lower), Advanced 5 (push/pull/legs/upper/lower);
+  ~45-minute sessions; phases Foundation (wk 1–2), Build (3–5), Push (6–7), Peak (8).
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
@@ -233,10 +244,10 @@ Next six sprints, in order:
    visitor-facing placeholder/admin copy removed, Sign in pill, versioned stylesheet,
    library snapshot (Home 20 → 5 DB calls, Exercises 11 → 0).
 2. ✅ Library: legs and glutes (27 new, 67 total) + deadlift/goblet squat text;
-   muscle-map placeholders (code done 2026-11-10; awaiting PR review + production sync).
-3. Programs v2 — programs as content files + sync; one-screen setup remembering level and
-   Home/Gym; current week, day view (sets/reps/rest), "Start today"; old URLs keep working.
-4. 8 Week Challenge content (3 levels, authored home swaps) + core exercises (~15).
+   muscle-map placeholders (promoted in PR #12, 2026-11-11; production content sync by Nate).
+3. ✅ Programs v2 — content files + sync, program page, day page, redirects (2026-11-11).
+4. 8 Week Challenge content: ✅ drafted (all levels, home swaps, phases) — awaiting Nate's
+   review; core exercises (~15) still to add, then link the program's custom core lines.
 5. Accounts and trust — new design for auth/account; password reset (email); delete account
    + export; privacy/terms; skippable training profile; error alerts; backups confirmed.
 6. Workouts + session mode — saved workouts (exercise + sets/reps/rest), "Save as workout",

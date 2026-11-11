@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+
+{% block title %}{{ hub.title or 'Program' }} – NFG{% endblock %}
+
+{% set days_per_week = track.days_per_week or (focus_week.days|length if focus_week else 0) %}
+{% set next_week = progress.next_week %}
+{% set next_day = progress.next_day %}
+
+{% macro day_link(week_n, d) -%}
+  {{ url_for('program_hub_week_detail', hub_slug=hub.slug, week_number=week_n, level=level, env=env, day=d.key) }}
+{%- endmacro %}
+
+{% block page %}
+<div class="nfg-discover nfg-prog">
+
+  <header class="nfg-page-head nfg-prog-head">
+    <div class="app-page-kicker">Program</div>
+    <div class="nfg-title-row">
+      <h1 class="nfg-page-title">{{ hub.title or 'Program' }}</h1>
+      <form class="nfg-save-form" method="post" action="{{ url_for('program_favorite_toggle', slug=hub.slug) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ request.full_path }}">
+        <button class="nfg-save-btn{% if is_saved %} is-saved{% endif %}" type="submit"
+                aria-pressed="{{ 'true' if is_saved else 'false' }}">
+          {{ ui.icon('heart-fill' if is_saved else 'heart') }} {{ 'Saved' if is_saved else 'Save' }}
+        </button>
+      </form>
+    </div>
+    {% if hub.summary %}<p class="nfg-prog-summary">{{ hub.summary | visitor_text }}</p>{% endif %}
+    <div class="nfg-prog-facts">
+      {% if hub.duration_label %}<span>{{ hub.duration_label }}</span>{% endif %}
+      {% if days_per_week %}<span>{{ days_per_week }} days a week</span>{% endif %}
+      {% if hub.session_minutes %}<span>~{{ hub.session_minutes }} min</span>{% endif %}
+      {% if hub.goal %}<span>{{ hub.goal }}</span>{% endif %}
+    </div>
+  </header>
+
+  {# Next session: the one thing to do. #}
+  {% if next_day %}
+    <section class="nfg-prog-next" aria-label="Next session">
+      <div class="nfg-prog-next-kicker">
+        {% if progress.finished %}Program complete · go again{% elif progress.started %}Next up{% else %}Start here{% endif %}
+        · Week {{ next_week.number }}{% if next_week.title %} · {{ next_week.title }}{% endif %}
+      </div>
+      <div class="nfg-prog-next-title">{{ next_day.label }}</div>
+      <div class="nfg-prog-next-meta">
+        {% if next_day.focus %}{{ next_day.focus }} · {% endif %}{{ next_day['items']|length }} exercises{% if next_day.minutes %} · ~{{ next_day.minutes }} min{% endif %}
+      </div>
+      {% if progress.total_days %}
+        <div class="nfg-prog-progress">
+          <span class="nfg-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                aria-valuenow="{{ progress.percent }}" aria-label="Program progress">
+            <span class="nfg-progress-bar" style="width: {{ progress.percent }}%;"></span>
+          </span>
+          <span>{{ progress.done_days }} of {{ progress.total_days }} days · {{ progress.percent }}%</span>
+        </div>
+      {% endif %}
+      <a class="nfg-btn nfg-prog-start" href="{{ day_link(next_week.number, next_day) }}">
+        {% if progress.started and not progress.finished %}Continue{% else %}Start{% endif %} {{ ui.icon('arrow-right') }}
+      </a>
+    </section>
+  {% else %}
+    <section class="nfg-prog-empty">
+      <h2>This plan is being written</h2>
+      <p>The weeks for this setup aren't ready yet. Until then, pick a session on Home.</p>
+      <a class="nfg-btn is-ghost" href="{{ url_for('home') }}">Pick a session</a>
+    </section>
+  {% endif %}
+
+  {# Setup: one screen, remembered. #}
+  <section class="nfg-prog-setup" aria-label="Your setup">
+    <div>
+      <div class="nfg-prog-label">Your level</div>
+      <div class="nfg-env-switch nfg-prog-switch" role="group" aria-label="Level">
+        {% for lv in levels %}
+          <a class="nfg-env-option{% if lv == level %} is-active{% endif %}"
+             href="{{ url_for('program_detail', slug=hub.slug, level=lv, env=env) }}"
+             {% if lv == level %}aria-current="true"{% endif %}>{{ level_meta[lv].label if lv in level_meta else lv|capitalize }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    <div>
+      <div class="nfg-prog-label">Where you train</div>
+      <div class="nfg-env-switch nfg-prog-switch" role="group" aria-label="Where you train">
+        {% for e in envs %}
+          <a class="nfg-env-option{% if e == env %} is-active{% endif %}"
+             href="{{ url_for('program_detail', slug=hub.slug, level=level, env=e) }}"
+             {% if e == env %}aria-current="true"{% endif %}>{{ environments[e].label if e in environments else e|capitalize }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    {% if track.summary %}<p class="nfg-prog-note">{{ track.summary | visitor_text }}</p>{% endif %}
+  </section>
+
+  {# Weeks at a glance. #}
+  <section class="nfg-section">
+    {{ ui.section_head(None, "Weeks") }}
+    {% call ui.rail() %}
+      {% for w in plan %}
+        {% set state = 'is-done' if w.complete else ('is-current' if next_week and w.number == next_week.number else ('is-locked' if not w.unlocked else '')) %}
+        {% if w.unlocked and w.days %}
+          <a class="nfg-week-chip {{ state }}" href="{{ url_for('program_hub_week_detail', hub_slug=hub.slug, week_number=w.number, level=level, env=env) }}">
+        {% else %}
+          <span class="nfg-week-chip {{ state }}" aria-disabled="true">
+        {% endif %}
+            <span class="nfg-week-n">{{ w.number }}</span>
+            <span class="nfg-week-label">{% if w.complete %}Done{% elif not w.unlocked %}Locked{% elif w.title %}{{ w.title }}{% else %}Week{% endif %}</span>
+            {% if w.days %}<span class="nfg-week-dots">{% for d in w.days %}<i class="{% if d.done %}is-on{% endif %}"></i>{% endfor %}</span>{% endif %}
+        {% if w.unlocked and w.days %}</a>{% else %}</span>{% endif %}
+      {% endfor %}
+    {% endcall %}
+  </section>
+
+  {# The days of the week you're on. #}
+  {% if focus_week and focus_week.days %}
+    <section class="nfg-section">
+      {{ ui.section_head(None, "Week " ~ focus_week.number ~ (" · " ~ focus_week.title if focus_week.title else "")) }}
+      {% if focus_week.notes %}<p class="nfg-prog-note">{{ focus_week.notes }}</p>{% endif %}
+      <div class="nfg-day-list">
+        {% for d in focus_week.days %}
+          <a class="nfg-day-card{% if d.done %} is-done{% endif %}" href="{{ day_link(focus_week.number, d) }}">
+            <span class="nfg-day-num">{% if d.done %}{{ ui.icon('check-lg') }}{% else %}{{ loop.index }}{% endif %}</span>
+            <span class="nfg-day-body">
+              <span class="nfg-day-name">{{ d.label }}</span>
+              <span class="nfg-day-meta">{% if d.focus %}{{ d.focus }} · {% endif %}{{ d['items']|length }} exercises{% if d.minutes %} · ~{{ d.minutes }} min{% endif %}</span>
+            </span>
+            <span class="nfg-day-go" aria-hidden="true">{{ ui.icon('chevron-right') }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {# How it works. #}
+  {% if hub.phases or hub.rules or track.rules %}
+    <section class="nfg-section">
+      <details class="nfg-prog-how">
+        <summary>How this program works</summary>
+        {% if hub.phases %}
+          <ol class="nfg-phase-list">
+            {% for ph in hub.phases %}
+              <li>
+                <span class="nfg-phase-weeks">Week{% if ph.weeks|length > 1 %}s {{ ph.weeks[0] }}–{{ ph.weeks[-1] }}{% else %} {{ ph.weeks[0] }}{% endif %}</span>
+                <strong>{{ ph.name }}</strong>
+                {% if ph.main %}<span class="nfg-phase-scheme">Main lifts {{ ph.main.sets }} × {{ ph.main.reps }}{% if ph.accessory %} · others {{ ph.accessory.sets }} × {{ ph.accessory.reps }}{% endif %}</span>{% endif %}
+                {% if ph.note %}<span class="nfg-phase-note">{{ ph.note }}</span>{% endif %}
+              </li>
+            {% endfor %}
+          </ol>
+        {% endif %}
+        {% set rules = hub.rules or track.rules %}
+        {% if rules %}
+          <ul class="nfg-rule-list">
+            {% for r in rules %}<li>{{ r }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </details>
+    </section>
+  {% endif %}
+
+  {% if progress.started %}
+    <section class="nfg-section nfg-prog-reset">
+      <form method="post" action="{{ url_for('program_hub_reset_progress', hub_slug=hub.slug) }}"
+            onsubmit="return confirm('Reset your progress for this setup? This can’t be undone.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="level" value="{{ level }}">
+        <input type="hidden" name="env" value="{{ env }}">
+        <button class="nfg-link-btn" type="submit">Reset progress</button>
+      </form>
+    </section>
+  {% endif %}
+
+</div>
+{% endblock %}
