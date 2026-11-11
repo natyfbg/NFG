@@ -37,4 +37,6 @@ safety:
 breathing: Breathe in as you lower, out as you stand.
 regressions: [bodyweight-squat]
 progressions: [barbell-back-squat, bulgarian-split-squat]
+videos:
+  youtube: https://www.youtube.com/watch?v=nfX7IFK9UNI
 tags: [squat, legs, dumbbell]

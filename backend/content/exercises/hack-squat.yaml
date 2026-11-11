@@ -36,4 +36,6 @@ safety:
   - Start light; the deep knee bend can surprise sore knees.
 breathing: Breathe in as you lower, out as you stand.
 regressions: [leg-press]
+videos:
+  youtube: https://www.youtube.com/watch?v=VY8ko6ecfso
 tags: [squat, quads, machine]

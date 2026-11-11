@@ -33,4 +33,6 @@ safety:
   - Make sure the path is clear and the floor isn't slippery.
 breathing: Breathe in as you lower, out as you push forward.
 regressions: [dumbbell-reverse-lunge]
+videos:
+  youtube: https://www.youtube.com/watch?v=_GqxkGp7NAA
 tags: [lunge, legs, dumbbell, unilateral, conditioning]

@@ -33,4 +33,6 @@ safety:
   - If a straight bar hurts your wrists, use an EZ bar or dumbbells.
 breathing: Breathe out as you curl, in as you lower.
 regressions: [dumbbell-curl]
+videos:
+  youtube: https://www.youtube.com/watch?v=QciWGMjD-nM
 tags: [biceps, arms, barbell]

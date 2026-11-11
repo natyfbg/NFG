@@ -34,4 +34,6 @@ safety:
   - Check the bench is locked at its angle before you sit back.
 breathing: Breathe in as you lower, out as you press.
 regressions: [dumbbell-bench-press]
+videos:
+  youtube: https://www.youtube.com/watch?v=JKnpHchOWPU
 tags: [push, chest, upper-chest, dumbbell]

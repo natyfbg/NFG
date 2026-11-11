@@ -180,6 +180,33 @@ def test_stored_youtube_id_wins(nfg_app):
     assert nfg_app._youtube_id(w) == "AAAAAAAAAAA"
 
 
+def test_every_exercise_has_a_youtube_demo():
+    exercises, _ = cs.load_exercises()
+    missing = [e["slug"] for e in exercises if not (e.get("videos") or {}).get("youtube")]
+    assert missing == []
+
+
+def test_check_videos_reports_broken_and_unembeddable(capsys):
+    import urllib.error
+
+    def lookup(url):
+        if url.endswith("gone"):
+            raise urllib.error.HTTPError(url, 404, "Not Found", None, None)
+        if url.endswith("noembed"):
+            raise urllib.error.HTTPError(url, 401, "Unauthorized", None, None)
+        return {"author_name": "NASM", "title": "How to do a Push-Up"}
+
+    exercises = [
+        {"slug": "a", "videos": {"youtube": "https://youtu.be/ok"}},
+        {"slug": "b", "videos": {"youtube": "https://youtu.be/gone"}},
+        {"slug": "c", "videos": {"youtube": "https://youtu.be/noembed"}},
+        {"slug": "d"},
+    ]
+    assert cs.check_videos(exercises, lookup=lookup) == (1, 1)
+    out = capsys.readouterr().out
+    assert "NASM | How to do a Push-Up" in out and "FAIL" in out and "embedding is off" in out
+
+
 # --------------------------------------------------------------------------
 # Placeholder art: 9:16 with a 4:5 safe zone
 # --------------------------------------------------------------------------

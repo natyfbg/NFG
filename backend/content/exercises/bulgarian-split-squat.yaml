@@ -35,4 +35,6 @@ safety:
     needed.
 breathing: Breathe in as you lower, out as you rise.
 regressions: [split-squat, dumbbell-reverse-lunge]
+videos:
+  youtube: https://www.youtube.com/watch?v=bZD05-6_yH4
 tags: [lunge, legs, dumbbell, unilateral]

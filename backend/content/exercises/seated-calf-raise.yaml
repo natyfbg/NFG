@@ -32,4 +32,6 @@ safety:
   - Put the safety lever back on before taking your feet off the platform.
 breathing: Breathe out as you rise, in as you lower.
 regressions: [standing-calf-raise]
+videos:
+  youtube: https://www.youtube.com/watch?v=3ZRe_QpvRPg
 tags: [calves, machine, isolation]

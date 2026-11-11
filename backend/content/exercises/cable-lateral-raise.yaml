@@ -33,4 +33,6 @@ safety:
   - Stop at shoulder height if raising higher is uncomfortable.
 breathing: Breathe out as you raise, in as you lower.
 regressions: [dumbbell-lateral-raise]
+videos:
+  youtube: https://www.youtube.com/watch?v=epjuphvl0is
 tags: [shoulders, side-delts, cable, isolation]

@@ -6,6 +6,7 @@ See backend/content/README.md for the file format.
 Usage (from backend/, or `docker compose exec app python content_sync.py ...`):
 
     python content_sync.py check                   # validate files only
+    python content_sync.py check-videos            # look up every YouTube link (internet)
     python content_sync.py placeholders            # write missing SVG placeholders
     python content_sync.py sync                    # DRY RUN: show what would change
     python content_sync.py sync --apply            # write changes (local DB)
@@ -517,6 +518,57 @@ def cmd_check(_args) -> None:
     )
 
 
+OEMBED_URL = "https://www.youtube.com/oembed?format=json&url={url}"
+
+
+def _oembed(url: str) -> dict:
+    """Title and channel of a YouTube video (network; no API key)."""
+    import json
+    import urllib.parse
+    import urllib.request
+
+    api = OEMBED_URL.format(url=urllib.parse.quote(url, safe=""))
+    with urllib.request.urlopen(api, timeout=10) as resp:  # noqa: S310 (fixed https host)
+        return json.load(resp)
+
+
+def check_videos(exercises: List[dict], lookup=_oembed) -> Tuple[int, int]:
+    """Print each exercise's YouTube demo (channel and title) and flag broken links.
+
+    Returns (broken, not_embeddable). A 401 means the owner turned off embedding: the
+    Watch link still works but the in-app Video tab can't play it.
+    """
+    import urllib.error
+
+    broken = no_embed = 0
+    for ex in exercises:
+        url = (ex.get("videos") or {}).get("youtube")
+        if not url:
+            print(f"  -     {ex['slug']:32} no YouTube link")
+            continue
+        try:
+            data = lookup(url)
+            print(f"  ok    {ex['slug']:32} {data.get('author_name')} | {data.get('title')}")
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                no_embed += 1
+                print(f"  !     {ex['slug']:32} embedding is off (Watch link still works) {url}")
+            else:
+                broken += 1
+                print(f"  FAIL  {ex['slug']:32} HTTP {e.code} (removed or private?) {url}")
+        except Exception as e:  # network trouble: report, keep going
+            broken += 1
+            print(f"  FAIL  {ex['slug']:32} {type(e).__name__}: {e} {url}")
+    return broken, no_embed
+
+
+def cmd_check_videos(_args) -> None:
+    exercises = _load_or_exit()
+    broken, no_embed = check_videos(exercises)
+    print(f"{len(exercises)} exercises: {broken} broken, {no_embed} not embeddable")
+    sys.exit(1 if broken else 0)
+
+
 def cmd_placeholders(args) -> None:
     from placeholders import render_exercise_svg
 
@@ -577,6 +629,7 @@ def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description="NFG exercise content tools")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("check", help="validate content files")
+    sub.add_parser("check-videos", help="look up every YouTube demo link (needs internet)")
     p_ph = sub.add_parser("placeholders", help="write SVG placeholders for exercises")
     p_ph.add_argument("--overwrite", action="store_true", help="regenerate existing files")
     p_sync = sub.add_parser("sync", help="sync content files into MongoDB (dry run by default)")
@@ -592,7 +645,13 @@ def main(argv=None) -> None:
         "--allow-remote", action="store_true", help="permit --apply against a non-local DB"
     )
     args = parser.parse_args(argv)
-    {"check": cmd_check, "placeholders": cmd_placeholders, "sync": cmd_sync}[args.command](args)
+    commands = {
+        "check": cmd_check,
+        "check-videos": cmd_check_videos,
+        "placeholders": cmd_placeholders,
+        "sync": cmd_sync,
+    }
+    commands[args.command](args)
 
 
 if __name__ == "__main__":

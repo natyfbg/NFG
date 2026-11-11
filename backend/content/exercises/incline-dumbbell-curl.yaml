@@ -33,4 +33,6 @@ safety:
     overload it.
 breathing: Breathe out as you curl, in as you lower.
 regressions: [dumbbell-curl]
+videos:
+  youtube: https://www.youtube.com/watch?v=5uAAU3sUURA
 tags: [biceps, arms, dumbbell]

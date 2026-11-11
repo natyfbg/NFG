@@ -34,4 +34,6 @@ safety:
   - Use a stable box that won't slide or tip. Start lower if your balance is shaky.
 breathing: Breathe out as you step up, in as you step down.
 regressions: [split-squat]
+videos:
+  youtube: https://www.youtube.com/watch?v=hgkk12L_Umk
 tags: [lunge, legs, dumbbell, unilateral]

@@ -56,6 +56,7 @@ Exercise content (see `backend/content/README.md`):
 ```bash
 python content_sync.py check                 # validate content/exercises/*.yaml
 python content_sync.py placeholders          # SVG placeholder for new exercises
+python content_sync.py check-videos          # look up every YouTube demo (internet)
 docker compose exec app python content_sync.py sync           # dry run (local DB)
 docker compose exec app python content_sync.py sync --apply   # write (local DB)
 ```
@@ -236,8 +237,11 @@ as committer, so GitHub shows them as Verified.
   EZ-bar photos). Placeholder subline reads "Muscles worked".
 - 2026-11-11 — Every exercise gets a YouTube demo (`videos.youtube`) → "Watch on
   YouTube" under the viewer and the how-to Video tab (id derived from the link when
-  `youtube_id` is empty). Picks favour one consistent, credible library (NASM's
-  "Proper Form & Technique" series) over influencer videos; Nate can swap any link.
+  `youtube_id` is empty). Picks favour consistent, credible libraries (NASM's
+  "Proper Form & Technique" series first, then Live Lean TV's exercise library and
+  OPEX) over influencer videos; every id came from a search result for that exercise.
+  `content_sync.py check-videos` confirms channel/title and flags dead or
+  non-embeddable links. Nate can swap any link.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 

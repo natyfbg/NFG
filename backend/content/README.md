@@ -15,6 +15,9 @@ content. `content_sync.py` validates them and syncs them into MongoDB.
    add `--apply` to write it. Locally with Docker:
    `docker compose exec app python content_sync.py sync --apply`.
 5. Flip `status: published` once the instructions are reviewed, then sync again.
+6. `python content_sync.py check-videos` looks up every YouTube demo link (channel and
+   title) and flags removed videos and ones that can't be embedded. Needs internet;
+   not part of the tests.
 
 Production syncs are always a deliberate, separate step: the script refuses to
 write to a non-local database without `--allow-remote`.

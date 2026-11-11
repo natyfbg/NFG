@@ -35,4 +35,6 @@ safety:
     secure anchor.
 breathing: Breathe out slowly as you lower; breathe in at the bottom.
 regressions: [lying-leg-curl, single-leg-glute-bridge]
+videos:
+  youtube: https://www.youtube.com/watch?v=TyKAicsT7Dg
 tags: [hamstrings, bodyweight, isolation, injury-prevention]

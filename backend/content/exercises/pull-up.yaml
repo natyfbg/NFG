@@ -35,4 +35,6 @@ safety:
   - Lower yourself down at the end of the set rather than dropping.
 breathing: Breathe out as you pull up, in as you lower.
 regressions: [lat-pulldown, inverted-row]
+videos:
+  youtube: https://www.youtube.com/watch?v=9yVGh3XbJ34
 tags: [pull, back, lats, bodyweight]

@@ -36,4 +36,6 @@ safety:
     first.
 breathing: Breathe in at the bottom, out as you drive up.
 regressions: [glute-bridge]
+videos:
+  youtube: https://www.youtube.com/watch?v=grVvryTVQi8
 tags: [hinge, glutes, barbell]
