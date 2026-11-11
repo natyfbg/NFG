@@ -42,8 +42,9 @@ migrate this app to Next.js/React or that project's architecture.
 ```bash
 docker compose up -d --build          # app on http://localhost:5050
 docker compose logs -f app
-docker compose restart app            # pick up code changes (bind-mounted)
 docker compose down
+# Code + templates are bind-mounted and reload on their own (DEV_RELOAD=1 in compose).
+# Rebuild only when requirements.txt or the Dockerfile change.
 
 pip install -r requirements-dev.txt   # once, in a venv
 python -m pytest -q                   # tests run against in-memory Mongo (mongomock)
@@ -90,15 +91,28 @@ as committer, so GitHub shows them as Verified.
 - **Import-time side effects:** importing `app.py` pings Mongo, creates indexes and
   inserts default styles + the 8-week hub/tracks if missing — in every Gunicorn
   worker, on every deploy. Deleting the 8-week programs in admin is undone on deploy.
+- **Local reload:** `DEV_RELOAD=1` (compose only) runs gunicorn with `--reload` and
+  `TEMPLATES_AUTO_RELOAD`. Without it, pulled code shows the *old* templates with the
+  *new* CSS (CSS is read live, templates are cached at start) and pages look broken.
 - **Hosted config fails fast:** on Render the app refuses to start without a real
   `SECRET_KEY` and `ADMIN_PASSWORD_HASH`. Plaintext `ADMIN_PASSWORD` is local-only.
 - **Swipe navigation** (`base.html`) hijacks horizontal drags on home/workouts/
   programs/recipes. Any horizontal scroller must carry `data-no-page-swipe`
   (or `.swipe-block`) — use the `ui.rail()` macro, which already does.
+  Smoothness: the page follows the finger, neighbouring tabs are prefetched
+  (`<script type="speculationrules">`), and cross-document View Transitions slide the
+  next page in (`@view-transition` + `html[data-nav-dir]` in app.css). The top bar,
+  bottom nav and swipe rail have their own `view-transition-name` so they stay still —
+  keep those names unique on the page.
 - **UI components** live in `templates/_components.html` (`{% import "_components.html"
   as ui %}`). Full-width pages override `{% block page %}` in `base.html`.
 - Grid layouts containing rails need `min-width: 0` on grid children, or the rail's
   content stretches the page wider than the phone screen.
+- **Bottom sheets / modals go in `{% block overlays %}`**, never inside `page`/`content`:
+  `#page-shell` gets a transform while being swiped, which traps `position: fixed`
+  children inside it and under the bottom nav.
+- Icons: `ui.icon('name')` inlines `templates/icons/<name>.svg` (Bootstrap Icons, MIT,
+  copied from the npm package). Add new ones by copying from `bootstrap-icons`.
 - **`workouts` collection = the exercise library** (single exercises). Do not rename it
   or its `/workouts/<slug>` URLs; program items reference it by `workout_id`/`workout_slug`.
 - **`is_favorite` on a workout is a global admin flag**, not a per-user favorite.
@@ -107,8 +121,20 @@ as committer, so GitHub shows them as Verified.
   `_progress_owner_key()` (`user:<id>` for members, the cookie for guests) and migrated
   on login/register by `_migrate_guest_state_to_member()`. Any new per-user data must
   use the same key and be added to that migration.
+- **Library snapshot:** Home, Exercises and session pages read exercises from
+  `_public_library()` (one query per worker, cached `LIBRARY_CACHE_SECONDS`=60; admins
+  read fresh; any `/admin` POST clears it). Treat its docs as read-only — `dict(doc)`
+  before adding keys. A CLI content sync shows up within a minute. Tests run with the
+  cache off (conftest) except `tests/test_tidy.py`.
+- Stylesheet link carries `?v=<commit>` (`RENDER_GIT_COMMIT`, else file mtime) and is
+  cached for a year; add `v=asset_v` to any new static link that changes on deploy.
+- Admin-only sentences stored in public fields are hidden with the `visitor_text`
+  filter (`ADMIN_ONLY_SENTENCES`), so production data needs no migration.
 - `/healthz` returns 503 when Mongo is unreachable (Render health check uses it).
 - Templates must tolerate missing fields (`x is defined and x is not none`).
+- Never pass a template variable named `session`, `request`, `g`, `config` or
+  `current_user`: Flask/Flask-Login already define them in every template, so a missing
+  value silently falls back to theirs (this caused the Mixer 500, f0df57e).
 - `seed.py` now seeds only the sample recipes; exercises come from content files.
 - `backend/taxonomy.py` is the single source of truth for muscle/group/equipment/
   movement keys. Keys are stored in the DB and content files — never rename one
@@ -151,18 +177,70 @@ as committer, so GitHub shows them as Verified.
   use `program_favorites`.
 - 2026-11-08 — Training environment preference lives in the `nfg_env` cookie
   (home/gym/hybrid; hybrid = no filtering).
+- 2026-11-10 — Design language: cream surfaces, near-black text, muscle-group colour
+  as the accent (tiles, chips, step numbers), **brand gold for primary buttons**
+  (matches the black/gold logo). Lively, not cartoonish; no intro paragraphs.
+- 2026-11-10 — Exercise images are 4:5 (1080×1350). Placeholders carry no exercise
+  name and keep the bottom-right corner free for the "?" (how-to) button.
+- 2026-11-10 — Exercise page: chips row replaces the Overview block; instructions
+  live in a tabbed bottom sheet (Steps · Cues · Mistakes · Safety · Video) opened by
+  the "?" on the image or the "How to do it" button; per-exercise `videos:` links
+  (YouTube/Instagram/TikTok, https + allow-listed hosts only) show as small icons.
+- 2026-11-10 — One global search (top bar → `/search`: exercises, programs, recipes).
+  Browse has its own compact search + Filters sheet; filters use taxonomy keys
+  (`group`, `eq`, `env`), legacy label params still work.
+- 2026-11-10 — Brand assets in `static/img/brand/` (see its README). The black/gold
+  glyph needs a cream tile on dark backgrounds; the navbar currently uses the wordmark.
+- 2026-11-10 — **Each page has one job.** Home = "what do I do today?" (continue,
+  build a session, Coach's Picks, programs). Exercises = the catalogue (search, muscle
+  group / equipment / level tiles → browse grid). Programs = plans + progress. Don't
+  duplicate a section across pages.
+- 2026-11-10 — Home "Build a session": full-width Home/Gym/Hybrid switch, then one
+  colour card per split (Push / Pull / Lower / Core / Full body, colour in
+  `taxonomy.SESSION_SPLITS`) opening its full session `/workouts/mix?p=<key>`; focus
+  variants (chest vs shoulder push, vertical vs horizontal pull, quad vs glute/ham
+  dominant) are named on the card and switched on the session page. Below, tinted
+  muscle chips (only groups with exercises) feed the Mixer with a live count. No tabs.
+  Continue training stays at the top, compact, only when there is progress.
+- 2026-11-10 — The Home/Gym preference (`nfg_env`) applies to Home, the Mixer and
+  session pages only. The Exercises page always shows the whole library; browse takes
+  an explicit `?env=` filter that is kept in pager links but never saved.
+- 2026-11-10 — Exercises page: muscle groups (groups with exercises first, curated
+  order) and equipment show 6 with "Show all"; equipment tiles are tinted and say
+  where they work; level cards have difficulty bars + who they suit; "New in the
+  library" rail.
+- 2026-11-10 — Top bar: "NFG" wordmark (logo kept for favicon/home-screen icons),
+  search (drawer on mobile), Sign in / Join for guests, hamburger menu (`#appMenu`).
+  The exercise how-to is a small centred modal, not a bottom sheet.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
 ## Roadmap (current)
 
-1. ✅ Phase 0: hardening + tests
-2. ✅ Content pipeline: taxonomy module, YAML schema, sync script, SVG placeholders,
-   existing 4 exercises migrated
-3. Starter exercise library: Nate approves the list, Claude drafts instructions in
-   batches, Nate reviews and publishes
-4. ✅ Home v2: continue training (with %), environment switch, muscle-group tiles,
-   Muscle Mixer v1 (`/workouts/mix`), Coach's Picks, saved exercises, programs rail
-5. Content batches 2+ (Shoulders/Arms, Legs/Glutes, Core, Full body/Cardio/Mobility)
-6. Browse + exercise detail redesign (card macro replacing the 4 duplicated card blocks,
-   related-exercise cards), recently viewed, equipment chips in Quick setup
+Full assessment and plan: the "NFG — Assessment & Plan" doc (2026-11-10, Nate's claude.ai
+docs). Summary:
+
+Done: Phase 0 hardening + tests · content pipeline (taxonomy, YAML, sync, placeholders) ·
+Home (session cards, Mixer chips, Continue training) · app shell, Exercises, browse,
+search, exercise page.
+
+Next six sprints, in order:
+1. ✅ Ship and tidy (code done 2026-11-10; promotion of PR #11 pending Nate's phone check) —
+   visitor-facing placeholder/admin copy removed, Sign in pill, versioned stylesheet,
+   library snapshot (Home 20 → 5 DB calls, Exercises 11 → 0).
+2. Library: legs and glutes (~25) + finish deadlift/goblet squat; muscle-map placeholders.
+3. Programs v2 — programs as content files + sync; one-screen setup remembering level and
+   Home/Gym; current week, day view (sets/reps/rest), "Start today"; old URLs keep working.
+4. 8 Week Challenge content (3 levels, authored home swaps) + core exercises (~15).
+5. Accounts and trust — new design for auth/account; password reset (email); delete account
+   + export; privacy/terms; skippable training profile; error alerts; backups confirmed.
+6. Workouts + session mode — saved workouts (exercise + sets/reps/rest), "Save as workout",
+   set logging, rest timer, swap exercise, history (guests and members).
+Alongside: full body (S3), cardio + mobility (S5), first 12 recipes (S6).
+Later, each gated: progress analytics · PWA · personalised Home · nutrition · AI coach ·
+native/wearables research · paid tier.
+
+Standing decisions: workouts/session mode is the signature feature; programs and recipes
+are content-as-code (Claude drafts, Nate approves); no AI-generated form images (Nate films,
+Claude processes); admin is frozen (no new features); guests stay first-class; analytics
+cookie-free.

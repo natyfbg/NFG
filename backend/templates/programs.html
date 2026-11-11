@@ -126,17 +126,15 @@
     </div>
   </div>
 
-  <div class="app-note">
-    Note: the Beginner/Intermediate/Advanced tracks exist in the database, but we keep them hidden here so users only see
-    the single “8 Week Challenge” entry point.
-  </div>
 
 {% else %}
   <div class="app-note">
-    No active hub programs yet.
-    <div class="small text-muted mt-1">
-      In <strong>Admin → Programs</strong>, create a program with type <code>Hub</code> and set it Active.
-    </div>
+    Programs are on the way.
+    {% if current_user.is_authenticated and current_user.is_admin %}
+      <div class="small text-muted mt-1">
+        In <strong>Admin → Programs</strong>, create a program with type <code>Hub</code> and set it Active.
+      </div>
+    {% endif %}
   </div>
 {% endif %}
 </div>

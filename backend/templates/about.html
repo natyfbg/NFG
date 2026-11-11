@@ -1,21 +1,56 @@
 {% extends "base.html" %}
+{% import "_components.html" as ui %}
+
 {% block title %}About – NFG{% endblock %}
 
-{% block content %}
-<div class="card shadow-sm">
-  <div class="card-body">
-    <h1 class="h4 mb-3">About NFG</h1>
-    <p class="text-muted mb-3">
-      This page is a starter template for your About content.
-    </p>
-    <p class="mb-2"><strong>Suggested sections to add:</strong></p>
-    <ul class="mb-0">
-      <li>Mission and coaching philosophy</li>
-      <li>Who this app is for</li>
-      <li>How programs and workouts are structured</li>
-      <li>Nutrition principles and expectations</li>
-      <li>How to contact support</li>
+{% block page %}
+<div class="nfg-discover nfg-about">
+
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">About</div>
+    <h1 class="nfg-page-title">Train with a plan, not a guess</h1>
+    <p class="nfg-about-lead">NFG helps you decide what to train and how to do it well, at home, at the gym or both.</p>
+  </header>
+
+  {# Coach section goes here once Nate sends his own words (see the plan doc). #}
+
+  <section class="nfg-section">
+    <h2 class="nfg-section-title">What you can do here</h2>
+    <ul class="nfg-about-list">
+      <li style="--group-color: #C2562B;">
+        <strong>Build a session in two taps.</strong>
+        <span>Pick where you train, then Push, Pull, Lower, Core or Full body.</span>
+      </li>
+      <li style="--group-color: #2F64A0;">
+        <strong>Mix your own.</strong>
+        <span>Choose up to six muscle groups and get exercises ranked for them.</span>
+      </li>
+      <li style="--group-color: #2E8A5F;">
+        <strong>Learn the movement.</strong>
+        <span>Every exercise has setup, steps, cues, common mistakes and safety notes.</span>
+      </li>
+      <li style="--group-color: #6A44A8;">
+        <strong>Follow a plan.</strong>
+        <span>Programs give you a week-by-week structure, so you don't decide every day.</span>
+      </li>
+      <li style="--group-color: #C79A1E;">
+        <strong>Keep what you like.</strong>
+        <span>Save exercises without an account. Sign up to keep them on every device.</span>
+      </li>
     </ul>
-  </div>
+  </section>
+
+  <section class="nfg-section">
+    <div class="nfg-about-note">
+      <h2 class="nfg-about-note-title">Train safely</h2>
+      <p>NFG gives general fitness guidance, not medical advice. Start lighter than you think, stop if something hurts, and check with a doctor or physiotherapist if you have an injury or a health condition.</p>
+    </div>
+  </section>
+
+  <section class="nfg-section nfg-about-actions">
+    <a class="nfg-btn" href="{{ url_for('home') }}">Pick a session</a>
+    <a class="nfg-btn is-ghost" href="{{ url_for('workouts') }}">Browse exercises</a>
+  </section>
+
 </div>
 {% endblock %}

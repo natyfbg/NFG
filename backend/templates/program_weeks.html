@@ -15,7 +15,7 @@ Weeks – {{ track.title if track and track.title else "Program" }}
       <div class="flow-kicker">Program ready</div>
       <h1 class="h4 mb-1">{{ track.title if track and track.title else "Program Weeks" }}</h1>
       {% if track and track.summary %}
-        <p class="flow-copy mb-0">{{ track.summary }}</p>
+        <p class="flow-copy mb-0">{{ track.summary | visitor_text }}</p>
       {% else %}
         <p class="flow-copy mb-0">Follow the weeks in order and open each day when you are ready to train.</p>
       {% endif %}

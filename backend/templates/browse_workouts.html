@@ -1,236 +1,112 @@
 {% extends "base.html" %}
-{% block title %}Browse Exercises – NFG{% endblock %}
+{% import "_components.html" as ui %}
 
-{% block sidebar %}
-  {% include "quick_options.html" %}
-{% endblock %}
+{% block title %}Browse exercises – NFG{% endblock %}
 
-{% block content %}
-<div class="app-page">
-  <div class="app-page-header">
-    <div>
-      <div class="app-page-kicker">Exercise library</div>
-      <h1 class="page-title mb-1">Browse Exercises</h1>
-      <p class="app-page-copy">Search and filter the library to find the exact movement you need for form, setup, and exercise guidance.</p>
-    </div>
-  </div>
+{% macro choice(name, value, label, current) %}
+  <label class="nfg-choice">
+    <input type="radio" name="{{ name }}" value="{{ value }}" {% if value == current %}checked{% endif %}>
+    <span>{{ label }}</span>
+  </label>
+{% endmacro %}
 
-  {% set show_pills = (level or body or style or movement or equipment or difficulty or q or sort in ['recent','rating','favorites']) %}
+{% block page %}
+<div class="nfg-discover nfg-browse">
 
-  <form method="get" class="filter-toolbar workout-filter-shell">
-    <input type="hidden" name="per_page" value="{{ per_page }}">
-    <input type="hidden" name="page" value="1">
-
-    <div class="toolbar-top">
-      <input name="q" class="form-control toolbar-search" placeholder="Search exercises..." value="{{ q }}">
-
-      <select name="sort" class="form-select form-select-sm">
-        <option value="name" {{ 'selected' if sort=='name' else '' }}>A–Z</option>
-        <option value="recent" {{ 'selected' if sort=='recent' else '' }}>Recent</option>
-        <option value="rating" {{ 'selected' if sort=='rating' else '' }}>Top Rated</option>
-        <option value="favorites" {{ 'selected' if sort=='favorites' else '' }}>Favorites</option>
-      </select>
-
-      <button class="btn btn-sm btn-outline-secondary app-btn-secondary app-btn-compact" type="button" data-bs-toggle="collapse" data-bs-target="#browseFilters" aria-expanded="{{ 'true' if level or body or style or movement or equipment or difficulty else 'false' }}" aria-controls="browseFilters">
-        Filters
+  <header class="nfg-page-head">
+    <h1 class="nfg-page-title">Browse exercises</h1>
+    <div class="nfg-toolbar">
+      <form class="nfg-searchbar" action="{{ url_for('workouts_browse') }}" method="get" role="search">
+        {{ ui.icon('search') }}
+        <input type="search" name="q" value="{{ q }}" placeholder="Search exercises" aria-label="Search exercises">
+        {% for k, v in page_args.items() if k != 'q' %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+      </form>
+      <button class="nfg-filter-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterSheet"
+              aria-controls="filterSheet">
+        {{ ui.icon('sliders') }}<span>Filters</span>{% if filter_count %}<span class="nfg-count">{{ filter_count }}</span>{% endif %}
       </button>
     </div>
+    {% if active_filters %}
+      {% call ui.rail() %}
+        {% for f in active_filters %}
+          <a class="nfg-active-chip" href="{{ f.href }}" aria-label="Remove filter {{ f.label }}">{{ f.label }} {{ ui.icon('x-lg') }}</a>
+        {% endfor %}
+      {% endcall %}
+    {% endif %}
+  </header>
 
-    <div class="collapse mt-2 {% if level or body or style or movement or equipment or difficulty %}show{% endif %}" id="browseFilters">
-      <div class="row g-2">
-        <div class="col-6 col-md-4">
-          <select name="level" class="form-select form-select-sm">
-            <option value="">All Levels</option>
-            {% for lv in workout_levels %}
-              <option value="{{ lv }}" {{ 'selected' if level==lv else '' }}>{{ lv }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="col-6 col-md-4">
-          <select name="body" class="form-select form-select-sm">
-            <option value="">All Body Parts</option>
-            {% for bp in body_parts %}
-              <option value="{{ bp }}" {{ 'selected' if body==bp else '' }}>{{ bp }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="col-6 col-md-4">
-          <select name="style" class="form-select form-select-sm">
-            <option value="">All Styles</option>
-            {% for st in workout_styles %}
-              <option value="{{ st }}" {{ 'selected' if style==st else '' }}>{{ st }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="col-6 col-md-4">
-          <select name="movement" class="form-select form-select-sm">
-            <option value="">All Movements</option>
-            {% for mp in movement_patterns %}
-              <option value="{{ mp }}" {{ 'selected' if movement==mp else '' }}>{{ mp }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="col-6 col-md-4">
-          <select name="equipment" class="form-select form-select-sm">
-            <option value="">All Equipment</option>
-            {% for eq in equipment_types %}
-              <option value="{{ eq }}" {{ 'selected' if equipment==eq else '' }}>{{ eq }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="col-6 col-md-4">
-          <select name="difficulty" class="form-select form-select-sm">
-            <option value="">All Difficulty Tiers</option>
-            {% for dt in difficulty_tiers %}
-              <option value="{{ dt }}" {{ 'selected' if difficulty==dt else '' }}>{{ dt }}</option>
-            {% endfor %}
-          </select>
-        </div>
-      </div>
+  <section class="nfg-section">
+    <div class="nfg-results-head">
+      <span>{{ total }} exercise{{ 's' if total != 1 }}{% if q %} for “{{ q }}”{% endif %}</span>
     </div>
+    {% if items %}
+      <div class="nfg-card-grid">
+        {% for w in items %}{{ ui.exercise_card(w) }}{% endfor %}
+      </div>
+      {{ ui.pagination(page, pages, 'workouts_browse', page_args) }}
+    {% else %}
+      <div class="nfg-empty">
+        Nothing matches yet — the library is still growing.
+        {% if active_filters or q %}<a href="{{ url_for('workouts_browse') }}">Clear filters</a>.{% endif %}
+      </div>
+    {% endif %}
+  </section>
 
-    <div class="workout-filter-actions">
-      <button class="btn btn-sm btn-dark app-btn-primary app-btn-compact" type="submit">Apply</button>
-      {% if show_pills %}
-        <a class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact" href="{{ url_for('workouts_browse') }}">Clear</a>
-      {% endif %}
+</div>
+{% endblock %}
+
+{% block overlays %}
+<div class="offcanvas offcanvas-bottom nfg-sheet" tabindex="-1" id="filterSheet" aria-labelledby="filterSheetTitle">
+  <form method="get" action="{{ url_for('workouts_browse') }}">
+    <div class="nfg-sheet-head">
+      <h2 class="nfg-sheet-title" id="filterSheetTitle">Filters</h2>
+      <button type="button" class="nfg-iconbtn is-dark" data-bs-dismiss="offcanvas" aria-label="Close">{{ ui.icon('x-lg') }}</button>
+    </div>
+    <div class="nfg-sheet-body">
+      {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+
+      <fieldset class="nfg-fieldset">
+        <legend>Training at</legend>
+        <div class="nfg-choices">
+          {% for key, e in environments.items() %}{{ choice('env', key, e.label, env) }}{% endfor %}
+        </div>
+      </fieldset>
+
+      <fieldset class="nfg-fieldset">
+        <legend>Muscle group</legend>
+        <div class="nfg-choices">
+          {{ choice('group', '', 'Any', group) }}
+          {% for key, label in group_choices %}{{ choice('group', key, label, group) }}{% endfor %}
+        </div>
+      </fieldset>
+
+      <fieldset class="nfg-fieldset">
+        <legend>Equipment</legend>
+        <div class="nfg-choices">
+          {{ choice('eq', '', 'Any', eq) }}
+          {% for key, label in equipment_choices %}{{ choice('eq', key, label, eq) }}{% endfor %}
+        </div>
+      </fieldset>
+
+      <fieldset class="nfg-fieldset">
+        <legend>Level</legend>
+        <div class="nfg-choices">
+          {{ choice('level', '', 'Any', level) }}
+          {% for label in level_choices %}{{ choice('level', label, label, level) }}{% endfor %}
+        </div>
+      </fieldset>
+
+      <fieldset class="nfg-fieldset">
+        <legend>Sort</legend>
+        <div class="nfg-choices">
+          {% for key, label in sorts.items() %}{{ choice('sort', key, label, sort if sort in sorts else 'name') }}{% endfor %}
+        </div>
+      </fieldset>
+    </div>
+    <div class="nfg-sheet-foot">
+      <a class="nfg-btn is-ghost" href="{{ url_for('workouts_browse') }}">Clear all</a>
+      <button class="nfg-btn" type="submit">Show results</button>
     </div>
   </form>
-
-  <div class="workout-results-head">
-    <p class="text-muted mb-0">{{ total }} result{{ '' if total==1 else 's' }}</p>
-    <a class="small text-decoration-none text-muted" href="{{ url_for('workouts_all') }}">A–Z index</a>
-  </div>
-
-  {% if show_pills %}
-    <div class="compact-pills workout-active-filters">
-      {% if level %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level='', body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ level }} ✕</a>{% endif %}
-      {% if body %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body='', style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ body }} ✕</a>{% endif %}
-      {% if style %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style='', movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ style }} ✕</a>{% endif %}
-      {% if movement %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement='', equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ movement }} ✕</a>{% endif %}
-      {% if equipment %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment='', difficulty=difficulty, q=q, sort=sort, per_page=per_page) }}">{{ equipment }} ✕</a>{% endif %}
-      {% if difficulty %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty='', q=q, sort=sort, per_page=per_page) }}">{{ difficulty }} ✕</a>{% endif %}
-      {% if q %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q='', sort=sort, per_page=per_page) }}">"{{ q }}" ✕</a>{% endif %}
-      {% if sort in ['recent','rating','favorites'] %}<a class="flow-chip text-decoration-none" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort='name', per_page=per_page) }}">{{ 'Recent' if sort=='recent' else ('Top Rated' if sort=='rating' else 'Favorites') }} ✕</a>{% endif %}
-    </div>
-  {% endif %}
-
-  {% if items %}
-    <div class="workout-library-grid">
-      {% for w in items %}
-        {% set parts = w.body_parts if w.body_parts else ([w.body_part] if w.body_part else []) %}
-        {% set thumbs = (w.images if w.images else []) %}
-        {% if w.muscle_image and (w.muscle_image not in thumbs) %}
-          {% set thumbs = thumbs + [w.muscle_image] %}
-        {% endif %}
-        {% if not thumbs or thumbs|length == 0 %}
-          {% set thumbs = [url_for('static', filename='img/exercise-placeholder.svg')] %}
-        {% endif %}
-        {% if thumbs|length == 1 %}
-          {% set thumbs = thumbs + [thumbs[0]] %}
-        {% endif %}
-        {% set cid = 'car-browse-' ~ (w._id|string if w._id else w.slug) %}
-        {% set body_chip = parts[0] if parts else (w.primary_muscle or 'Full body') %}
-
-        <article class="card workout-library-card js-workout-card" data-href="{{ url_for('workout_detail', slug=w.slug) }}">
-          <div class="workout-library-media">
-            <div id="{{ cid }}" class="carousel slide fast-carousel workout-library-carousel" data-bs-ride="false" data-bs-touch="true" aria-label="Images for {{ w.name }}">
-              <div class="carousel-inner">
-                {% for img in thumbs %}
-                  <div class="carousel-item {% if loop.first %}active{% endif %}">
-                    <img src="{{ img }}"
-                         class="d-block w-100"
-                         alt="{{ w.name }} image {{ loop.index }}"
-                         {% if loop.first %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
-                         decoding="async">
-                  </div>
-                {% endfor %}
-              </div>
-
-              {% if thumbs|length > 1 %}
-                <button class="carousel-control-prev" type="button" data-bs-target="#{{ cid }}" data-bs-slide="prev" aria-label="Previous">
-                  <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#{{ cid }}" data-bs-slide="next" aria-label="Next">
-                  <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                </button>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="card-body workout-library-body">
-            <div class="workout-library-title-row">
-              <div>
-                {% if w.publish_status == 'draft' %}<span class="badge text-bg-warning mb-1">Draft</span>{% endif %}
-                <h2 class="workout-library-title">{{ w.name }}</h2>
-              </div>
-            </div>
-
-            <div class="workout-library-meta">
-              {% if w.level %}<span class="workout-library-chip workout-library-chip-level">{{ w.level }}</span>{% endif %}
-              <span class="workout-library-chip workout-library-chip-body">{{ body_chip }}</span>
-              {% if w.style %}<span class="workout-library-chip workout-library-chip-style">{{ w.style }}</span>{% endif %}
-            </div>
-
-            <div class="workout-library-actions">
-              <a class="btn workout-library-cta" href="{{ url_for('workout_detail', slug=w.slug) }}">
-                <span>View exercise</span>
-                <span aria-hidden="true">↗</span>
-              </a>
-            </div>
-          </div>
-        </article>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div class="app-note workout-empty-state">
-      No exercises match that filter. Try a broader search or clear one of the active filters.
-    </div>
-  {% endif %}
-
-  <nav class="workout-pagination-wrap" aria-label="Workout pagination">
-    <ul class="pagination workout-pagination">
-      <li class="page-item {% if page<=1 %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page, page=page-1) }}">Previous</a>
-      </li>
-      <li class="page-item disabled"><span class="page-link">Page {{ page }}</span></li>
-      <li class="page-item {% if (page*per_page) >= total %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('workouts_browse', level=level, body=body, style=style, movement=movement, equipment=equipment, difficulty=difficulty, q=q, sort=sort, per_page=per_page, page=page+1) }}">Next</a>
-      </li>
-    </ul>
-  </nav>
 </div>
-
-<script>
-  (function(){
-    const LOCK_W = 380;
-    function updateLock(){
-      const lock = window.innerWidth <= LOCK_W;
-      document.querySelectorAll('.workout-library-carousel').forEach(carEl => {
-        const inst = bootstrap.Carousel.getOrCreateInstance(carEl, { ride:false });
-        if (lock){
-          carEl.classList.add('locked');
-          try { inst.to(0); } catch(e){}
-          inst.pause();
-          carEl.dataset.bsTouch = "false";
-        } else {
-          carEl.classList.remove('locked');
-          carEl.dataset.bsTouch = "true";
-          const slides = carEl.querySelectorAll('.carousel-item').length;
-          if (slides > 1) { try { inst.pause(); } catch(e){} }
-        }
-      });
-    }
-
-    let t;
-    window.addEventListener('resize', ()=>{ clearTimeout(t); t = setTimeout(updateLock, 120); }, { passive:true });
-    document.addEventListener('DOMContentLoaded', updateLock);
-    if (document.readyState !== 'loading') updateLock();
-  })();
-</script>
 {% endblock %}

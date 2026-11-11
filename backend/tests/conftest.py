@@ -23,6 +23,9 @@ os.environ["MONGO_DB"] = "NFG_TEST"
 os.environ["SECRET_KEY"] = "test-secret-key"
 os.environ["ADMIN_USERNAME"] = "admin"
 os.environ["UPLOAD_FOLDER"] = tempfile.mkdtemp(prefix="nfg-test-uploads-")
+# Tests write to the DB between requests; the library snapshot is tested on its own
+# (test_library_cache.py) with caching switched back on.
+os.environ["LIBRARY_CACHE_SECONDS"] = "0"
 
 pymongo.MongoClient = mongomock.MongoClient
 
@@ -46,9 +49,11 @@ _USER_STATE_COLLECTIONS = (
 @pytest.fixture
 def nfg_app():
     nfg.app.config.update(TESTING=True, WTF_CSRF_ENABLED=False)
+    nfg._invalidate_library_cache()
     yield nfg
     for name in _USER_STATE_COLLECTIONS:
         nfg.db[name].delete_many({})
+    nfg._invalidate_library_cache()
 
 
 @pytest.fixture

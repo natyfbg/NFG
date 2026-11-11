@@ -340,26 +340,26 @@ Week {{ week_number }} – {{ track.title if track and track.title else "Program
   {% else %}
     <div class="card week-detail-panel week-detail-empty">
       <div class="card-body">
-        <h2 class="h6 mb-2">Week {{ week_number }} isn’t built yet</h2>
+        <h2 class="h6 mb-2">Week {{ week_number }} is on its way</h2>
         <p class="text-muted small mb-3">
-          Add week items in Admin to populate the daily split for this week.
+          This week's sessions are still being written. Until then, pick a session on Home.
         </p>
         <div class="d-flex flex-wrap gap-2">
-          {% if week and week._id %}
-            <a class="btn btn-dark btn-sm"
-               href="{{ url_for('admin_program_week_items', program_id=track._id|string, week_id=week._id|string) }}">
-              Add week items in Admin
-            </a>
-          {% else %}
-            <a class="btn btn-dark btn-sm"
-               href="{{ url_for('admin_programs') }}">
-              Go to Admin → Programs
-            </a>
-          {% endif %}
+          <a class="btn btn-dark btn-sm" href="{{ url_for('home') }}">Pick a session</a>
           <a class="btn btn-outline-secondary btn-sm"
              href="{{ url_for('program_hub_weeks', hub_slug=hub_slug, level=lvl, env=envv) }}">
             Back to weeks
           </a>
+          {% if current_user.is_authenticated and current_user.is_admin %}
+            {% if week and week._id %}
+              <a class="btn btn-outline-dark btn-sm"
+                 href="{{ url_for('admin_program_week_items', program_id=track._id|string, week_id=week._id|string) }}">
+                Add week items in Admin
+              </a>
+            {% else %}
+              <a class="btn btn-outline-dark btn-sm" href="{{ url_for('admin_programs') }}">Go to Admin → Programs</a>
+            {% endif %}
+          {% endif %}
         </div>
       </div>
     </div>
