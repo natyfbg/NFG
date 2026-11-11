@@ -1,0 +1,38 @@
+slug: single-leg-glute-bridge
+name: Single-Leg Glute Bridge
+status: published
+level: intermediate
+category: strength
+movement: hinge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [glutes]
+  secondary: [hamstrings, abductors]
+equipment: []
+summary: >-
+  A glute bridge on one leg. It doubles the load on each glute and shows up any
+  difference between your sides.
+setup:
+  - Lie on your back with your knees bent and feet flat.
+  - Lift one foot and straighten that leg, keeping your thighs level.
+steps:
+  - Press through the heel of the planted foot to lift your hips.
+  - Rise until your body is straight from shoulder to knee.
+  - Keep your hips level as you pause at the top.
+  - Lower slowly, then repeat before switching sides.
+cues:
+  - Hips stay level, like a tray of drinks.
+  - Drive through the heel.
+  - Squeeze the working glute at the top.
+mistakes:
+  - One hip dropping lower than the other.
+  - Pushing through the toes.
+  - Arching the lower back.
+safety:
+  - Stop if you feel a cramp in the hamstring; move your foot slightly closer to your
+    hips and try again.
+breathing: Breathe out as you lift, in as you lower.
+regressions: [glute-bridge]
+progressions: [barbell-hip-thrust]
+tags: [hinge, glutes, bodyweight, unilateral]

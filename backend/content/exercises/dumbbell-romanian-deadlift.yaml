@@ -1,0 +1,38 @@
+slug: dumbbell-romanian-deadlift
+name: Dumbbell Romanian Deadlift
+status: published
+level: beginner
+category: strength
+movement: hinge
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [hamstrings, glutes]
+  secondary: [lower_back, forearms]
+equipment: [dumbbell]
+summary: >-
+  The Romanian deadlift with a dumbbell in each hand. It's the easiest way to learn
+  the hip hinge, and it works at home.
+setup:
+  - Stand holding a dumbbell in each hand in front of your thighs.
+  - Feet hip-width apart, knees softly bent.
+  - Shoulders back, core braced.
+steps:
+  - Push your hips back and slide the dumbbells down the front of your legs.
+  - Keep your back flat and knees softly bent.
+  - Lower until you feel a strong stretch in your hamstrings.
+  - Drive your hips forward to stand tall.
+cues:
+  - Hips back, like shutting a drawer with your bottom.
+  - Dumbbells stay close to your legs.
+  - Squeeze your glutes at the top.
+mistakes:
+  - Rounding the back.
+  - Squatting down instead of hinging.
+  - Lowering further than your hamstrings allow.
+safety:
+  - Start light and practise in front of a mirror, side-on, to check your back stays
+    flat.
+breathing: Breathe in as you lower, out as you stand.
+progressions: [romanian-deadlift, single-leg-romanian-deadlift]
+tags: [hinge, hamstrings, glutes, dumbbell]

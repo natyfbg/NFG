@@ -1,0 +1,39 @@
+slug: hack-squat
+name: Hack Squat
+status: published
+level: intermediate
+category: strength
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads]
+  secondary: [glutes, adductors]
+equipment: [machine]
+summary: >-
+  A machine squat where you lean back into a pad that slides on a fixed track. The
+  machine steadies you, so the quads can work hard and deep.
+setup:
+  - Stand on the platform with your back flat against the pad and shoulders under the
+    shoulder pads.
+  - Place your feet about shoulder-width apart, slightly forward of your hips.
+  - Release the safety handles.
+steps:
+  - Bend your knees and hips to lower the sled under control.
+  - Go as deep as you can while your back stays on the pad.
+  - Drive through your whole foot to stand back up.
+  - Stop just short of locking your knees.
+cues:
+  - Back and hips stay against the pad.
+  - Knees push forward and out over your toes.
+  - Control the way down; don't drop into the bottom.
+mistakes:
+  - Heels lifting off the platform.
+  - Hips peeling away from the pad at the bottom.
+  - Bouncing out of the bottom.
+safety:
+  - Lock the safety handles before stepping out.
+  - Start light; the deep knee bend can surprise sore knees.
+breathing: Breathe in as you lower, out as you stand.
+regressions: [leg-press]
+tags: [squat, quads, machine]

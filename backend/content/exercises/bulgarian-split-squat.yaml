@@ -1,0 +1,38 @@
+slug: bulgarian-split-squat
+name: Bulgarian Split Squat
+status: published
+level: intermediate
+category: strength
+movement: lunge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [adductors, hamstrings]
+equipment: [dumbbell, bench]
+summary: >-
+  A split squat with your back foot raised on a bench. It's one of the hardest and
+  most effective single-leg exercises for the quads and glutes.
+setup:
+  - Stand about two feet in front of a bench, facing away from it.
+  - Reach one foot back and rest the top of it on the bench.
+  - Hold a dumbbell in each hand at your sides, or start with no weight.
+steps:
+  - Bend your front knee to lower your hips straight down.
+  - Stop when your front thigh is about parallel to the floor.
+  - Push through your front foot to rise back up.
+  - Finish all reps on one side, then switch.
+cues:
+  - The back leg is only for balance; the front leg does the work.
+  - Lean slightly forward for more glutes, stay upright for more quads.
+  - Front knee tracks over the toes.
+mistakes:
+  - Front foot too close to the bench, cramping the knee.
+  - Pushing off the back foot.
+  - Bouncing at the bottom.
+safety:
+  - Find your foot position with no weight first. Use a wall or rack for balance if
+    needed.
+breathing: Breathe in as you lower, out as you rise.
+regressions: [split-squat, dumbbell-reverse-lunge]
+tags: [lunge, legs, dumbbell, unilateral]

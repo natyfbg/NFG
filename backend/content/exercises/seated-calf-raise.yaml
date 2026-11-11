@@ -1,0 +1,35 @@
+slug: seated-calf-raise
+name: Seated Calf Raise
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [calves]
+equipment: [machine]
+summary: >-
+  Raising your heels against a padded lever while seated. With the knees bent it works
+  the deeper calf muscle that standing raises reach less.
+setup:
+  - Sit with the pad resting on your lower thighs, just above the knees.
+  - Place the balls of your feet on the platform, heels hanging off.
+  - Release the safety lever.
+steps:
+  - Lower your heels until you feel a stretch in your calves.
+  - Push up onto the balls of your feet as high as you can.
+  - Pause at the top, then lower slowly.
+cues:
+  - Full stretch at the bottom.
+  - Pause and squeeze at the top.
+  - Slow, even reps.
+mistakes:
+  - Bouncing out of the bottom.
+  - Cutting the range short.
+  - Using so much weight that the heels barely move.
+safety:
+  - Put the safety lever back on before taking your feet off the platform.
+breathing: Breathe out as you rise, in as you lower.
+regressions: [standing-calf-raise]
+tags: [calves, machine, isolation]

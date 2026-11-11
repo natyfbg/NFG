@@ -1,0 +1,39 @@
+slug: barbell-hip-thrust
+name: Barbell Hip Thrust
+status: published
+level: intermediate
+category: strength
+movement: hinge
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [glutes]
+  secondary: [hamstrings, quads, adductors]
+equipment: [barbell, bench]
+summary: >-
+  Driving your hips up with a barbell across them and your upper back on a bench. It
+  loads the glutes harder than almost any other exercise.
+setup:
+  - Sit on the floor with your upper back against the side of a bench.
+  - Roll a padded barbell over your legs until it sits in the crease of your hips.
+  - Plant your feet flat, about hip-width apart, knees bent.
+steps:
+  - Brace your core and tuck your chin slightly.
+  - Drive through your heels to lift your hips until your body is straight from
+    shoulders to knees.
+  - Squeeze your glutes hard for a moment at the top.
+  - Lower your hips under control.
+cues:
+  - Shins vertical at the top.
+  - Ribs down; finish with the glutes, not by arching your back.
+  - Eyes forward, chin tucked.
+mistakes:
+  - Overarching the lower back at the top.
+  - Feet too far forward, shifting the work to the hamstrings.
+  - Pushing through the toes.
+safety:
+  - Use a bar pad or folded towel across your hips. Learn the move with the glute bridge
+    first.
+breathing: Breathe in at the bottom, out as you drive up.
+regressions: [glute-bridge]
+tags: [hinge, glutes, barbell]

@@ -1,0 +1,39 @@
+slug: bodyweight-squat
+name: Bodyweight Squat
+status: published
+level: beginner
+category: strength
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [adductors, hamstrings, abs]
+equipment: []
+summary: >-
+  Sitting down between your heels and standing back up, with no weight. It teaches the
+  squat pattern and builds leg strength anywhere.
+setup:
+  - Stand with your feet about shoulder-width apart, toes turned out slightly.
+  - Hold your arms out in front of you or clasp your hands at your chest.
+  - Brace your core lightly and look straight ahead.
+steps:
+  - Bend at the hips and knees at the same time, as if sitting between your heels.
+  - Lower until your thighs are about parallel to the floor, or as low as you can keep
+    good form.
+  - Keep your weight across your whole foot.
+  - Push the floor away to stand back up.
+cues:
+  - Knees travel in the same direction as your toes.
+  - Chest up, back long.
+  - Heels stay down the whole time.
+mistakes:
+  - Knees collapsing inward.
+  - Heels lifting off the floor.
+  - Rounding the lower back at the bottom.
+safety:
+  - Squat only as deep as you can keep your heels down and your back flat. Holding onto
+    a doorframe or squatting to a chair helps while you learn.
+breathing: Breathe in as you lower, out as you stand.
+progressions: [goblet-squat]
+tags: [squat, legs, bodyweight, beginner]

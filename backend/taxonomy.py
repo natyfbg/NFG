@@ -228,7 +228,7 @@ SESSION_SPLITS = [
                 "key": "lower",
                 "label": "Full lower",
                 "covers": "Quads · glutes · hamstrings · calves",
-                "movements": ["squat", "lunge", "hinge"],
+                "movements": ["squat", "hinge", "lunge"],
                 "muscles": ["quads", "glutes", "hamstrings", "adductors", "abductors", "calves"],
             },
             {

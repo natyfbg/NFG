@@ -1,0 +1,41 @@
+slug: romanian-deadlift
+name: Barbell Romanian Deadlift
+status: published
+level: intermediate
+category: strength
+movement: hinge
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [hamstrings, glutes]
+  secondary: [lower_back, forearms, upper_back]
+equipment: [barbell]
+summary: >-
+  Lowering a barbell down your legs by pushing your hips back, then standing tall. It
+  builds the hamstrings and glutes through a long stretch.
+setup:
+  - Stand holding a barbell at your hips with an overhand grip, hands just outside your
+    thighs.
+  - Feet hip-width apart, knees softly bent.
+  - Pull your shoulders back and brace your core.
+steps:
+  - Push your hips back and let the bar slide down the front of your thighs.
+  - Keep your back flat and your knees softly bent the whole time.
+  - Lower until you feel a strong stretch in your hamstrings, usually around knee or
+    mid-shin height.
+  - Drive your hips forward to stand tall.
+cues:
+  - Hips go back, not down.
+  - Keep the bar touching your legs.
+  - Squeeze your glutes at the top.
+mistakes:
+  - Rounding the back to reach lower.
+  - Bending the knees so it turns into a squat.
+  - Letting the bar drift away from your legs.
+safety:
+  - Stop where your hamstrings stop you, not where the floor is. Keep the back flat on
+    every rep.
+breathing: Breathe in and brace before you lower; breathe out as you stand.
+regressions: [dumbbell-romanian-deadlift]
+progressions: [deadlift]
+tags: [hinge, hamstrings, glutes, barbell]

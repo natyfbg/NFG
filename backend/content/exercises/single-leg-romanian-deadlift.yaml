@@ -1,0 +1,37 @@
+slug: single-leg-romanian-deadlift
+name: Single-Leg Romanian Deadlift
+status: published
+level: intermediate
+category: strength
+movement: hinge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [hamstrings, glutes]
+  secondary: [abductors, lower_back, abs]
+equipment: [dumbbell]
+summary: >-
+  Hinging forward on one leg while the other reaches back. It builds the hamstrings
+  and glutes one side at a time and challenges your balance.
+setup:
+  - Stand on one leg with a soft knee, holding a dumbbell in the opposite hand.
+  - Brace your core and keep your hips level.
+steps:
+  - Hinge forward at the hip while your free leg reaches straight back.
+  - Lower the dumbbell toward the floor until your body is close to parallel or you feel
+    a strong stretch.
+  - Keep your hips square to the floor.
+  - Drive the standing hip forward to return to standing.
+cues:
+  - Body moves like a seesaw, head and back foot in one line.
+  - Back toes point down to keep the hips square.
+  - Slow and steady beats deep.
+mistakes:
+  - Hip of the back leg opening up toward the ceiling.
+  - Rounding the back to reach the floor.
+  - Locking the standing knee.
+safety:
+  - Hold a wall or rack with your free hand until your balance is reliable.
+breathing: Breathe in as you hinge forward, out as you stand.
+regressions: [dumbbell-romanian-deadlift]
+tags: [hinge, hamstrings, glutes, dumbbell, unilateral, balance]

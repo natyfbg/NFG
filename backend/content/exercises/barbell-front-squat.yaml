@@ -1,0 +1,41 @@
+slug: barbell-front-squat
+name: Barbell Front Squat
+status: published
+level: advanced
+category: strength
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads]
+  secondary: [glutes, adductors, upper_back, abs]
+equipment: [barbell]
+summary: >-
+  Squatting with the barbell resting on the front of your shoulders. The upright torso
+  puts more work on the quads and the upper back.
+setup:
+  - Set the bar in a rack at about collarbone height.
+  - Step in so the bar sits on the front of your shoulders, close to your throat.
+  - Hold it with your fingertips just outside your shoulders and lift your elbows high,
+    or cross your arms over the bar.
+  - Lift it off, step back and set your feet about shoulder-width apart.
+steps:
+  - Brace your core and keep your elbows up.
+  - Sit straight down between your heels, keeping your torso upright.
+  - Lower as deep as you can while the elbows stay high.
+  - Drive up through your whole foot, leading with your elbows.
+cues:
+  - Elbows high the whole time.
+  - Sit down, not back.
+  - Stay tall through the upper back.
+mistakes:
+  - Elbows dropping, so the bar rolls forward.
+  - Leaning forward and turning it into a back squat.
+  - Gripping hard with the hands instead of resting the bar on the shoulders.
+safety:
+  - Squat inside a rack with the safety arms set. If you lose the bar, push it forward
+    and step back.
+  - Stiff wrists make the grip hard; the crossed-arm hold is fine.
+breathing: Breathe in and brace before you lower; breathe out near the top.
+regressions: [goblet-squat, barbell-back-squat]
+tags: [squat, quads, barbell, strength]

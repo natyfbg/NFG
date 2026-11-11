@@ -10,7 +10,31 @@ muscles:
   primary: [quads, glutes]
   secondary: [adductors, abs]
 equipment: [dumbbell]
+summary: >-
+  Squatting while holding one dumbbell against your chest. The weight in front helps
+  you sit upright, so it's the best way to learn a loaded squat.
+setup:
+  - Hold one dumbbell vertically against your chest, both hands cupping the top end.
+  - Stand with your feet a little wider than shoulder-width, toes turned out slightly.
+  - Brace your core and keep your elbows tucked in.
+steps:
+  - Sit down between your heels, keeping your chest up.
+  - Lower until your elbows brush the inside of your knees, or as low as you can with a
+    flat back.
+  - Drive through your whole foot to stand up.
+  - Squeeze your glutes at the top.
+cues:
+  - Dumbbell stays against your chest.
+  - Push your knees out with your elbows at the bottom.
+  - Heels down the whole time.
+mistakes:
+  - Leaning forward so the dumbbell drifts away from your chest.
+  - Knees caving inward.
+  - Heels lifting.
+safety:
+  - Choose a weight you can hold comfortably for the whole set. Squat only as deep as
+    your back stays flat.
+breathing: Breathe in as you lower, out as you stand.
+regressions: [bodyweight-squat]
+progressions: [barbell-back-squat, bulgarian-split-squat]
 tags: [squat, legs, dumbbell]
-notes: >-
-  Migrated from the original seed (already live, no instructions yet). Text fields
-  are intentionally omitted so a sync never blanks content edited in admin.

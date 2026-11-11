@@ -1,0 +1,37 @@
+slug: glute-bridge
+name: Glute Bridge
+status: published
+level: beginner
+category: strength
+movement: hinge
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [glutes]
+  secondary: [hamstrings]
+equipment: []
+summary: >-
+  Lying on your back and lifting your hips. It wakes up and strengthens the glutes
+  with no equipment.
+setup:
+  - Lie on your back with your knees bent and feet flat, hip-width apart.
+  - Rest your arms by your sides, palms down.
+steps:
+  - Press through your heels to lift your hips off the floor.
+  - Rise until your body is straight from shoulders to knees.
+  - Squeeze your glutes for a moment at the top.
+  - Lower slowly back down.
+cues:
+  - Push through your heels.
+  - Squeeze the glutes; don't arch the lower back.
+  - Knees stay in line with your hips.
+mistakes:
+  - Arching the back to get higher.
+  - Knees falling in or out.
+  - Rushing the reps.
+safety:
+  - If you feel it in your lower back, lift a little less high and focus on squeezing
+    your glutes.
+breathing: Breathe out as you lift, in as you lower.
+progressions: [single-leg-glute-bridge, barbell-hip-thrust]
+tags: [hinge, glutes, bodyweight, beginner]

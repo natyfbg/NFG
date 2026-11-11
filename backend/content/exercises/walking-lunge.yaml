@@ -1,0 +1,36 @@
+slug: walking-lunge
+name: Dumbbell Walking Lunge
+status: published
+level: intermediate
+category: strength
+movement: lunge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [hamstrings, adductors, calves]
+equipment: [dumbbell]
+summary: >-
+  Lunging forward step after step while holding dumbbells. It builds leg strength,
+  balance and conditioning in one move.
+setup:
+  - Hold a dumbbell in each hand at your sides.
+  - Find a clear path of at least 10 metres.
+steps:
+  - Take a long step forward and lower until your back knee is just above the floor.
+  - Push through your front foot and bring your back foot through into the next step.
+  - Keep moving forward, alternating legs.
+  - Count each step as one rep.
+cues:
+  - Long, controlled steps.
+  - Drive through the front heel.
+  - Stay tall; don't fold forward.
+mistakes:
+  - Short, choppy steps.
+  - Back knee slamming into the floor.
+  - Rushing and losing balance.
+safety:
+  - Make sure the path is clear and the floor isn't slippery.
+breathing: Breathe in as you lower, out as you push forward.
+regressions: [dumbbell-reverse-lunge]
+tags: [lunge, legs, dumbbell, unilateral, conditioning]

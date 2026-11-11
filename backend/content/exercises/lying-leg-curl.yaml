@@ -1,0 +1,37 @@
+slug: lying-leg-curl
+name: Lying Leg Curl
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [hamstrings]
+  secondary: [calves]
+equipment: [machine]
+summary: >-
+  Curling a padded lever toward your bottom while lying face down. It isolates the
+  hamstrings.
+setup:
+  - Lie face down with your knees just off the edge of the bench, lined up with the
+    machine's pivot.
+  - Set the pad just above your heels.
+  - Hold the handles.
+steps:
+  - Bend your knees to curl the pad toward your bottom.
+  - Squeeze your hamstrings at the top.
+  - Lower slowly until your legs are almost straight.
+cues:
+  - Hips stay pressed into the bench.
+  - Full range, slow on the way down.
+  - Point your toes up toward your shins.
+mistakes:
+  - Hips lifting off the bench to finish the rep.
+  - Swinging the weight.
+  - Cutting the range short.
+safety:
+  - Start light; hamstrings cramp easily on this machine.
+breathing: Breathe out as you curl, in as you lower.
+progressions: [nordic-hamstring-curl]
+tags: [hamstrings, machine, isolation]

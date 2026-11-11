@@ -1,0 +1,38 @@
+slug: dumbbell-reverse-lunge
+name: Dumbbell Reverse Lunge
+status: published
+level: beginner
+category: strength
+movement: lunge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [hamstrings, adductors]
+equipment: [dumbbell]
+summary: >-
+  Stepping backward into a lunge with dumbbells at your sides. Stepping back is easier
+  on the knees than stepping forward and keeps the work on the front leg.
+setup:
+  - Stand tall with a dumbbell in each hand at your sides.
+  - Feet hip-width apart.
+steps:
+  - Take a long step back with one foot.
+  - Bend both knees to lower until your back knee is just above the floor.
+  - Push through your front foot to bring the back foot forward and stand tall.
+  - Alternate legs, or finish one side before switching.
+cues:
+  - Most of your weight stays on the front foot.
+  - Torso tall, or leaning slightly forward.
+  - Front knee tracks over the toes.
+mistakes:
+  - Stepping back too short, so the front knee shoots forward.
+  - Pushing off the back foot to stand up.
+  - Letting the front knee collapse inward.
+safety:
+  - Learn the move without weights first, and keep the dumbbells light until your
+    balance is solid.
+breathing: Breathe in as you step back and lower, out as you stand.
+regressions: [split-squat]
+progressions: [walking-lunge, bulgarian-split-squat]
+tags: [lunge, legs, dumbbell, unilateral]

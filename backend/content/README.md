@@ -9,7 +9,8 @@ content. `content_sync.py` validates them and syncs them into MongoDB.
 1. Add or edit a file in `exercises/` (new exercises start as `status: draft`).
 2. `python content_sync.py check` validates every file.
 3. `python content_sync.py placeholders` creates an SVG placeholder for any new
-   exercise (in `static/img/exercises/`).
+   exercise (in `static/img/exercises/`). Add `--overwrite` to redraw them all, e.g.
+   after changing an exercise's muscles.
 4. `python content_sync.py sync` shows what would change (dry run);
    add `--apply` to write it. Locally with Docker:
    `docker compose exec app python content_sync.py sync --apply`.
@@ -86,4 +87,5 @@ images:
 ```
 
 Until then each exercise uses its generated placeholder
-(`static/img/exercises/<slug>.svg`, coloured by muscle group).
+(`static/img/exercises/<slug>.svg`): the muscle group's colour plus a front/back
+muscle map drawn from `muscles:` (primary bright, secondary dimmer; `musclemap.py`).

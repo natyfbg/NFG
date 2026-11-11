@@ -1,0 +1,37 @@
+slug: wall-sit
+name: Wall Sit
+status: published
+level: beginner
+category: strength
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads]
+  secondary: [glutes, adductors]
+equipment: []
+summary: >-
+  Holding a seated position with your back against a wall. It builds quad endurance
+  with nothing but a wall and a timer.
+setup:
+  - Stand with your back against a wall and your feet about two feet in front of you.
+  - Set your feet hip-width apart.
+steps:
+  - Slide down the wall until your thighs are about parallel to the floor.
+  - Adjust your feet so your knees sit right above your ankles.
+  - Hold the position for the time given.
+  - Slide back up the wall to finish.
+cues:
+  - Back flat against the wall.
+  - Knees over ankles, not past the toes.
+  - Keep breathing steadily.
+mistakes:
+  - Feet too close to the wall, so the knees push past the toes.
+  - Resting your hands on your thighs.
+  - Holding your breath.
+safety:
+  - Start with a higher position if your knees are sensitive, and come up if you feel
+    sharp pain.
+breathing: Breathe slowly and steadily for the whole hold.
+progressions: [bodyweight-squat]
+tags: [squat, quads, bodyweight, isometric]

@@ -1,0 +1,33 @@
+slug: hip-abduction-machine
+name: Hip Abduction Machine
+status: published
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [abductors, glutes]
+equipment: [machine]
+summary: >-
+  Pushing your knees apart against padded arms while seated. It isolates the side
+  glutes and outer hips.
+setup:
+  - Sit with your back against the pad and the outside of your knees against the pads.
+  - Hold the handles and sit tall.
+steps:
+  - Push your knees out as far as you comfortably can.
+  - Pause for a moment.
+  - Bring your knees back together slowly, without letting the weights touch.
+cues:
+  - Move only at the hips.
+  - Pause at the widest point.
+  - Control the return.
+mistakes:
+  - Letting the weights slam between reps.
+  - Rocking the body to move the weight.
+  - Rushing short reps.
+safety:
+  - Use a weight you can control through the whole range.
+breathing: Breathe out as you push out, in as you return.
+tags: [glutes, abductors, machine, isolation]
