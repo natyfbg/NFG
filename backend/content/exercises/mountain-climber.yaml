@@ -1,0 +1,37 @@
+slug: mountain-climber
+name: Mountain Climber
+status: published
+level: beginner
+category: strength
+movement: core
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [hip_flexors, front_delts, quads]
+equipment: []
+summary: >-
+  Driving your knees toward your chest one at a time from a push-up position. It works
+  your core and gets your heart rate up.
+setup:
+  - Start in a high plank with your hands under your shoulders.
+  - Keep your body in a straight line from head to heels.
+steps:
+  - Drive your right knee toward your chest.
+  - Return it to the start as you drive your left knee in.
+  - Keep alternating at a steady pace.
+cues:
+  - Keep your hips level with your shoulders.
+  - Stay on the balls of your feet.
+  - Keep your shoulders over your hands.
+mistakes:
+  - Bouncing the hips up and down.
+  - Letting the shoulders drift back behind the hands.
+  - Going so fast that form falls apart.
+safety:
+  - Slow down or step the knees in one at a time if your wrists or shoulders feel
+    strained.
+breathing: Breathe in a steady rhythm. Don't hold your breath.
+videos:
+  youtube: https://www.youtube.com/watch?v=6SuzsLzU_t0
+tags: [core, abs, bodyweight, conditioning]

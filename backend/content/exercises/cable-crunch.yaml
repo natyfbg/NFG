@@ -1,0 +1,38 @@
+slug: cable-crunch
+name: Cable Crunch
+status: published
+level: intermediate
+category: strength
+movement: core
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [obliques]
+equipment: [cable]
+summary: >-
+  Kneeling under a high cable and crunching your ribs down toward your hips. Because
+  you can add weight, it's a great way to make your abs stronger over time.
+setup:
+  - Attach a rope to a high cable pulley.
+  - Kneel facing the stack and hold the rope ends beside your head.
+  - Sit your hips back slightly and keep them there.
+steps:
+  - Curl your torso down, bringing your elbows toward your thighs.
+  - Pause and squeeze your abs at the bottom.
+  - Slowly return to the start, keeping tension on the cable.
+cues:
+  - Round your spine. Think ribs to hips.
+  - Keep your hips still; don't sit back and forth.
+  - Keep the rope by your head the whole time.
+mistakes:
+  - Pulling with the arms instead of crunching with the abs.
+  - Moving the hips down and up instead of curling the spine.
+  - Using so much weight that you can't control the return.
+safety:
+  - Start light. Your abs, not your hips or arms, should move the weight.
+breathing: Breathe out as you crunch down, in as you rise.
+regressions: [crunch]
+videos:
+  youtube: https://www.youtube.com/watch?v=kc0PRn372lo
+tags: [core, abs, cable]

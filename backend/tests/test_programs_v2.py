@@ -205,6 +205,7 @@ def test_day_page_lists_sets_reps_and_rest(synced, client):
     html = client.get(_week_url(day="full-body-a")).get_data(as_text=True)
     assert "Goblet Squat" in html and "3 × 10–12" in html and "rest 75s" in html
     assert "Plank" in html and "20–40 s" in html
+    assert 'href="/workouts/plank"' in html  # core lines are real exercise pages now
     assert "Mark day done" in html and "Next: Full Body B" in html
 
 

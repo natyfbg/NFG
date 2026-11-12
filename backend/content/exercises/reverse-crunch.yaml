@@ -1,0 +1,37 @@
+slug: reverse-crunch
+name: Reverse Crunch
+status: published
+level: beginner
+category: strength
+movement: core
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [hip_flexors, obliques]
+equipment: []
+summary: >-
+  Lying on your back and curling your hips up off the floor toward your chest. It
+  works the lower part of the abs without straining your neck.
+setup:
+  - Lie on your back with your arms by your sides, palms down.
+  - Lift your legs with your knees bent at 90 degrees.
+steps:
+  - Curl your hips off the floor, bringing your knees toward your chest.
+  - Pause at the top.
+  - Lower your hips slowly back to the floor without swinging.
+cues:
+  - Lift with your abs, not by swinging your legs.
+  - Keep your knee bend the same throughout.
+  - Lower slower than you lift.
+mistakes:
+  - Using momentum to throw the legs up.
+  - Dropping the hips quickly on the way down.
+  - Pushing hard through the hands to lift.
+safety:
+  - Keep the movement small and controlled, especially if your lower back is sensitive.
+breathing: Breathe out as you curl your hips up, in as you lower.
+progressions: [lying-leg-raise]
+videos:
+  youtube: https://www.youtube.com/watch?v=yH-oSzE5_g0
+tags: [core, abs, bodyweight]

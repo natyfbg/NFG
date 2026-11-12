@@ -1635,56 +1635,12 @@ body{
   content:"";
   position:absolute;
   left: 50%;
-  top: 6px;
+  top: 3px;
   width: 18px;
   height: 3px;
   transform: translateX(-50%);
   border-radius: 999px;
   background: var(--bottom-nav-accent);
-}
-
-.bottom-nav .icon{
-  width: 21px;
-  height: 21px;
-  display: inline-block;
-  border-radius: 7px;
-  background: rgba(255,255,255,.12);
-  margin-bottom: 3px;
-  position: relative;
-  transition: background .16s ease, box-shadow .16s ease;
-}
-.bottom-nav a.active .icon{
-  background: rgba(18,21,18,.08);
-  box-shadow: inset 0 0 0 1px rgba(18,21,18,.18);
-}
-
-/* Simple “icon” differentiation per tab (no SVG) */
-.bottom-nav a[data-nav="home"] .icon{
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,.18);
-}
-.bottom-nav a[data-nav="home"].active .icon{
-  box-shadow: inset 0 0 0 2px rgba(18,21,18,.25);
-}
-.bottom-nav a[data-nav="workouts"] .icon::before{
-  content:"";
-  position:absolute; inset: 5px 6px;
-  border-top: 2px solid rgba(255,255,255,.22);
-  border-bottom: 2px solid rgba(255,255,255,.22);
-}
-.bottom-nav a[data-nav="programs"] .icon::before{
-  content:"";
-  position:absolute; inset: 5px;
-  border: 2px solid rgba(255,255,255,.22);
-  border-radius: 5px;
-}
-.bottom-nav a[data-nav="recipes"] .icon::before{
-  content:"";
-  position:absolute; left: 6px; right: 6px; top: 6px; bottom: 6px;
-  border-left: 2px solid rgba(255,255,255,.22);
-  border-right: 2px solid rgba(255,255,255,.22);
-}
-.bottom-nav a.active .icon::before{
-  border-color: rgba(18,21,18,.34);
 }
 
 .bottom-nav .label{
@@ -3307,7 +3263,7 @@ html[data-nav-dir="prev"]::view-transition-new(root){ animation: nfgInLeft 260ms
 
 .nfg-footer a{ color: var(--app-text-soft); text-decoration: none; }
 
-/* Bottom nav: real icons replace the old CSS shapes. */
+/* Bottom nav icons (Bootstrap Icons; filled when the tab is active). */
 .bottom-nav a[data-nav] .icon{
   display: inline-flex;
   width: 22px;
@@ -3318,8 +3274,6 @@ html[data-nav-dir="prev"]::view-transition-new(root){ animation: nfgInLeft 260ms
   border-radius: 0;
   font-size: 20px;
 }
-
-.bottom-nav a[data-nav] .icon::before{ content: none; }
 
 /* =====================================================================
    Page header, search bar, filters

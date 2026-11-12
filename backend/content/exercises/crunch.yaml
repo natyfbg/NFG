@@ -1,0 +1,37 @@
+slug: crunch
+name: Crunch
+status: published
+level: beginner
+category: strength
+movement: core
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [obliques]
+equipment: []
+summary: >-
+  Lying on your back and curling your shoulders up toward your hips. The basic move
+  for working the front of your abs.
+setup:
+  - Lie on your back with your knees bent and feet flat on the floor.
+  - Place your fingertips lightly behind your ears or cross your arms over your chest.
+steps:
+  - Curl your head and shoulders up off the floor, bringing your ribs toward your hips.
+  - Pause and squeeze your abs at the top.
+  - Lower back down slowly.
+cues:
+  - Think about rolling up one vertebra at a time.
+  - Keep space between your chin and chest.
+  - Keep your lower back on the floor.
+mistakes:
+  - Pulling on your head with your hands.
+  - Using momentum to swing up.
+  - Sitting all the way up, which shifts the work to the hip flexors.
+safety:
+  - Keep your hands light behind your head so your neck isn't pulled forward.
+breathing: Breathe out as you curl up, in as you lower.
+progressions: [bicycle-crunch, cable-crunch]
+videos:
+  youtube: https://www.youtube.com/watch?v=qZq9bNk1owk
+tags: [core, abs, bodyweight]

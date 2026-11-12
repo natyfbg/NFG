@@ -1,0 +1,38 @@
+slug: cable-woodchop
+name: Cable Woodchop
+status: published
+level: intermediate
+category: strength
+movement: core
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [obliques]
+  secondary: [abs, front_delts]
+equipment: [cable]
+summary: >-
+  Pulling a cable diagonally from high on one side to low on the other, like chopping
+  wood. It builds rotational strength through your core.
+setup:
+  - Set a cable pulley high and attach a handle.
+  - Stand side-on to the stack and hold the handle with both hands above your shoulder.
+  - Stand with your feet wider than shoulder-width, knees slightly bent.
+steps:
+  - Pull the handle down and across your body toward your opposite hip.
+  - Turn your torso and pivot your back foot as you pull.
+  - Pause, then return slowly along the same path.
+  - Finish the reps, then switch sides.
+cues:
+  - Turn from your core, not just your arms.
+  - Keep your arms fairly straight.
+  - Control the cable on the way back.
+mistakes:
+  - Pulling with the arms and keeping the torso still.
+  - Rounding the lower back at the bottom.
+  - Letting the weight yank you back to the start.
+safety:
+  - Start light and pivot your back foot so the twist doesn't strain your knees.
+breathing: Breathe out as you chop down, in as you return.
+videos:
+  youtube: https://www.youtube.com/watch?v=he4IhLc1d5k
+tags: [core, obliques, cable, rotation]
