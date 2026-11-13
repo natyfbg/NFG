@@ -4375,54 +4375,64 @@ h2.nfg-results-head{ font-size: 1rem; font-weight: 800; margin: 0 0 .7rem; }
   .nfg-search-drawer{ display: none !important; }
 }
 
-/* Side menu (hamburger) */
-.offcanvas-end.nfg-menu{
-  width: min(320px, 86vw);
-  border: 0;
+/* Menu (hamburger): a small card that drops from the button, sized to its contents.
+   It pops in from the top-right corner in 160ms and closes instantly. */
+.nfg-menu-wrap{ position: relative; }
+
+.dropdown-menu.nfg-menu{
+  --bs-dropdown-link-hover-bg: var(--app-surface-inset);
+  --bs-dropdown-link-hover-color: var(--app-text);
+  --bs-dropdown-link-active-bg: var(--app-surface-inset);
+  --bs-dropdown-link-active-color: var(--app-text);
+  top: calc(100% + 8px);
+  right: 0;
+  left: auto;
+  width: min(240px, calc(100vw - 24px));
+  margin: 0;
+  padding: .4rem;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
   background: var(--app-bg);
+  box-shadow: 0 18px 40px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.08);
   z-index: 1100;
+  transform-origin: top right;
 }
 
-.nfg-menu-head{
+@media (prefers-reduced-motion: no-preference){
+  .dropdown-menu.nfg-menu.show{ animation: nfg-menu-in .16s cubic-bezier(.22, .8, .24, 1); }
+}
+
+@keyframes nfg-menu-in{
+  from{ opacity: 0; transform: translateY(-6px) scale(.96); }
+  to{ opacity: 1; transform: none; }
+}
+
+.nfg-menu .nfg-menu-link{
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: .75rem .75rem .5rem 1.25rem;
-}
-
-.nfg-menu-head .nfg-brand-word{ color: var(--app-text); }
-
-.nfg-menu-body{
-  display: grid;
-  align-content: start;
-  gap: .15rem;
-  padding: .25rem .75rem calc(1rem + env(safe-area-inset-bottom));
-  overflow-y: auto;
-}
-
-.nfg-menu-link{
-  display: flex;
-  align-items: center;
-  gap: .85rem;
+  gap: .7rem;
   width: 100%;
-  padding: .75rem .6rem;
+  min-height: 42px;
+  padding: .45rem .65rem;
   border: 0;
-  border-radius: 12px;
+  border-radius: 10px;
   background: transparent;
   color: var(--app-text);
-  font-size: 1rem;
+  font-size: .92rem;
   font-weight: 650;
   text-align: left;
+  white-space: nowrap;
   text-decoration: none;
 }
 
-.nfg-menu-link .nfg-icon{ width: 1.15rem; height: 1.15rem; color: var(--app-text-muted); }
-.nfg-menu-link:hover{ color: var(--app-text); background: var(--app-surface-inset); }
-.nfg-menu-link.is-active{ background: var(--app-surface-strong); box-shadow: var(--shadow-sm); }
-.nfg-menu-link.is-active .nfg-icon{ color: var(--app-accent-strong); }
-.nfg-menu-link:focus-visible{ outline: 3px solid var(--app-accent); outline-offset: 1px; }
+.nfg-menu .nfg-menu-link .nfg-icon{ width: 1rem; height: 1rem; color: var(--app-text-muted); }
+.nfg-menu .nfg-menu-link:hover,
+.nfg-menu .nfg-menu-link:focus{ background: var(--app-surface-inset); color: var(--app-text); }
+.nfg-menu .nfg-menu-link.is-active{ background: var(--app-surface-strong); box-shadow: var(--shadow-sm); }
+.nfg-menu .nfg-menu-link.is-active .nfg-icon{ color: var(--app-accent-strong); }
+.nfg-menu .nfg-menu-link:focus-visible{ outline: 3px solid var(--app-accent); outline-offset: -1px; }
 
-.nfg-menu-sep{ height: 1px; margin: .5rem .6rem; background: var(--app-border); }
+.nfg-menu-sep{ height: 1px; margin: .35rem .5rem; background: var(--app-border); }
 
 /* Overlays sit above the bottom nav. */
 body.modal-open .bottom-nav,

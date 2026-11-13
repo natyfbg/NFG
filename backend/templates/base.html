@@ -98,8 +98,35 @@
             <a class="nfg-pill is-quiet{% if ep == 'account_login' %} is-active{% endif %}" href="{{ url_for('account_login') }}">Sign in</a>
             <a class="nfg-pill is-solid{% if ep == 'account_register' %} is-active{% endif %}" href="{{ url_for('account_register') }}">Join</a>
           {% endif %}
-          <button class="nfg-iconbtn nfg-menu-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#appMenu"
-                  aria-controls="appMenu" aria-label="Menu">{{ ui.icon('list') }}</button>
+          {# Menu: a small card under the button holding only what the bars don't show. #}
+          <div class="dropdown nfg-menu-wrap">
+            <button class="nfg-iconbtn nfg-menu-btn" type="button" data-bs-toggle="dropdown" data-bs-display="static"
+                    aria-expanded="false" aria-controls="appMenu" aria-label="Menu">{{ ui.icon('list') }}</button>
+            <nav class="dropdown-menu dropdown-menu-end nfg-menu" id="appMenu" aria-label="Menu">
+              <a class="dropdown-item nfg-menu-link{% if ep == 'workouts_mix' %} is-active{% endif %}" href="{{ url_for('workouts_mix') }}">{{ ui.icon('shuffle') }} Muscle Mixer</a>
+              <a class="dropdown-item nfg-menu-link{% if ep == 'search' %} is-active{% endif %}" href="{{ url_for('search') }}">{{ ui.icon('search') }} Search</a>
+              <a class="dropdown-item nfg-menu-link{% if ep == 'about_page' %} is-active{% endif %}" href="{{ url_for('about_page') }}">{{ ui.icon('info-circle') }} About NFG</a>
+              <div class="nfg-menu-sep" role="separator"></div>
+              {% if current_user.is_authenticated %}
+                {% if current_user.is_admin %}
+                  <a class="dropdown-item nfg-menu-link" href="{{ url_for('admin_index') }}">{{ ui.icon('gear') }} Admin</a>
+                  <form action="{{ url_for('logout') }}" method="post" class="m-0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="dropdown-item nfg-menu-link" type="submit">{{ ui.icon('box-arrow-right') }} Log out</button>
+                  </form>
+                {% else %}
+                  <a class="dropdown-item nfg-menu-link{% if ep in account_eps %} is-active{% endif %}" href="{{ url_for('account_profile') }}">{{ ui.icon('person-circle') }} Your account</a>
+                  <form action="{{ url_for('account_logout') }}" method="post" class="m-0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="dropdown-item nfg-menu-link" type="submit">{{ ui.icon('box-arrow-right') }} Sign out</button>
+                  </form>
+                {% endif %}
+              {% else %}
+                <a class="dropdown-item nfg-menu-link" href="{{ url_for('account_login') }}">{{ ui.icon('box-arrow-in-right') }} Sign in</a>
+                <a class="dropdown-item nfg-menu-link" href="{{ url_for('account_register') }}">{{ ui.icon('person-plus') }} Create an account</a>
+              {% endif %}
+            </nav>
+          </div>
         </div>
       </div>
 
@@ -114,42 +141,6 @@
         </form>
       </div>
     </header>
-
-    <div class="offcanvas offcanvas-end nfg-menu" tabindex="-1" id="appMenu" aria-labelledby="appMenuTitle">
-      <div class="nfg-menu-head">
-        <span class="nfg-brand-word" id="appMenuTitle">NFG</span>
-        <button type="button" class="nfg-iconbtn is-dark" data-bs-dismiss="offcanvas" aria-label="Close menu">{{ ui.icon('x-lg') }}</button>
-      </div>
-      <nav class="nfg-menu-body" aria-label="Menu">
-        <a class="nfg-menu-link{% if ep == 'home' %} is-active{% endif %}" href="{{ url_for('home') }}">{{ ui.icon('house-door') }} Home</a>
-        <a class="nfg-menu-link{% if ep in workouts_eps %} is-active{% endif %}" href="{{ url_for('workouts') }}">{{ ui.icon('grid') }} Exercises</a>
-        <a class="nfg-menu-link{% if ep in programs_eps %} is-active{% endif %}" href="{{ url_for('programs_index') }}">{{ ui.icon('calendar-week') }} Programs</a>
-        <a class="nfg-menu-link{% if ep in recipes_eps %} is-active{% endif %}" href="{{ url_for('recipes') }}">{{ ui.icon('egg-fried') }} Recipes</a>
-        <a class="nfg-menu-link" href="{{ url_for('workouts_mix') }}">{{ ui.icon('shuffle') }} Muscle Mixer</a>
-        <a class="nfg-menu-link" href="{{ url_for('search') }}">{{ ui.icon('search') }} Search</a>
-        <div class="nfg-menu-sep"></div>
-        {% if current_user.is_authenticated %}
-          {% if current_user.is_admin %}
-            <a class="nfg-menu-link" href="{{ url_for('admin_index') }}">{{ ui.icon('gear') }} Admin</a>
-            <form action="{{ url_for('logout') }}" method="post" class="m-0">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="nfg-menu-link" type="submit">{{ ui.icon('box-arrow-right') }} Log out</button>
-            </form>
-          {% else %}
-            <a class="nfg-menu-link" href="{{ url_for('account_profile') }}">{{ ui.icon('person-circle') }} Your account</a>
-            <form action="{{ url_for('account_logout') }}" method="post" class="m-0">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="nfg-menu-link" type="submit">{{ ui.icon('box-arrow-right') }} Sign out</button>
-            </form>
-          {% endif %}
-        {% else %}
-          <a class="nfg-menu-link" href="{{ url_for('account_login') }}">{{ ui.icon('box-arrow-in-right') }} Sign in</a>
-          <a class="nfg-menu-link" href="{{ url_for('account_register') }}">{{ ui.icon('person-plus') }} Create an account</a>
-        {% endif %}
-        <div class="nfg-menu-sep"></div>
-        <a class="nfg-menu-link" href="{{ url_for('about_page') }}">{{ ui.icon('info-circle') }} About NFG</a>
-      </nav>
-    </div>
 
     <!-- Flash alerts -->
     <div class="container mt-3">
