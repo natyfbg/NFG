@@ -415,7 +415,9 @@ def test_howto_is_a_small_popup(client, library):
 def test_top_bar_for_guests(client):
     html = client.get("/").get_data(as_text=True)
     assert ">Sign in</a>" in html and ">Join</a>" in html
-    assert 'id="appMenu"' in html and 'data-bs-target="#appMenu"' in html
+    assert 'id="appMenu"' in html and 'aria-controls="appMenu"' in html
+    assert 'data-bs-toggle="dropdown"' in html  # small card under the button, not a drawer
+    assert "offcanvas-end nfg-menu" not in html
     assert 'id="topSearchDrawer"' in html
 
 

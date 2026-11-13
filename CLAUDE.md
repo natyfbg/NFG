@@ -215,6 +215,9 @@ as committer, so GitHub shows them as Verified.
   library" rail.
 - 2026-11-10 — Top bar: "NFG" wordmark (logo kept for favicon/home-screen icons),
   search (drawer on mobile), Sign in / Join for guests, hamburger menu (`#appMenu`).
+  2026-11-12: the menu is a small dropdown card under the button (not a full-height
+  drawer) holding only what the bars don't show: Muscle Mixer, Search, About, then
+  account actions. It pops in from the corner in 160ms and closes instantly.
   The exercise how-to is a small centred modal, not a bottom sheet.
 - 2026-11-11 — **Programs v2.** Programs are content files (`content/programs/*.yaml`,
   `program_content.py`) synced into the existing hub/track/week/item collections (one
