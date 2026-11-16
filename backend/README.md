@@ -1,6 +1,6 @@
 # Backend Operations
 
-This directory contains the Flask application, Docker assets, templates, static files, and seed tooling for NFG.
+This directory contains the Flask application, Docker assets, templates, static files, and seed tooling for Qiltsim (formerly NFG).
 
 ## Key Files
 

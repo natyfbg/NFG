@@ -28,6 +28,7 @@ SAFE_BOTTOM = HEIGHT - SAFE_TOP  # 1635
 MARGIN = 88
 MAP_TOP, MAP_HEIGHT, MAP_GAP = SAFE_TOP + 250, 880, 96  # muscle map placement
 FONT = "Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+BRAND_MARK = "QILTSIM"  # bottom-left mark on every placeholder
 
 
 def _shade(hex_color: str, factor: float) -> str:
@@ -73,7 +74,7 @@ def render_svg(
     figures = ""
     primary, secondary = list(primary), list(secondary)
     if primary or secondary:
-        # Two figures, centred, between the label (top) and the NFG mark (bottom),
+        # Two figures, centred, between the label (top) and the brand mark (bottom),
         # clear of the bottom-right corner where the "?" button sits.
         fig_h = MAP_HEIGHT
         total = 2 * musclemap.figure_width(fig_h) + MAP_GAP
@@ -97,7 +98,7 @@ font-family="{FONT}" font-size="44" font-weight="800" letter-spacing="7">{escape
   <text x="{MARGIN}" y="{SAFE_TOP + MARGIN + 92}" fill="#FFFFFF" fill-opacity="0.6" \
 font-family="{FONT}" font-size="30" font-weight="500">{escape(subline)}</text>
   <text x="{MARGIN}" y="{SAFE_BOTTOM - MARGIN}" fill="#FFFFFF" fill-opacity="0.9" \
-font-family="{FONT}" font-size="40" font-weight="900" letter-spacing="5">NFG</text>
+font-family="{FONT}" font-size="40" font-weight="900" letter-spacing="5">{BRAND_MARK}</text>
 </svg>
 """
 

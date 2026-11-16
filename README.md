@@ -1,6 +1,6 @@
-# NFG
+# Qiltsim
 
-NFG is a Flask + Jinja + MongoDB fitness application moving toward a structured fitness SaaS. The current product centers on:
+Qiltsim (qiltsim.com; formerly NFG, still the repo name) is a Flask + Jinja + MongoDB fitness application moving toward a structured fitness SaaS. The current product centers on:
 
 - program-first public flow
 - workout library and exercise guidance

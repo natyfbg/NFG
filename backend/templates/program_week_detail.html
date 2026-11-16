@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% import "_components.html" as ui %}
 
-{% block title %}{{ day.label if day else 'Week ' ~ week_number }} – {{ hub.title or 'Program' }} – NFG{% endblock %}
+{% block title %}{{ day.label if day else 'Week ' ~ week_number }} – {{ hub.title or 'Program' }} – {{ app_name }}{% endblock %}
 
 {% macro day_url(d, wn=week_number) -%}
   {{ url_for('program_hub_week_detail', hub_slug=hub.slug, week_number=wn, level=level, env=env, day=d.key) }}

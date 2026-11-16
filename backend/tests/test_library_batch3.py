@@ -70,8 +70,8 @@ def test_placeholder_keeps_label_and_corner_free():
             "muscles": {"primary": ["quads"], "secondary": ["glutes"]},
         }
     )
-    assert "QUADS" in svg and "NFG" in svg and "muscles worked" in svg
-    # Figures sit inside the centre 4:5 band that cards crop to, above the NFG mark.
+    assert "QUADS" in svg and placeholders.BRAND_MARK in svg and "muscles worked" in svg
+    # Figures sit inside the centre 4:5 band that cards crop to, above the brand mark.
     assert placeholders.MAP_TOP + placeholders.MAP_HEIGHT < placeholders.SAFE_BOTTOM - 100
 
 

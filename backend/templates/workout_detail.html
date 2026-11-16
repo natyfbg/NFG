@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% import "_components.html" as ui %}
 
-{% block title %}{{ w.name }} – NFG{% endblock %}
+{% block title %}{{ w.name }} – {{ app_name }}{% endblock %}
+{% block meta_description %}How to do the {{ w.name }}: step-by-step form, the muscles it works and a video demo.{% endblock %}
 
 {% block page %}
 <article class="nfg-exercise" style="--accent: {{ accent.color }};">

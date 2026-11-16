@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Reset password – {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center">
+  <div class="card shadow-sm p-4" style="max-width: 440px; width: 100%;">
+    {% if sent_to %}
+      <h1 class="h4 mb-2 text-center">Check your email</h1>
+      <p class="text-muted text-center mb-3">
+        If an account uses <strong class="text-body">{{ sent_to }}</strong>, a link to reset
+        its password is on its way. It works for one hour.
+      </p>
+      <a class="btn btn-dark w-100" href="{{ url_for('account_login') }}">Back to sign in</a>
+      <div class="small text-muted mt-3 text-center">
+        Nothing there? Check your spam folder, or
+        <a href="{{ url_for('account_forgot') }}">send it again</a>.
+      </div>
+    {% else %}
+      <h1 class="h4 mb-2 text-center">Reset your password</h1>
+      <p class="text-muted text-center mb-3">We'll email you a link to choose a new one.</p>
+
+      <form method="post" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label class="form-label" for="forgot-email">Email</label>
+          <input class="form-control" id="forgot-email" type="email" name="email"
+                 value="{{ email or '' }}" autocomplete="email" inputmode="email"
+                 maxlength="254" required autofocus>
+        </div>
+        <button type="submit" class="btn btn-dark w-100">Send reset link</button>
+      </form>
+
+      <div class="small text-muted mt-3 text-center">
+        Remembered it? <a href="{{ url_for('account_login') }}">Sign in</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

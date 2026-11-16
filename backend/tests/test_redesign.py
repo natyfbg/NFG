@@ -251,13 +251,13 @@ def test_top_bar_has_global_search_and_icons(client):
     assert 'class="nfg-topsearch" action="/search"' in html
     assert 'aria-label="Search"' in html
     assert "bi-house-door-fill" in html  # active Home icon in the bottom nav
-    assert "About NFG" in html
+    assert "About Qiltsim" in html
 
 
 def test_navbar_wordmark_and_icons_only_when_files_exist(client, nfg_app, monkeypatch, tmp_path):
     monkeypatch.setattr(nfg_app, "BRAND_DIR", str(tmp_path))
     html = client.get("/").get_data(as_text=True)
-    assert 'class="nfg-brand-word">NFG<' in html and 'rel="icon"' not in html
+    assert 'class="nfg-brand-word">QILTSIM<' in html and 'rel="icon"' not in html
     (tmp_path / "logo-128.png").write_bytes(b"png")
     (tmp_path / "favicon-32.png").write_bytes(b"png")
     html = client.get("/").get_data(as_text=True)

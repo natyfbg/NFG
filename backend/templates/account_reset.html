@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Choose a new password – {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center">
+  <div class="card shadow-sm p-4" style="max-width: 440px; width: 100%;">
+    {% if expired %}
+      <h1 class="h4 mb-2 text-center">This link has expired</h1>
+      <p class="text-muted text-center mb-3">
+        Reset links work once, for one hour. Ask for a new one and use the latest email.
+      </p>
+      <a class="btn btn-dark w-100" href="{{ url_for('account_forgot') }}">Send a new link</a>
+    {% else %}
+      <h1 class="h4 mb-3 text-center">Choose a new password</h1>
+
+      <form method="post" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label class="form-label" for="reset-password">New password</label>
+          <input class="form-control" id="reset-password" type="password" name="password"
+                 minlength="8" autocomplete="new-password" required autofocus>
+          <div class="form-text">At least 8 characters.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="reset-confirm">Type it again</label>
+          <input class="form-control" id="reset-confirm" type="password" name="confirm_password"
+                 minlength="8" autocomplete="new-password" required>
+        </div>
+        <button type="submit" class="btn btn-dark w-100">Save and sign in</button>
+      </form>
+      <div class="small text-muted mt-3 text-center">
+        This signs you out everywhere else.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
