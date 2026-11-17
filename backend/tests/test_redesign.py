@@ -86,7 +86,7 @@ def test_landing_sections(client, library):
     assert "New in the library" in html
     for text in ("Simple, stable moves", "More load, balance", "Heavy, technical"):
         assert text in html
-    assert "Home &amp; gym" in html  # equipment tiles say where it works
+    assert "Anywhere" in html and "Home kit &amp; gym" in html  # tiles say where it works
     # 14 muscle groups: six shown, the rest behind "Show all".
     assert "Show all 14 muscle groups" in html and 'data-more-visible="6"' in html
 
@@ -119,7 +119,8 @@ def _names(html):
         ("?eq=bodyweight", ["Floor Press", "Wall Press"]),
         ("?eq=barbell", ["Bench Press"]),
         ("?level=Intermediate", ["Bench Press"]),
-        ("?env=home", ["Floor Press", "Wall Press", "DB Row"]),
+        ("?env=home", ["Floor Press", "Wall Press"]),  # dumbbells are hybrid kit now
+        ("?env=hybrid", ["Floor Press", "Wall Press", "DB Row"]),
         ("?q=row", ["DB Row", "Cable Row"]),
         ("?body=Back", ["DB Row", "Cable Row"]),  # legacy label filter still works
         ("?group=wings", ["Floor Press", "Wall Press", "Bench Press", "DB Row", "Cable Row"]),
@@ -185,7 +186,7 @@ def test_search_programs_skip_internal_tracks(client, library):
 def test_exercise_page_layout(client, library):
     html = client.get("/workouts/floor-press").get_data(as_text=True)
     assert (
-        'nfg-mchip is-primary" style="--group-color: #B4532A;" href="/workouts/mix?g=chest">Chest<'
+        'nfg-mchip is-primary" style="--group-color: #D63A2F;" href="/workouts/mix?g=chest">Chest<'
         in html
     )
     assert "nfg-mchip is-primary" in html and ">Triceps<" in html
@@ -326,7 +327,7 @@ def sessions(nfg_app):
     return nfg_app
 
 
-def _session(nfg_app, key, extra=(), env="hybrid"):
+def _session(nfg_app, key, extra=(), env="gym"):
     import taxonomy as tx
 
     with nfg_app.app.test_request_context("/"):

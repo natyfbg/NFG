@@ -3401,7 +3401,7 @@ def set_theme():
     return resp
 
 
-DEFAULT_ENV = "hybrid"
+DEFAULT_ENV = "gym"  # the setting that shows everything, until someone picks Home or Hybrid
 MIX_MAX_GROUPS = 6
 FAVORITE_ITEM_TYPES = {"exercise"}
 LEVEL_ORDER = {"Beginner": 0, "Intermediate": 1, "Advanced": 2}
@@ -3413,14 +3413,14 @@ except curation.CurationError as e:
     CURATED = {}
 
 ENV_NOTES = {
-    "home": "Showing exercises you can do with bodyweight and common home equipment.",
-    "gym": "Showing everything a typical gym can handle.",
-    "hybrid": "Showing everything — home and gym.",
+    "home": "Showing bodyweight moves, household items and a pull-up bar.",
+    "hybrid": "Showing home moves plus dumbbells, a bench and bands.",
+    "gym": "Showing everything, including barbells, cables and machines.",
 }
 
 
 def _current_env() -> str:
-    """Training environment from ?env=, else the remembered cookie, else hybrid."""
+    """Training setting from ?env=, else the remembered cookie, else the default (gym)."""
     requested = _norm_choice(request.args.get("env"))
     if requested in tx.ENVIRONMENTS:
         if requested != _norm_choice(request.cookies.get(ENV_COOKIE)):
@@ -3465,8 +3465,10 @@ def _public_library() -> List[dict]:
 
 
 def _in_env(doc: dict, env: str) -> bool:
-    """Python twin of _env_filter: hybrid trains anywhere."""
-    if not env or env == "hybrid":
+    """Python twin of _env_filter. Empty env = the whole library; each setting
+    includes the ones below it (home < hybrid < gym), already baked into
+    `environments` by the content sync."""
+    if not env:
         return True
     envs = doc.get("environments")
     return env in envs if isinstance(envs, list) else envs == env
@@ -3484,8 +3486,8 @@ def _clear_library_after_admin_write(resp):
 
 
 def _env_filter(env: str) -> Optional[dict]:
-    """Mongo filter for an environment. Hybrid trains anywhere, so nothing is filtered."""
-    if env and env != "hybrid":
+    """Mongo filter for a training setting; empty env = no filter."""
+    if env in tx.ENVIRONMENTS:
         return {"environments": env}
     return None
 
@@ -4408,7 +4410,9 @@ def eight_week_hub_redirect():
 # Workouts
 # -----------------------------------------------------------------------------
 # Equipment shown as tiles / filter chips. Bench and box are accessories, not choices.
-EQUIPMENT_CHOICES = ["bodyweight"] + [k for k in tx.EQUIPMENT if k not in ("bench", "box")]
+# The 12 tiles on the Exercises page; every equipment key is still valid in browse.
+EQUIPMENT_CHOICES = ["bodyweight"] + tx.EQUIPMENT_TILES
+EQUIPMENT_FILTER_KEYS = ["bodyweight"] + list(tx.EQUIPMENT)
 BROWSE_SORTS = {"name": "A–Z", "recent": "Newest"}
 BROWSE_PER_PAGE = 24
 REGION_TO_GROUP = {
@@ -4437,7 +4441,8 @@ def _equipment_label(key: str) -> str:
 def _equipment_clause(key: str) -> dict:
     if key == "bodyweight":
         return {"equipment_required": {"$size": 0}}
-    return {"equipment_required": key}
+    # equipment_all also holds optional kit (a mat), so the Yoga Mat tile finds floor work.
+    return {"$or": [{"equipment_all": key}, {"equipment_required": key}]}
 
 
 def _and(*clauses) -> Optional[dict]:
@@ -4455,7 +4460,8 @@ def _equipment_counts(env: str) -> Dict[str, int]:
             continue  # legacy docs without the field count for neither
         if not required:
             counts["bodyweight"] += 1
-        for key in required:
+        everything = doc.get("equipment_all")
+        for key in everything if isinstance(everything, list) else required:
             counts[key] = counts.get(key, 0) + 1
     return counts
 
@@ -4483,7 +4489,13 @@ GROUP_ORDER = [
     "mobility",
 ]
 LANDING_VISIBLE = 6
-HOME_EQUIPMENT = {"bodyweight", *tx.ENVIRONMENTS["home"]["equipment"]}
+EQUIPMENT_WHERE = {"home": "Anywhere", "hybrid": "Home kit & gym", "gym": "Gym"}
+
+
+def _equipment_where(key: str) -> str:
+    if key == "bodyweight":
+        return "Anywhere"
+    return EQUIPMENT_WHERE[tx.EQUIPMENT[key]["tier"]]
 
 
 def _ordered_group_cards(env: str) -> List[dict]:
@@ -4505,14 +4517,14 @@ def workouts():
 
     # The catalogue always shows the whole library. The Home/Gym preference applies
     # to Home and session pages, not here (it used to follow people in and hide things).
-    env = "hybrid"
+    env = ""
     eq_counts = _equipment_counts(env)
     equipment_tiles = [
         {
             "key": key,
             "label": _equipment_label(key),
             "count": eq_counts[key],
-            "where": "Home & gym" if key in HOME_EQUIPMENT else "Gym",
+            "where": _equipment_where(key),
             "color": tx.BODYWEIGHT_COLOR if key == "bodyweight" else tx.EQUIPMENT[key]["color"],
             "href": url_for("workouts_browse", eq=key),
         }
@@ -4605,15 +4617,15 @@ def workouts_browse():
     # Browse shows everything unless a Home/Gym filter is picked here; it does not
     # read or change the remembered Home preference.
     env = _norm_choice(args.pop("env", ""))
-    if env in tx.ENVIRONMENTS and env != "hybrid":
+    if env in tx.ENVIRONMENTS:
         args["env"] = env
     else:
-        env = "hybrid"
+        env = ""
     q = _clean_search_query(args.get("q"))
     group = _norm_choice(args.get("group"))
     group = group if group in tx.MUSCLE_GROUPS else ""
     eq = _norm_choice(args.get("eq"))
-    eq = eq if eq in EQUIPMENT_CHOICES else ""
+    eq = eq if eq in EQUIPMENT_FILTER_KEYS else ""
     level = args.get("level") or ""
     sort_key = args.get("sort") or "name"
     # Legacy label-based filters (old links and bookmarks keep working).
@@ -4686,7 +4698,7 @@ def workouts_browse():
         return url_for("workouts_browse", **kept)
 
     active = []
-    if env != "hybrid":
+    if env:
         active.append(
             {"label": f"At {tx.ENVIRONMENTS[env]['label'].lower()}", "href": without("env")}
         )

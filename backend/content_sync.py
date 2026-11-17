@@ -71,6 +71,7 @@ OPTIONAL_KEYS = (
         "images",
         "videos",
         "notes",  # free-form authoring notes; never synced
+        "lists",  # session lists from the planner (full_push, chest_focus, …); synced
     )
     + TEXT_LIST_KEYS
     + SLUG_LIST_KEYS
@@ -288,9 +289,11 @@ def build_doc(ex: dict) -> dict:
         "muscles": {"primary": primary, "secondary": secondary},
         "primary_groups": primary_groups,
         "muscle_groups": muscle_groups,
-        "equipment_required": equipment,
+        "equipment_required": [k for k in equipment if not tx.EQUIPMENT[k].get("optional")],
+        "equipment_all": equipment,
         "equipment_label": tx.equipment_text(equipment),
         "environments": tx.environments_for_equipment(equipment),
+        "setting": tx.equipment_tier(equipment),
         # Legacy fields the current templates, filters and admin form read.
         "level": level["label"],
         "difficulty_tier": level["tier"],
@@ -570,7 +573,7 @@ def cmd_check_videos(_args) -> None:
 
 
 def cmd_placeholders(args) -> None:
-    from placeholders import render_exercise_svg
+    from placeholders import render_exercise_svg, render_generic_svg
 
     exercises = _load_or_exit()
     PLACEHOLDER_DIR.mkdir(parents=True, exist_ok=True)
@@ -581,6 +584,9 @@ def cmd_placeholders(args) -> None:
             continue
         path.write_text(render_exercise_svg(ex), encoding="utf-8")
         written += 1
+    generic = PLACEHOLDER_DIR.parent / "exercise-placeholder.svg"
+    if args.overwrite or not generic.exists():
+        generic.write_text(render_generic_svg(), encoding="utf-8")
     print(f"Wrote {written} placeholder(s) to {PLACEHOLDER_DIR.relative_to(BACKEND_DIR)}")
 
 

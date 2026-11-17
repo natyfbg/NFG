@@ -28,7 +28,9 @@ PROGRAMS_DIR = Path(__file__).resolve().parent / "content" / "programs"
 
 ENVS = ("home", "gym", "hybrid")
 ROLES = ("main", "accessory")
-HOME_EQUIPMENT = set(tx.ENVIRONMENTS["home"]["equipment"])
+# A program's Home track assumes the basic home kit (dumbbells, a bench, bands):
+# the planner's Hybrid tier. Programs offer Home or Gym only (Nate, 2026-11-16).
+HOME_EQUIPMENT = set(tx.ENVIRONMENTS["hybrid"]["equipment"])
 WORK_SECONDS_PER_SET = 40  # rough time under tension + setup, for the time estimate
 
 
