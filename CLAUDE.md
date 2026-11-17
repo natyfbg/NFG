@@ -329,6 +329,25 @@ as committer, so GitHub shows them as Verified.
   and a popup under the bar on desktop, with a live "Show N exercises" count from
   `/workouts/browse/count` and a one-tap "Remove <last muscle>" when nothing matches.
   All 12 equipment tiles show on the Exercises page.
+- 2026-11-17 — **Revamp phase 3 (sessions + Mixer):** one builder for both,
+  `session_builder.py` (pure, no Flask). Main lifts by level: sessions Beginner 6–7,
+  Intermediate 7–9, Advanced 8–9; the Mixer 6–7 / 7–8 / 8–9. Beginner sessions never
+  use Advanced exercises. "Accessories" are now **Secondary lifts** (2–3 complements);
+  each **Add** option joins them with one exercise. Add is contextual (Push: forearms,
+  core, rotator cuff · Pull: rear delts, traps, forearms · Lower: calves, hips, core ·
+  Core: lower back, hips · Full body: core, calves, forearms), `?add=` (old `?g=` add-on
+  links still work). Variety: one version per exercise (`stem()` drops equipment and
+  grip words, so Smith/Dumbbell "Bench Press" count once), at most two per movement on
+  the main group and one on the others, one isolation per muscle, about 60% compounds
+  on split days, every preset movement and target group covered; Nate's planner
+  `lists:` and a short list of staples lead the ranking. Full body picks one lift per
+  slot (squat, push, pull, hinge, core, ...). Every row shows sets × reps for its role
+  and level. Session page: title left, Home/Gym/Hybrid and **+ Add** top-right, level
+  switch under it (level remembered in `nfg_level`, shared with programs), "More
+  options" collapsed at the end. **Mixer:** tap the body (licensed figures, picked
+  muscles glow in their group colour), picked chips with × underneath, "Pick from a
+  list" for the rest; results in tiers ("Hits all of them", "Hits 2 of 3", "One at a
+  time") and every picked group gets at least one main-target exercise.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 

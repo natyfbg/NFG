@@ -75,6 +75,34 @@
   </a>
 {% endmacro %}
 
+{# Session / Mixer row: number, thumb, name, meta, sets x reps; optional muscle hits. #}
+{% macro session_row(w, n, groups_meta={}, saved=False, note="") %}
+  <a class="nfg-srow" href="{{ url_for('workout_detail', slug=w.slug) }}">
+    <span class="nfg-srow-n">{{ n }}</span>
+    <span class="nfg-ex-thumb"><img src="{{ exercise_image(w) }}" alt="" loading="lazy"></span>
+    <span class="nfg-ex-body">
+      <span class="nfg-ex-name">{{ w.name }}{% if saved %} <span class="nfg-saved-dot" title="Saved">♥</span>{% endif %}</span>
+      <span class="nfg-ex-meta">{% if note %}<span class="nfg-srow-note">{{ note }}</span> · {% endif %}{{ w.equipment_label or w.equipment or '' }}{% if w.level %} · {{ w.level }}{% endif %}</span>
+      {% if groups_meta and (w.mix_primary or w.mix_secondary) %}
+        <span class="nfg-ex-hits">
+          {% for gk in w.mix_primary %}<span class="nfg-hit is-primary" style="--group-color: {{ groups_meta[gk].color }};">{{ groups_meta[gk].label }}</span>{% endfor %}
+          {% for gk in w.mix_secondary %}<span class="nfg-hit" style="--group-color: {{ groups_meta[gk].color }};">{{ groups_meta[gk].label }}</span>{% endfor %}
+        </span>
+      {% endif %}
+    </span>
+    {% if w.scheme %}<span class="nfg-srow-scheme">{{ w.scheme }}</span>{% endif %}
+  </a>
+{% endmacro %}
+
+{# Compact segmented switch made of links (env, level). #}
+{% macro seg_links(options, current, label, cls="") %}
+  <div class="nfg-seg {{ cls }}" role="group" aria-label="{{ label }}">
+    {% for key, text, href in options %}
+      <a class="nfg-seg-opt{% if key == current %} is-on{% endif %}" href="{{ href }}"{% if key == current %} aria-current="true"{% endif %}>{{ text }}</a>
+    {% endfor %}
+  </div>
+{% endmacro %}
+
 {# Compact program card for rails. #}
 {% macro program_rail_card(p, saved=False) %}
   <a class="nfg-program-card" href="{{ url_for('program_detail', slug=p.slug) }}">

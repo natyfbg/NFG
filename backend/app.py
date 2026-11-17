@@ -17,10 +17,12 @@ from typing import Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse, urlsplit
 from xml.sax.saxutils import escape as xml_escape
 
+import bodymap
 import curation
 import formfigures
 import mailer
 import program_content
+import session_builder as sb
 import taxonomy as tx
 from bson.objectid import ObjectId
 from bson.regex import Regex
@@ -3432,6 +3434,20 @@ def _current_env() -> str:
     return saved if saved in tx.ENVIRONMENTS else DEFAULT_ENV
 
 
+def _current_level() -> str:
+    """Session/Mixer level from ?level=, else the remembered cookie (shared with programs)."""
+    requested = _norm_choice(request.args.get("level"))
+    if requested in sb.LEVELS:
+        if requested != _norm_choice(request.cookies.get(LEVEL_COOKIE)):
+            g._set_level = requested
+        return requested
+    saved = _norm_choice(request.cookies.get(LEVEL_COOKIE))
+    return saved if saved in sb.LEVELS else sb.DEFAULT_LEVEL
+
+
+LEVEL_CHOICES = [(k, tx.LEVELS[k]["label"]) for k in sb.LEVELS if k in tx.LEVELS]
+
+
 # -----------------------------------------------------------------------------
 # Library snapshot: Home and the Exercises page read the whole public library many
 # times per request (one pass per session preset, counts per group/equipment/level).
@@ -3532,110 +3548,6 @@ def _selected_groups() -> List[str]:
     return selected[:MIX_MAX_GROUPS]
 
 
-def _mix_results(groups: List[str], env: str, limit: int = 60) -> List[dict]:
-    """Exercises hitting the selected groups, ranked by how many they train.
-
-    A selected group trained as a primary target scores 2, as a secondary 1.
-    Ties go to easier exercises first, then name.
-    """
-    if not groups:
-        return []
-    clauses = [{"muscle_groups": {"$in": groups}}]
-    env_clause = _env_filter(env)
-    if env_clause:
-        clauses.append(env_clause)
-    docs = list(db.workouts.find(_public_workout_query({"$and": clauses})).limit(500))
-    for doc in docs:
-        primary = set(doc.get("primary_groups") or [])
-        trained = set(doc.get("muscle_groups") or [])
-        doc["mix_primary"] = [gk for gk in groups if gk in primary]
-        doc["mix_secondary"] = [gk for gk in groups if gk in trained and gk not in primary]
-        doc["mix_score"] = 2 * len(doc["mix_primary"]) + len(doc["mix_secondary"])
-        _with_metadata_fallbacks(doc)
-    docs.sort(
-        key=lambda d: (-d["mix_score"], LEVEL_ORDER.get(d.get("level"), 3), d.get("name") or "")
-    )
-    return docs[:limit]
-
-
-def _session_results(
-    preset: dict, extra_groups: List[str], env: str, limit: int = 60
-) -> List[dict]:
-    """Exercises for a session preset (e.g. Pull > Vertical pull), main lifts first.
-
-    Included: the preset's movement patterns, plus any exercise whose primary
-    muscles are preset targets (accessories), minus excluded patterns. Add-on
-    groups (e.g. calves) contribute their muscles as extra targets.
-    Each result gets `session_role` = "main" (a compound in the preset's
-    patterns) or "accessory".
-    """
-    movements = set(preset.get("movements") or [])
-    excluded = set(preset.get("exclude_movements") or [])
-    muscles = set(preset.get("muscles") or []) | set(tx.muscles_for_groups(extra_groups))
-    groups = set(preset.get("groups") or []) | {g for g in extra_groups if g in tx.MUSCLE_GROUPS}
-    categories = set(preset.get("categories") or [])  # e.g. Stretching = mobility exercises
-    if not (movements or muscles or groups or categories):
-        return []
-
-    def wanted(doc: dict) -> bool:
-        if categories:
-            return doc.get("category") in categories
-        if doc.get("category") in ("cardio", "mobility"):
-            return False
-        if excluded and doc.get("movement") in excluded:
-            return False
-        primary = set((doc.get("muscles") or {}).get("primary") or [])
-        return (
-            doc.get("movement") in movements
-            or bool(primary & muscles)
-            or bool(set(doc.get("primary_groups") or []) & groups)
-        )
-
-    docs = [dict(d) for d in _library_for_env(env) if wanted(d)][:500]
-
-    shown_groups = tx.groups_for_muscles(sorted(muscles)) + sorted(
-        g for g in groups if g not in tx.groups_for_muscles(sorted(muscles))
-    )
-    for doc in docs:
-        m = doc.get("muscles") or {}
-        primary_hits = set(m.get("primary") or []) & muscles
-        secondary_hits = set(m.get("secondary") or []) & muscles
-        main_pattern = doc.get("movement") in movements
-        # Holds (wall sit, planks) are finishers, not main lifts.
-        holds = "isometric" in (doc.get("tags") or [])
-        doc["session_role"] = (
-            "main"
-            if main_pattern and doc.get("mechanics") != "isolation" and not holds
-            else "accessory"
-        )
-        doc["mix_score"] = (
-            (3 if main_pattern else 0)
-            + 2 * len(primary_hits)
-            + len(secondary_hits)
-            + (2 if groups & set(doc.get("primary_groups") or []) else 0)
-        )
-        pg = set(doc.get("primary_groups") or [])
-        mg = set(doc.get("muscle_groups") or [])
-        doc["mix_primary"] = [g for g in shown_groups if g in pg]
-        doc["mix_secondary"] = [g for g in shown_groups if g in mg and g not in pg]
-        _with_metadata_fallbacks(doc)
-    # Main lifts lead with two-legged/two-armed compounds, grouped in the preset's
-    # movement order (a lower day: squats, then hinges, then lunges), so the anchor
-    # lifts come first instead of whatever is tagged with the most muscles.
-    order = {m: i for i, m in enumerate(preset.get("movements") or [])}
-    docs.sort(
-        key=lambda d: (
-            d["session_role"] != "main",
-            d["session_role"] == "main" and d.get("laterality") == "unilateral",
-            order.get(d.get("movement"), len(order)) if d["session_role"] == "main" else 0,
-            -d["mix_score"],
-            LEVEL_ORDER.get(d.get("level"), 3),
-            d.get("name") or "",
-        )
-    )
-    return docs[:limit]
-
-
 def _favorite_slugs(owner_key: str, item_type: str, limit: int = 0) -> List[str]:
     if not owner_key:
         return []
@@ -3683,85 +3595,125 @@ def favorite_toggle(item_type, slug):
 @app.route("/workouts/mix")
 def workouts_mix():
     env = _current_env()
+    level = _current_level()
     preset = tx.SESSION_PRESETS.get(_norm_choice(request.args.get("p")))
     if preset:
-        return _render_session(preset, env)
+        return _render_session(preset, env, level)
     groups = _selected_groups()
-    group_cards = _group_cards(env)
+    counts = _group_counts(env)
 
-    chips = []
-    for card in group_cards:
-        selected = card["key"] in groups
-        if selected:
-            next_groups = [gk for gk in groups if gk != card["key"]]
+    def toggle_url(key: str) -> str:
+        if key in groups:
+            nxt = [x for x in groups if x != key]
         else:
-            next_groups = (groups + [card["key"]])[-MIX_MAX_GROUPS:]
-        chips.append(
-            dict(
-                card,
-                selected=selected,
-                href=(
-                    url_for("workouts_mix", g=next_groups)
-                    if next_groups
-                    else url_for("workouts_mix")
-                ),
-            )
-        )
+            nxt = (groups + [key])[-MIX_MAX_GROUPS:]
+        return url_for("workouts_mix", g=nxt) if nxt else url_for("workouts_mix")
 
-    # Selected groups first (in the order picked) so they're visible without scrolling.
-    chips.sort(key=lambda c: groups.index(c["key"]) if c["selected"] else len(groups))
-
-    results = _mix_results(groups, env)
+    groups_meta = {
+        key: {
+            "label": grp["label"],
+            "color": grp["color"],
+            "count": counts.get(key, 0),
+            "on": key in groups,
+            "href": toggle_url(key),
+        }
+        for key, grp in tx.MUSCLE_GROUPS.items()
+    }
+    picked = [
+        {
+            "key": key,
+            "label": tx.MUSCLE_GROUPS[key]["label"],
+            "color": tx.MUSCLE_GROUPS[key]["color"],
+            "remove": toggle_url(key),
+        }
+        for key in groups
+    ]
+    built = sb.build_mix(_library_for_env(env), groups, level)
+    for tier in built["tiers"]:
+        for item in tier["items"]:
+            _with_metadata_fallbacks(item)
+    for item in built["more"]:
+        _with_metadata_fallbacks(item)
+    body = bodymap.body_groups()
     return render_template(
         "mix.html",
         preset=None,
+        mix_title=" + ".join(p["label"] for p in picked),
         env=env,
-        env_note=ENV_NOTES.get(env, ""),
+        level=level,
+        level_choices=LEVEL_CHOICES,
+        level_urls={
+            k: (
+                url_for("workouts_mix", g=groups, level=k)
+                if groups
+                else url_for("workouts_mix", level=k)
+            )
+            for k, _ in LEVEL_CHOICES
+        },
         environments=tx.ENVIRONMENTS,
+        env_extra={"g": groups},
         muscle_groups=tx.MUSCLE_GROUPS,
         groups=groups,
-        selected_labels=[tx.MUSCLE_GROUPS[gk]["label"] for gk in groups],
-        chips=chips,
-        group_cards=group_cards,
-        results=results,
+        groups_meta=groups_meta,
+        body_groups=body,
+        other_groups=[k for k in tx.MUSCLE_GROUPS if k not in body],
+        figures=[bodymap.figure(view) for view in bodymap.VIEWS],
+        picked=picked,
+        clear_url=url_for("workouts_mix"),
+        tiers=built["tiers"],
+        more=built["more"],
+        workout_count=built["count"],
+        max_groups=MIX_MAX_GROUPS,
         saved_slugs=set(_favorite_slugs(_progress_owner_key(), "exercise")),
     )
 
 
-def _render_session(preset: dict, env: str):
-    """Mixer page for a session preset, e.g. /workouts/mix?p=pull-vertical&g=calves."""
-    split = next(s for s in tx.SESSION_SPLITS if s["key"] == preset["split"])
-    covered = set(tx.groups_for_muscles(preset.get("muscles") or [])) | set(
-        preset.get("groups") or []
-    )
-    addons = [g for g in tx.SESSION_ADDONS if g not in covered]
-    extra = [g for g in _selected_groups() if g in addons]
-    results = _session_results(preset, extra, env)
+def _session_adds(split_key: str) -> List[str]:
+    """Add options picked on a session page (?add=calves); old ?g= add-on links still work."""
+    allowed = sb.add_options_for(split_key)
+    raw = request.args.getlist("add") + [
+        sb.LEGACY_ADD.get(_norm_choice(x), "") for x in request.args.getlist("g")
+    ]
+    out: List[str] = []
+    for value in raw:
+        key = _norm_choice(value)
+        if key in allowed and key not in out:
+            out.append(key)
+    return out
 
-    def session_url(key, groups):
-        return (
-            url_for("workouts_mix", p=key, g=groups) if groups else url_for("workouts_mix", p=key)
-        )
+
+def _render_session(preset: dict, env: str, level: str):
+    """A session page, e.g. /workouts/mix?p=pull-vertical&level=intermediate&add=traps."""
+    split = next(s for s in tx.SESSION_SPLITS if s["key"] == preset["split"])
+    adds = _session_adds(split["key"])
+    built = sb.build_session(_library_for_env(env), preset, level, adds)
+    for key in ("main", "secondary", "more"):
+        for item in built[key]:
+            _with_metadata_fallbacks(item)
+
+    def session_url(key: Optional[str] = None, next_adds: Optional[List[str]] = None, **extra):
+        args: Dict[str, object] = {"p": key or preset["key"]}
+        chosen = adds if next_adds is None else next_adds
+        if chosen:
+            args["add"] = chosen
+        args.update(extra)
+        return url_for("workouts_mix", **args)
 
     focus_options = [
-        {
-            "label": p["label"],
-            "href": session_url(p["key"], extra),
-            "active": p["key"] == preset["key"],
-        }
+        {"label": p["label"], "href": session_url(p["key"]), "active": p["key"] == preset["key"]}
         for p in split["presets"]
     ]
-    addon_chips = []
-    for key in addons:
-        on = key in extra
-        nxt = [x for x in extra if x != key] if on else extra + [key]
-        addon_chips.append(
+    add_options = []
+    for key in sb.add_options_for(split["key"]):
+        on = key in adds
+        nxt = [a for a in adds if a != key] if on else adds + [key]
+        add_options.append(
             {
                 "key": key,
-                "label": tx.MUSCLE_GROUPS[key]["label"],
-                "color": tx.MUSCLE_GROUPS[key]["color"],
-                "selected": on,
-                "href": session_url(preset["key"], nxt),
+                "label": sb.ADD_OPTIONS[key]["label"],
+                "color": sb.add_option_color(key),
+                "on": on,
+                "href": session_url(next_adds=nxt),
             }
         )
     title = (
@@ -3779,19 +3731,20 @@ def _render_session(preset: dict, env: str):
         preset=preset,
         session_title=title,
         focus_options=focus_options if len(focus_options) > 1 else [],
-        addon_chips=addon_chips,
+        add_options=add_options,
+        added=[o for o in add_options if o["on"]],
         env=env,
+        level=level,
+        level_choices=LEVEL_CHOICES,
+        level_urls={k: session_url(level=k) for k, _ in LEVEL_CHOICES},
         env_note=ENV_NOTES.get(env, ""),
         environments=tx.ENVIRONMENTS,
-        env_extra={"p": preset["key"], "g": extra},
+        env_extra={"p": preset["key"], "add": adds},
         muscle_groups=tx.MUSCLE_GROUPS,
-        groups=[],
-        selected_labels=[title],
-        chips=[],
-        group_cards=[],
-        main_results=[r for r in results if r["session_role"] == "main"],
-        accessory_results=[r for r in results if r["session_role"] == "accessory"],
-        results=results,
+        main_results=built["main"],
+        secondary_results=built["secondary"],
+        more=built["more"],
+        workout_count=built["count"],
         saved_slugs=set(_favorite_slugs(_progress_owner_key(), "exercise")),
     )
 
@@ -3808,8 +3761,10 @@ def _home_splits(env: str) -> List[dict]:
         if split.get("home") is False:
             continue
         presets = []
+        pool = _library_for_env(env)
         for preset in split["presets"]:
-            n = len(_session_results(tx.SESSION_PRESETS[preset["key"]], [], env))
+            full = tx.SESSION_PRESETS[preset["key"]]
+            n = sum(1 for d in pool if sb.preset_wants(d, full))
             if n:
                 presets.append(dict(preset, count=n, href=url_for("workouts_mix", p=preset["key"])))
         if not presets:

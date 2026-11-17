@@ -331,11 +331,18 @@ def sessions(nfg_app):
     return nfg_app
 
 
-def _session(nfg_app, key, extra=(), env="gym"):
+def _built(nfg_app, key, adds=(), env="gym", level="advanced"):
+    import session_builder as sb
     import taxonomy as tx
 
     with nfg_app.app.test_request_context("/"):
-        return nfg_app._session_results(tx.SESSION_PRESETS[key], list(extra), env)
+        pool = nfg_app._library_for_env(env)
+        return sb.build_session(pool, tx.SESSION_PRESETS[key], level, list(adds))
+
+
+def _session(nfg_app, key, adds=(), env="gym", level="advanced"):
+    built = _built(nfg_app, key, adds, env, level)
+    return built["main"] + built["secondary"] + built["more"]
 
 
 def test_presets_reference_real_taxonomy_keys():
@@ -351,9 +358,9 @@ def test_vertical_pull_puts_main_lifts_first_and_skips_rows(sessions):
     results = _session(sessions, "pull-vertical")
     names = [r["name"] for r in results]
     assert "Seated Row" not in names  # horizontal pattern excluded
-    mains = [r["name"] for r in results if r["session_role"] == "main"]
-    assert set(mains) == {"Pull Up", "Chin Up"}
+    assert names[:2] == ["Pull Up", "Chin Up"] or names[:2] == ["Chin Up", "Pull Up"]
     assert names.index("Curl") > max(names.index("Pull Up"), names.index("Chin Up"))
+    assert all(r["scheme"] for r in results)  # every row says sets x reps
 
 
 def test_horizontal_pull_keeps_rows_and_curls(sessions):
@@ -370,23 +377,42 @@ def test_lower_focus_splits_quad_and_hip_dominant(sessions):
     assert "Calf Raise" in quad and "Calf Raise" in hip  # calves go with any lower day
 
 
-def test_addon_groups_extend_a_session(sessions):
-    plain = [r["name"] for r in _session(sessions, "pull")]
-    with_calves = [r["name"] for r in _session(sessions, "pull", ["calves"])]
-    assert "Calf Raise" not in plain and "Calf Raise" in with_calves
+def test_add_options_join_the_secondary_lifts(sessions):
+    plain = _built(sessions, "lower-hip")
+    added = _built(sessions, "lower-hip", ["calves"])
+    assert not any(r.get("added_by") for r in plain["secondary"])
+    assert "Calf Raise" in [r["name"] for r in plain["main"] + plain["secondary"]]
+    # Pull days offer rear delts, traps and forearms; calves are not a pull add-on.
+    pull = _built(sessions, "pull", ["calves"])
+    assert "Calf Raise" not in [r["name"] for r in pull["main"] + pull["secondary"]]
+    assert added["count"] >= plain["count"]
 
 
 def test_session_page_shows_focus_options_and_sections(client, sessions):
     html = client.get("/workouts/mix?p=pull-vertical").get_data(as_text=True)
     assert '<h1 class="nfg-page-title">Pull · Vertical pull</h1>' in html
     assert "Full pull" in html and "Horizontal pull" in html
-    assert "Main lifts" in html and "Accessories" in html
-    assert "/workouts/mix?p=pull-vertical&amp;g=calves" in html  # add-on chip
+    assert "Main lifts" in html and "Accessories" not in html
+    assert "/workouts/mix?p=pull-vertical&amp;add=rear_delts" in html  # Add menu
+    assert "Rear delts" in html and "Traps" in html and "Forearms" in html
+    assert 'href="/workouts/mix?p=pull-vertical&amp;level=intermediate"' in html  # level switch
+
+
+def test_session_level_is_remembered(client, sessions):
+    resp = client.get("/workouts/mix?p=pull&level=intermediate")
+    assert any("nfg_level=intermediate" in c for c in resp.headers.getlist("Set-Cookie"))
+    html = client.get("/workouts/mix?p=pull").get_data(as_text=True)
+    assert 'class="nfg-seg-opt is-on" href="/workouts/mix?p=pull&amp;level=intermediate"' in html
+
+
+def test_old_addon_links_still_work(client, sessions):
+    html = client.get("/workouts/mix?p=pull&g=forearms").get_data(as_text=True)
+    assert 'aria-label="Remove Forearms"' in html
 
 
 def test_unknown_preset_falls_back_to_mixer(client, sessions):
     html = client.get("/workouts/mix?p=nope").get_data(as_text=True)
-    assert "Build your mix" in html
+    assert "What do you want to train?" in html
 
 
 # --------------------------------------------------------------------------

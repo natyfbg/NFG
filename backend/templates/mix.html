@@ -1,33 +1,64 @@
 {% extends "base.html" %}
 {% import "_components.html" as ui %}
 
-{% block title %}{{ selected_labels | join(' + ') if selected_labels else 'Muscle Mixer' }} – {{ app_name }}{% endblock %}
+{% block title %}{{ session_title if preset else (mix_title or 'Muscle Mixer') }} – {{ app_name }}{% endblock %}
 {% block back_url %}{{ url_for('home') }}{% endblock %}
 
-{% macro results_list(items) %}
-  <div class="nfg-ex-list">
-    {% for w in items %}
-      {{ ui.exercise_row(w, muscle_groups, saved=(w.slug in saved_slugs)) }}
-    {% endfor %}
-  </div>
-{% endmacro %}
+{% set env_options = [] %}
+{% for key, e in environments.items() %}
+  {% set _ = env_options.append((key, e.label, url_for('workouts_mix', env=key, **env_extra))) %}
+{% endfor %}
+{% set level_options = [] %}
+{% for key, label in level_choices %}
+  {% set _ = level_options.append((key, label, level_urls[key])) %}
+{% endfor %}
 
 {% macro empty_note(retry_url) %}
   <div class="nfg-empty">
-    Nothing here {% if env != 'hybrid' %}at {{ environments[env].label | lower }} {% endif %}yet — the library is still growing.
-    {% if env != 'hybrid' %}<a href="{{ retry_url }}">Show home and gym exercises</a>.{% endif %}
+    Nothing here {% if env != 'gym' %}at {{ environments[env].label | lower }} {% endif %}yet — the library is still growing.
+    {% if env != 'gym' %}<a href="{{ retry_url }}">Show gym exercises too</a>.{% endif %}
   </div>
 {% endmacro %}
 
+{% macro more_list(items, groups_meta={}) %}
+  {% if items %}
+    <details class="nfg-more-options">
+      <summary>More options <span class="nfg-results-n">{{ items|length }}</span></summary>
+      <div class="nfg-ex-list">
+        {% for w in items %}{{ ui.session_row(w, '·', groups_meta, saved=(w.slug in saved_slugs)) }}{% endfor %}
+      </div>
+    </details>
+  {% endif %}
+{% endmacro %}
+
 {% block page %}
-<div class="nfg-discover nfg-mix">
+<div class="nfg-discover nfg-mix"{% if preset %} style="--split-color: {{ preset.split_color }};"{% endif %}>
 
 {% if preset %}
-  {# ---------------- Session preset (Push / Pull / Lower / Core) ---------------- #}
-  <header class="nfg-page-head nfg-session-head" style="--split-color: {{ preset.split_color }};">
-    <div class="app-page-kicker">Session</div>
-    <h1 class="nfg-page-title">{{ session_title }}</h1>
-    <p class="nfg-env-note">{{ preset.covers }}</p>
+  {# ---------------- Session (Push / Pull / Lower / Core / Stretching / Full body) ---------------- #}
+  <header class="nfg-session-top">
+    <div class="nfg-session-id">
+      <div class="app-page-kicker">Session</div>
+      <h1 class="nfg-page-title">{{ session_title }}</h1>
+      <p class="nfg-env-note">{{ preset.covers }}</p>
+    </div>
+    <div class="nfg-session-controls">
+      {{ ui.seg_links(env_options, env, "Where are you training?", "is-env") }}
+      {% if add_options %}
+        <details class="nfg-addmenu">
+          <summary class="nfg-addmenu-btn">{{ ui.icon('plus-lg') }}<span>Add</span>{% if added %}<span class="nfg-count">{{ added|length }}</span>{% endif %}</summary>
+          <div class="nfg-addmenu-pop" role="menu">
+            <p class="nfg-addmenu-note">Adds a secondary lift</p>
+            {% for o in add_options %}
+              <a class="nfg-addmenu-item{% if o.on %} is-on{% endif %}" href="{{ o.href }}" role="menuitemcheckbox"
+                 aria-checked="{{ 'true' if o.on else 'false' }}" style="--group-color: {{ o.color }};">
+                <span class="nfg-addmenu-dot"></span>{{ o.label }}<span class="nfg-addmenu-state">{{ ui.icon('check-lg') if o.on else ui.icon('plus-lg') }}</span>
+              </a>
+            {% endfor %}
+          </div>
+        </details>
+      {% endif %}
+    </div>
   </header>
 
   {% if focus_options %}
@@ -39,82 +70,134 @@
     {% endcall %}
   {% endif %}
 
-  <section class="nfg-section nfg-session-tools">
-    {{ ui.env_switch(env, environments, "workouts_mix", env_extra) }}
-    {% if addon_chips %}
-      <div class="nfg-addons">
-        <span class="nfg-addons-label">Add</span>
-        {% for chip in addon_chips %}
-          <a class="nfg-chip is-small{% if chip.selected %} is-selected{% endif %}" href="{{ chip.href }}"
-             style="--group-color: {{ chip.color }};" {% if chip.selected %}aria-pressed="true"{% endif %}>
-            {% if chip.selected %}✓{% else %}+{% endif %} {{ chip.label }}
-          </a>
-        {% endfor %}
-      </div>
-    {% endif %}
-  </section>
+  <div class="nfg-session-bar">
+    {{ ui.seg_links(level_options, level, "Level", "is-level") }}
+    {% for o in added %}
+      <a class="nfg-active-chip is-group" href="{{ o.href }}" style="--group-color: {{ o.color }};" aria-label="Remove {{ o.label }}">+ {{ o.label }} {{ ui.icon('x-lg') }}</a>
+    {% endfor %}
+  </div>
 
-  {% if results %}
-    {% if main_results %}
-      <section class="nfg-section">
-        <h2 class="nfg-results-head">Main lifts <span class="nfg-results-n">{{ main_results|length }}</span></h2>
-        {{ results_list(main_results) }}
+  {% if main_results %}
+    <section class="nfg-section nfg-session-block">
+      <h2 class="nfg-results-head">Main lifts <span class="nfg-results-n">{{ main_results|length }}</span></h2>
+      <div class="nfg-ex-list">
+        {% for w in main_results %}{{ ui.session_row(w, loop.index, saved=(w.slug in saved_slugs)) }}{% endfor %}
+      </div>
+    </section>
+    {% if secondary_results %}
+      <section class="nfg-section nfg-session-block">
+        <h2 class="nfg-results-head">Secondary lifts <span class="nfg-results-n">{{ secondary_results|length }}</span></h2>
+        <div class="nfg-ex-list">
+          {% for w in secondary_results %}
+            {{ ui.session_row(w, main_results|length + loop.index, saved=(w.slug in saved_slugs),
+                              note=('+ ' ~ add_options|selectattr('key', 'equalto', w.added_by)|map(attribute='label')|first) if w.added_by else '') }}
+          {% endfor %}
+        </div>
       </section>
     {% endif %}
-    {% if accessory_results %}
-      <section class="nfg-section">
-        <h2 class="nfg-results-head">Accessories <span class="nfg-results-n">{{ accessory_results|length }}</span></h2>
-        {{ results_list(accessory_results) }}
-      </section>
-    {% endif %}
+    {{ more_list(more) }}
   {% else %}
-    {{ empty_note(url_for('workouts_mix', p=preset.key, env='hybrid')) }}
+    {{ empty_note(url_for('workouts_mix', p=preset.key, env='gym')) }}
   {% endif %}
 
 {% else %}
-  {# ---------------- Muscle Mixer (pick any groups) ---------------- #}
-  <header class="nfg-page-head">
-    <div class="app-page-kicker">Muscle Mixer</div>
-    <h1 class="nfg-page-title">{{ selected_labels | join(' + ') if selected_labels else 'Build your mix' }}</h1>
+  {# ---------------- Muscle Mixer: tap the body, picked chips underneath ---------------- #}
+  <header class="nfg-session-top">
+    <div class="nfg-session-id">
+      <div class="app-page-kicker">Muscle Mixer</div>
+      <h1 class="nfg-page-title">{{ mix_title or 'What do you want to train?' }}</h1>
+    </div>
+    <div class="nfg-session-controls">
+      {{ ui.seg_links(env_options, env, "Where are you training?", "is-env") }}
+    </div>
   </header>
 
-  <section class="nfg-section">
-    {{ ui.env_switch(env, environments, "workouts_mix", {"g": groups}) }}
-  </section>
+  <div class="nfg-session-bar">
+    {{ ui.seg_links(level_options, level, "Level", "is-level") }}
+  </div>
 
-  <section class="nfg-section">
-    {% call ui.rail() %}
-      {% for chip in chips %}
-        <a class="nfg-chip{% if chip.selected %} is-selected{% endif %}" href="{{ chip.href }}"
-           style="--group-color: {{ chip.color }};" {% if chip.selected %}aria-pressed="true"{% endif %}>
-          {% if chip.selected %}✓ {% endif %}{{ chip.label }}
-        </a>
+  <section class="nfg-bodypick" data-no-page-swipe aria-label="Pick muscles on the body">
+    <div class="nfg-bodypick-figs">
+      {% for fig in figures %}
+        {% set side = 'Front' if fig.view == 'front' else 'Back' %}
+        <figure class="nfg-bodypick-fig">
+          <svg class="nfg-bm" viewBox="{{ fig.viewbox }}" preserveAspectRatio="xMidYMid meet" role="group" aria-label="{{ side }} of the body">
+            <path class="nfg-bm-outline" d="{{ fig.outline }}"/>
+            {% for r in fig.regions %}
+              {% if r.group %}
+                {% set meta = groups_meta[r.group] %}
+                <a href="{{ meta.href }}" class="nfg-bm-link{% if meta.on %} is-on{% endif %}{% if not meta.count %} is-empty{% endif %}"
+                   style="--group-color: {{ meta.color }};" aria-label="{{ 'Remove' if meta.on else 'Add' }} {{ meta.label }}">
+                  {% for d in r.paths %}<path class="nfg-bm-region" d="{{ d }}"/>{% endfor %}
+                </a>
+              {% else %}
+                {% for d in r.paths %}<path class="nfg-bm-deco" d="{{ d }}"/>{% endfor %}
+              {% endif %}
+            {% endfor %}
+          </svg>
+          <figcaption>{{ side }}</figcaption>
+        </figure>
       {% endfor %}
-    {% endcall %}
+    </div>
+    {% if not picked %}<p class="nfg-bodypick-hint">Tap a muscle to add it · up to {{ max_groups }}</p>{% endif %}
   </section>
 
-  {% if not groups %}
-    <section class="nfg-section">
-      <div class="nfg-group-grid">
-        {% for card in group_cards %}
-          {{ ui.group_card(card, url_for("workouts_mix", g=card.key)) }}
-        {% endfor %}
-      </div>
-    </section>
-  {% else %}
-    <section class="nfg-section">
-      <div class="nfg-results-head">
-        {{ results | length }} exercise{{ 's' if results|length != 1 }}
+  {% if picked %}
+    <div class="nfg-picked">
+      {% for p in picked %}
+        <a class="nfg-active-chip is-group" href="{{ p.remove }}" style="--group-color: {{ p.color }};" aria-label="Remove {{ p.label }}">{{ p.label }} {{ ui.icon('x-lg') }}</a>
+      {% endfor %}
+      <a class="nfg-clear-link" href="{{ clear_url }}">Clear</a>
+    </div>
+  {% endif %}
+
+  <details class="nfg-mixlist"{% if not picked %} open{% endif %}>
+    <summary>Pick from a list</summary>
+    <div class="nfg-choices">
+      {% for key in body_groups + other_groups %}
+        {% set m = groups_meta[key] %}
+        <a class="nfg-pick{% if m.on %} is-on{% endif %}{% if not m.count %} is-empty{% endif %}" href="{{ m.href }}" style="--group-color: {{ m.color }};"
+           {% if m.on %}aria-pressed="true"{% endif %}>{{ m.label }} <small>{{ m.count }}</small></a>
+      {% endfor %}
+    </div>
+  </details>
+
+  {% if groups %}
+    <section class="nfg-section nfg-session-block">
+      <h2 class="nfg-results-head">Your workout <span class="nfg-results-n">{{ workout_count }}</span>
         {% if groups|length > 1 %}<span class="nfg-results-key"><span class="nfg-hit is-primary">Main target</span> <span class="nfg-hit">Also works</span></span>{% endif %}
-      </div>
-      {% if results %}
-        {{ results_list(results) }}
+      </h2>
+      {% if tiers %}
+        {% set ns = namespace(n=0) %}
+        {% for tier in tiers %}
+          {% if tier.label %}<h3 class="nfg-tier">{{ tier.label }}</h3>{% endif %}
+          <div class="nfg-ex-list">
+            {% for w in tier['items'] %}
+              {% set ns.n = ns.n + 1 %}
+              {{ ui.session_row(w, ns.n, muscle_groups, saved=(w.slug in saved_slugs)) }}
+            {% endfor %}
+          </div>
+        {% endfor %}
+        {{ more_list(more, muscle_groups) }}
       {% else %}
-        {{ empty_note(url_for('workouts_mix', g=groups, env='hybrid')) }}
+        {{ empty_note(url_for('workouts_mix', g=groups, env='gym')) }}
       {% endif %}
     </section>
   {% endif %}
 {% endif %}
 
 </div>
+{% endblock %}
+
+{% block overlays %}
+<script>
+  /* Add menu: close when tapping elsewhere. */
+  (function () {
+    document.addEventListener('click', function (e) {
+      document.querySelectorAll('details.nfg-addmenu[open]').forEach(function (d) {
+        if (!d.contains(e.target)) d.removeAttribute('open');
+      });
+    });
+  })();
+</script>
 {% endblock %}

@@ -127,15 +127,24 @@ def lower_library(nfg_app):
     return nfg_app
 
 
+def _lower(app, key):
+    import session_builder as sb
+
+    with app.app.test_request_context("/"):
+        return sb.build_session(
+            app._library_for_env("hybrid"), tx.SESSION_PRESETS[key], "intermediate"
+        )
+
+
 def test_lower_day_leads_with_bilateral_lifts_in_movement_order(lower_library):
-    with lower_library.app.test_request_context("/"):
-        results = lower_library._session_results(tx.SESSION_PRESETS["lower"], [], "hybrid")
-    main = [r["slug"] for r in results if r["session_role"] == "main"]
-    assert main == ["squat", "hinge", "lateral-lunge"]
+    built = _lower(lower_library, "lower")
+    main = [r["slug"] for r in built["main"]]
+    assert main[:3] == ["squat", "hinge", "lateral-lunge"]
 
 
-def test_holds_are_accessories(lower_library):
-    with lower_library.app.test_request_context("/"):
-        results = lower_library._session_results(tx.SESSION_PRESETS["lower-quad"], [], "hybrid")
-    roles = {r["slug"]: r["session_role"] for r in results}
-    assert roles["wall-sit"] == "accessory"
+def test_holds_come_after_the_lifts(lower_library):
+    built = _lower(lower_library, "lower-quad")
+    slugs = [r["slug"] for r in built["main"] + built["secondary"]]
+    assert slugs.index("wall-sit") > slugs.index("squat")
+    wall = next(r for r in built["main"] + built["secondary"] if r["slug"] == "wall-sit")
+    assert wall["scheme"].endswith(" s")  # holds are timed
