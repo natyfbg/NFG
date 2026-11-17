@@ -2436,6 +2436,115 @@ html[data-nav-dir="prev"]::view-transition-new(root){ animation: nfgInLeft 260ms
 
 .nfg-active-chip:hover{ color: var(--solid-fg); }
 .nfg-active-chip .nfg-icon{ font-size: .7rem; opacity: .75; }
+.nfg-active-chip.is-group{ background: var(--group-color); color: var(--on-color); }
+.nfg-active-chip.is-group:hover{ color: var(--on-color); filter: brightness(1.06); }
+
+/* Always-visible filter bar (Exercises + browse): search, then Muscles · Equipment ·
+   Level · more. Sticks under the top bar while the results scroll. */
+.nfg-filterbar{
+  position: sticky;
+  top: 57px;
+  z-index: 20;
+  margin: 0 -1rem 1rem;
+  padding: .6rem 1rem .55rem;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition: background-color .15s ease, box-shadow .15s ease;
+}
+.nfg-filterbar.is-stuck{
+  background: var(--app-bg);
+  border-bottom-color: var(--app-border);
+  box-shadow: 0 8px 18px -14px rgba(0,0,0,.35);
+}
+.nfg-fchips{
+  display: flex;
+  gap: .4rem;
+  margin-top: .55rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nfg-fchips::-webkit-scrollbar{ display: none; }
+.nfg-fchip{
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  height: 36px;
+  padding: 0 .8rem 0 .9rem;
+  border-radius: 999px;
+  border: 1px solid var(--app-border-strong);
+  background: var(--app-surface-strong);
+  color: var(--app-text);
+  font-size: .86rem;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nfg-fchip:hover{ color: var(--app-text); border-color: var(--app-text-soft); }
+.nfg-fchip .nfg-icon{ font-size: .7rem; opacity: .7; }
+.nfg-fchip.is-icon{ padding: 0 .75rem; }
+.nfg-fchip.is-icon .nfg-icon{ font-size: .95rem; opacity: 1; }
+.nfg-fchip.is-on{ background: var(--solid-bg); border-color: var(--solid-bg); color: var(--solid-fg); }
+.nfg-fchip.is-on:hover{ color: var(--solid-fg); }
+.nfg-fchips.is-active{ align-items: center; margin-top: .45rem; }
+.nfg-clear-link{ flex: 0 0 auto; padding: 0 .4rem; font-size: .82rem; font-weight: 650; color: var(--app-text-muted); }
+@media (min-width: 992px){
+  .nfg-filterbar{ margin-inline: 0; padding-inline: 0; }
+  .nfg-filterbar .nfg-searchbar{ max-width: 560px; }
+}
+
+/* Filter panel: bottom sheet on phones, popup under the filter bar on desktop. */
+.nfg-fpanel{ position: fixed; inset: 0; z-index: 1100; display: none; }
+.nfg-fpanel.is-open, .nfg-fpanel:target{ display: block; }
+.nfg-fpanel-backdrop{ position: absolute; inset: 0; background: rgba(0,0,0,.42); }
+.nfg-fpanel-card{
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 86vh;
+  max-height: 86svh;
+  border-radius: 22px 22px 0 0;
+  background: var(--app-bg);
+  box-shadow: 0 -12px 40px rgba(0,0,0,.25);
+  animation: nfg-sheet-up .2s ease-out;
+}
+@keyframes nfg-sheet-up{ from{ transform: translateY(24px); opacity: .6; } to{ transform: none; opacity: 1; } }
+@keyframes nfg-pop-down{ from{ transform: translateY(-8px); opacity: 0; } to{ transform: none; opacity: 1; } }
+@media (min-width: 768px){
+  .nfg-fpanel-backdrop{ background: rgba(0,0,0,.18); }
+  .nfg-fpanel-card{
+    top: var(--panel-top, 120px);
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    width: min(720px, calc(100vw - 2rem));
+    max-height: calc(100vh - var(--panel-top, 120px) - 24px);
+    transform: translateX(-50%);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--app-border);
+    box-shadow: 0 18px 48px rgba(0,0,0,.22);
+    animation: none;
+  }
+}
+@media (prefers-reduced-motion: reduce){ .nfg-fpanel-card{ animation: none; } }
+html.nfg-fpanel-open{ overflow: hidden; }
+.nfg-legend-note{ display: block; margin-top: .15rem; font-size: .76rem; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--app-text-muted); }
+.nfg-choice.is-group input:checked + span{ background: var(--group-color); border-color: var(--group-color); color: var(--on-color); }
+.nfg-choice.is-group span{ border-color: color-mix(in srgb, var(--group-color) 45%, var(--app-border-strong)); }
+.nfg-fpanel-empty{
+  margin: 0;
+  padding: .65rem 1.1rem;
+  border-top: 1px solid var(--app-border);
+  background: var(--app-surface-inset);
+  font-size: .88rem;
+}
+.nfg-fieldset{ border-radius: var(--radius-sm); transition: background-color .4s ease; }
+.nfg-fieldset.is-focus legend{ color: var(--app-text); }
+.nfg-linkbtn{ border: 0; padding: 0; background: none; color: var(--app-text); font-weight: 700; text-decoration: underline; }
+.nfg-sheet-foot .nfg-btn[disabled]{ opacity: .55; filter: grayscale(.4); box-shadow: none; }
 
 /* Neutral tiles (equipment, level) */
 

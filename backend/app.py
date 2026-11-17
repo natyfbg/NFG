@@ -30,6 +30,7 @@ from flask import (
     abort,
     flash,
     g,
+    jsonify,
     make_response,
     redirect,
     render_template,
@@ -4561,6 +4562,7 @@ def workouts():
     total = len(library)
     return render_template(
         "workouts.html",
+        **_filter_panel_context({}),
         group_cards=_ordered_group_cards(env),
         equipment_tiles=equipment_tiles,
         level_tiles=level_tiles,
@@ -4593,11 +4595,34 @@ def body_parts_index():
     return redirect(url_for("workouts") + "#muscles")
 
 
-def _browse_args() -> Dict[str, str]:
-    """Current non-empty browse query params (without page)."""
+BROWSE_MAX_GROUPS = 4  # muscles combine with AND; more than four never matches anything
+
+
+def _browse_groups() -> List[str]:
+    """Selected muscle groups, in the order picked (`group=a&group=b` or `group=a,b`)."""
+    out: List[str] = []
+    for raw in request.args.getlist("group"):
+        for part in (raw or "").split(","):
+            key = _norm_choice(part)
+            if key in tx.MUSCLE_GROUPS and key not in out:
+                out.append(key)
+    return out[:BROWSE_MAX_GROUPS]
+
+
+def _groups_clause(groups: List[str]) -> Optional[dict]:
+    """One group: its exercises (primary). Several: exercises that work every one of them
+    (primary or secondary) with at least one as a main target."""
+    if not groups:
+        return None
+    if len(groups) == 1:
+        return {"primary_groups": groups[0]}
+    return {"muscle_groups": {"$all": groups}, "primary_groups": {"$in": groups}}
+
+
+def _browse_args() -> Dict[str, object]:
+    """Current non-empty browse query params (without page). `group` is a list."""
     keys = (
         "q",
-        "group",
         "eq",
         "level",
         "sort",
@@ -4609,51 +4634,52 @@ def _browse_args() -> Dict[str, str]:
         "per_page",
         "env",
     )
-    return {k: request.args.get(k) for k in keys if (request.args.get(k) or "").strip()}
+    args: Dict[str, object] = {
+        k: request.args.get(k) for k in keys if (request.args.get(k) or "").strip()
+    }
+    groups = _browse_groups()
+    if groups:
+        args["group"] = groups
+    return args
 
 
-@app.route("/workouts/browse")
-def workouts_browse():
-    args = _browse_args()
-    # Browse shows everything unless a Home/Gym filter is picked here; it does not
-    # read or change the remembered Home preference.
-    env = _norm_choice(args.pop("env", ""))
+def _browse_filters(args: Dict[str, object]) -> dict:
+    """Parse browse args into the filters, the Mongo query and the sort."""
+    env = _norm_choice(args.pop("env", "") or "")
     if env in tx.ENVIRONMENTS:
         args["env"] = env
     else:
         env = ""
-    q = _clean_search_query(args.get("q"))
-    group = _norm_choice(args.get("group"))
-    group = group if group in tx.MUSCLE_GROUPS else ""
-    eq = _norm_choice(args.get("eq"))
+    groups = list(args.get("group") or [])
+    eq = _norm_choice(args.get("eq") or "")
     eq = eq if eq in EQUIPMENT_FILTER_KEYS else ""
+    if not eq:
+        args.pop("eq", None)
     level = args.get("level") or ""
+    if level and level not in {lvl["label"] for lvl in tx.LEVELS.values()}:
+        level = ""
+        args.pop("level", None)
     sort_key = args.get("sort") or "name"
-    # Legacy label-based filters (old links and bookmarks keep working).
-    body = args.get("body") or ""
-    style = args.get("style") or ""
-    movement = args.get("movement") or ""
-    equipment = args.get("equipment") or ""
-    difficulty = args.get("difficulty") or ""
-    page = _safe_int(request.args.get("page"), default=1, min_value=1)
-    per_page = _safe_int(args.get("per_page"), default=BROWSE_PER_PAGE, min_value=1, max_value=100)
-
-    clauses = [_env_filter(env)]
-    if group:
-        clauses.append({"primary_groups": group})
+    q = _clean_search_query(args.get("q"))
+    clauses = [_env_filter(env), _groups_clause(groups)]
     if eq:
         clauses.append(_equipment_clause(eq))
     if level:
         clauses.append({"level": level})
-    if style:
-        clauses.append({"style": style})
-    if movement:
-        clauses.append({"movement_pattern": movement})
-    if equipment:
-        clauses.append({"equipment": equipment})
-    if difficulty:
-        clauses.append({"difficulty_tier": difficulty})
-    if body:
+    # Legacy label-based filters (old links and bookmarks keep working).
+    legacy = {
+        k: args.get(k) or "" for k in ("body", "style", "movement", "equipment", "difficulty")
+    }
+    if legacy["style"]:
+        clauses.append({"style": legacy["style"]})
+    if legacy["movement"]:
+        clauses.append({"movement_pattern": legacy["movement"]})
+    if legacy["equipment"]:
+        clauses.append({"equipment": legacy["equipment"]})
+    if legacy["difficulty"]:
+        clauses.append({"difficulty_tier": legacy["difficulty"]})
+    if legacy["body"]:
+        body = legacy["body"]
         clauses.append(
             {"$or": [{"body_part": body}, {"body_parts": body}, {"primary_muscle": body}]}
         )
@@ -4678,7 +4704,65 @@ def workouts_browse():
                 ]
             }
         )
-    query = _public_workout_query(_and(*clauses))
+    return {
+        "env": env,
+        "groups": groups,
+        "eq": eq,
+        "level": level,
+        "sort": sort_key,
+        "q": q,
+        "legacy": legacy,
+        "query": _public_workout_query(_and(*clauses)),
+    }
+
+
+def _filter_panel_context(f: dict) -> dict:
+    """What the filter bar and panel need (Exercises page and browse)."""
+    body_groups = [k for k in tx.MUSCLE_GROUPS if k not in ("full_body", "cardio", "mobility")]
+    other_groups = [k for k in tx.MUSCLE_GROUPS if k not in body_groups]
+    return {
+        "f_groups": f.get("groups") or [],
+        "f_eq": f.get("eq") or "",
+        "f_level": f.get("level") or "",
+        "f_env": f.get("env") or "",
+        "f_sort": f.get("sort") if f.get("sort") in BROWSE_SORTS else "name",
+        "f_q": f.get("q") or "",
+        "group_choices": [
+            {"key": k, "label": tx.MUSCLE_GROUPS[k]["label"], "color": tx.MUSCLE_GROUPS[k]["color"]}
+            for k in body_groups + other_groups
+        ],
+        "equipment_choices": [(k, _equipment_label(k)) for k in EQUIPMENT_CHOICES],
+        "level_choices": [lvl["label"] for lvl in tx.LEVELS.values()],
+        "environments": tx.ENVIRONMENTS,
+        "sorts": BROWSE_SORTS,
+        "eq_label": _equipment_label(f["eq"]) if f.get("eq") else "",
+    }
+
+
+@app.route("/workouts/browse/count")
+def workouts_browse_count():
+    """Live result count for the filter panel ("Show 23 exercises")."""
+    f = _browse_filters(_browse_args())
+    return jsonify({"total": db.workouts.count_documents(f["query"])})
+
+
+@app.route("/workouts/browse")
+def workouts_browse():
+    args = _browse_args()
+    # Browse shows everything unless a Home/Gym filter is picked here; it does not
+    # read or change the remembered Home preference.
+    f = _browse_filters(args)
+    env, groups, eq, level, sort_key, q = (
+        f["env"],
+        f["groups"],
+        f["eq"],
+        f["level"],
+        f["sort"],
+        f["q"],
+    )
+    query = f["query"]
+    page = _safe_int(request.args.get("page"), default=1, min_value=1)
+    per_page = _safe_int(args.get("per_page"), default=BROWSE_PER_PAGE, min_value=1, max_value=100)
 
     sort = [("name", ASCENDING)]
     if sort_key == "recent":
@@ -4689,7 +4773,15 @@ def workouts_browse():
     total = db.workouts.count_documents(query)
     pages = max(1, -(-total // per_page))
     page = min(page, pages)
-    items = list(db.workouts.find(query).sort(sort).skip((page - 1) * per_page).limit(per_page))
+    if len(groups) > 1 and sort_key == "name":
+        # Several muscles: exercises that train more of them as a main target come first.
+        everything = list(db.workouts.find(query).sort(sort))
+        everything.sort(
+            key=lambda d: -sum(1 for g in groups if g in (d.get("primary_groups") or []))
+        )
+        items = everything[(page - 1) * per_page : page * per_page]
+    else:
+        items = list(db.workouts.find(query).sort(sort).skip((page - 1) * per_page).limit(per_page))
     for w in items:
         _with_metadata_fallbacks(w)
 
@@ -4699,27 +4791,37 @@ def workouts_browse():
         return url_for("workouts_browse", **kept)
 
     active = []
+    for gk in groups:
+        rest = [x for x in groups if x != gk]
+        active.append(
+            {
+                "label": tx.MUSCLE_GROUPS[gk]["label"],
+                "href": without("group", **({"group": rest} if rest else {})),
+                "color": tx.MUSCLE_GROUPS[gk]["color"],
+            }
+        )
+    if eq:
+        active.append({"label": _equipment_label(eq), "href": without("eq")})
+    if level:
+        active.append({"label": level, "href": without("level")})
     if env:
         active.append(
             {"label": f"At {tx.ENVIRONMENTS[env]['label'].lower()}", "href": without("env")}
         )
-    if group:
-        active.append({"label": tx.MUSCLE_GROUPS[group]["label"], "href": without("group")})
-    if eq:
-        active.append({"label": _equipment_label(eq), "href": without("eq")})
-    for key, value in (
-        ("level", level),
-        ("body", body),
-        ("style", style),
-        ("movement", movement),
-        ("equipment", equipment),
-        ("difficulty", difficulty),
-    ):
+    for key, value in f["legacy"].items():
         if value:
             active.append({"label": value, "href": without(key)})
     if sort_key in ("recent", "favorites", "rating"):
         label = {"recent": "Newest", "favorites": "Featured", "rating": "Top rated"}[sort_key]
         active.append({"label": label, "href": without("sort")})
+
+    # No match with several muscles: offer to drop the last one picked.
+    drop_last = None
+    if not total and len(groups) > 1:
+        drop_last = {
+            "label": tx.MUSCLE_GROUPS[groups[-1]]["label"],
+            "href": without("group", group=groups[:-1]),
+        }
 
     return render_template(
         "browse_workouts.html",
@@ -4729,18 +4831,10 @@ def workouts_browse():
         pages=pages,
         page_args=args,
         q=q,
-        env=env,
-        group=group,
-        eq=eq,
-        level=level,
-        sort=sort_key,
         active_filters=active,
         filter_count=len(active),
-        group_choices=[(k, g["label"]) for k, g in tx.MUSCLE_GROUPS.items()],
-        equipment_choices=[(k, _equipment_label(k)) for k in EQUIPMENT_CHOICES],
-        level_choices=[lvl["label"] for lvl in tx.LEVELS.values()],
-        environments=tx.ENVIRONMENTS,
-        sorts=BROWSE_SORTS,
+        drop_last=drop_last,
+        **_filter_panel_context(f),
     )
 
 

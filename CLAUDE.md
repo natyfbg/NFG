@@ -321,6 +321,14 @@ as committer, so GitHub shows them as Verified.
   and tip from the exercise's own instructions (`form:` in the file overrides them,
   `form_pose:` forces a family). Real photos replace a figure when
   `static/img/exercises/<slug>/step-<n>.webp|jpg|png` exists.
+  **Exercises filters:** an always-visible, sticky filter bar (search, then Muscles ·
+  Equipment · Level · more) on the Exercises page and browse. Muscles are
+  multi-select and combine with AND (`group=a&group=b`: every group worked, at least
+  one as a main target; exercises with more of them as main targets first); equipment
+  and level are one each. The panel (`_filterpanel.html`) is a bottom sheet on phones
+  and a popup under the bar on desktop, with a live "Show N exercises" count from
+  `/workouts/browse/count` and a one-tap "Remove <last muscle>" when nothing matches.
+  All 12 equipment tiles show on the Exercises page.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 

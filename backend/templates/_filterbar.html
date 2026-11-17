@@ -1,0 +1,56 @@
+{# Always-visible filter bar (Exercises page and browse). Needs _filter_panel_context().
+   The chips open the filter panel (_filterpanel.html) at their section; without JS they
+   jump to it via #filterPanel. #}
+{% import "_components.html" as ui %}
+<div class="nfg-filterbar" data-filterbar>
+  <form class="nfg-searchbar" action="{{ url_for('workouts_browse') }}" method="get" role="search">
+    {{ ui.icon('search') }}
+    <input type="search" name="q" value="{{ f_q }}" placeholder="Search {% if total_library %}{{ total_library }} {% endif %}exercises" aria-label="Search exercises">
+    {% for k, v in (page_args or {}).items() if k not in ('q', 'page') %}
+      {% if v is string %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% else %}{% for x in v %}<input type="hidden" name="{{ k }}" value="{{ x }}">{% endfor %}{% endif %}
+    {% endfor %}
+  </form>
+  <div class="nfg-fchips" data-no-page-swipe>
+    <a class="nfg-fchip{% if f_groups %} is-on{% endif %}" href="#filterPanel" data-filter-open="muscles"
+       aria-haspopup="dialog" aria-controls="filterPanel">
+      <span>{% if f_groups|length == 1 %}{{ group_choices|selectattr('key', 'equalto', f_groups[0])|map(attribute='label')|first }}{% elif f_groups %}{{ f_groups|length }} muscles{% else %}Muscles{% endif %}</span>
+      {{ ui.icon('chevron-down') }}
+    </a>
+    <a class="nfg-fchip{% if f_eq %} is-on{% endif %}" href="#filterPanel" data-filter-open="equipment"
+       aria-haspopup="dialog" aria-controls="filterPanel">
+      <span>{{ eq_label or 'Equipment' }}</span>{{ ui.icon('chevron-down') }}
+    </a>
+    <a class="nfg-fchip{% if f_level %} is-on{% endif %}" href="#filterPanel" data-filter-open="level"
+       aria-haspopup="dialog" aria-controls="filterPanel">
+      <span>{{ f_level or 'Level' }}</span>{{ ui.icon('chevron-down') }}
+    </a>
+    <a class="nfg-fchip is-icon{% if f_env or f_sort != 'name' %} is-on{% endif %}" href="#filterPanel" data-filter-open="more"
+       aria-haspopup="dialog" aria-controls="filterPanel" aria-label="More filters">
+      {{ ui.icon('sliders') }}
+    </a>
+  </div>
+  {% if active_filters %}
+    <div class="nfg-fchips is-active" data-no-page-swipe>
+      {% for a in active_filters %}
+        <a class="nfg-active-chip{% if a.color %} is-group{% endif %}" href="{{ a.href }}"
+           {% if a.color %}style="--group-color: {{ a.color }};"{% endif %}
+           aria-label="Remove filter {{ a.label }}">{{ a.label }} {{ ui.icon('x-lg') }}</a>
+      {% endfor %}
+      {% if active_filters|length > 1 %}<a class="nfg-clear-link" href="{{ url_for('workouts_browse') }}">Clear all</a>{% endif %}
+    </div>
+  {% endif %}
+</div>
+<script>
+  /* A hairline under the filter bar once it sticks. */
+  (function () {
+    var bar = document.querySelector('[data-filterbar]');
+    if (!bar) return;
+    var stuck = false;
+    function check() {
+      var now = bar.getBoundingClientRect().top <= 58 && window.scrollY > 0;
+      if (now !== stuck) { stuck = now; bar.classList.toggle('is-stuck', now); }
+    }
+    window.addEventListener('scroll', check, { passive: true });
+    check();
+  })();
+</script>
