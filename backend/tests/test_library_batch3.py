@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import content_sync as cs
-import musclemap
+import musclecard
 import placeholders
 import pytest
 import taxonomy as tx
@@ -26,7 +26,7 @@ def test_every_exercise_has_a_placeholder_with_a_muscle_map():
     exercises, _ = cs.load_exercises()
     for ex in exercises:
         svg = (EXERCISE_IMG_DIR / f"{ex['slug']}.svg").read_text(encoding="utf-8")
-        assert 'opacity="0.96"' in svg, ex["slug"]  # primary muscles are lit up
+        assert 'data-role="primary"' in svg, ex["slug"]  # primary muscles are lit up
 
 
 def test_lower_body_is_covered_at_home_and_in_the_gym():
@@ -47,18 +47,33 @@ def test_lower_body_is_covered_at_home_and_in_the_gym():
 # --------------------------------------------------------------------------
 
 
-def test_muscle_map_regions_use_taxonomy_keys():
-    for regions in (musclemap.FRONT, musclemap.BACK):
-        assert set(regions) <= set(tx.MUSCLES)
+def test_muscle_card_regions_use_taxonomy_keys():
+    for (view, slug), muscles in musclecard.CARD_EXTRA.items():
+        assert view in ("front", "back") and set(muscles) <= set(tx.MUSCLES)
+    # Every muscle in the taxonomy lights at least one region on the card.
+    lit = set()
+    for view, slug in list(musclecard.bodymap.REGION_MUSCLES) + list(musclecard.CARD_EXTRA):
+        lit.update(musclecard.region_muscles(view, slug))
+    assert set(tx.MUSCLES) <= lit
 
 
-def test_muscle_map_lights_primary_brighter_than_secondary():
-    markup, width = musclemap.muscle_map_group(
-        ["chest"], ["front_delts"], x=0, y=0, height=640, gap=40
+def test_muscle_card_colours_primary_red_and_secondary_yellow():
+    markup, width, sex = musclecard.figures(
+        ["chest"], ["front_delts", "chest"], x=0, y=0, height=640, gap=40
     )
-    assert width > 0
-    front = markup.split("</g><g transform")[0]  # the front figure
-    assert front.index('opacity="0.5"') < front.index('opacity="0.96"')  # primary on top
+    assert width > 0 and sex == "male"
+    assert 'fill="url(#mfp)" data-role="primary"' in markup  # chest, red gradient
+    assert 'fill="url(#mfs)" data-role="secondary"' in markup  # front delts, yellow
+    assert musclecard.region_role("front", "chest", {"chest"}, {"chest"}) == "primary"
+    assert musclecard.region_role("front", "hands", {"chest"}, set()) is None  # decor
+
+
+def test_upper_body_uses_the_male_figure_and_lower_body_the_female():
+    assert musclecard.figure_for(["chest", "triceps"]) == "male"
+    assert musclecard.figure_for(["quads", "glutes"]) == "female"
+    assert musclecard.figure_for(["glutes", "hamstrings", "lower_back"]) == "female"
+    assert musclecard.figure_for(["quads", "chest"]) == "male"  # a tie stays male
+    assert musclecard.figure_for([]) == "male"
 
 
 def test_placeholder_keeps_label_and_corner_free():
@@ -75,8 +90,9 @@ def test_placeholder_keeps_label_and_corner_free():
     assert placeholders.MAP_TOP + placeholders.MAP_HEIGHT < placeholders.SAFE_BOTTOM - 100
 
 
-def test_generic_placeholder_has_no_body():
-    assert 'opacity="0.96"' not in placeholders.render_generic_svg()
+def test_generic_placeholder_lights_nothing():
+    svg = placeholders.render_generic_svg()
+    assert "data-role=" not in svg and "Primary" not in svg  # no lit muscles, no legend
 
 
 # --------------------------------------------------------------------------

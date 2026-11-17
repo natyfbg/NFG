@@ -96,10 +96,12 @@ On the exercise page the viewer shows these photos first (swipe or tap the bars 
 the top) and the generated muscle map last. `images: []` clears photos uploaded in
 admin and leaves just the muscle map.
 
-The muscle map (`static/img/exercises/<slug>.svg`, from `python content_sync.py
-placeholders`) is the muscle group's colour plus a front/back figure drawn from
-`muscles:` (primary bright, secondary dimmer; `musclemap.py`). It's also the card
-image until an exercise has photos.
+The muscle card (`static/img/exercises/<slug>.svg`, from `python content_sync.py
+placeholders`; `--overwrite` regenerates them all) is a dark card with front and back
+figures drawn from `muscles:`: primary muscles red, secondary yellow, the muscle group's
+colour on the label and the glow (`musclecard.py`, licensed body art in
+`bodymap_paths.py`). Upper-body exercises use the male figure, lower-body ones the
+female figure. It's also the card image until an exercise has photos.
 
 ## Programs (`programs/<hub-slug>.yaml`)
 

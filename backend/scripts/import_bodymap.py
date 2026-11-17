@@ -1,4 +1,4 @@
-"""Import the front/back body figures used by the Muscle Mixer picker.
+"""Import the front/back body figures (Muscle Mixer picker and exercise muscle cards).
 
 Source: react-native-body-highlighter 3.1.3 (MIT, (c) 2022 ELABBASSI Hicham). 3.1.3 is
 pinned on purpose: the 3.2.0 package on npm ships without its assets/ folder.
@@ -9,7 +9,8 @@ Run it once (from backend/) and commit what it writes:
     python scripts/import_bodymap.py path/to/package # an already-unpacked package
 
 It writes bodymap_paths.py (plain data, no app code) and copies the package licence to
-LICENSE-react-native-body-highlighter.txt. The app never depends on npm.
+LICENSE-react-native-body-highlighter.txt. The app never depends on npm. Male figures feed
+the Mixer and upper-body cards; female figures feed lower-body cards (cards.py).
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ BACKEND = Path(__file__).resolve().parent.parent
 OUT_FILE = BACKEND / "bodymap_paths.py"
 LICENSE_OUT = BACKEND / "LICENSE-react-native-body-highlighter.txt"
 CROP_MARGIN = 6  # viewBox units kept above and below the figure
+PATH_DECIMALS = 0  # see minify_path
 
 # Original viewBoxes from components/SvgMaleWrapper.tsx (front and back share one canvas).
 VIEW_X = {"front": 0, "back": 724}
@@ -213,6 +215,136 @@ def path_bounds(d: str) -> Tuple[float, float, float, float]:
     return min(xs), min(ys), max(xs), max(ys)
 
 
+def _fmt(v: float, decimals: int) -> str:
+    s = f"{round(v, decimals):.{decimals}f}".rstrip("0").rstrip(".") if decimals else str(round(v))
+    if s in ("-0", ""):
+        s = "0"
+    if s.startswith("0.") and len(s) > 1:
+        s = s[1:]
+    elif s.startswith("-0."):
+        s = "-" + s[2:]
+    return s
+
+
+def _absolute_commands(d: str):
+    """Yield (CMD, values) with every command made absolute (H/V/S/T kept as-is)."""
+    sc = _Scanner(d)
+    cx = cy = sx = sy = 0.0
+    cmd = None
+    while True:
+        new = sc.command()
+        if new:
+            cmd = new
+        elif not sc.at_number():
+            break
+        if cmd is None:
+            raise ValueError("path data must start with a command")
+        up, rel = cmd.upper(), cmd.islower()
+        if up == "Z":
+            cx, cy = sx, sy
+            yield "Z", []
+            continue
+        if up == "A":
+            rx, ry, rot = sc.number(), sc.number(), sc.number()
+            large, sweep = sc.flag(), sc.flag()
+            x, y = sc.number(), sc.number()
+            if rel:
+                x, y = x + cx, y + cy
+            yield "A", [rx, ry, rot, large, sweep, x, y]
+            cx, cy = x, y
+            continue
+        vals = [sc.number() for _ in range(_ARGS[up])]
+        if up == "H":
+            x = vals[0] + (cx if rel else 0)
+            yield "H", [x]
+            cx = x
+            continue
+        if up == "V":
+            y = vals[0] + (cy if rel else 0)
+            yield "V", [y]
+            cy = y
+            continue
+        ox, oy = (cx, cy) if rel else (0.0, 0.0)
+        pts = [vals[i] + (ox if i % 2 == 0 else oy) for i in range(len(vals))]
+        yield up, pts
+        cx, cy = pts[-2], pts[-1]
+        if up == "M":
+            sx, sy = cx, cy
+            cmd = "l" if rel else "L"  # extra pairs after M are line-tos
+
+
+def minify_path(d: str, decimals: int = PATH_DECIMALS) -> str:
+    """Same shape, fewer bytes: relative commands, rounded numbers, minimal separators.
+
+    Relative values are measured from the *rounded* current point, so rounding never
+    accumulates along the path (every point stays within half a unit of the original).
+    """
+    q = 10**decimals
+    out: List[str] = []
+    last: List[Optional[str]] = [None, None]  # [previous command letter, previous number]
+
+    def r(v: float) -> float:
+        return round(v * q) / q
+
+    def emit(letter: str, toks: List[str]) -> None:
+        if letter != last[0] or letter in "mM":
+            out.append(letter)
+            last[0], last[1] = letter, None
+        for tok in toks:
+            prev = last[1]
+            if prev is not None and not (
+                tok.startswith("-") or (tok.startswith(".") and "." in prev)
+            ):
+                out.append(" ")
+            out.append(tok)
+            last[1] = tok
+
+    cx = cy = sx = sy = 0.0  # rounded current point / subpath start
+    for up, v in _absolute_commands(d):
+        if up == "Z":
+            out.append("z")
+            last[0], last[1] = "z", None
+            cx, cy = sx, sy
+            continue
+        if up == "A":
+            ex, ey = r(v[5]), r(v[6])
+            toks = [
+                _fmt(v[0], decimals),
+                _fmt(v[1], decimals),
+                _fmt(v[2], 0),
+                str(int(v[3])),
+                str(int(v[4])),
+                _fmt(ex - cx, decimals),
+                _fmt(ey - cy, decimals),
+            ]
+            emit("a", toks)
+            cx, cy = ex, ey
+            continue
+        if up == "H":
+            ex = r(v[0])
+            emit("h", [_fmt(ex - cx, decimals)])
+            cx = ex
+            continue
+        if up == "V":
+            ey = r(v[0])
+            emit("v", [_fmt(ey - cy, decimals)])
+            cy = ey
+            continue
+        pts = [r(x) for x in v]
+        rel = [_fmt(pts[i] - (cx if i % 2 == 0 else cy), decimals) for i in range(len(pts))]
+        if up == "M":
+            emit(
+                "m" if out else "M",
+                rel if out else [_fmt(pts[0], decimals), _fmt(pts[1], decimals)],
+            )
+            cx, cy = pts[0], pts[1]
+            sx, sy = cx, cy
+            continue
+        emit(up.lower(), rel)
+        cx, cy = pts[-2], pts[-1]
+    return "".join(out)
+
+
 def union_bounds(ds: Iterable[str]) -> Tuple[float, float, float, float]:
     boxes = [path_bounds(d) for d in ds]
     return (
@@ -235,7 +367,7 @@ def parse_regions(ts_source: str) -> List[Dict]:
         paths = re.findall(r'"([Mm][^"]*)"', chunk)
         if not paths:
             raise ValueError(f"region {slug} has no paths")
-        regions.append({"slug": slug, "paths": paths})
+        regions.append({"slug": slug, "paths": [minify_path(d) for d in paths]})
     return regions
 
 
@@ -244,7 +376,15 @@ def parse_outlines(wrapper_source: str) -> Tuple[str, str]:
     back = re.search(r'side === "back"[\s\S]*?\bd="([^"]+)"', wrapper_source)
     if not (front and back):
         raise ValueError("could not find the front/back outline paths")
-    return front.group(1), back.group(1)
+    return minify_path(front.group(1)), minify_path(back.group(1))
+
+
+def tight_viewbox(ds: Iterable[str], margin: int = CROP_MARGIN) -> str:
+    """The smallest viewBox around the paths (both axes), plus a margin."""
+    min_x, min_y, max_x, max_y = union_bounds(ds)
+    left, top = math.floor(min_x) - margin, math.floor(min_y) - margin
+    right, bottom = math.ceil(max_x) + margin, math.ceil(max_y) + margin
+    return f"{left} {top} {right - left} {bottom - top}"
 
 
 def crop_viewbox(side: str, ds: Iterable[str]) -> str:
@@ -267,46 +407,81 @@ def fetch_package(dest: Path) -> Path:
     return dest / "package"
 
 
-def render(front, back, outline_front, outline_back, vb_front, vb_back) -> str:
+def _regions_lines(name: str, regions: List[Dict]) -> List[str]:
+    lines = [f"{name} = ["]
+    for r in regions:
+        lines.append(f"    {{'slug': {r['slug']!r}, 'paths': [")
+        lines.extend(f"        {p!r}," for p in r["paths"])
+        lines.append("    ]},")
+    lines.append("]")
+    return lines
+
+
+def render(male: Dict, female: Dict, tight: Dict[str, str]) -> str:
     lines = [
         '"""GENERATED by scripts/import_bodymap.py. Do not edit; re-run the script instead.',
         "",
-        f"Source: {PACKAGE} {VERSION} (male front/back figures).",
+        f"Source: {PACKAGE} {VERSION} (male and female front/back figures).",
         "Licence: MIT, (c) 2022 ELABBASSI Hicham. See LICENSE-react-native-body-highlighter.txt.",
         '"""',
         "",
         "# fmt: off",
         "# flake8: noqa",
-        f"VIEWBOX_FRONT = {vb_front!r}",
-        f"VIEWBOX_BACK = {vb_back!r}",
-        f"OUTLINE_FRONT = {outline_front!r}",
-        f"OUTLINE_BACK = {outline_back!r}",
+        f"VIEWBOX_FRONT = {male['vb_front']!r}",
+        f"VIEWBOX_BACK = {male['vb_back']!r}",
+        f"OUTLINE_FRONT = {male['outline_front']!r}",
+        f"OUTLINE_BACK = {male['outline_back']!r}",
     ]
-    for name, regions in (("FRONT", front), ("BACK", back)):
-        lines.append(f"{name} = [")
-        for r in regions:
-            lines.append(f"    {{'slug': {r['slug']!r}, 'paths': [")
-            lines.extend(f"        {p!r}," for p in r["paths"])
-            lines.append("    ]},")
-        lines.append("]")
+    lines += _regions_lines("FRONT", male["front"])
+    lines += _regions_lines("BACK", male["back"])
+    lines += [
+        f"FEMALE_OUTLINE_FRONT = {female['outline_front']!r}",
+        f"FEMALE_OUTLINE_BACK = {female['outline_back']!r}",
+    ]
+    lines += _regions_lines("FEMALE_FRONT", female["front"])
+    lines += _regions_lines("FEMALE_BACK", female["back"])
+    lines.append("# Tight boxes (both axes) around each figure, for the exercise cards.")
+    lines.append("TIGHT_VIEWBOX = {")
+    lines.extend(f"    {k!r}: {v!r}," for k, v in tight.items())
+    lines.append("}")
     return "\n".join(lines) + "\n"
+
+
+def _load(pkg: Path, front_ts: str, back_ts: str, wrapper_tsx: str) -> Dict:
+    front = parse_regions((pkg / "assets" / front_ts).read_text(encoding="utf-8"))
+    back = parse_regions((pkg / "assets" / back_ts).read_text(encoding="utf-8"))
+    wrapper = (pkg / "components" / wrapper_tsx).read_text(encoding="utf-8")
+    outline_front, outline_back = parse_outlines(wrapper)
+    return {
+        "front": front,
+        "back": back,
+        "outline_front": outline_front,
+        "outline_back": outline_back,
+    }
 
 
 def main(argv: List[str]) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         pkg = Path(argv[0]) if argv else fetch_package(Path(tmp))
-        front = parse_regions((pkg / "assets" / "bodyFront.ts").read_text(encoding="utf-8"))
-        back = parse_regions((pkg / "assets" / "bodyBack.ts").read_text(encoding="utf-8"))
-        wrapper = (pkg / "components" / "SvgMaleWrapper.tsx").read_text(encoding="utf-8")
-        outline_front, outline_back = parse_outlines(wrapper)
-        vb_front = crop_viewbox("front", [outline_front] + [p for r in front for p in r["paths"]])
-        vb_back = crop_viewbox("back", [outline_back] + [p for r in back for p in r["paths"]])
-        OUT_FILE.write_text(
-            render(front, back, outline_front, outline_back, vb_front, vb_back), encoding="utf-8"
+        male = _load(pkg, "bodyFront.ts", "bodyBack.ts", "SvgMaleWrapper.tsx")
+        female = _load(pkg, "bodyFemaleFront.ts", "bodyFemaleBack.ts", "SvgFemaleWrapper.tsx")
+        tight = {}
+        for sex, fig in (("male", male), ("female", female)):
+            for side in ("front", "back"):
+                paths = [fig[f"outline_{side}"]] + [p for r in fig[side] for p in r["paths"]]
+                tight[f"{sex}_{side}"] = tight_viewbox(paths)
+        male["vb_front"] = crop_viewbox(
+            "front", [male["outline_front"]] + [p for r in male["front"] for p in r["paths"]]
         )
+        male["vb_back"] = crop_viewbox(
+            "back", [male["outline_back"]] + [p for r in male["back"] for p in r["paths"]]
+        )
+        OUT_FILE.write_text(render(male, female, tight), encoding="utf-8")
         shutil.copyfile(pkg / "LICENSE", LICENSE_OUT)
-    print(f"front: {len(front)} regions, viewBox {vb_front}")
-    print(f"back:  {len(back)} regions, viewBox {vb_back}")
+    for sex, fig in (("male", male), ("female", female)):
+        print(f"{sex}: {len(fig['front'])} front / {len(fig['back'])} back regions")
+    for k, v in tight.items():
+        print(f"  {k}: {v}")
     print(f"wrote {OUT_FILE.name} and {LICENSE_OUT.name}")
 
 
