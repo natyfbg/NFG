@@ -1,0 +1,36 @@
+slug: machine-preacher-curl
+name: Machine Preacher Curl
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [biceps]
+equipment: [machine]
+lists: [pull]
+summary: >-
+  A preacher curl on the machine. Fixed path and constant tension make it the easiest
+  curl to push to failure safely.
+setup:
+  - Set the seat so the armpits sit at the top of the pad. Grip the handles with the
+    upper arms flat.
+steps:
+  - Curl the handles up until the forearms are vertical.
+  - Squeeze.
+  - Lower slowly.
+cues:
+  - Elbows stay on the pad.
+  - Keep the wrists straight.
+mistakes:
+  - Leaning back to lift.
+  - Short reps.
+safety:
+  - Set the seat first.
+breathing: Breathe out as you curl.
+videos:
+  youtube: https://www.youtube.com/watch?v=to3m8zws1n8
+tags: [biceps, curl, gym, machine]
+notes: >-
+  Also covers other biceps curl machines

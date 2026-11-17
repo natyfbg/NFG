@@ -1,0 +1,38 @@
+slug: pigeon-pose
+name: Pigeon Pose
+status: draft
+level: intermediate
+category: mobility
+movement: mobility
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [glutes]
+  secondary: [hip_flexors]
+equipment: []
+summary: >-
+  One leg bent in front with the shin across the mat, the other stretched straight
+  behind. A deep stretch for the glutes and hip rotators.
+setup:
+  - From hands and knees, bring one knee forward toward the same-side wrist and lay the
+    shin across the mat.
+  - Extend the other leg straight behind you, top of the foot down.
+steps:
+  - Square your hips toward the floor and sit tall to feel the stretch in the front
+    glute.
+  - For more, walk the hands forward and lower your chest.
+  - Hold for 45–60 seconds and switch sides.
+cues:
+  - Flex the front foot to protect the knee.
+  - Hips level; put a cushion under the front hip if it hangs.
+mistakes:
+  - Letting the hip of the front leg drop sideways.
+  - Forcing the front shin parallel to the mat.
+safety:
+  - Keep the front heel closer to the hips if you feel anything in the knee. Figure-four
+    stretch is the gentler version.
+breathing: Long breaths; soften the hip on each breath out.
+regressions: [figure-four-glute-stretch]
+videos:
+  youtube: https://www.youtube.com/watch?v=zuYbjkuKLKY
+tags: [glutes, hips, home, mobility, stretching]

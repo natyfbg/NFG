@@ -1,0 +1,33 @@
+slug: barbell-front-raise
+name: Barbell Front Raise
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [front_delts]
+  secondary: [upper_chest]
+equipment: [barbell]
+summary: >-
+  A front raise with a barbell. Both arms work together and the load is easy to set.
+setup:
+  - Stand holding a barbell in front of the thighs with an overhand grip at
+    shoulder-width.
+steps:
+  - Raise the bar in front to shoulder height with nearly straight arms.
+  - Pause.
+  - Lower slowly.
+cues:
+  - Ribs down; don't lean back.
+  - Keep the shoulders down.
+mistakes:
+  - Swinging the bar up.
+  - Bending the elbows a lot.
+safety:
+  - Use a light bar.
+breathing: Breathe out as you raise.
+videos:
+  youtube: https://www.youtube.com/watch?v=MF7xYL5rnOE
+tags: [barbell, gym, raise, shoulders]

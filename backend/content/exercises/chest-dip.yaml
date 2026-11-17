@@ -1,0 +1,40 @@
+slug: chest-dip
+name: Chest Dip
+status: draft
+level: intermediate
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [triceps, front_delts]
+equipment: [dip_bars]
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  Dips on parallel bars with a forward lean and the elbows flared slightly. The lean
+  shifts the work from the triceps onto the lower chest.
+setup:
+  - Support yourself on the bars with straight arms.
+  - Lean the torso forward about 30 degrees, cross the ankles behind you.
+steps:
+  - Lower by bending the elbows and letting them travel out a little, keeping the lean.
+  - Go down until the upper arms are about parallel to the floor and you feel the chest
+    stretch.
+  - Press back up, keeping the lean until the top.
+cues:
+  - Chin tucked, eyes down, lean the whole way.
+  - Shoulders down; don't let them shrug.
+mistakes:
+  - Going so deep the shoulders roll forward.
+  - Standing upright, which makes it a triceps dip.
+safety:
+  - Build range gradually; stop at the depth where the front of the shoulder stays
+    comfortable.
+breathing: Breathe in down, out up.
+regressions: [assisted-dip, bench-dip]
+videos:
+  youtube: https://www.youtube.com/watch?v=8xBVaG7tfbQ
+tags: [chest, dip, gym]
+notes: >-
+  Lean forward to bias the chest

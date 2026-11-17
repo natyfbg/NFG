@@ -1,0 +1,36 @@
+slug: cable-rope-upright-row
+name: Cable Rope Upright Row
+status: draft
+level: intermediate
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [side_delts]
+  secondary: [traps, front_delts]
+equipment: [cable]
+lists: [full_push, shoulder_focus]
+summary: >-
+  Pulling a rope up the body to chest height with the elbows leading. The rope lets
+  the hands separate at the top, which keeps the shoulders happier than a bar.
+setup:
+  - Set the pulley low with a rope. Stand close, holding the rope in front of the
+    thighs.
+steps:
+  - Pull the rope up the body, elbows leading high and wide, until the hands reach the
+    upper chest.
+  - Pull the rope ends apart at the top.
+  - Lower slowly.
+cues:
+  - Elbows above the hands the whole way.
+  - Stop at chest height, not the chin.
+mistakes:
+  - Pulling the hands higher than the elbows.
+  - Shrugging instead of lifting the elbows.
+safety:
+  - Keep the pull to chest height; higher can pinch the shoulder.
+breathing: Breathe out as you pull up.
+videos:
+  youtube: https://www.youtube.com/watch?v=XoI1t4DqBRY
+tags: [cable, gym, shoulders, upright-row]

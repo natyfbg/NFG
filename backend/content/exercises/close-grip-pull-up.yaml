@@ -1,0 +1,35 @@
+slug: close-grip-pull-up
+name: Close-Grip Pull-Up
+status: draft
+level: intermediate
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats]
+  secondary: [biceps, upper_back]
+equipment: [pullup_bar]
+lists: [pull]
+summary: >-
+  A pull-up with the hands close together. The narrow grip brings the biceps and lower
+  lats in harder.
+setup:
+  - Grip the bar overhand with the hands a few inches apart.
+steps:
+  - Pull the chest to the bar, elbows close to the body.
+  - Pause with the chin over.
+  - Lower to straight arms.
+cues:
+  - Elbows drive down to the ribs.
+  - Keep the chest up.
+mistakes:
+  - Kipping.
+  - Stopping short of the bar.
+safety:
+  - Full range every rep.
+breathing: Breathe out as you pull.
+regressions: [pull-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=Co2vKsDU-H8
+tags: [back, home, pull-up]

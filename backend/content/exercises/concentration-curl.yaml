@@ -1,0 +1,36 @@
+slug: concentration-curl
+name: Concentration Curl
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [biceps]
+equipment: [dumbbell, bench]
+lists: [pull]
+summary: >-
+  A one-arm curl with the elbow braced against the inside of the thigh. Nothing can
+  swing, so it's pure biceps.
+setup:
+  - Sit on a bench with the legs wide. Hold a dumbbell in one hand, elbow against the
+    inside of that thigh.
+steps:
+  - Curl the dumbbell up to the shoulder.
+  - Squeeze at the top.
+  - Lower slowly. Switch arms after the set.
+cues:
+  - Elbow stays against the thigh.
+  - Rotate the pinky up at the top.
+mistakes:
+  - Lifting the elbow off the leg.
+  - Rocking the torso.
+safety:
+  - Keep the back flat, not rounded over.
+breathing: Breathe out as you curl.
+videos:
+  youtube: https://www.youtube.com/watch?v=oPGBZHIxusU
+tags: [biceps, curl, hybrid, unilateral]
+notes: >-
+  Seated, elbow braced on the inner thigh

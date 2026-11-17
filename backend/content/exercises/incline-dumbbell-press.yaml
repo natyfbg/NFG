@@ -10,6 +10,7 @@ muscles:
   primary: [upper_chest]
   secondary: [front_delts, triceps]
 equipment: [dumbbell, bench]
+lists: [full_push, chest_focus, shoulder_focus]
 summary: >-
   A dumbbell press on a bench set to a low incline. The angle targets the upper chest
   more than a flat press does.

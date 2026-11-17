@@ -10,6 +10,7 @@ muscles:
   primary: [chest]
   secondary: [front_delts, triceps]
 equipment: [dumbbell, bench]
+lists: [full_push, chest_focus, shoulder_focus]
 summary: >-
   A flat-bench press with a dumbbell in each hand. Each arm works on its own, which
   builds balanced strength and lets your wrists and elbows find a natural path.

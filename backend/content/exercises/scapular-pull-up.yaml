@@ -1,0 +1,39 @@
+slug: scapular-pull-up
+name: Scapular Pull-Up
+status: draft
+level: beginner
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats, traps]
+  secondary: [upper_back]
+equipment: [pullup_bar]
+lists: [pull]
+summary: >-
+  Hanging from the bar and pulling the shoulder blades down without bending the arms.
+  Teaches the first inch of every pull-up.
+setup:
+  - Hang from the bar with straight arms and a shoulder-width grip.
+steps:
+  - Without bending the elbows, pull the shoulder blades down and back so the body rises
+    an inch or two.
+  - Hold for a second.
+  - Relax back to the dead hang. Do 8–12 reps.
+cues:
+  - Think 'shoulders away from the ears'.
+  - Arms stay straight.
+mistakes:
+  - Bending the elbows.
+  - Swinging.
+safety:
+  - Keep the movement small and controlled.
+breathing: Breathe out as you pull the shoulders down.
+regressions: [dead-hang]
+progressions: [negative-pull-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=8FWdmFBUNP0
+tags: [back, bodyweight, home, pull-up]
+notes: >-
+  On both your Home and Gym lists

@@ -1,0 +1,36 @@
+slug: band-external-rotation
+name: Band External Rotation
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [rotator_cuff]
+  secondary: [rear_delts]
+equipment: [bands]
+summary: >-
+  Rotating the forearm outward against a band with the elbow at your side. Strengthens
+  the rotator cuff, which keeps pressing shoulders healthy.
+setup:
+  - Anchor a light band at elbow height. Stand side-on with the elbow tucked at your
+    side, bent 90 degrees, hand across your body holding the band.
+steps:
+  - Rotate the forearm outward, away from the body, keeping the elbow pinned.
+  - Pause at the end.
+  - Return slowly. Switch sides after the set.
+cues:
+  - Tuck a towel between elbow and ribs to keep it still.
+  - Slow and smooth.
+mistakes:
+  - Elbow drifting away from the body.
+  - Using the shoulder instead of rotating.
+safety:
+  - Very light band and higher reps.
+breathing: Breathe out as you rotate out.
+videos:
+  youtube: https://www.youtube.com/watch?v=8UZT_SElGlc
+tags: [bands, hybrid, rotator-cuff, shoulders]
+notes: >-
+  Home version of Cable External Rotation

@@ -1,0 +1,35 @@
+slug: arnold-press
+name: Arnold Press
+status: draft
+level: intermediate
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts, side_delts]
+  secondary: [triceps]
+equipment: [dumbbell, bench]
+lists: [full_push, shoulder_focus]
+summary: >-
+  A shoulder press that starts with the palms facing you and rotates them forward as
+  you press. The rotation takes the front and side delts through a longer range.
+setup:
+  - Sit on an upright bench with dumbbells in front of your shoulders, palms facing you,
+    elbows in front.
+steps:
+  - Press up while rotating the palms to face forward, opening the elbows out as you go.
+  - Finish with the arms straight overhead, palms forward.
+  - Reverse the path on the way down.
+cues:
+  - Rotate smoothly through the whole press, not just at the top.
+  - Keep the ribs down.
+mistakes:
+  - Rotating at the bottom and then pressing normally.
+  - Going too heavy and losing the rotation.
+safety:
+  - Lighter than a normal press; the rotation is the point.
+breathing: Breathe out as you press and rotate.
+videos:
+  youtube: https://www.youtube.com/watch?v=jeJttN2EWCo
+tags: [hybrid, press, shoulders]

@@ -1,0 +1,34 @@
+slug: seated-ez-bar-shoulder-press
+name: Seated EZ-Bar Shoulder Press
+status: draft
+level: intermediate
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts, side_delts]
+  secondary: [triceps]
+equipment: [barbell, bench]
+summary: >-
+  A seated overhead press with the EZ bar. The angled grip sits better in the hands
+  and shoulders than a straight bar.
+setup:
+  - Sit on an upright bench holding the EZ bar on the outer angled grips at the upper
+    chest.
+steps:
+  - Press the bar overhead until the arms are straight.
+  - Pause at the top.
+  - Lower under control to the upper chest.
+cues:
+  - Elbows under the bar.
+  - Keep the ribs down.
+mistakes:
+  - Leaning back.
+  - Pressing to the front of the face instead of overhead.
+safety:
+  - Have a spotter hand you the bar for heavy sets.
+breathing: Breathe in down, out up.
+videos:
+  youtube: https://www.youtube.com/watch?v=9qx1r70FS80
+tags: [barbell, gym, press, shoulders]

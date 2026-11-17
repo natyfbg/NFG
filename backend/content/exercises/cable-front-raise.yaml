@@ -1,0 +1,33 @@
+slug: cable-front-raise
+name: Cable Front Raise
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [front_delts]
+  secondary: [upper_chest]
+equipment: [cable]
+summary: >-
+  A front raise with a low cable. Constant tension through the full range.
+setup:
+  - Set the pulley low, face away from the machine, and hold the handle in front of the
+    thighs (one or both hands).
+steps:
+  - Raise the handle in front to shoulder height.
+  - Pause.
+  - Lower slowly.
+cues:
+  - Slight elbow bend, held throughout.
+  - Stand tall.
+mistakes:
+  - Leaning forward at the start.
+  - Swinging.
+safety:
+  - Light weight.
+breathing: Breathe out as you raise.
+videos:
+  youtube: https://www.youtube.com/watch?v=RsbyWwhaWBs
+tags: [cable, gym, raise, shoulders]

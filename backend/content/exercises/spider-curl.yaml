@@ -1,0 +1,36 @@
+slug: spider-curl
+name: Spider Curl
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [biceps]
+equipment: [dumbbell, bench]
+lists: [pull]
+summary: >-
+  Curling dumbbells with the chest on an incline bench and the arms hanging straight
+  down. The arm position keeps tension on the biceps through the whole rep.
+setup:
+  - Set a bench to about 45 degrees and lie chest-down with dumbbells hanging straight
+    down, palms forward.
+steps:
+  - Curl the dumbbells up toward the shoulders without moving the upper arms.
+  - Squeeze.
+  - Lower slowly.
+cues:
+  - Upper arms stay vertical.
+  - Chest stays on the bench.
+mistakes:
+  - Swinging the elbows forward.
+  - Lifting the chest off the pad.
+safety:
+  - Light to moderate weight.
+breathing: Breathe out as you curl.
+videos:
+  youtube: https://www.youtube.com/watch?v=OP9O3F-7Tr0
+tags: [biceps, curl, hybrid]
+notes: >-
+  Chest on an incline bench, arms hanging forward

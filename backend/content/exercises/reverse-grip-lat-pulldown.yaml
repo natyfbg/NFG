@@ -1,0 +1,36 @@
+slug: reverse-grip-lat-pulldown
+name: Reverse-Grip Lat Pulldown
+status: draft
+level: beginner
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats]
+  secondary: [biceps]
+equipment: [cable]
+summary: >-
+  A pulldown with an underhand, shoulder-width grip. Like a chin-up on the cable: lats
+  plus plenty of biceps.
+setup:
+  - Grip the bar underhand at shoulder-width. Lock the thighs, sit tall.
+steps:
+  - Pull the bar to the upper chest with the elbows tucked.
+  - Squeeze the lats.
+  - Return slowly to straight arms.
+cues:
+  - Elbows down and in.
+  - Keep the wrists straight.
+mistakes:
+  - Leaning far back.
+  - Shrugging at the top.
+safety:
+  - Keep the grip at shoulder-width; narrower can bother the wrists.
+breathing: Breathe out as you pull.
+progressions: [chin-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=SNiwpA13ZLU
+tags: [back, cable, gym, pulldown]
+notes: >-
+  Underhand grip

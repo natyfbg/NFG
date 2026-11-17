@@ -1,0 +1,33 @@
+slug: cable-triceps-kickback
+name: Cable Triceps Kickback
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: unilateral
+muscles:
+  primary: [triceps]
+equipment: [cable]
+summary: >-
+  Extending one arm back against a low cable while hinged forward. Constant tension
+  through the full range, so it's better than the dumbbell version.
+setup:
+  - Set the pulley low and hold the handle (or the cable itself). Hinge forward with a
+    flat back, upper arm at your side and parallel to the floor.
+steps:
+  - Extend the elbow until the arm is straight behind you.
+  - Squeeze the triceps.
+  - Return under control to a 90-degree elbow.
+cues:
+  - Upper arm stays still and high.
+  - Keep the back flat and the core braced.
+mistakes:
+  - Swinging the arm from the shoulder.
+  - Dropping the upper arm.
+safety:
+  - Light weight; it's a finisher, not a strength lift.
+breathing: Breathe out as you extend.
+videos:
+  youtube: https://www.youtube.com/watch?v=q0LGf0ojb4Y
+tags: [cable, gym, kickback, triceps]

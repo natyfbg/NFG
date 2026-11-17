@@ -1,0 +1,38 @@
+slug: deep-squat
+name: Deep Squat
+status: draft
+level: beginner
+category: strength
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [adductors]
+equipment: []
+lists: [lower]
+summary: >-
+  A bodyweight squat all the way down, as low as the hips go. Builds hip and ankle
+  mobility as much as strength.
+setup:
+  - Stand with the feet shoulder-width apart, toes slightly out.
+steps:
+  - Sit down between the heels as low as you can, letting the arms reach forward for
+    balance.
+  - Pause at the bottom.
+  - Stand back up, driving through the whole foot.
+cues:
+  - Heels down, chest up.
+  - Push the knees out over the toes.
+mistakes:
+  - Heels lifting.
+  - Rounding the lower back at the bottom.
+safety:
+  - Hold a post or doorframe to go deeper safely.
+breathing: Breathe in down, out up.
+regressions: [bodyweight-squat]
+videos:
+  youtube: https://www.youtube.com/watch?v=9rAK8aVOl0g
+tags: [bodyweight, home, quads, squat]
+notes: >-
+  Full-depth bodyweight squat. Also covers the deep squat hold on the mobility list

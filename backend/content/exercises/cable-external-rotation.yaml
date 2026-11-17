@@ -1,0 +1,36 @@
+slug: cable-external-rotation
+name: Cable External Rotation
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [rotator_cuff]
+  secondary: [rear_delts]
+equipment: [cable]
+summary: >-
+  External rotation with a cable, elbow pinned to the side. Same rotator-cuff work as
+  the band version, with easier loading.
+setup:
+  - Set the pulley at elbow height. Stand side-on with the far arm's elbow at your side,
+    bent 90 degrees, hand across the body.
+steps:
+  - Rotate the forearm outward, keeping the elbow still.
+  - Pause.
+  - Return slowly. Switch sides after the set.
+cues:
+  - Elbow stays glued to the ribs.
+  - Wrist straight.
+mistakes:
+  - Shrugging.
+  - Going too heavy.
+safety:
+  - Light weight; this is a small muscle.
+breathing: Breathe out as you rotate out.
+videos:
+  youtube: https://www.youtube.com/watch?v=ZpD21ZOixQw
+tags: [cable, gym, rotator-cuff, shoulders]
+notes: >-
+  The app has no rotator cuff tag yet. I'd add one under Shoulders

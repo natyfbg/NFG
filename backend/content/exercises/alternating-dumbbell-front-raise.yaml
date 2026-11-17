@@ -1,0 +1,35 @@
+slug: alternating-dumbbell-front-raise
+name: Alternating Dumbbell Front Raise
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: unilateral
+muscles:
+  primary: [front_delts]
+  secondary: [upper_chest]
+equipment: [dumbbell]
+summary: >-
+  Front raises one arm at a time. Alternating keeps the torso stable and lets you
+  focus on each side.
+setup:
+  - Stand with dumbbells in front of the thighs, palms facing back.
+steps:
+  - Raise one arm in front to shoulder height.
+  - Lower it, then raise the other.
+  - Alternate for all reps.
+cues:
+  - Brace so the body doesn't rock.
+  - Soft elbow, controlled lower.
+mistakes:
+  - Rocking back and forth.
+  - Shrugging.
+safety:
+  - Light weight.
+breathing: Breathe out as each arm rises.
+videos:
+  youtube: https://www.youtube.com/watch?v=NIC5EpVb9Bs
+tags: [hybrid, raise, shoulders, unilateral]
+notes: >-
+  Standing, one arm at a time

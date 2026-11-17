@@ -1,0 +1,32 @@
+slug: treadmill-walk
+name: Treadmill Walk
+status: draft
+level: beginner
+category: cardio
+movement: cardio
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [calves, quads, glutes]
+equipment: [cardio_machine]
+summary: >-
+  Walking on a treadmill at a brisk pace. Easy to fit in, easy on the joints, and
+  perfect for rest-day movement.
+setup:
+  - Set the speed to 5–6.5 km/h and the incline to 1–2%.
+steps:
+  - Walk tall with a natural arm swing, not holding the rails.
+  - Keep the pace brisk for 20–45 minutes.
+  - Add incline when it starts to feel easy.
+cues:
+  - Heel to toe through each step.
+  - Relaxed shoulders.
+mistakes:
+  - Holding the rails and leaning back.
+  - Walking so slowly the heart rate never rises.
+safety:
+  - Keep the safety key clipped on.
+breathing: Natural breathing.
+videos:
+  youtube: https://www.youtube.com/watch?v=h8bewP_eFhU
+tags: [cardio, conditioning, gym, low-impact, steady]

@@ -1,0 +1,37 @@
+slug: smith-machine-reverse-lunge
+name: Smith Machine Reverse Lunge
+status: draft
+level: intermediate
+category: strength
+movement: lunge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [hamstrings, adductors]
+equipment: [smith]
+lists: [lower]
+summary: >-
+  A reverse lunge under the Smith bar. The fixed bar steadies the lunge so you can
+  load it.
+setup:
+  - Set the bar at shoulder height and stand under it with the feet together.
+steps:
+  - Unhook and step one foot back into a lunge, lowering the back knee toward the floor.
+  - Drive through the front foot to return.
+  - Alternate legs or finish one side first.
+cues:
+  - Front knee over the toes.
+  - Keep the torso tall.
+mistakes:
+  - Leaning forward.
+  - Short steps.
+safety:
+  - Set the safety catches.
+breathing: Breathe in down, out up.
+regressions: [reverse-lunge]
+videos:
+  youtube: https://www.youtube.com/watch?v=SRJWDaHqJII
+tags: [gym, lunge, quads, smith-machine]
+notes: >-
+  Your "smith machine step backs"

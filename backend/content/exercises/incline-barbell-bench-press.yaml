@@ -1,0 +1,38 @@
+slug: incline-barbell-bench-press
+name: Incline Barbell Bench Press
+status: draft
+level: intermediate
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [upper_chest]
+  secondary: [front_delts, triceps]
+equipment: [barbell, bench]
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  Pressing a barbell on an incline bench set to 30–45 degrees. The angle shifts the
+  work to the upper chest and front delts.
+setup:
+  - Set the bench at 30–45 degrees. Lie back with your eyes under the bar.
+  - Grip slightly wider than shoulder-width, shoulder blades pulled back and down, feet
+    flat.
+steps:
+  - Unrack and hold the bar over your upper chest with straight arms.
+  - Lower it to the upper chest just below the collarbones, elbows at about 45–60
+    degrees.
+  - Press back up to the start.
+cues:
+  - Bar touches high on the chest, not the stomach.
+  - Drive the feet into the floor for stability.
+mistakes:
+  - Bouncing the bar off the chest.
+  - Flaring the elbows out to the sides.
+safety:
+  - Use a spotter or safety pins. Keep the thumbs wrapped around the bar.
+breathing: Breathe in as you lower, out as you press.
+regressions: [incline-dumbbell-press]
+videos:
+  youtube: https://www.youtube.com/watch?v=11gY7Q5D5wo
+tags: [barbell, chest, gym, press]

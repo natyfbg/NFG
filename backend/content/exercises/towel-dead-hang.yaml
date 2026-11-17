@@ -1,0 +1,36 @@
+slug: towel-dead-hang
+name: Towel Dead Hang
+status: draft
+level: intermediate
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [forearms]
+  secondary: [lats]
+equipment: [pullup_bar]
+summary: >-
+  Hanging from a towel draped over a pull-up bar. The thick, soft grip builds crushing
+  strength fast.
+setup:
+  - Drape a towel over the bar and hold both ends (or one towel per hand).
+steps:
+  - Hang with straight arms and the shoulders active.
+  - Hold for 15–40 seconds.
+  - Lower and rest.
+cues:
+  - Squeeze the towel hard.
+  - Shoulders down, not shrugged.
+mistakes:
+  - Hanging completely passive.
+  - Swinging.
+safety:
+  - Have a box ready to step onto when the grip fails.
+breathing: Breathe steadily.
+regressions: [dead-hang]
+videos:
+  youtube: https://www.youtube.com/watch?v=gvgpRes6FwA
+tags: [forearms, grip, hold, home]
+notes: >-
+  Towels over the bar make the grip much harder

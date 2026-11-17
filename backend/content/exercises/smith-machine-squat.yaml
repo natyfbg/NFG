@@ -1,0 +1,37 @@
+slug: smith-machine-squat
+name: Smith Machine Squat
+status: draft
+level: beginner
+category: strength
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [adductors]
+equipment: [smith]
+lists: [lower]
+summary: >-
+  A squat under the Smith machine bar. The fixed path lets you set the feet slightly
+  forward for a more quad-focused squat with no balance demand.
+setup:
+  - Set the bar at shoulder height. Stand under it with the feet slightly in front of
+    the bar, shoulder-width apart.
+steps:
+  - Unhook and squat down to parallel or below, keeping the torso upright.
+  - Pause.
+  - Drive back up.
+cues:
+  - Feet a little forward of the bar.
+  - Knees track over the toes.
+mistakes:
+  - Feet directly under the bar, which forces a forward lean.
+  - Bouncing at the bottom.
+safety:
+  - Set the safety catches just below your lowest depth.
+breathing: Breathe in down, out up.
+videos:
+  youtube: https://www.youtube.com/watch?v=jPrzu4kp47o
+tags: [gym, quads, smith-machine, squat]
+notes: >-
+  Your "smith machine squat" and "smith machine back squats", merged

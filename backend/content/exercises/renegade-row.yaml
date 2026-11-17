@@ -1,0 +1,33 @@
+slug: renegade-row
+name: Renegade Row
+status: draft
+level: intermediate
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats, upper_back]
+  secondary: [abs, obliques, biceps]
+equipment: [dumbbell]
+summary: >-
+  Rowing a dumbbell from a plank on two dumbbells. A row and a core exercise in one;
+  the challenge is keeping the hips still.
+setup:
+  - Take a plank with the hands on two dumbbells (hex ones are stable), feet wide.
+steps:
+  - Row one dumbbell to the hip while keeping the hips square.
+  - Lower it to the floor.
+  - Row the other side. Alternate for all reps.
+cues:
+  - Brace hard; imagine a glass on your back.
+  - Elbow close to the body.
+mistakes:
+  - Rotating the hips to lift the weight.
+  - Sagging between reps.
+safety:
+  - Use a wide foot stance and hex dumbbells that won't roll.
+breathing: Breathe out as you row.
+videos:
+  youtube: https://www.youtube.com/watch?v=0ANhSr-Vk9M
+tags: [back, core, hybrid, row, unilateral]

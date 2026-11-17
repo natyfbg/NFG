@@ -1,0 +1,36 @@
+slug: sissy-squat
+name: Sissy Squat
+status: draft
+level: intermediate
+category: strength
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads]
+equipment: []
+lists: [lower]
+summary: >-
+  Leaning back and bending the knees forward with the hips extended, holding a post.
+  An intense quad stretch and contraction.
+setup:
+  - Stand holding a post or rack with one hand, feet hip-width apart, heels raised.
+steps:
+  - Bend the knees and let them travel forward while leaning the torso back, keeping the
+    hips straight.
+  - Go as low as the quads allow.
+  - Drive back up through the knees.
+cues:
+  - Body in a straight line from knees to shoulders.
+  - Hips stay extended; don't sit back.
+mistakes:
+  - Bending at the hips.
+  - Going too deep too soon.
+safety:
+  - Build range gradually. Skip it if your knees ache.
+breathing: Breathe in down, out up.
+videos:
+  youtube: https://www.youtube.com/watch?v=30_K-UpUerk
+tags: [bodyweight, home, quads, squat]
+notes: >-
+  Lean back as the knees travel forward

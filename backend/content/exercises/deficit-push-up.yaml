@@ -1,0 +1,40 @@
+slug: deficit-push-up
+name: Deficit Push-Up
+status: draft
+level: intermediate
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [front_delts, triceps]
+equipment: []
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  A push-up with the hands on blocks or dumbbells so your chest can drop below hand
+  level. The extra range gives the chest a deeper stretch and more work per rep.
+setup:
+  - Place two blocks, push-up handles or hex dumbbells shoulder-width apart.
+  - Take a plank position with your hands on them.
+steps:
+  - Lower until your chest drops below the level of your hands.
+  - Pause in the stretched position.
+  - Press back up to full lockout.
+cues:
+  - Control the bottom; don't bounce out of the stretch.
+  - Elbows at 45 degrees, shoulder blades pulled together at the bottom.
+mistakes:
+  - Going so deep the shoulders roll forward.
+  - Letting the hips drop at the bottom.
+safety:
+  - Build the depth up over several sessions; the stretched position is the one that
+    gets sore.
+breathing: Breathe in down, out up.
+regressions: [push-up]
+progressions: [weighted-push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=bKqlcTE9F1Q
+tags: [chest, home, push-up]
+notes: >-
+  Hands on books, blocks or push-up handles

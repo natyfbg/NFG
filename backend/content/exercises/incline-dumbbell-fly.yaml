@@ -1,0 +1,35 @@
+slug: incline-dumbbell-fly
+name: Incline Dumbbell Fly
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [upper_chest]
+  secondary: [front_delts]
+equipment: [dumbbell, bench]
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  A dumbbell fly on an incline bench. The angle puts the stretch and squeeze on the
+  upper chest.
+setup:
+  - Set the bench at 30–45 degrees. Hold light dumbbells over the upper chest, palms
+    facing each other, elbows slightly bent.
+steps:
+  - Open the arms wide and down until the chest is stretched.
+  - Keep the elbow angle fixed.
+  - Bring the dumbbells together over the upper chest and squeeze.
+cues:
+  - Arc the weights, don't press them.
+  - Shoulder blades stay pinned back.
+mistakes:
+  - Letting the elbows drop below the shoulders.
+  - Shrugging as the weights come together.
+safety:
+  - Keep it light and smooth.
+breathing: Breathe in open, out close.
+videos:
+  youtube: https://www.youtube.com/watch?v=qTnyM0rktpk
+tags: [chest, fly, hybrid]

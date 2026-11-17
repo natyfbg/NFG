@@ -1,0 +1,37 @@
+slug: dumbbell-squeeze-press
+name: Dumbbell Squeeze Press
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [triceps, front_delts]
+equipment: [dumbbell, bench]
+summary: >-
+  A dumbbell press with the weights pressed hard together the whole time. The inward
+  squeeze keeps the chest contracted through the full rep.
+setup:
+  - Lie on a bench holding two dumbbells together over your chest, palms facing each
+    other.
+  - Press the dumbbells into one another.
+steps:
+  - Keeping them squeezed together, lower them slowly to your chest.
+  - Pause at the bottom without letting the squeeze go.
+  - Press back up while still squeezing.
+cues:
+  - Squeeze so hard the chest shakes a little.
+  - Elbows stay fairly close to the body.
+mistakes:
+  - Letting the dumbbells separate.
+  - Going heavy and losing the squeeze.
+safety:
+  - Use less weight than you'd press normally; the squeeze does the work.
+breathing: Breathe in down, out up.
+videos:
+  youtube: https://www.youtube.com/watch?v=rHfxaP0iF1E
+tags: [chest, hybrid, press]
+notes: >-
+  Dumbbells pressed together the whole rep

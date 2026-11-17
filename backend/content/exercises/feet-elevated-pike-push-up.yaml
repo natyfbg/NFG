@@ -1,0 +1,39 @@
+slug: feet-elevated-pike-push-up
+name: Feet-Elevated Pike Push-Up
+status: draft
+level: advanced
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts]
+  secondary: [triceps, upper_chest, side_delts]
+equipment: []
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  A pike push-up with the feet on a bench or box. Raising the feet makes the body more
+  vertical, so it's closer to a handstand push-up.
+setup:
+  - Put the feet on a bench and the hands on the floor, then walk the hands back so the
+    hips are high and the torso is near vertical.
+steps:
+  - Lower the head toward the floor by bending the elbows.
+  - Touch lightly, pause.
+  - Press back up to straight arms.
+cues:
+  - Keep the hips over the hands.
+  - Look at the floor between the hands.
+mistakes:
+  - Hips drifting back so it becomes a push-up.
+  - Elbows flaring out.
+safety:
+  - Start with a low box and raise it over time.
+breathing: Breathe in down, out up.
+regressions: [pike-push-up]
+progressions: [wall-handstand-push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=whTTE5e0fNo
+tags: [bodyweight, home, push-up, shoulders]
+notes: >-
+  Your "Leg Raise Pike Push Up" / "elevated pike push ups". Feet on a chair or box

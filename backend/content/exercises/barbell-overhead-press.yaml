@@ -10,6 +10,7 @@ muscles:
   primary: [front_delts, side_delts]
   secondary: [triceps, upper_back, abs]
 equipment: [barbell]
+lists: [full_push, chest_focus, shoulder_focus]
 summary: >-
   Pressing a barbell from your shoulders to overhead while standing. A classic
   strength lift for the shoulders and a test of a strong, stable trunk.

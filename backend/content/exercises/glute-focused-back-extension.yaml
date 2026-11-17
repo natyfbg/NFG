@@ -1,0 +1,39 @@
+slug: glute-focused-back-extension
+name: Glute-Focused Back Extension
+status: draft
+level: beginner
+category: strength
+movement: hinge
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [glutes, hamstrings]
+  secondary: [lower_back]
+equipment: [machine]
+lists: [lower]
+summary: >-
+  A back extension done with a rounded upper back and the hips doing the work. Turns
+  the 45-degree bench into a glute exercise.
+setup:
+  - Set the pad just below the hip bones. Hook the feet in, point the toes out slightly.
+  - Round the upper back a little and cross the arms.
+steps:
+  - Hinge down at the hips until you feel the glutes and hamstrings stretch.
+  - Drive back up by squeezing the glutes, stopping with the body in a straight line.
+  - Pause at the top.
+cues:
+  - Push the hips into the pad.
+  - Don't arch the back at the top.
+mistakes:
+  - Hyperextending the back.
+  - Using the lower back instead of the glutes.
+safety:
+  - Keep the upper back rounded and stop at straight, not beyond.
+breathing: Breathe out as you come up.
+regressions: [back-extension]
+videos:
+  youtube: https://www.youtube.com/watch?v=nuK_lfO57rs
+tags: [glutes, gym, hinge]
+notes: >-
+  Same bench as Back Extension, but the hips do the work and the upper back stays
+  rounded

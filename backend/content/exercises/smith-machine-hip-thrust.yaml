@@ -1,0 +1,34 @@
+slug: smith-machine-hip-thrust
+name: Smith Machine Hip Thrust
+status: draft
+level: beginner
+category: strength
+movement: hinge
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [glutes]
+  secondary: [hamstrings]
+equipment: [smith, bench]
+lists: [lower]
+summary: >-
+  A hip thrust under the Smith bar. Easy to set up heavy and the bar can't roll.
+setup:
+  - Set the bar low. Sit with the upper back on a bench and the padded bar across the
+    hips, feet flat.
+steps:
+  - Unhook and drive the hips up until the body is straight.
+  - Squeeze the glutes.
+  - Lower under control.
+cues:
+  - Chin tucked.
+  - Drive through the heels.
+mistakes:
+  - Overarching at the top.
+  - Short reps.
+safety:
+  - Pad the bar and set the catches.
+breathing: Breathe out as you thrust.
+videos:
+  youtube: https://www.youtube.com/watch?v=s3N-i46gR8o
+tags: [glutes, gym, hip-thrust, smith-machine]

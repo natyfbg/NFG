@@ -1,0 +1,35 @@
+slug: band-lat-pulldown
+name: Band Lat Pulldown
+status: draft
+level: beginner
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats]
+  secondary: [biceps]
+equipment: [bands]
+summary: >-
+  A pulldown with a band anchored overhead. Vertical pulling at home with no bar.
+setup:
+  - Anchor the band high (door anchor or pull-up bar). Kneel or sit and hold the ends
+    overhead.
+steps:
+  - Pull the hands down to the sides of the chest, elbows to the ribs.
+  - Squeeze the lats.
+  - Return slowly.
+cues:
+  - Chest up, shoulders down.
+  - Keep tension on the band at the top.
+mistakes:
+  - Leaning back to pull.
+  - Letting the band go slack.
+safety:
+  - Check the anchor.
+breathing: Breathe out as you pull.
+videos:
+  youtube: https://www.youtube.com/watch?v=VxCt-KKvzBQ
+tags: [back, bands, hybrid, pulldown]
+notes: >-
+  Band anchored on the pull-up bar

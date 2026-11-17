@@ -1,0 +1,36 @@
+slug: rowing-machine
+name: Rowing Machine
+status: draft
+level: beginner
+category: cardio
+movement: cardio
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [lats, quads, glutes]
+  secondary: [upper_back, biceps, hamstrings]
+equipment: [cardio_machine]
+summary: >-
+  Pulling a handle in a smooth legs-back-arms sequence. Works almost every muscle and
+  is the most forgiving hard cardio for the joints.
+setup:
+  - Strap the feet in with the strap over the ball of the foot.
+  - Set the damper around 4–5. Grip the handle lightly.
+steps:
+  - "Catch: shins vertical, arms straight, chest up."
+  - "Drive: push with the legs, then lean the torso back slightly, then pull the handle
+    to the lower ribs."
+  - "Recovery: arms away, torso forward, then bend the knees back to the catch."
+  - Row 2,000 metres at a steady pace, or 250–500 m intervals with equal rest.
+cues:
+  - Legs, back, arms on the drive; arms, back, legs on the way back.
+  - The handle moves in a straight line.
+mistakes:
+  - Pulling with the arms before the legs have finished.
+  - Rounding the lower back at the catch.
+safety:
+  - Keep the stroke rate low (20–26) and the drive powerful rather than fast.
+breathing: Breathe out on the drive, in on the recovery.
+videos:
+  youtube: https://www.youtube.com/watch?v=Hw4pt9oXu_o
+tags: [cardio, conditioning, full-body, gym, intervals, steady]

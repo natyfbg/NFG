@@ -1,0 +1,36 @@
+slug: band-curl
+name: Band Curl
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [biceps]
+  secondary: [forearms]
+equipment: [bands]
+lists: [pull]
+summary: >-
+  Curls with a band under the feet. The band gets heavier at the top, where the biceps
+  squeeze hardest.
+setup:
+  - Stand on the middle of a band and hold the ends with palms forward, arms straight.
+steps:
+  - Curl the hands up to the shoulders.
+  - Squeeze.
+  - Lower slowly.
+cues:
+  - Elbows at the sides.
+  - Control the band on the way down.
+mistakes:
+  - Swinging.
+  - Letting the band snap back.
+safety:
+  - Check the band.
+breathing: Breathe out as you curl.
+videos:
+  youtube: https://www.youtube.com/watch?v=1-QRzbPL2Bw
+tags: [bands, biceps, curl, hybrid]
+notes: >-
+  Band under your feet. Hammer grip covered in the how-to

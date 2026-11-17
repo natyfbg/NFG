@@ -1,0 +1,35 @@
+slug: fire-hydrant
+name: Fire Hydrant
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [abductors, glutes]
+equipment: []
+summary: >-
+  From hands and knees, lifting one bent leg out to the side. Works the outer glutes
+  that stabilise the hips.
+setup:
+  - Start on hands and knees.
+steps:
+  - Keeping the knee bent, lift one leg out to the side as high as you can without
+    tilting the hips.
+  - Pause.
+  - Lower slowly. Switch legs after the set.
+cues:
+  - Keep the torso still.
+  - Think of lifting the knee, not the foot.
+mistakes:
+  - Tilting the hips to lift higher.
+  - Rushing.
+safety:
+  - Small, controlled range.
+breathing: Breathe out as you lift.
+videos:
+  youtube: https://www.youtube.com/watch?v=hdw6-OI6WUU
+tags: [bodyweight, glutes, home, unilateral]
+notes: >-
+  Outer hips

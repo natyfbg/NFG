@@ -1,0 +1,35 @@
+slug: barbell-shrug
+name: Barbell Shrug
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [traps]
+  secondary: [forearms]
+equipment: [barbell]
+lists: [pull]
+summary: >-
+  Shrugging the shoulders straight up while holding a barbell. The heaviest trap
+  builder.
+setup:
+  - Hold a barbell in front of the thighs with an overhand grip, shoulders back, arms
+    straight.
+steps:
+  - Shrug the shoulders straight up toward the ears.
+  - Hold for a second at the top.
+  - Lower slowly.
+cues:
+  - Straight up and down, no rolling.
+  - Keep the arms straight.
+mistakes:
+  - Rolling the shoulders.
+  - Bending the elbows to help.
+safety:
+  - Use straps if grip fails before the traps do.
+breathing: Breathe out as you shrug.
+videos:
+  youtube: https://www.youtube.com/watch?v=tuNT1yeZUx0
+tags: [back, barbell, gym, shrug]

@@ -1,0 +1,37 @@
+slug: close-grip-bench-press
+name: Close-Grip Bench Press
+status: draft
+level: intermediate
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [triceps]
+  secondary: [chest, front_delts]
+equipment: [barbell, bench]
+summary: >-
+  A bench press with the hands about shoulder-width apart. The narrow grip keeps the
+  elbows tucked and makes the triceps do most of the work.
+setup:
+  - Lie on a flat bench, eyes under the bar. Grip at shoulder-width.
+  - Shoulder blades back and down, feet flat.
+steps:
+  - Unrack and hold the bar over your lower chest.
+  - Lower it to the lower chest with the elbows tucked close to the body.
+  - Press back up, pushing the bar slightly back over the shoulders.
+cues:
+  - Elbows stay close to the ribs.
+  - Wrists straight over the forearms.
+mistakes:
+  - Gripping so narrow the wrists bend.
+  - Flaring the elbows.
+safety:
+  - Use a spotter or safety pins.
+breathing: Breathe in down, out up.
+regressions: [bench-dip]
+videos:
+  youtube: https://www.youtube.com/watch?v=a2G3IdaTcPU
+tags: [barbell, gym, press, triceps]
+notes: >-
+  Barbell version of your EZ-Bar Close-Grip Press

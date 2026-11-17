@@ -1,0 +1,40 @@
+slug: cable-rope-face-pull
+name: Cable Rope Face Pull
+status: draft
+level: beginner
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [rear_delts]
+  secondary: [upper_back, traps]
+equipment: [cable]
+lists: [full_push, shoulder_focus, pull]
+summary: >-
+  Pulling a rope toward the face with the elbows high and the hands pulling apart. The
+  best exercise for rear delts and shoulder health.
+setup:
+  - Set the pulley at face height with a rope. Grip with palms facing in, thumbs toward
+    you.
+  - Step back so the arms are straight, staggered stance.
+steps:
+  - Pull the rope toward your face, driving the elbows out and back and pulling the ends
+    apart.
+  - Finish with the hands beside the ears, squeezing the rear delts and upper back.
+  - Return slowly.
+cues:
+  - Elbows high and wide.
+  - Pull the rope apart as you pull it in.
+mistakes:
+  - Elbows dropping low so it becomes a row.
+  - Leaning back to use bodyweight.
+safety:
+  - Light weight and high reps; never heave.
+breathing: Breathe out as you pull.
+regressions: [band-face-pull]
+videos:
+  youtube: https://www.youtube.com/watch?v=4CXhdbWOdzQ
+tags: [cable, face-pull, gym, shoulders]
+notes: >-
+  Standing. Your "cable face pulls" / "standing face pulls"

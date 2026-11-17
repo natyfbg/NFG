@@ -1,0 +1,33 @@
+slug: machine-lateral-raise
+name: Machine Lateral Raise
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [side_delts]
+equipment: [machine]
+lists: [full_push, shoulder_focus]
+summary: >-
+  A lateral raise on the machine with the pads against the upper arms. The machine
+  fixes the path, so every rep hits the side delts.
+setup:
+  - Set the seat so the shoulders line up with the pivot. Place the arms under the pads.
+steps:
+  - Raise the arms out to the sides until the upper arms are level with the shoulders.
+  - Pause.
+  - Lower slowly.
+cues:
+  - Push with the elbows, not the hands.
+  - Keep the shoulders down.
+mistakes:
+  - Lifting too high and shrugging.
+  - Letting the weight drop.
+safety:
+  - Set the seat height first.
+breathing: Breathe out as you raise.
+videos:
+  youtube: https://www.youtube.com/watch?v=uh1UO-ieTYQ
+tags: [gym, machine, raise, shoulders]

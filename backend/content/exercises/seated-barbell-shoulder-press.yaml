@@ -1,0 +1,36 @@
+slug: seated-barbell-shoulder-press
+name: Seated Barbell Shoulder Press
+status: draft
+level: intermediate
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts, side_delts]
+  secondary: [triceps, upper_back]
+equipment: [barbell, bench]
+summary: >-
+  Pressing a barbell overhead from a seated bench. The seat removes the legs and back
+  from the lift so the shoulders carry the full load.
+setup:
+  - Set an upright bench in a rack with the bar at shoulder height. Grip slightly wider
+    than the shoulders.
+  - Sit tall with the feet flat, shoulder blades down.
+steps:
+  - Unrack and hold the bar at the upper chest.
+  - Press it straight up, moving the head back slightly to let it pass.
+  - Lock out overhead, then lower to the upper chest.
+cues:
+  - Bar travels in a straight line over the shoulders.
+  - Brace the core; don't let the lower back arch.
+mistakes:
+  - Flaring the elbows far out.
+  - Pressing the bar forward instead of up.
+safety:
+  - Use a rack with safety pins or a spotter.
+breathing: Breathe in down, out up.
+regressions: [dumbbell-shoulder-press]
+videos:
+  youtube: https://www.youtube.com/watch?v=OoE0pJm4Z_4
+tags: [barbell, gym, press, shoulders]

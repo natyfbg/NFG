@@ -1,0 +1,38 @@
+slug: ez-bar-curl
+name: EZ-Bar Curl
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [biceps]
+  secondary: [forearms]
+equipment: [barbell]
+lists: [pull]
+summary: >-
+  A standing curl with the EZ bar. The angled grip sits naturally in the hands and is
+  kinder on the wrists than a straight bar.
+setup:
+  - Stand holding the EZ bar on the outer angled grips, arms straight, elbows at your
+    sides.
+steps:
+  - Curl the bar up to the shoulders without moving the elbows.
+  - Squeeze the biceps at the top.
+  - Lower slowly to straight arms.
+cues:
+  - Elbows pinned to the ribs.
+  - No swinging from the hips.
+mistakes:
+  - Leaning back to heave the bar.
+  - Half reps that skip the stretch.
+safety:
+  - Keep the wrists straight.
+breathing: Breathe out as you curl.
+regressions: [dumbbell-curl]
+videos:
+  youtube: https://www.youtube.com/watch?v=7lZ78fo-yUA
+tags: [barbell, biceps, curl, gym]
+notes: >-
+  Easier on the wrists than a straight bar

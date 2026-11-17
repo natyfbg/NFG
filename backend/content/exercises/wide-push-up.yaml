@@ -1,0 +1,38 @@
+slug: wide-push-up
+name: Wide Push-Up
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [front_delts, triceps]
+equipment: []
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  A push-up with the hands set well outside the shoulders. The wider hand position
+  shifts more of the work to the chest and less to the triceps.
+setup:
+  - Start in a plank with your hands about one and a half times shoulder-width apart,
+    fingers turned slightly out.
+  - Body in a straight line, core braced.
+steps:
+  - Lower your chest between your hands with elbows at about 60 degrees from the body.
+  - Pause just above the floor.
+  - Press back up and squeeze the chest at the top.
+cues:
+  - Feel the stretch across the chest at the bottom.
+  - "Keep the shoulder blades moving: apart at the top, together at the bottom."
+mistakes:
+  - Elbows flaring straight out to 90 degrees.
+  - Hips sagging as the wider stance tires you.
+safety:
+  - If the front of the shoulders pinches, bring the hands in a little.
+breathing: Breathe in down, out up.
+regressions: [push-up]
+progressions: [deficit-push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=Z8nUVpSZAhE
+tags: [chest, home, push-up]

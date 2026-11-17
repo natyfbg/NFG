@@ -1,0 +1,35 @@
+slug: band-lateral-raise
+name: Band Lateral Raise
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [side_delts]
+  secondary: [traps]
+equipment: [bands]
+summary: >-
+  Lateral raises with a band under the feet. Tension climbs through the rep, so the
+  top of the raise is the hardest part.
+setup:
+  - Stand on the middle of a light band and hold the ends at your sides.
+steps:
+  - Raise the arms out to the sides to shoulder height.
+  - Pause at the top.
+  - Lower slowly.
+cues:
+  - Soft elbows, lead with the elbows.
+  - Don't shrug.
+mistakes:
+  - Standing with the feet so wide the band is too heavy.
+  - Leaning back.
+safety:
+  - Check the band before use.
+breathing: Breathe out as you raise.
+videos:
+  youtube: https://www.youtube.com/watch?v=RcAWfZT3HiU
+tags: [bands, hybrid, raise, shoulders]
+notes: >-
+  Side-delt option without dumbbells

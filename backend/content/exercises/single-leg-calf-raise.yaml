@@ -1,0 +1,36 @@
+slug: single-leg-calf-raise
+name: Single-Leg Calf Raise
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: unilateral
+muscles:
+  primary: [calves]
+equipment: []
+lists: [lower]
+summary: >-
+  A calf raise on one leg. Doubles the load and shows up any side-to-side difference.
+setup:
+  - Stand on one foot on the edge of a step, heel hanging off, holding a wall for
+    balance.
+steps:
+  - Rise as high as you can onto the ball of the foot.
+  - Pause at the top.
+  - Lower slowly until the heel is below the step. Switch legs after the set.
+cues:
+  - Full range, top and bottom.
+  - Keep the knee straight.
+mistakes:
+  - Bouncing.
+  - Bending the knee.
+safety:
+  - Hold something for balance.
+breathing: Breathe out as you rise.
+regressions: [standing-calf-raise]
+videos:
+  youtube: https://www.youtube.com/watch?v=Ux47hU-ePXs
+tags: [calves, home, unilateral]
+notes: >-
+  On a step. Hold a dumbbell to progress

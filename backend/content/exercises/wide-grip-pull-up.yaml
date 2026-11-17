@@ -1,0 +1,35 @@
+slug: wide-grip-pull-up
+name: Wide-Grip Pull-Up
+status: draft
+level: intermediate
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats]
+  secondary: [upper_back, biceps]
+equipment: [pullup_bar]
+lists: [pull]
+summary: >-
+  A pull-up with the hands well outside the shoulders. The wide grip shortens the
+  range and puts the emphasis on the upper lats.
+setup:
+  - Grip the bar overhand about one and a half times shoulder-width.
+steps:
+  - Pull the chest toward the bar, driving the elbows down and out.
+  - Pause with the chin over.
+  - Lower to straight arms.
+cues:
+  - Pull the elbows to the back pockets.
+  - Shoulders down, not shrugged.
+mistakes:
+  - Gripping so wide the shoulders strain.
+  - Half reps.
+safety:
+  - Narrow the grip a little if the shoulders feel pinched at the bottom.
+breathing: Breathe out as you pull.
+regressions: [pull-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=9A6NPVPzkqQ
+tags: [back, home, pull-up]

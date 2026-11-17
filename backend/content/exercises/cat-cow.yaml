@@ -1,0 +1,34 @@
+slug: cat-cow
+name: Cat-Cow
+status: draft
+level: beginner
+category: mobility
+movement: mobility
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [lower_back, upper_back]
+  secondary: [abs]
+equipment: []
+summary: >-
+  Arching and rounding the spine on hands and knees. The simplest way to loosen a
+  stiff back and get the core and hips moving before training.
+setup:
+  - Start on hands and knees with wrists under shoulders and knees under hips.
+  - Spine neutral, gaze at the floor.
+steps:
+  - "Cow: drop your belly, lift your chest and tailbone, look slightly up."
+  - "Cat: push the floor away, round your upper back and tuck your tailbone and chin."
+  - Flow slowly between the two for 8–10 rounds.
+cues:
+  - Move one vertebra at a time rather than hinging at one spot.
+  - Keep the arms straight; the movement is in the spine.
+mistakes:
+  - Only moving the neck and not the back.
+  - Rushing through the positions.
+safety:
+  - Keep the range comfortable. Skip the arch (cow) if it bothers your lower back.
+breathing: Breathe in for cow, out for cat.
+videos:
+  youtube: https://www.youtube.com/watch?v=KT6Fk7FWYfM
+tags: [back, home, mobility, stretching, warm-up]

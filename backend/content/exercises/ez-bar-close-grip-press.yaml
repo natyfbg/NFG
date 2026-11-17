@@ -1,0 +1,35 @@
+slug: ez-bar-close-grip-press
+name: EZ-Bar Close-Grip Press
+status: draft
+level: intermediate
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [triceps]
+  secondary: [chest, front_delts]
+equipment: [barbell, bench]
+lists: [full_push]
+summary: >-
+  A close-grip press using the angled EZ bar. The angled grip is easier on the wrists
+  than a straight bar.
+setup:
+  - Lie on a flat bench holding the EZ bar on the inner grips, palms angled in.
+  - Shoulder blades back, feet flat.
+steps:
+  - Lower the bar to the lower chest with the elbows tucked.
+  - Pause briefly.
+  - Press back up to lockout.
+cues:
+  - Keep the elbows pointing forward, not out.
+  - Touch the chest lightly.
+mistakes:
+  - Bouncing the bar.
+  - Letting the elbows drift out.
+safety:
+  - Keep a thumbs-around grip.
+breathing: Breathe in down, out up.
+videos:
+  youtube: https://www.youtube.com/watch?v=3U94_ZiAwfM
+tags: [barbell, gym, press, triceps]

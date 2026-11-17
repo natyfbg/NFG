@@ -1,0 +1,35 @@
+slug: burpee
+name: Burpee
+status: draft
+level: intermediate
+category: cardio
+movement: cardio
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [quads, chest, front_delts]
+  secondary: [triceps, abs, glutes]
+equipment: []
+summary: >-
+  Drop to a push-up, jump the feet back in and leap. The classic whole-body
+  conditioning move that needs no equipment and no excuses.
+setup:
+  - Stand with feet shoulder-width apart.
+steps:
+  - Squat down and put your hands on the floor.
+  - Jump the feet back to a plank and, if you like, do a push-up.
+  - Jump the feet back to the hands, stand and jump with the arms overhead.
+  - Land softly and go straight into the next rep.
+cues:
+  - Brace the core when you land in the plank; don't let the hips sag.
+  - Land quietly from the jump with soft knees.
+mistakes:
+  - Belly-flopping into the plank.
+  - Rounding the back on the way up.
+safety:
+  - Step the feet back and in instead of jumping if your back or knees need a gentler
+    version.
+breathing: Breathe out on the jump.
+videos:
+  youtube: https://www.youtube.com/watch?v=fZx6nxKMq4E
+tags: [cardio, conditioning, full-body, home, intervals]

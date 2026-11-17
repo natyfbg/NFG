@@ -1,0 +1,34 @@
+slug: seated-dumbbell-lateral-raise
+name: Seated Dumbbell Lateral Raise
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [side_delts]
+  secondary: [traps]
+equipment: [dumbbell, bench]
+lists: [full_push, shoulder_focus]
+summary: >-
+  Lateral raises sitting on a bench. Sitting removes the leg swing, so the side delts
+  have to do all the work.
+setup:
+  - Sit on the end of a bench with dumbbells at your sides, slight bend in the elbows.
+steps:
+  - Raise the arms out to the sides until they're level with the shoulders.
+  - Pause at the top.
+  - Lower slowly.
+cues:
+  - Lead with the elbows, not the hands.
+  - Pinkies slightly higher than thumbs at the top.
+mistakes:
+  - Shrugging the traps.
+  - Swinging the torso.
+safety:
+  - Light weight, strict form.
+breathing: Breathe out as you raise.
+videos:
+  youtube: https://www.youtube.com/watch?v=yKAxVcU3nfw
+tags: [hybrid, raise, shoulders]

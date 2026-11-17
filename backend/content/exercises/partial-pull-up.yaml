@@ -1,0 +1,39 @@
+slug: partial-pull-up
+name: Partial Pull-Up
+status: draft
+level: beginner
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats]
+  secondary: [biceps, upper_back]
+equipment: [pullup_bar]
+lists: [pull]
+summary: >-
+  Pull-ups through the range you can manage, from the top down. Builds the strength to
+  complete the full rep.
+setup:
+  - Hang from the bar with a grip slightly wider than the shoulders.
+  - Or start from a box at the top and lower to a set point.
+steps:
+  - Pull up as far as you can, even if it's only a few inches.
+  - Hold the highest point for a second.
+  - Lower under control. Add range each week.
+cues:
+  - Start every rep by pulling the shoulders down.
+  - Chest toward the bar.
+mistakes:
+  - Swinging to gain height.
+  - Letting the shoulders shrug up at the bottom.
+safety:
+  - Keep the range you can control; progress by adding inches, not reps.
+breathing: Breathe out as you pull.
+regressions: [negative-pull-up]
+progressions: [pull-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=ivUm1v0irDI
+tags: [back, home, pull-up]
+notes: >-
+  Your "Semi Pull Up" (Home) and "partial pull ups" (Gym), merged

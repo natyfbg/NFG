@@ -1,0 +1,35 @@
+slug: machine-shoulder-press
+name: Machine Shoulder Press
+status: draft
+level: beginner
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts, side_delts]
+  secondary: [triceps]
+equipment: [machine]
+summary: >-
+  An overhead press on a machine. Fixed path and easy loading make it a safe way to
+  press heavy without a spotter.
+setup:
+  - Set the seat so the handles are at shoulder height. Sit back fully, feet flat.
+steps:
+  - Press the handles up until the arms are straight.
+  - Pause.
+  - Lower under control to shoulder height.
+cues:
+  - Keep the back against the pad.
+  - Wrists straight, elbows under the hands.
+mistakes:
+  - Seat too low, starting with the handles too high.
+  - Shrugging the shoulders at the top.
+safety:
+  - Set the seat before loading.
+breathing: Breathe out as you press.
+videos:
+  youtube: https://www.youtube.com/watch?v=_V5TXzPyACk
+tags: [gym, machine, press, shoulders]
+notes: >-
+  Your "machine shoulder press" and "shoulder press machine", merged

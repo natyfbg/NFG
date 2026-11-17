@@ -1,0 +1,36 @@
+slug: standing-cable-chest-press
+name: Standing Cable Chest Press
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [front_delts, triceps, abs]
+equipment: [cable]
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  Pressing two cable handles forward from a staggered stance. The cables load the
+  chest through the whole range while the core keeps you upright.
+setup:
+  - Set both pulleys at chest height and hold a handle in each hand.
+  - Take a staggered stance, step forward so the cables are taut, elbows bent at your
+    sides.
+steps:
+  - Press both handles forward until your arms are straight in front of your chest.
+  - Squeeze the chest and bring the hands slightly together.
+  - Return under control until the elbows are just behind the body.
+cues:
+  - Brace the core; the cables try to pull you back.
+  - Keep the shoulders down.
+mistakes:
+  - Leaning far forward to use bodyweight.
+  - Letting the shoulders roll forward at the end.
+safety:
+  - Keep the stance stable and the weight moderate; balance is part of the exercise.
+breathing: Breathe out as you press.
+videos:
+  youtube: https://www.youtube.com/watch?v=QhxFLOiNN8g
+tags: [cable, chest, gym, press]

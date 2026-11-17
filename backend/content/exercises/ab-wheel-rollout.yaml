@@ -1,0 +1,35 @@
+slug: ab-wheel-rollout
+name: Ab Wheel Rollout
+status: draft
+level: intermediate
+category: strength
+movement: core
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [obliques, lats, front_delts]
+equipment: [ab_wheel]
+summary: >-
+  Rolling an ab wheel out from the knees and pulling it back. One of the hardest
+  anti-extension core moves.
+setup:
+  - Kneel on a pad holding the wheel under the shoulders.
+steps:
+  - Roll the wheel forward, extending the body as far as you can without the back
+    arching.
+  - Pause.
+  - Pull the wheel back by bracing the abs, not by sitting the hips back.
+cues:
+  - Tuck the tailbone and brace before you roll.
+  - Only go as far as the back stays flat.
+mistakes:
+  - Arching the lower back at the end.
+  - Piking the hips back to return.
+safety:
+  - Start with short rollouts and lengthen over weeks.
+breathing: Breathe out as you roll out and brace.
+regressions: [plank]
+videos:
+  youtube: https://www.youtube.com/watch?v=NbudTqiwguk
+tags: [abs, core, hybrid]

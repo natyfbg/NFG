@@ -1,0 +1,32 @@
+slug: ab-crunch-machine
+name: Ab Crunch Machine
+status: draft
+level: beginner
+category: strength
+movement: core
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [abs]
+equipment: [machine]
+summary: >-
+  A crunch on the machine with the pads on the chest or shoulders. Easy to load and
+  strict.
+setup:
+  - Set the seat so the pads sit at the upper chest. Hold the handles and sit tall.
+steps:
+  - Curl the ribs down toward the hips, pulling the pads with the abs.
+  - Squeeze.
+  - Return slowly.
+cues:
+  - Crunch with the abs, not the arms.
+  - Keep the neck relaxed.
+mistakes:
+  - Pulling with the arms.
+  - Rushing.
+safety:
+  - Set the seat so the pivot lines up with the hips.
+breathing: Breathe out as you crunch.
+videos:
+  youtube: https://www.youtube.com/watch?v=tE-X4SZtAio
+tags: [abs, core, gym, machine]

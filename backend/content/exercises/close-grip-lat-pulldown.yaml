@@ -1,0 +1,34 @@
+slug: close-grip-lat-pulldown
+name: Close-Grip Lat Pulldown
+status: draft
+level: beginner
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats]
+  secondary: [biceps, upper_back]
+equipment: [cable]
+lists: [pull]
+summary: >-
+  A pulldown with a narrow V-handle. The close neutral grip gives a longer range and
+  loads the lower lats and biceps.
+setup:
+  - Attach the V-handle. Lock the thighs under the pad and sit tall.
+steps:
+  - Pull the handle to the upper chest, elbows close to the body.
+  - Squeeze the lats.
+  - Return slowly to straight arms.
+cues:
+  - Chest up as the handle arrives.
+  - Don't let the shoulders roll forward at the top.
+mistakes:
+  - Leaning back and rowing.
+  - Curling it with the biceps.
+safety:
+  - Full stretch at the top, no bouncing.
+breathing: Breathe out as you pull.
+videos:
+  youtube: https://www.youtube.com/watch?v=-HA56qLRK84
+tags: [back, cable, gym, pulldown]

@@ -1,0 +1,37 @@
+slug: iron-man-fly
+name: Iron Man Fly
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [lower_back, upper_back]
+  secondary: [rear_delts, traps, glutes]
+equipment: []
+lists: [pull]
+summary: >-
+  Lying face down and raising straight arms out to the sides with the thumbs up, like
+  a superhero in flight. Rear delts and mid-back with no load.
+setup:
+  - Lie face down with the arms out to the sides, thumbs up.
+steps:
+  - Lift the arms toward the ceiling, squeezing the shoulder blades together.
+  - Pause.
+  - Lower slowly.
+cues:
+  - Thumbs up, elbows straight.
+  - Forehead down.
+mistakes:
+  - Shrugging.
+  - Lifting the chest.
+safety:
+  - Bodyweight only.
+breathing: Breathe out as you lift.
+videos:
+  youtube: https://www.youtube.com/watch?v=PUECe6k7DvY
+tags: [back, bodyweight, home, upper-back]
+notes: >-
+  A superman with the arms swept back by your sides in a V, instead of straight
+  forward

@@ -1,0 +1,38 @@
+slug: triceps-dip
+name: Triceps Dip
+status: draft
+level: intermediate
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [triceps]
+  secondary: [chest, front_delts]
+equipment: [dip_bars]
+summary: >-
+  Dips on parallel bars with an upright torso and the elbows close. Upright is the
+  triceps version; the lean is the chest version.
+setup:
+  - Support yourself on the bars with straight arms, torso upright, legs hanging or
+    ankles crossed behind.
+steps:
+  - Lower by bending the elbows straight back until the upper arms are about parallel to
+    the floor.
+  - Pause.
+  - Press back up to lockout.
+cues:
+  - Stay tall; eyes forward.
+  - Elbows point back, not out.
+mistakes:
+  - Going so deep the shoulders roll forward.
+  - Leaning forward, which shifts the work to the chest.
+safety:
+  - Find the depth where the front of the shoulders stays comfortable.
+breathing: Breathe in down, out up.
+regressions: [bench-dip, assisted-dip]
+videos:
+  youtube: https://www.youtube.com/watch?v=J3WYrjNDLI4
+tags: [dip, gym, triceps]
+notes: >-
+  Upright torso. Chest Dip is the forward-lean version

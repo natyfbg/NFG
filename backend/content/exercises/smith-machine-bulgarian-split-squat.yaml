@@ -1,0 +1,36 @@
+slug: smith-machine-bulgarian-split-squat
+name: Smith Machine Bulgarian Split Squat
+status: draft
+level: intermediate
+category: strength
+movement: lunge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [adductors, hamstrings]
+equipment: [smith, bench]
+lists: [lower]
+summary: >-
+  A Bulgarian split squat under the Smith bar. Removes the balance challenge so you
+  can load the front leg heavily.
+setup:
+  - Set the bar at shoulder height. Stand under it with one foot forward and the other
+    on a bench behind you.
+steps:
+  - Unhook and lower the back knee toward the floor.
+  - Pause at the bottom.
+  - Drive through the front foot to stand. Switch legs after the set.
+cues:
+  - Front shin stays vertical.
+  - Torso upright.
+mistakes:
+  - Front foot too close to the bar.
+  - Pushing off the back foot.
+safety:
+  - Set the safety catches below the bottom position.
+breathing: Breathe in down, out up.
+regressions: [bulgarian-split-squat]
+videos:
+  youtube: https://www.youtube.com/watch?v=adHTwUipN1o
+tags: [gym, lunge, quads, smith-machine]

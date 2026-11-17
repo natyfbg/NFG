@@ -1,0 +1,39 @@
+slug: archer-push-up
+name: Archer Push-Up
+status: draft
+level: advanced
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [triceps, front_delts]
+equipment: []
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  A wide push-up where you lower toward one hand while the other arm stays straight
+  out to the side. It loads one arm at a time and is the bridge to one-arm push-ups.
+setup:
+  - Take a very wide push-up position, hands turned slightly out.
+  - Body straight, core tight.
+steps:
+  - Bend one elbow and lower your chest toward that hand, letting the other arm
+    straighten out to the side.
+  - Press back to the centre.
+  - Alternate sides, or finish all reps on one side.
+cues:
+  - The straight arm only balances; the bent arm does the pressing.
+  - Hips stay square to the floor.
+mistakes:
+  - Rotating the torso toward the straight arm.
+  - Bending the 'straight' arm to help.
+safety:
+  - Keep the straight arm slightly soft at the elbow and inside your comfortable range.
+breathing: Breathe in down, out up.
+regressions: [wide-push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=rvHTofenk-Y
+tags: [chest, home, push-up, unilateral]
+notes: >-
+  One side at a time

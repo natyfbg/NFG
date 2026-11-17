@@ -1,0 +1,37 @@
+slug: dumbbell-hip-thrust
+name: Dumbbell Hip Thrust
+status: draft
+level: beginner
+category: strength
+movement: hinge
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [glutes]
+  secondary: [hamstrings]
+equipment: [dumbbell, bench]
+summary: >-
+  A hip thrust with a dumbbell across the hips and the upper back on a bench. The best
+  glute exercise at home.
+setup:
+  - Sit on the floor with the upper back against a bench and a dumbbell across the hips
+    (use a pad). Feet flat, knees bent.
+steps:
+  - Drive through the heels and lift the hips until the body is straight from shoulders
+    to knees.
+  - Squeeze the glutes hard at the top.
+  - Lower under control.
+cues:
+  - Chin tucked, ribs down.
+  - Shins vertical at the top.
+mistakes:
+  - Arching the lower back at the top.
+  - Feet too far forward.
+safety:
+  - Pad the dumbbell.
+breathing: Breathe out as you thrust.
+regressions: [glute-bridge]
+progressions: [barbell-hip-thrust]
+videos:
+  youtube: https://www.youtube.com/watch?v=N4JVnHFOq50
+tags: [glutes, hip-thrust, hybrid]

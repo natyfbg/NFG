@@ -1,0 +1,36 @@
+slug: hip-adduction-machine
+name: Hip Adduction Machine
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [adductors]
+equipment: [machine]
+lists: [lower]
+summary: >-
+  Squeezing the legs together against the pads on the adductor machine. Direct
+  inner-thigh work that supports squats and stability.
+setup:
+  - Sit with the pads on the inside of the knees and set the start width to a
+    comfortable stretch.
+steps:
+  - Squeeze the legs together.
+  - Hold for a second.
+  - Open slowly.
+cues:
+  - Sit tall.
+  - Control the return.
+mistakes:
+  - Starting too wide.
+  - Letting the weight open the legs fast.
+safety:
+  - Set a comfortable starting width.
+breathing: Breathe out as you squeeze.
+videos:
+  youtube: https://www.youtube.com/watch?v=ScqpbvOZWe8
+tags: [adductors, gym, machine, quads]
+notes: >-
+  Inner thighs. The app files adductors under Quads

@@ -1,0 +1,39 @@
+slug: cable-x-fly
+name: Cable X Fly
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [rear_delts]
+  secondary: [upper_back]
+equipment: [cable]
+lists: [full_push, shoulder_focus]
+summary: >-
+  A rear-delt fly with crossed cables, pulling the hands out and back in an X. The
+  crossed setup gives a longer range than a dumbbell fly.
+setup:
+  - Set both pulleys high and cross the cables. Hold the handles with arms crossed in
+    front of you.
+steps:
+  - Pull the hands out and back in an X until the arms are out to the sides, slightly
+    behind the body.
+  - Squeeze the rear delts and upper back.
+  - Return slowly.
+cues:
+  - Keep the elbows slightly bent and high.
+  - Chest up.
+mistakes:
+  - Using the arms to bend and pull.
+  - Letting the shoulders roll forward on the return.
+safety:
+  - Light weight.
+breathing: Breathe out as you open.
+videos:
+  youtube: https://www.youtube.com/watch?v=FcCNakXguzc
+tags: [cable, fly, gym, shoulders]
+notes: >-
+  Rear-delt fly with both arms at once, cables crossed. Pulleys high or low: one
+  entry, and the how-to covers both

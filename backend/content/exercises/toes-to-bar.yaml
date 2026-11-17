@@ -1,0 +1,34 @@
+slug: toes-to-bar
+name: Toes-to-Bar
+status: draft
+level: advanced
+category: strength
+movement: core
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [hip_flexors, lats]
+equipment: [pullup_bar]
+summary: >-
+  Raising the feet all the way to the bar from a hang. The top of the leg-raise
+  ladder; needs a big range and strong grip.
+setup:
+  - Hang from the bar with straight arms.
+steps:
+  - Raise the legs and touch the toes to the bar.
+  - Lower under control.
+  - Keep the swing small between reps.
+cues:
+  - Pull down on the bar slightly as the legs rise.
+  - Tilt the pelvis up.
+mistakes:
+  - Big swings.
+  - Dropping the legs.
+safety:
+  - Master hanging leg raises first.
+breathing: Breathe out as you raise.
+regressions: [hanging-leg-raise]
+videos:
+  youtube: https://www.youtube.com/watch?v=iNouXsNdslw
+tags: [abs, core, home]

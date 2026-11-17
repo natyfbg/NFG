@@ -1,0 +1,37 @@
+slug: landmine-row
+name: Landmine Row
+status: draft
+level: intermediate
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats, upper_back]
+  secondary: [biceps, rear_delts]
+equipment: [barbell]
+lists: [pull]
+summary: >-
+  A one-arm row with a barbell set in a landmine. The arc of the bar gives a natural
+  row path and the landmine takes less space than dumbbells.
+setup:
+  - Stand beside the loaded end of a landmine bar, hinge at the hips with a flat back,
+    hold the bar just behind the sleeve.
+steps:
+  - Row the bar up to the hip.
+  - Squeeze the lat.
+  - Lower slowly. Switch sides after the set.
+cues:
+  - Elbow close to the body.
+  - Don't rotate the torso.
+mistakes:
+  - Twisting to row.
+  - Rounding the back.
+safety:
+  - Keep the stance stable.
+breathing: Breathe out as you row.
+videos:
+  youtube: https://www.youtube.com/watch?v=GP3EJLg89Bo
+tags: [back, barbell, gym, row, unilateral]
+notes: >-
+  One arm. Close to a T-Bar Row done on a landmine

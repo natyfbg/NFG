@@ -1,0 +1,35 @@
+slug: reverse-pec-deck-fly
+name: Reverse Pec Deck Fly
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [rear_delts]
+  secondary: [upper_back]
+equipment: [machine]
+lists: [full_push, shoulder_focus]
+summary: >-
+  A reverse fly on the pec deck, facing the pad. The machine path makes it easy to
+  isolate the rear delts.
+setup:
+  - Set the handles to the rear position. Sit facing the pad with the chest against it,
+    arms straight in front at shoulder height.
+steps:
+  - Pull the handles out and back until the arms are out to the sides.
+  - Squeeze the rear delts.
+  - Return slowly.
+cues:
+  - Slight elbow bend, held.
+  - Keep the chest on the pad.
+mistakes:
+  - Shrugging.
+  - Pulling with bent arms like a row.
+safety:
+  - Set the seat so the handles are at shoulder height.
+breathing: Breathe out as you open.
+videos:
+  youtube: https://www.youtube.com/watch?v=Y7ZKBP5bMwg
+tags: [fly, gym, machine, shoulders]

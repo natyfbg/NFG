@@ -10,6 +10,7 @@ muscles:
   primary: [chest]
   secondary: [triceps, front_delts, abs]
 equipment: []
+lists: [full_push, chest_focus, shoulder_focus]
 summary: >-
   A push-up with your hands raised on a bench, counter or step. The higher the
   surface, the easier it gets, so it's the best way to build up to full push-ups.

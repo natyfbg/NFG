@@ -1,0 +1,33 @@
+slug: triceps-extension-machine
+name: Triceps Extension Machine
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [triceps]
+equipment: [machine]
+summary: >-
+  A seated triceps extension on a machine. Fixed path, easy to load, and kind to the
+  elbows.
+setup:
+  - Set the seat so the elbows line up with the machine's pivot. Grip the handles with
+    the elbows on the pads.
+steps:
+  - Extend the arms until straight.
+  - Squeeze the triceps.
+  - Return slowly without letting the weight stack touch.
+cues:
+  - Keep the elbows pressed into the pads.
+  - Don't lean back.
+mistakes:
+  - Elbows lifting off the pads.
+  - Short, fast reps.
+safety:
+  - Line the elbows up with the pivot before loading weight.
+breathing: Breathe out as you extend.
+videos:
+  youtube: https://www.youtube.com/watch?v=hJeS3MY4Drs
+tags: [extension, gym, machine, triceps]

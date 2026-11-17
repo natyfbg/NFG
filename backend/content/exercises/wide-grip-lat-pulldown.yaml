@@ -1,0 +1,37 @@
+slug: wide-grip-lat-pulldown
+name: Wide-Grip Lat Pulldown
+status: draft
+level: beginner
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats]
+  secondary: [upper_back, biceps]
+equipment: [cable]
+lists: [pull]
+summary: >-
+  A pulldown with a wide overhand grip. Emphasises the upper and outer lats and is the
+  standard introduction to vertical pulling.
+setup:
+  - Set the thigh pad so your legs are locked in. Grip the wide bar outside the
+    shoulders.
+  - Sit tall with a slight lean back, chest up.
+steps:
+  - Pull the bar to the upper chest, driving the elbows down and back.
+  - Squeeze the lats at the bottom.
+  - Return slowly until the arms are straight.
+cues:
+  - Pull the elbows to the back pockets.
+  - Shoulders down first.
+mistakes:
+  - Leaning far back and rowing it.
+  - Pulling behind the neck.
+safety:
+  - Keep the bar in front of the face.
+breathing: Breathe out as you pull down.
+progressions: [pull-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=m6ZEZAmEa6M
+tags: [back, cable, gym, pulldown]

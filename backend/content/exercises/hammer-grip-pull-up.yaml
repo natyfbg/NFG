@@ -1,0 +1,37 @@
+slug: hammer-grip-pull-up
+name: Hammer Grip Pull-Up
+status: draft
+level: intermediate
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats]
+  secondary: [biceps, forearms, upper_back]
+equipment: [pullup_bar]
+lists: [pull]
+summary: >-
+  A pull-up with the palms facing each other on parallel handles. The neutral grip is
+  the most comfortable for the wrists and shoulders.
+setup:
+  - Hang from parallel handles with the palms facing each other.
+steps:
+  - Pull the chest up to the handles.
+  - Pause at the top.
+  - Lower to straight arms.
+cues:
+  - Elbows drive down to the ribs.
+  - Chest up.
+mistakes:
+  - Swinging.
+  - Rounding the shoulders forward at the top.
+safety:
+  - Good option if standard pull-ups bother the elbows.
+breathing: Breathe out as you pull.
+regressions: [chin-up, pull-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=A3kl7Do0a3g
+tags: [back, home, pull-up]
+notes: >-
+  Aka neutral-grip pull-up. Needs parallel handles

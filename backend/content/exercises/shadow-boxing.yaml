@@ -1,0 +1,33 @@
+slug: shadow-boxing
+name: Shadow Boxing
+status: draft
+level: beginner
+category: cardio
+movement: cardio
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [front_delts, obliques]
+  secondary: [triceps, calves]
+equipment: []
+summary: >-
+  Throwing combinations at the air from a boxing stance. Cardio that also sharpens
+  coordination and footwork, no gear needed.
+setup:
+  - Stand with the non-dominant foot forward, knees soft, hands up by the chin.
+steps:
+  - Throw jabs, crosses, hooks and uppercuts in combinations of 2–4 punches.
+  - "Move around between combinations: step, pivot, slip."
+  - Work 2–3 minute rounds with a minute of rest.
+cues:
+  - Rotate the hips into every punch.
+  - Hands come straight back to the chin.
+mistakes:
+  - Punching with the arms only, no hip rotation.
+  - Dropping the hands when tired.
+safety:
+  - Don't fully lock the elbows at the end of punches.
+breathing: Sharp breath out with each punch.
+videos:
+  youtube: https://www.youtube.com/watch?v=i12A6G_LiJo
+tags: [cardio, conditioning, home, intervals]

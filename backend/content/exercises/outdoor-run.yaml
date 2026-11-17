@@ -1,0 +1,35 @@
+slug: outdoor-run
+name: Outdoor Run
+status: draft
+level: intermediate
+category: cardio
+movement: cardio
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [quads, calves, glutes]
+  secondary: [hamstrings]
+equipment: []
+summary: >-
+  Running outside at a conversational pace. Easy running builds the aerobic base that
+  makes every other kind of training recover faster.
+setup:
+  - Good shoes and a flat, safe route.
+  - Start with a few minutes of walking.
+steps:
+  - Run at a pace where you can speak in full sentences.
+  - Start with 15–20 minutes and add a few minutes each week.
+  - Finish with a few minutes of walking.
+cues:
+  - Short, quick steps; land under your hips.
+  - Relaxed shoulders and hands.
+mistakes:
+  - Running every run hard.
+  - Adding distance too quickly.
+safety:
+  - Increase weekly distance by no more than about 10%. Run-walk intervals are fine when
+    starting out.
+breathing: Relaxed, steady breathing; slow down if you can't talk.
+videos:
+  youtube: https://www.youtube.com/watch?v=RcDcQXAIe18
+tags: [cardio, conditioning, home, running, steady]

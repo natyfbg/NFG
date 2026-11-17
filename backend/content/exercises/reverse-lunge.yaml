@@ -1,0 +1,37 @@
+slug: reverse-lunge
+name: Reverse Lunge
+status: draft
+level: beginner
+category: strength
+movement: lunge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [adductors, hamstrings]
+equipment: []
+lists: [lower]
+summary: >-
+  Stepping backward into a lunge and returning. Easier on the knees than the forward
+  version and great for the glutes.
+setup:
+  - Stand tall with the feet hip-width apart.
+steps:
+  - Step one foot back and lower until the back knee is just off the floor.
+  - Drive through the front heel to return.
+  - Alternate legs.
+cues:
+  - Front shin vertical, chest up.
+  - Keep most of the weight on the front leg.
+mistakes:
+  - Leaning forward.
+  - Short steps.
+safety:
+  - Hold a wall if balance is the limiter.
+breathing: Breathe in down, out up.
+progressions: [bulgarian-split-squat]
+videos:
+  youtube: https://www.youtube.com/watch?v=-Nr6dqEvz3Q
+tags: [bodyweight, home, lunge, quads]
+notes: >-
+  Your "step backs"

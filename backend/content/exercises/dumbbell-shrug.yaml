@@ -1,0 +1,35 @@
+slug: dumbbell-shrug
+name: Dumbbell Shrug
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [traps]
+  secondary: [forearms]
+equipment: [dumbbell]
+lists: [pull]
+summary: >-
+  Shrugging the shoulders straight up with a dumbbell in each hand. The simplest trap
+  builder, and the dumbbells let the arms hang naturally at the sides.
+setup:
+  - Stand tall with a dumbbell in each hand at your sides, arms straight.
+steps:
+  - Shrug the shoulders straight up toward the ears.
+  - Hold for a second at the top.
+  - Lower slowly.
+cues:
+  - Straight up and down; no rolling.
+  - Keep the arms straight and the chin level.
+mistakes:
+  - Rolling the shoulders in circles.
+  - Bending the elbows to help.
+safety:
+  - Use straps on heavy sets if the grip gives out first.
+breathing: Breathe out as you shrug.
+progressions: [barbell-shrug]
+videos:
+  youtube: https://www.youtube.com/watch?v=xiLT85G_GuU
+tags: [back, hybrid, shrug]

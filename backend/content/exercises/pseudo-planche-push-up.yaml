@@ -1,0 +1,42 @@
+slug: pseudo-planche-push-up
+name: Pseudo Planche Push-Up
+status: draft
+level: advanced
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts, chest]
+  secondary: [triceps, abs, biceps]
+equipment: []
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  A push-up with the hands set down by the hips and the shoulders leaning far past
+  them. It overloads the front delts and chest and builds the lean needed for planche
+  work.
+setup:
+  - Kneel and place your hands beside your hips, fingers pointing out or back.
+  - Extend into a plank and lean the shoulders forward over the hands. Protract the
+    shoulder blades.
+steps:
+  - Lower your chest toward the floor while keeping the forward lean.
+  - Pause with the chest low.
+  - Press up without letting the shoulders drift back over the wrists.
+cues:
+  - Push the floor away so the upper back rounds slightly.
+  - The lean is the exercise; keep it on every rep.
+mistakes:
+  - Losing the lean as you get tired.
+  - Letting the hips pike up.
+safety:
+  - Warm up the wrists. Reduce the lean if the wrists or front of the shoulders hurt.
+breathing: Breathe in down, out up.
+regressions: [pseudo-planche-lean, push-up]
+progressions: [fingers-forward-pseudo-planche-push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=tCTdAf0iz_o
+tags: [chest, home, planche, push-up]
+notes: >-
+  Your "Psudo Push Up". Fingers point toward your toes, hands near the hips. Heavier
+  on the biceps

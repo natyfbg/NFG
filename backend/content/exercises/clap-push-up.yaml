@@ -1,0 +1,37 @@
+slug: clap-push-up
+name: Clap Push-Up
+status: draft
+level: advanced
+category: plyometric
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [triceps, front_delts]
+equipment: []
+summary: >-
+  An explosive push-up where you push off the floor hard enough to clap before
+  landing. Builds pressing power; keep reps low and crisp.
+setup:
+  - Start in a solid push-up position, hands slightly wider than the shoulders.
+  - Warm up with regular push-ups first.
+steps:
+  - Lower quickly to just above the floor.
+  - Explode up so your hands leave the floor and clap.
+  - Land with soft elbows and go straight into the next rep, or reset each time.
+cues:
+  - Think 'throw the floor away'.
+  - Land with bent elbows to absorb the drop.
+mistakes:
+  - Landing on locked elbows.
+  - Letting the hips sag on landing.
+safety:
+  - Only once you can do 20 strict push-ups. Stop the set as soon as height drops.
+breathing: Sharp breath out on the push.
+regressions: [push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=IzXKJjpkvAY
+tags: [chest, explosive, home, push-up]
+notes: >-
+  Plyometric (power)

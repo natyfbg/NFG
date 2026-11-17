@@ -1,0 +1,37 @@
+slug: bench-squat
+name: Bench Squat
+status: draft
+level: beginner
+category: strength
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [adductors]
+equipment: [bench]
+lists: [lower]
+summary: >-
+  Squatting down to lightly touch a bench and standing back up. The bench sets the
+  depth and gives nervous squatters confidence.
+setup:
+  - Stand in front of a bench with the feet shoulder-width apart.
+steps:
+  - Sit back and down until the glutes touch the bench.
+  - Touch lightly; don't rest.
+  - Stand back up.
+cues:
+  - Keep the weight on the whole foot.
+  - Touch, don't sit.
+mistakes:
+  - Plopping onto the bench.
+  - Rocking forward to stand.
+safety:
+  - Use a lower box as you get stronger.
+breathing: Breathe in down, out up.
+progressions: [bodyweight-squat, goblet-squat]
+videos:
+  youtube: https://www.youtube.com/watch?v=5e7YnJP5u3U
+tags: [bodyweight, hybrid, quads, squat]
+notes: >-
+  Your "bench seating squats". Sit back until you touch the bench, then stand

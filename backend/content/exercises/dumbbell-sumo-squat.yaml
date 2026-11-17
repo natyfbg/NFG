@@ -1,0 +1,39 @@
+slug: dumbbell-sumo-squat
+name: Dumbbell Sumo Squat
+status: draft
+level: beginner
+category: strength
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads, glutes, adductors]
+  secondary: [hamstrings]
+equipment: [dumbbell]
+lists: [lower]
+summary: >-
+  A wide-stance squat holding one dumbbell between the legs. The stance brings in the
+  inner thighs and glutes.
+setup:
+  - Stand with the feet wide and toes turned out, holding a dumbbell by one end between
+    the legs.
+steps:
+  - Squat down, pushing the knees out over the toes.
+  - Lower until the thighs are about parallel.
+  - Drive up, squeezing the glutes.
+cues:
+  - Knees out, chest up.
+  - Dumbbell hangs straight down.
+mistakes:
+  - Knees caving in.
+  - Leaning forward.
+safety:
+  - Keep the toes and knees pointing the same way.
+breathing: Breathe in down, out up.
+regressions: [goblet-squat]
+videos:
+  youtube: https://www.youtube.com/watch?v=ERZyI58nDas
+tags: [hybrid, quads, squat]
+notes: >-
+  Your "sump dumbbell side squats": I read this as a wide-stance squat holding one
+  dumbbell

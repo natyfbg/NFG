@@ -1,0 +1,32 @@
+slug: seated-dumbbell-front-raise
+name: Seated Dumbbell Front Raise
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [front_delts]
+  secondary: [upper_chest]
+equipment: [dumbbell, bench]
+summary: >-
+  Front raises sitting down. Sitting stops you cheating with the legs or the back.
+setup:
+  - Sit on the end of a bench, dumbbells beside the thighs, palms facing back.
+steps:
+  - Raise both dumbbells in front to shoulder height.
+  - Pause.
+  - Lower slowly.
+cues:
+  - Sit tall, no leaning back.
+  - Smooth tempo.
+mistakes:
+  - Swinging the torso.
+  - Going above shoulder height.
+safety:
+  - Light weight.
+breathing: Breathe out as you raise.
+videos:
+  youtube: https://www.youtube.com/watch?v=yZLJWm5d0Vc
+tags: [hybrid, raise, shoulders]

@@ -1,0 +1,37 @@
+slug: archer-pull-up
+name: Archer Pull-Up
+status: draft
+level: advanced
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats]
+  secondary: [biceps, upper_back]
+equipment: [pullup_bar]
+summary: >-
+  A wide pull-up where you pull toward one hand while the other arm straightens out
+  along the bar. One arm does most of the work; a step toward one-arm pull-ups.
+setup:
+  - Take a very wide overhand grip.
+steps:
+  - Pull toward one hand, letting the other arm straighten so the chest ends up by that
+    hand.
+  - Pause at the top.
+  - Lower to the centre and pull to the other side.
+cues:
+  - The straight arm guides; the bent arm pulls.
+  - Keep the hips square.
+mistakes:
+  - Bending the 'straight' arm to help.
+  - Swinging across.
+safety:
+  - Only once you can do 12 strict pull-ups.
+breathing: Breathe out as you pull.
+regressions: [wide-grip-pull-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=_LGLKUiQH5k
+tags: [back, home, pull-up, unilateral]
+notes: >-
+  One side at a time. Hardest pull-up option you'd have

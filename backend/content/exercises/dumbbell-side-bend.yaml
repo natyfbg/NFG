@@ -1,0 +1,35 @@
+slug: dumbbell-side-bend
+name: Dumbbell Side Bend
+status: draft
+level: beginner
+category: strength
+movement: core
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [obliques]
+  secondary: [lower_back]
+equipment: [dumbbell]
+summary: >-
+  Bending sideways with a dumbbell in one hand. Loads the obliques through a full
+  range.
+setup:
+  - Stand tall with a dumbbell in one hand, the other hand on the head or hip.
+steps:
+  - Bend sideways toward the dumbbell, letting it slide down the leg.
+  - Pull back to upright and slightly past, squeezing the opposite oblique.
+  - Finish the set, then switch hands.
+cues:
+  - Bend straight to the side, not forward.
+  - Slow and controlled.
+mistakes:
+  - Leaning forward.
+  - Using two dumbbells, which cancels the load.
+safety:
+  - Moderate weight.
+breathing: Breathe out as you come up.
+videos:
+  youtube: https://www.youtube.com/watch?v=H-SNzwUQDIM
+tags: [core, hybrid, obliques]
+notes: >-
+  Cable version covered in the how-to

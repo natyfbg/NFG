@@ -1,0 +1,36 @@
+slug: iso-lateral-machine-shoulder-press
+name: Iso-Lateral Machine Shoulder Press
+status: draft
+level: beginner
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts, side_delts]
+  secondary: [triceps]
+equipment: [machine]
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  A plate-loaded shoulder press with independent arms. Each shoulder presses on its
+  own, so imbalances can't hide.
+setup:
+  - Set the seat so the handles start at shoulder height. Sit back with the feet flat.
+steps:
+  - Press both handles overhead until the arms are nearly straight.
+  - Lower under control to shoulder height.
+  - Alternate arms for extra core work.
+cues:
+  - Shoulders down, not shrugged.
+  - Press evenly with both arms.
+mistakes:
+  - Leaning to one side.
+  - Locking the elbows hard.
+safety:
+  - Check the range at the bottom; don't let the handles drop below the shoulders.
+breathing: Breathe out as you press.
+videos:
+  youtube: https://www.youtube.com/watch?v=tr_LDd8W3iM
+tags: [gym, machine, press, shoulders]
+notes: >-
+  Also covers plate-loaded shoulder press machines (merged)
