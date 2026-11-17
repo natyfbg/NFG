@@ -1,0 +1,35 @@
+slug: smith-machine-incline-press
+name: Smith Machine Incline Press
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [upper_chest]
+  secondary: [front_delts, triceps]
+equipment: [smith, bench]
+lists: [shoulder_focus]
+summary: >-
+  An incline press on the Smith machine. Fixed bar path plus the incline angle makes
+  it a safe, focused upper-chest builder.
+setup:
+  - Set an incline bench at 30–45 degrees so the bar meets your upper chest.
+  - Grip slightly wider than shoulder-width, shoulder blades back and down.
+steps:
+  - Unhook and lower the bar to your upper chest.
+  - Pause just above the chest.
+  - Press back to straight arms.
+cues:
+  - Bar lands just below the collarbones.
+  - Keep the feet planted and the back against the bench.
+mistakes:
+  - Bench too steep, turning it into a shoulder press.
+  - Bouncing off the chest.
+safety:
+  - Set the safety catches just below chest height.
+breathing: Breathe in down, out up.
+videos:
+  youtube: https://www.youtube.com/watch?v=MqcS3CMGtwQ
+tags: [chest, gym, press, smith-machine]

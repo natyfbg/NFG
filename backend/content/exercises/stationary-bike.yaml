@@ -1,0 +1,36 @@
+slug: stationary-bike
+name: Stationary Bike
+status: draft
+level: beginner
+category: cardio
+movement: cardio
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [calves, hamstrings]
+equipment: [cardio_machine]
+summary: >-
+  Pedalling on an upright or spin bike. The easiest low-impact cardio to control
+  precisely, for recovery rides or hard intervals.
+setup:
+  - Set the seat so your knee is slightly bent at the bottom of the stroke.
+  - Hands light on the bars, shoulders relaxed.
+steps:
+  - Pedal at a smooth 80–100 revolutions per minute.
+  - "Steady: 20–30 minutes at a conversational pace."
+  - "Intervals: 30 seconds hard, 90 seconds easy, for 8 rounds."
+cues:
+  - Push and pull in circles, not just stamping down.
+  - Knees track straight, not flaring out.
+mistakes:
+  - Seat too low, which strains the knees.
+  - Rocking the hips at high cadence.
+safety:
+  - Raise resistance rather than speed when bouncing in the saddle.
+breathing: Steady breathing; hard intervals should leave you breathless but in control.
+videos:
+  youtube: https://www.youtube.com/watch?v=MaI2Y9pLDJc
+tags: [cardio, conditioning, gym, intervals, low-impact, steady]
+notes: >-
+  Covers spin and recumbent bikes

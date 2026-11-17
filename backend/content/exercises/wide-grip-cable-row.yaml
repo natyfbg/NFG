@@ -1,0 +1,37 @@
+slug: wide-grip-cable-row
+name: Wide-Grip Cable Row
+status: draft
+level: beginner
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [upper_back, rear_delts]
+  secondary: [lats, biceps, traps]
+equipment: [cable]
+lists: [pull]
+summary: >-
+  A seated cable row with a wide bar and the elbows out. Shifts the work from the lats
+  to the upper back and rear delts.
+setup:
+  - Attach a wide bar. Sit with the feet on the platform, knees soft, back flat.
+steps:
+  - Row the bar to the lower chest with the elbows out at shoulder height.
+  - Squeeze the shoulder blades.
+  - Return slowly.
+cues:
+  - Elbows wide and high.
+  - Chest up; don't round on the return.
+mistakes:
+  - Leaning back to pull.
+  - Letting the elbows drop.
+safety:
+  - Keep the lower back neutral throughout.
+breathing: Breathe out as you row.
+videos:
+  youtube: https://www.youtube.com/watch?v=FXo1YuL1XeM
+tags: [back, cable, gym, row]
+notes: >-
+  Cable version of your wide-grip rear delt row. The machine version is Wide-Grip
+  Machine Row in the Shoulders rows

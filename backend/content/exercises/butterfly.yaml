@@ -1,0 +1,37 @@
+slug: butterfly
+name: Butterfly
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [upper_back, rear_delts]
+  secondary: [lower_back, traps]
+equipment: []
+lists: [pull]
+summary: >-
+  Lying face down and sweeping straight arms from overhead to the hips, like a
+  swimming stroke. Works the whole upper back with no equipment.
+setup:
+  - Lie face down with the arms extended overhead, thumbs up.
+steps:
+  - Lift the arms and sweep them in a wide arc down to the hips.
+  - Reverse the arc back overhead.
+  - Keep the arms off the floor throughout.
+cues:
+  - Squeeze between the shoulder blades through the whole arc.
+  - Keep the neck long.
+mistakes:
+  - Lifting the chest and arching hard.
+  - Letting the arms rest on the floor.
+safety:
+  - Bodyweight only.
+breathing: Breathe out as the arms sweep down.
+videos:
+  youtube: https://www.youtube.com/watch?v=nkfRVaKKtKM
+tags: [back, bodyweight, home, upper-back]
+notes: >-
+  Lying on your chest, swing the arms from a superman (overhead) back to an Iron Man
+  (by your sides) and back

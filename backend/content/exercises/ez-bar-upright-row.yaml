@@ -1,0 +1,34 @@
+slug: ez-bar-upright-row
+name: EZ-Bar Upright Row
+status: draft
+level: intermediate
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [side_delts]
+  secondary: [traps, front_delts]
+equipment: [barbell]
+summary: >-
+  An upright row with the EZ bar held wide. A wide grip and a stop at chest height
+  keep it kind to the shoulders while loading the side delts and traps.
+setup:
+  - Hold the EZ bar on the outer grips in front of the thighs.
+steps:
+  - Pull the bar up the body with the elbows leading until it reaches the lower chest.
+  - Pause.
+  - Lower slowly.
+cues:
+  - Elbows higher than the hands.
+  - Bar stays close to the body.
+mistakes:
+  - Pulling to the chin.
+  - Rocking the torso.
+safety:
+  - Stop at chest height. Skip it if the shoulders pinch; lateral raises do the same
+    job.
+breathing: Breathe out as you pull.
+videos:
+  youtube: https://www.youtube.com/watch?v=rBwRXRrJO4M
+tags: [barbell, gym, shoulders, upright-row]

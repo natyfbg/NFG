@@ -1,0 +1,36 @@
+slug: dumbbell-front-raise
+name: Dumbbell Front Raise
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [front_delts]
+  secondary: [upper_chest]
+equipment: [dumbbell]
+lists: [full_push, shoulder_focus]
+summary: >-
+  Raising dumbbells straight in front of you to shoulder height. Front-delt work,
+  useful when pressing volume is low.
+setup:
+  - Stand with dumbbells in front of your thighs, palms facing the body, soft elbows.
+steps:
+  - Raise both arms in front to shoulder height.
+  - Pause.
+  - Lower slowly.
+cues:
+  - Don't lean back.
+  - Thumbs slightly up is easier on the shoulder.
+mistakes:
+  - Swinging the weights up.
+  - Raising above shoulder height.
+safety:
+  - Keep the weight light; front delts get plenty of work from pressing.
+breathing: Breathe out as you raise.
+videos:
+  youtube: https://www.youtube.com/watch?v=O_nYMwWzo2I
+tags: [hybrid, raise, shoulders]
+notes: >-
+  Standing

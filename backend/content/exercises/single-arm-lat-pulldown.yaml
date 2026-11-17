@@ -1,0 +1,34 @@
+slug: single-arm-lat-pulldown
+name: Single-Arm Lat Pulldown
+status: draft
+level: beginner
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [lats]
+  secondary: [biceps]
+equipment: [cable]
+lists: [pull]
+summary: >-
+  A pulldown with one handle, one arm at a time. Each lat works alone with a full
+  range and a big stretch.
+setup:
+  - Attach a single handle. Sit or kneel under the pulley, take the handle in one hand.
+steps:
+  - Pull the handle down to the side of the chest, elbow driving to the hip.
+  - Squeeze the lat.
+  - Return slowly to a full stretch. Switch sides after the set.
+cues:
+  - Keep the torso tall; don't lean to the side.
+  - Pull with the elbow, not the hand.
+mistakes:
+  - Twisting the torso to pull.
+  - Shrugging.
+safety:
+  - Moderate weight; keep the shoulder down.
+breathing: Breathe out as you pull.
+videos:
+  youtube: https://www.youtube.com/watch?v=eM162KNncD8
+tags: [back, cable, gym, pulldown, unilateral]

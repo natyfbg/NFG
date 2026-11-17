@@ -18,6 +18,7 @@ from urllib.parse import parse_qs, urlparse, urlsplit
 from xml.sax.saxutils import escape as xml_escape
 
 import curation
+import formfigures
 import mailer
 import program_content
 import taxonomy as tx
@@ -29,6 +30,7 @@ from flask import (
     abort,
     flash,
     g,
+    jsonify,
     make_response,
     redirect,
     render_template,
@@ -3401,7 +3403,7 @@ def set_theme():
     return resp
 
 
-DEFAULT_ENV = "hybrid"
+DEFAULT_ENV = "gym"  # the setting that shows everything, until someone picks Home or Hybrid
 MIX_MAX_GROUPS = 6
 FAVORITE_ITEM_TYPES = {"exercise"}
 LEVEL_ORDER = {"Beginner": 0, "Intermediate": 1, "Advanced": 2}
@@ -3413,14 +3415,14 @@ except curation.CurationError as e:
     CURATED = {}
 
 ENV_NOTES = {
-    "home": "Showing exercises you can do with bodyweight and common home equipment.",
-    "gym": "Showing everything a typical gym can handle.",
-    "hybrid": "Showing everything — home and gym.",
+    "home": "Showing bodyweight moves, household items and a pull-up bar.",
+    "hybrid": "Showing home moves plus dumbbells, a bench and bands.",
+    "gym": "Showing everything, including barbells, cables and machines.",
 }
 
 
 def _current_env() -> str:
-    """Training environment from ?env=, else the remembered cookie, else hybrid."""
+    """Training setting from ?env=, else the remembered cookie, else the default (gym)."""
     requested = _norm_choice(request.args.get("env"))
     if requested in tx.ENVIRONMENTS:
         if requested != _norm_choice(request.cookies.get(ENV_COOKIE)):
@@ -3465,8 +3467,10 @@ def _public_library() -> List[dict]:
 
 
 def _in_env(doc: dict, env: str) -> bool:
-    """Python twin of _env_filter: hybrid trains anywhere."""
-    if not env or env == "hybrid":
+    """Python twin of _env_filter. Empty env = the whole library; each setting
+    includes the ones below it (home < hybrid < gym), already baked into
+    `environments` by the content sync."""
+    if not env:
         return True
     envs = doc.get("environments")
     return env in envs if isinstance(envs, list) else envs == env
@@ -3484,8 +3488,8 @@ def _clear_library_after_admin_write(resp):
 
 
 def _env_filter(env: str) -> Optional[dict]:
-    """Mongo filter for an environment. Hybrid trains anywhere, so nothing is filtered."""
-    if env and env != "hybrid":
+    """Mongo filter for a training setting; empty env = no filter."""
+    if env in tx.ENVIRONMENTS:
         return {"environments": env}
     return None
 
@@ -4408,7 +4412,9 @@ def eight_week_hub_redirect():
 # Workouts
 # -----------------------------------------------------------------------------
 # Equipment shown as tiles / filter chips. Bench and box are accessories, not choices.
-EQUIPMENT_CHOICES = ["bodyweight"] + [k for k in tx.EQUIPMENT if k not in ("bench", "box")]
+# The 12 tiles on the Exercises page; every equipment key is still valid in browse.
+EQUIPMENT_CHOICES = ["bodyweight"] + tx.EQUIPMENT_TILES
+EQUIPMENT_FILTER_KEYS = ["bodyweight"] + list(tx.EQUIPMENT)
 BROWSE_SORTS = {"name": "A–Z", "recent": "Newest"}
 BROWSE_PER_PAGE = 24
 REGION_TO_GROUP = {
@@ -4437,7 +4443,8 @@ def _equipment_label(key: str) -> str:
 def _equipment_clause(key: str) -> dict:
     if key == "bodyweight":
         return {"equipment_required": {"$size": 0}}
-    return {"equipment_required": key}
+    # equipment_all also holds optional kit (a mat), so the Yoga Mat tile finds floor work.
+    return {"$or": [{"equipment_all": key}, {"equipment_required": key}]}
 
 
 def _and(*clauses) -> Optional[dict]:
@@ -4455,7 +4462,8 @@ def _equipment_counts(env: str) -> Dict[str, int]:
             continue  # legacy docs without the field count for neither
         if not required:
             counts["bodyweight"] += 1
-        for key in required:
+        everything = doc.get("equipment_all")
+        for key in everything if isinstance(everything, list) else required:
             counts[key] = counts.get(key, 0) + 1
     return counts
 
@@ -4483,7 +4491,13 @@ GROUP_ORDER = [
     "mobility",
 ]
 LANDING_VISIBLE = 6
-HOME_EQUIPMENT = {"bodyweight", *tx.ENVIRONMENTS["home"]["equipment"]}
+EQUIPMENT_WHERE = {"home": "Anywhere", "hybrid": "Home kit & gym", "gym": "Gym"}
+
+
+def _equipment_where(key: str) -> str:
+    if key == "bodyweight":
+        return "Anywhere"
+    return EQUIPMENT_WHERE[tx.EQUIPMENT[key]["tier"]]
 
 
 def _ordered_group_cards(env: str) -> List[dict]:
@@ -4505,14 +4519,14 @@ def workouts():
 
     # The catalogue always shows the whole library. The Home/Gym preference applies
     # to Home and session pages, not here (it used to follow people in and hide things).
-    env = "hybrid"
+    env = ""
     eq_counts = _equipment_counts(env)
     equipment_tiles = [
         {
             "key": key,
             "label": _equipment_label(key),
             "count": eq_counts[key],
-            "where": "Home & gym" if key in HOME_EQUIPMENT else "Gym",
+            "where": _equipment_where(key),
             "color": tx.BODYWEIGHT_COLOR if key == "bodyweight" else tx.EQUIPMENT[key]["color"],
             "href": url_for("workouts_browse", eq=key),
         }
@@ -4548,6 +4562,7 @@ def workouts():
     total = len(library)
     return render_template(
         "workouts.html",
+        **_filter_panel_context({}),
         group_cards=_ordered_group_cards(env),
         equipment_tiles=equipment_tiles,
         level_tiles=level_tiles,
@@ -4580,11 +4595,34 @@ def body_parts_index():
     return redirect(url_for("workouts") + "#muscles")
 
 
-def _browse_args() -> Dict[str, str]:
-    """Current non-empty browse query params (without page)."""
+BROWSE_MAX_GROUPS = 4  # muscles combine with AND; more than four never matches anything
+
+
+def _browse_groups() -> List[str]:
+    """Selected muscle groups, in the order picked (`group=a&group=b` or `group=a,b`)."""
+    out: List[str] = []
+    for raw in request.args.getlist("group"):
+        for part in (raw or "").split(","):
+            key = _norm_choice(part)
+            if key in tx.MUSCLE_GROUPS and key not in out:
+                out.append(key)
+    return out[:BROWSE_MAX_GROUPS]
+
+
+def _groups_clause(groups: List[str]) -> Optional[dict]:
+    """One group: its exercises (primary). Several: exercises that work every one of them
+    (primary or secondary) with at least one as a main target."""
+    if not groups:
+        return None
+    if len(groups) == 1:
+        return {"primary_groups": groups[0]}
+    return {"muscle_groups": {"$all": groups}, "primary_groups": {"$in": groups}}
+
+
+def _browse_args() -> Dict[str, object]:
+    """Current non-empty browse query params (without page). `group` is a list."""
     keys = (
         "q",
-        "group",
         "eq",
         "level",
         "sort",
@@ -4596,51 +4634,52 @@ def _browse_args() -> Dict[str, str]:
         "per_page",
         "env",
     )
-    return {k: request.args.get(k) for k in keys if (request.args.get(k) or "").strip()}
+    args: Dict[str, object] = {
+        k: request.args.get(k) for k in keys if (request.args.get(k) or "").strip()
+    }
+    groups = _browse_groups()
+    if groups:
+        args["group"] = groups
+    return args
 
 
-@app.route("/workouts/browse")
-def workouts_browse():
-    args = _browse_args()
-    # Browse shows everything unless a Home/Gym filter is picked here; it does not
-    # read or change the remembered Home preference.
-    env = _norm_choice(args.pop("env", ""))
-    if env in tx.ENVIRONMENTS and env != "hybrid":
+def _browse_filters(args: Dict[str, object]) -> dict:
+    """Parse browse args into the filters, the Mongo query and the sort."""
+    env = _norm_choice(args.pop("env", "") or "")
+    if env in tx.ENVIRONMENTS:
         args["env"] = env
     else:
-        env = "hybrid"
-    q = _clean_search_query(args.get("q"))
-    group = _norm_choice(args.get("group"))
-    group = group if group in tx.MUSCLE_GROUPS else ""
-    eq = _norm_choice(args.get("eq"))
-    eq = eq if eq in EQUIPMENT_CHOICES else ""
+        env = ""
+    groups = list(args.get("group") or [])
+    eq = _norm_choice(args.get("eq") or "")
+    eq = eq if eq in EQUIPMENT_FILTER_KEYS else ""
+    if not eq:
+        args.pop("eq", None)
     level = args.get("level") or ""
+    if level and level not in {lvl["label"] for lvl in tx.LEVELS.values()}:
+        level = ""
+        args.pop("level", None)
     sort_key = args.get("sort") or "name"
-    # Legacy label-based filters (old links and bookmarks keep working).
-    body = args.get("body") or ""
-    style = args.get("style") or ""
-    movement = args.get("movement") or ""
-    equipment = args.get("equipment") or ""
-    difficulty = args.get("difficulty") or ""
-    page = _safe_int(request.args.get("page"), default=1, min_value=1)
-    per_page = _safe_int(args.get("per_page"), default=BROWSE_PER_PAGE, min_value=1, max_value=100)
-
-    clauses = [_env_filter(env)]
-    if group:
-        clauses.append({"primary_groups": group})
+    q = _clean_search_query(args.get("q"))
+    clauses = [_env_filter(env), _groups_clause(groups)]
     if eq:
         clauses.append(_equipment_clause(eq))
     if level:
         clauses.append({"level": level})
-    if style:
-        clauses.append({"style": style})
-    if movement:
-        clauses.append({"movement_pattern": movement})
-    if equipment:
-        clauses.append({"equipment": equipment})
-    if difficulty:
-        clauses.append({"difficulty_tier": difficulty})
-    if body:
+    # Legacy label-based filters (old links and bookmarks keep working).
+    legacy = {
+        k: args.get(k) or "" for k in ("body", "style", "movement", "equipment", "difficulty")
+    }
+    if legacy["style"]:
+        clauses.append({"style": legacy["style"]})
+    if legacy["movement"]:
+        clauses.append({"movement_pattern": legacy["movement"]})
+    if legacy["equipment"]:
+        clauses.append({"equipment": legacy["equipment"]})
+    if legacy["difficulty"]:
+        clauses.append({"difficulty_tier": legacy["difficulty"]})
+    if legacy["body"]:
+        body = legacy["body"]
         clauses.append(
             {"$or": [{"body_part": body}, {"body_parts": body}, {"primary_muscle": body}]}
         )
@@ -4665,7 +4704,65 @@ def workouts_browse():
                 ]
             }
         )
-    query = _public_workout_query(_and(*clauses))
+    return {
+        "env": env,
+        "groups": groups,
+        "eq": eq,
+        "level": level,
+        "sort": sort_key,
+        "q": q,
+        "legacy": legacy,
+        "query": _public_workout_query(_and(*clauses)),
+    }
+
+
+def _filter_panel_context(f: dict) -> dict:
+    """What the filter bar and panel need (Exercises page and browse)."""
+    body_groups = [k for k in tx.MUSCLE_GROUPS if k not in ("full_body", "cardio", "mobility")]
+    other_groups = [k for k in tx.MUSCLE_GROUPS if k not in body_groups]
+    return {
+        "f_groups": f.get("groups") or [],
+        "f_eq": f.get("eq") or "",
+        "f_level": f.get("level") or "",
+        "f_env": f.get("env") or "",
+        "f_sort": f.get("sort") if f.get("sort") in BROWSE_SORTS else "name",
+        "f_q": f.get("q") or "",
+        "group_choices": [
+            {"key": k, "label": tx.MUSCLE_GROUPS[k]["label"], "color": tx.MUSCLE_GROUPS[k]["color"]}
+            for k in body_groups + other_groups
+        ],
+        "equipment_choices": [(k, _equipment_label(k)) for k in EQUIPMENT_CHOICES],
+        "level_choices": [lvl["label"] for lvl in tx.LEVELS.values()],
+        "environments": tx.ENVIRONMENTS,
+        "sorts": BROWSE_SORTS,
+        "eq_label": _equipment_label(f["eq"]) if f.get("eq") else "",
+    }
+
+
+@app.route("/workouts/browse/count")
+def workouts_browse_count():
+    """Live result count for the filter panel ("Show 23 exercises")."""
+    f = _browse_filters(_browse_args())
+    return jsonify({"total": db.workouts.count_documents(f["query"])})
+
+
+@app.route("/workouts/browse")
+def workouts_browse():
+    args = _browse_args()
+    # Browse shows everything unless a Home/Gym filter is picked here; it does not
+    # read or change the remembered Home preference.
+    f = _browse_filters(args)
+    env, groups, eq, level, sort_key, q = (
+        f["env"],
+        f["groups"],
+        f["eq"],
+        f["level"],
+        f["sort"],
+        f["q"],
+    )
+    query = f["query"]
+    page = _safe_int(request.args.get("page"), default=1, min_value=1)
+    per_page = _safe_int(args.get("per_page"), default=BROWSE_PER_PAGE, min_value=1, max_value=100)
 
     sort = [("name", ASCENDING)]
     if sort_key == "recent":
@@ -4676,7 +4773,15 @@ def workouts_browse():
     total = db.workouts.count_documents(query)
     pages = max(1, -(-total // per_page))
     page = min(page, pages)
-    items = list(db.workouts.find(query).sort(sort).skip((page - 1) * per_page).limit(per_page))
+    if len(groups) > 1 and sort_key == "name":
+        # Several muscles: exercises that train more of them as a main target come first.
+        everything = list(db.workouts.find(query).sort(sort))
+        everything.sort(
+            key=lambda d: -sum(1 for g in groups if g in (d.get("primary_groups") or []))
+        )
+        items = everything[(page - 1) * per_page : page * per_page]
+    else:
+        items = list(db.workouts.find(query).sort(sort).skip((page - 1) * per_page).limit(per_page))
     for w in items:
         _with_metadata_fallbacks(w)
 
@@ -4686,27 +4791,37 @@ def workouts_browse():
         return url_for("workouts_browse", **kept)
 
     active = []
-    if env != "hybrid":
+    for gk in groups:
+        rest = [x for x in groups if x != gk]
+        active.append(
+            {
+                "label": tx.MUSCLE_GROUPS[gk]["label"],
+                "href": without("group", **({"group": rest} if rest else {})),
+                "color": tx.MUSCLE_GROUPS[gk]["color"],
+            }
+        )
+    if eq:
+        active.append({"label": _equipment_label(eq), "href": without("eq")})
+    if level:
+        active.append({"label": level, "href": without("level")})
+    if env:
         active.append(
             {"label": f"At {tx.ENVIRONMENTS[env]['label'].lower()}", "href": without("env")}
         )
-    if group:
-        active.append({"label": tx.MUSCLE_GROUPS[group]["label"], "href": without("group")})
-    if eq:
-        active.append({"label": _equipment_label(eq), "href": without("eq")})
-    for key, value in (
-        ("level", level),
-        ("body", body),
-        ("style", style),
-        ("movement", movement),
-        ("equipment", equipment),
-        ("difficulty", difficulty),
-    ):
+    for key, value in f["legacy"].items():
         if value:
             active.append({"label": value, "href": without(key)})
     if sort_key in ("recent", "favorites", "rating"):
         label = {"recent": "Newest", "favorites": "Featured", "rating": "Top rated"}[sort_key]
         active.append({"label": label, "href": without("sort")})
+
+    # No match with several muscles: offer to drop the last one picked.
+    drop_last = None
+    if not total and len(groups) > 1:
+        drop_last = {
+            "label": tx.MUSCLE_GROUPS[groups[-1]]["label"],
+            "href": without("group", group=groups[:-1]),
+        }
 
     return render_template(
         "browse_workouts.html",
@@ -4716,18 +4831,10 @@ def workouts_browse():
         pages=pages,
         page_args=args,
         q=q,
-        env=env,
-        group=group,
-        eq=eq,
-        level=level,
-        sort=sort_key,
         active_filters=active,
         filter_count=len(active),
-        group_choices=[(k, g["label"]) for k, g in tx.MUSCLE_GROUPS.items()],
-        equipment_choices=[(k, _equipment_label(k)) for k in EQUIPMENT_CHOICES],
-        level_choices=[lvl["label"] for lvl in tx.LEVELS.values()],
-        environments=tx.ENVIRONMENTS,
-        sorts=BROWSE_SORTS,
+        drop_last=drop_last,
+        **_filter_panel_context(f),
     )
 
 
@@ -4824,6 +4931,44 @@ def _has_muscle_map(slug: str) -> bool:
         path = os.path.join(app.static_folder, "img", "exercises", f"{slug}.svg")
         _MUSCLE_MAP_FILES[slug] = bool(slug) and os.path.isfile(path)
     return _MUSCLE_MAP_FILES[slug]
+
+
+FORM_IMAGE_EXTS = ("webp", "jpg", "jpeg", "png")
+_FORM_IMAGE_FILES: Dict[Tuple[str, int], Optional[str]] = {}
+
+
+def _form_image(slug: str, n: int) -> Optional[str]:
+    """static/img/exercises/<slug>/step-<n>.<ext>, if Nate has added one."""
+    key = (slug, n)
+    if key not in _FORM_IMAGE_FILES:
+        found = None
+        for ext in FORM_IMAGE_EXTS:
+            rel = f"img/exercises/{slug}/step-{n}.{ext}"
+            if slug and os.path.isfile(os.path.join(app.static_folder, rel)):
+                found = rel
+                break
+        _FORM_IMAGE_FILES[key] = found
+    rel = _FORM_IMAGE_FILES[key]
+    return url_for("static", filename=rel) if rel else None
+
+
+def _form_steps(w: dict, accent: str) -> List[dict]:
+    """Start · Movement · Finish: caption + tip each, with Nate's photo for the step when
+    there is one, otherwise the illustrated figure."""
+    texts = formfigures.step_texts(w)
+    figures = None
+    steps = []
+    for i, text in enumerate(texts):
+        step = dict(text, n=i + 1)
+        src = _form_image(w.get("slug") or "", i + 1)
+        if src:
+            step["img"] = src
+        else:
+            if figures is None:
+                figures = formfigures.figures_for(w, formfigures.lighten(accent))
+            step["svg"] = figures[i]
+        steps.append(step)
+    return steps
 
 
 def _exercise_slides(w: dict) -> List[dict]:
@@ -4942,10 +5087,12 @@ def workout_detail(slug):
         or w.get("mistakes")
         or w.get("safety")
     )
+    accent = _accent_for(w)
     return render_template(
         "workout_detail.html",
         w=w,
-        accent=_accent_for(w),
+        accent=accent,
+        form_steps=_form_steps(w, accent["color"]),
         muscle_chips=_muscle_chips(w),
         slides=_exercise_slides(w),
         video_links=_video_links(w),

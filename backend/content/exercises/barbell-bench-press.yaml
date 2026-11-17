@@ -10,6 +10,7 @@ muscles:
   primary: [chest]
   secondary: [front_delts, triceps]
 equipment: [barbell, bench]
+lists: [full_push, chest_focus, shoulder_focus]
 summary: >-
   The classic heavy chest press. Lowering a barbell to your chest and pressing it back
   up builds strength across the chest, shoulders and triceps.

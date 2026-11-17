@@ -1,0 +1,36 @@
+slug: box-jump
+name: Box Jump
+status: draft
+level: intermediate
+category: plyometric
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [calves]
+equipment: [box]
+summary: >-
+  Jumping onto a box and stepping down. Power for the legs with the landing done on
+  top, so it's easy on the joints.
+setup:
+  - Stand a short step from a sturdy box at a height you can land on with bent knees.
+steps:
+  - Dip into a quarter squat and swing the arms back.
+  - Jump up onto the box, landing softly with the whole foot.
+  - Stand tall, then step down one foot at a time.
+cues:
+  - Land in a quarter squat, not a deep one.
+  - Step down; never jump down.
+mistakes:
+  - Choosing a box so high you land in a full squat.
+  - Jumping down from the box.
+safety:
+  - Start with a low box. Stepping down protects the knees and Achilles.
+breathing: Breathe out on the jump.
+regressions: [jump-squat]
+videos:
+  youtube: https://www.youtube.com/watch?v=3INzGHuk23U
+tags: [explosive, hybrid, quads]
+notes: >-
+  Plyometric

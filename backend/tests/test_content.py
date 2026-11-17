@@ -114,10 +114,14 @@ def test_published_without_instructions_warns(tmp_path):
 
 
 def test_environment_derivation():
-    assert tx.environments_for_equipment([]) == ["home", "gym", "hybrid"]
-    assert tx.environments_for_equipment(["dumbbell", "bench"]) == ["home", "gym", "hybrid"]
-    assert tx.environments_for_equipment(["barbell"]) == ["gym", "hybrid"]
-    assert tx.environments_for_equipment(["cable"]) == ["gym", "hybrid"]
+    # Settings nest: home < hybrid < gym. Optional kit (a mat) never raises the tier.
+    assert tx.environments_for_equipment([]) == ["home", "hybrid", "gym"]
+    assert tx.environments_for_equipment(["yoga_mat", "pullup_bar"]) == ["home", "hybrid", "gym"]
+    assert tx.environments_for_equipment(["dumbbell", "bench"]) == ["hybrid", "gym"]
+    assert tx.environments_for_equipment(["barbell"]) == ["gym"]
+    assert tx.environments_for_equipment(["cable"]) == ["gym"]
+    assert tx.equipment_tier(["bands"]) == "hybrid" and tx.equipment_tier(["smith"]) == "gym"
+    assert tx.equipment_text(["yoga_mat"]) == "Bodyweight"
 
 
 def test_muscle_belongs_to_multiple_groups():

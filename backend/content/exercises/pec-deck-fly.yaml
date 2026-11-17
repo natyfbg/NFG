@@ -1,0 +1,35 @@
+slug: pec-deck-fly
+name: Pec Deck Fly
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [front_delts]
+equipment: [machine]
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  A fly on the pec deck machine. The machine holds the path, so you can focus purely
+  on squeezing the chest.
+setup:
+  - Set the seat so the handles or pads are at chest height with the arms slightly bent.
+  - Sit with the back flat against the pad, shoulder blades down.
+steps:
+  - Bring the handles together in front of your chest.
+  - Squeeze for a second.
+  - Return slowly to a comfortable stretch.
+cues:
+  - Keep the elbows slightly bent and at chest height.
+  - Don't let the handles slam back.
+mistakes:
+  - Setting the arms too far back so the shoulders strain.
+  - Rushing the return.
+safety:
+  - Set the start position with the range-of-motion pin so the stretch is comfortable.
+breathing: Breathe out as you squeeze.
+videos:
+  youtube: https://www.youtube.com/watch?v=ybi3NPUK47M
+tags: [chest, fly, gym, machine]

@@ -1,0 +1,38 @@
+slug: wide-grip-machine-row
+name: Wide-Grip Machine Row
+status: draft
+level: beginner
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [rear_delts, upper_back]
+  secondary: [traps, biceps]
+equipment: [machine]
+lists: [full_push, shoulder_focus]
+summary: >-
+  A machine row with a wide grip and the elbows out. The wide, high pull hits the rear
+  delts and upper back more than the lats.
+setup:
+  - Set the seat so the handles are at chest height. Sit with the chest on the pad and
+    take the wide handles.
+steps:
+  - Pull the handles back with the elbows out to the sides, at shoulder height.
+  - Squeeze the shoulder blades together.
+  - Return slowly.
+cues:
+  - Elbows high and wide.
+  - Chest stays on the pad.
+mistakes:
+  - Letting the elbows drop so it becomes a lat row.
+  - Pulling with the biceps.
+safety:
+  - Set the seat so the handles line up with the chest.
+breathing: Breathe out as you pull.
+videos:
+  youtube: https://www.youtube.com/watch?v=7Uile-wTmnY
+tags: [gym, machine, row, shoulders]
+notes: >-
+  Your "wide grip rear delt rows", as the machine version. The cable version is
+  Wide-Grip Cable Row in the Back rows

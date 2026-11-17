@@ -1,0 +1,35 @@
+slug: incline-iso-lateral-machine-press
+name: Incline Iso-Lateral Machine Press
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [upper_chest]
+  secondary: [front_delts, triceps]
+equipment: [machine]
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  A plate-loaded incline press with independent arms. Upper-chest focus on a machine
+  that lets each side work alone.
+setup:
+  - Set the seat so the handles start at your upper chest.
+  - Sit back fully with the shoulder blades down.
+steps:
+  - Press the handles up and forward until the arms are nearly straight.
+  - Lower under control to a comfortable stretch.
+  - Alternate arms for the last few reps if you like.
+cues:
+  - Elbows under the wrists through the press.
+  - Chest up, no shrugging.
+mistakes:
+  - Setting the seat too low so the press turns into a shoulder press.
+  - Locking the elbows hard at the top.
+safety:
+  - Set the seat and check the range before adding weight.
+breathing: Breathe out as you press.
+videos:
+  youtube: https://www.youtube.com/watch?v=UKPBc1BWRzw
+tags: [chest, gym, machine, press]

@@ -10,6 +10,7 @@ muscles:
   primary: [chest]
   secondary: [triceps, front_delts, abs]
 equipment: []
+lists: [full_push, chest_focus, shoulder_focus]
 summary: >-
   Push-ups build chest, triceps, shoulders, and core. Great for endurance and stability.
 setup:

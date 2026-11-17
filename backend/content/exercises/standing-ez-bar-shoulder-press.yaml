@@ -1,0 +1,35 @@
+slug: standing-ez-bar-shoulder-press
+name: Standing EZ-Bar Shoulder Press
+status: draft
+level: intermediate
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts, side_delts]
+  secondary: [triceps, abs]
+equipment: [barbell]
+summary: >-
+  A standing overhead press with the EZ bar. Lighter than a barbell press, kinder on
+  the wrists, and good for home racks.
+setup:
+  - Stand with feet hip-width apart holding the EZ bar at the upper chest, elbows down
+    and forward.
+  - Brace the core and squeeze the glutes.
+steps:
+  - Press the bar overhead, moving the head back slightly.
+  - Lock out with the bar over the middle of the feet.
+  - Lower to the upper chest.
+cues:
+  - Ribs down, glutes tight.
+  - Push the head through at the top.
+mistakes:
+  - Arching the lower back.
+  - Bending the knees to push press.
+safety:
+  - Clean the bar to the shoulders with a flat back, or take it from a rack.
+breathing: Breathe in down, out up.
+videos:
+  youtube: https://www.youtube.com/watch?v=XhSzasnQ080
+tags: [barbell, gym, press, shoulders]

@@ -1,0 +1,37 @@
+slug: assisted-dip
+name: Assisted Dip
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest, triceps]
+  secondary: [front_delts]
+equipment: [machine]
+summary: >-
+  Dips on the assisted machine, with the knee pad taking part of your weight. The way
+  to learn dips before you can do them unassisted.
+setup:
+  - "Set the assist weight: more weight on the stack means more help."
+  - Kneel on the pad and hold the handles with straight arms.
+steps:
+  - Lower by bending the elbows until the upper arms are about parallel to the floor.
+  - Pause briefly.
+  - Press back up to straight arms.
+cues:
+  - Lean forward slightly for the chest, stay upright for the triceps.
+  - Shoulders down the whole time.
+mistakes:
+  - Using so much assistance that the reps are effortless.
+  - Shrugging at the top.
+safety:
+  - Reduce the assistance a little each week.
+breathing: Breathe in down, out up.
+progressions: [chest-dip, triceps-dip]
+videos:
+  youtube: https://www.youtube.com/watch?v=8NDyPgEy84E
+tags: [chest, dip, gym, machine]
+notes: >-
+  Easier version of Chest Dip

@@ -1,0 +1,34 @@
+slug: skierg
+name: SkiErg
+status: draft
+level: intermediate
+category: cardio
+movement: cardio
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [lats, triceps]
+  secondary: [abs, glutes]
+equipment: [cardio_machine]
+summary: >-
+  Pulling two handles down in a skiing motion. It loads the lats, core and hips while
+  driving the heart rate up, with zero impact.
+setup:
+  - Stand close to the machine, feet hip-width apart, handles held overhead.
+steps:
+  - Hinge at the hips and pull the handles down past your thighs, bending the knees
+    slightly.
+  - Return to tall with the arms overhead in one smooth motion.
+  - Work 30-second intervals with 60 seconds rest, or a steady 10–15 minutes.
+cues:
+  - Power comes from the hips and lats, not the arms.
+  - Finish each stroke with the handles behind the hips.
+mistakes:
+  - Rounding the back at the bottom.
+  - Pulling with bent arms only.
+safety:
+  - Keep the spine neutral through the hinge.
+breathing: Breathe out as you pull down.
+videos:
+  youtube: https://www.youtube.com/watch?v=tJU6VGbGEaI
+tags: [back, cardio, conditioning, gym, intervals]

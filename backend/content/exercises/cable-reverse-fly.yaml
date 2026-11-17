@@ -1,0 +1,39 @@
+slug: cable-reverse-fly
+name: Cable Reverse Fly
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [rear_delts]
+  secondary: [upper_back]
+equipment: [cable]
+lists: [full_push, shoulder_focus, pull]
+summary: >-
+  Pulling two cable handles apart with nearly straight arms, standing between the
+  pulleys. Rear-delt isolation with constant tension.
+setup:
+  - Set both pulleys at shoulder height and cross the cables, holding the left handle in
+    the right hand and vice versa.
+  - Step back so the arms are straight in front, chest up.
+steps:
+  - Pull the hands apart and back until the arms are out to the sides.
+  - Squeeze the rear delts.
+  - Return slowly.
+cues:
+  - Slight elbow bend, held.
+  - Don't shrug.
+mistakes:
+  - Bending the elbows a lot, turning it into a row.
+  - Leaning back.
+safety:
+  - Light weight.
+breathing: Breathe out as you open.
+videos:
+  youtube: https://www.youtube.com/watch?v=kDhyOrL_1io
+tags: [cable, fly, gym, shoulders]
+notes: >-
+  Treating this as one arm at a time, since Cable X Fly is the two-arm version —
+  correct me if not

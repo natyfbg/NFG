@@ -1,0 +1,35 @@
+slug: zottman-curl
+name: Zottman Curl
+status: draft
+level: intermediate
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [biceps, forearms]
+equipment: [dumbbell]
+lists: [pull]
+summary: >-
+  Curling up with the palms up and lowering with the palms down. The twist loads the
+  biceps on the way up and the forearms on the way down.
+setup:
+  - Stand with dumbbells at your sides, palms forward.
+steps:
+  - Curl the dumbbells up to the shoulders.
+  - At the top, rotate the palms to face down.
+  - Lower slowly with the palms down, then rotate back at the bottom.
+cues:
+  - Slow lowering phase; that's the forearm work.
+  - Elbows pinned.
+mistakes:
+  - Rushing the lowering.
+  - Rotating halfway up.
+safety:
+  - Lighter than a normal curl.
+breathing: Breathe out as you curl.
+videos:
+  youtube: https://www.youtube.com/watch?v=HkCxX3mQlVg
+tags: [biceps, curl, forearms, hybrid]
+notes: >-
+  Curl palms up, lower palms down

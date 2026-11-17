@@ -1,0 +1,37 @@
+slug: leaning-dumbbell-lateral-raise
+name: Leaning Dumbbell Lateral Raise
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [side_delts]
+equipment: [dumbbell]
+lists: [full_push, shoulder_focus]
+summary: >-
+  A one-arm lateral raise while leaning away from a post. The lean keeps tension on
+  the side delt through the whole range, including the bottom.
+setup:
+  - Hold a post or rack with one hand and lean away from it with straight arms, feet
+    close to the post.
+  - Hold a dumbbell in the free hand.
+steps:
+  - Raise the dumbbell out to the side until the arm is level with the shoulder.
+  - Pause.
+  - Lower slowly all the way down. Switch sides after the set.
+cues:
+  - Keep the lean constant.
+  - Elbow leads the way up.
+mistakes:
+  - Standing up straight as you tire.
+  - Swinging the weight.
+safety:
+  - Use a secure anchor.
+breathing: Breathe out as you raise.
+videos:
+  youtube: https://www.youtube.com/watch?v=6pYLxGYOb6s
+tags: [hybrid, raise, shoulders, unilateral]
+notes: >-
+  Split from "leaning cable and dumbbell lateral raise"

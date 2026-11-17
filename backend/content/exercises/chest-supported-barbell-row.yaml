@@ -1,0 +1,38 @@
+slug: chest-supported-barbell-row
+name: Chest-Supported Barbell Row
+status: draft
+level: beginner
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [upper_back, lats]
+  secondary: [rear_delts, biceps]
+equipment: [barbell, bench]
+lists: [pull]
+summary: >-
+  Rowing a barbell while lying chest-down on an incline bench. The bench supports the
+  back, so you can row heavy with no strain.
+setup:
+  - Set a bench to about 30–45 degrees and lie chest-down with a barbell underneath.
+    Grip overhand at shoulder-width.
+steps:
+  - Row the bar to the bottom of the bench, elbows driving back.
+  - Squeeze the shoulder blades together.
+  - Lower slowly to straight arms.
+cues:
+  - Chest stays on the pad.
+  - Pull with the elbows.
+mistakes:
+  - Lifting the chest off the bench.
+  - Shrugging.
+safety:
+  - Set the bench high enough for the bar to hang clear at the bottom.
+breathing: Breathe out as you row.
+videos:
+  youtube: https://www.youtube.com/watch?v=qyVXxvpPEmA
+tags: [back, barbell, gym, row]
+notes: >-
+  Your "Preacher Row". Chest on an incline bench, row the bar up. It was on your Home
+  list, but needs a barbell and bench, so it's Gym

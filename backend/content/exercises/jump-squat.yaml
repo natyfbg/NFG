@@ -1,0 +1,36 @@
+slug: jump-squat
+name: Jump Squat
+status: draft
+level: intermediate
+category: plyometric
+movement: squat
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [calves]
+equipment: []
+summary: >-
+  A squat finished with a jump. Builds lower-body power; keep reps low and land
+  softly.
+setup:
+  - Stand with the feet shoulder-width apart.
+steps:
+  - Squat to about parallel.
+  - Explode up into a jump, swinging the arms.
+  - Land softly with bent knees and go straight into the next rep.
+cues:
+  - Land quietly, toes then heels.
+  - Knees track over the toes on landing.
+mistakes:
+  - Landing stiff-legged.
+  - Knees caving on landing.
+safety:
+  - Do 5–8 reps per set. Stop when the jumps get lower.
+breathing: Breathe out on the jump.
+regressions: [bodyweight-squat]
+videos:
+  youtube: https://www.youtube.com/watch?v=ZxFJi9vRx4s
+tags: [explosive, home, quads, squat]
+notes: >-
+  Plyometric

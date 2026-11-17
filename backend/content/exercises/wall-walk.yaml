@@ -1,0 +1,38 @@
+slug: wall-walk
+name: Wall Walk
+status: draft
+level: intermediate
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts]
+  secondary: [triceps, abs]
+equipment: []
+summary: >-
+  Walking the feet up a wall from a push-up position until you're near vertical, then
+  walking back down. Builds shoulder strength and handstand confidence step by step.
+setup:
+  - Lie face down with the feet against the base of a wall. Push up to a plank.
+steps:
+  - Walk the feet up the wall while walking the hands toward it.
+  - Stop when the chest is close to the wall (or as far as you're comfortable).
+  - Walk back down the same way. Do 3–5 reps.
+cues:
+  - Brace hard; keep a straight line from hands to feet.
+  - Small steps with both hands and feet.
+mistakes:
+  - Letting the hips sag.
+  - Rushing down and collapsing.
+safety:
+  - Stop short of vertical until the shoulders are strong. Walk down with control every
+    time.
+breathing: Breathe steadily throughout.
+regressions: [pike-push-up]
+progressions: [wall-handstand-hold]
+videos:
+  youtube: https://www.youtube.com/watch?v=VpuoE246W1Y
+tags: [bodyweight, handstand, home, shoulders]
+notes: >-
+  Step between pike push-ups and handstands

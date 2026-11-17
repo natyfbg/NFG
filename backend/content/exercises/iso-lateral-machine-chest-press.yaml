@@ -1,0 +1,37 @@
+slug: iso-lateral-machine-chest-press
+name: Iso-Lateral Machine Chest Press
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [front_delts, triceps]
+equipment: [machine]
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  A plate-loaded press where each arm moves its own handle. It gives a chest press
+  with independent arms, so the strong side can't cover for the weak one.
+setup:
+  - Set the seat so the handles line up with your mid-chest.
+  - Sit tall, shoulder blades back, feet flat.
+steps:
+  - Press both handles forward until your arms are nearly straight.
+  - Return under control until you feel a stretch across the chest.
+  - You can also press one arm at a time.
+cues:
+  - Drive through the palms with the wrists straight.
+  - Keep the shoulders back; don't let them roll forward at the end.
+mistakes:
+  - Shrugging the shoulders toward the ears.
+  - Short, bouncy reps.
+safety:
+  - Set the seat height before loading plates.
+breathing: Breathe out as you press.
+videos:
+  youtube: https://www.youtube.com/watch?v=KVjtJS8eAAE
+tags: [chest, gym, machine, press]
+notes: >-
+  Kept separate from the app's Machine Chest Press: each arm moves on its own

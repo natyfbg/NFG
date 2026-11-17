@@ -1,0 +1,36 @@
+slug: single-leg-hip-thrust
+name: Single-Leg Hip Thrust
+status: draft
+level: intermediate
+category: strength
+movement: hinge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [glutes]
+  secondary: [hamstrings]
+equipment: [box]
+summary: >-
+  A hip thrust on one leg with the other held up. Doubles the load on each glute with
+  no weight needed.
+setup:
+  - Upper back on a bench, one foot flat, the other leg lifted with the knee bent.
+steps:
+  - Drive through the planted heel and lift the hips until the body is straight.
+  - Squeeze the glute.
+  - Lower slowly. Switch legs after the set.
+cues:
+  - Hips stay level; don't let one side drop.
+  - Ribs down.
+mistakes:
+  - Twisting the hips.
+  - Arching the back.
+safety:
+  - Master the two-leg version first.
+breathing: Breathe out as you thrust.
+regressions: [dumbbell-hip-thrust]
+videos:
+  youtube: https://www.youtube.com/watch?v=OYhurKvKNYA
+tags: [bodyweight, glutes, hip-thrust, home, unilateral]
+notes: >-
+  Shoulders on a bench or couch

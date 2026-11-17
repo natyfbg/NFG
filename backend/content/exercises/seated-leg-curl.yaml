@@ -1,0 +1,34 @@
+slug: seated-leg-curl
+name: Seated Leg Curl
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [hamstrings]
+equipment: [machine]
+lists: [lower]
+summary: >-
+  Curling the heels back under a pad while seated. The seated position stretches the
+  hamstrings at the hip, so it works them harder than the lying version.
+setup:
+  - Set the back pad so the knees line up with the pivot and the thigh pad is snug. Legs
+    straight on the roller.
+steps:
+  - Curl the heels back and under the seat as far as they go.
+  - Squeeze.
+  - Return slowly to straight legs.
+cues:
+  - Keep the hips pressed into the seat.
+  - Point the toes slightly up.
+mistakes:
+  - Lifting the hips to curl.
+  - Letting the weight yank the legs straight.
+safety:
+  - Set the pads before loading.
+breathing: Breathe out as you curl.
+videos:
+  youtube: https://www.youtube.com/watch?v=Z5pRnXaCjpM
+tags: [gym, hamstrings, machine]

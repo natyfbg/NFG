@@ -1,0 +1,41 @@
+slug: dumbbell-floor-press
+name: Dumbbell Floor Press
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [triceps, front_delts]
+equipment: [dumbbell]
+summary: >-
+  A dumbbell press lying on the floor. The floor stops the elbows at the bottom, which
+  protects the shoulders and emphasises the lockout. A bench press for anyone without
+  a bench.
+setup:
+  - Lie on your back with knees bent and feet flat, holding dumbbells over your chest
+    with straight arms.
+  - Pull the shoulder blades back and down.
+steps:
+  - Lower the dumbbells until your upper arms touch the floor, elbows at about 45
+    degrees.
+  - Pause for a moment on the floor.
+  - Press back up and bring the dumbbells together at the top.
+cues:
+  - Let the elbows rest on the floor briefly, then press; no bouncing.
+  - Keep the wrists straight over the elbows.
+mistakes:
+  - Flaring the elbows out to 90 degrees.
+  - Arching the back off the floor.
+safety:
+  - Keep the knees bent for stability. Get the dumbbells up from the floor by rolling
+    onto your back with them on your thighs.
+breathing: Breathe in down, out up.
+progressions: [dumbbell-bench-press]
+videos:
+  youtube: https://www.youtube.com/watch?v=qHCI9rK7HqM
+tags: [chest, hybrid, press]
+notes: >-
+  No bench needed

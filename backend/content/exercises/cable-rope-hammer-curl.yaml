@@ -1,0 +1,34 @@
+slug: cable-rope-hammer-curl
+name: Cable Rope Hammer Curl
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [biceps, forearms]
+equipment: [cable]
+lists: [pull]
+summary: >-
+  A hammer curl with a rope on a low cable. Neutral grip plus constant tension for the
+  biceps and forearms.
+setup:
+  - Set the pulley low with a rope. Stand holding the rope with the palms facing each
+    other.
+steps:
+  - Curl the rope up to the shoulders, keeping the palms facing in.
+  - Squeeze.
+  - Lower slowly.
+cues:
+  - Elbows at the sides.
+  - Pull the rope ends apart slightly at the top.
+mistakes:
+  - Leaning back.
+  - Elbows drifting forward.
+safety:
+  - Moderate weight.
+breathing: Breathe out as you curl.
+videos:
+  youtube: https://www.youtube.com/watch?v=PslvRTdHJHY
+tags: [biceps, cable, curl, gym]

@@ -1,0 +1,37 @@
+slug: treadmill-run
+name: Treadmill Run
+status: draft
+level: intermediate
+category: cardio
+movement: cardio
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [quads, calves, glutes]
+  secondary: [hamstrings]
+equipment: [cardio_machine]
+summary: >-
+  Running on a treadmill at a controlled pace. Predictable footing and exact speed
+  make it good for intervals and bad-weather days.
+setup:
+  - Set the incline to 1% to mimic outdoor running.
+  - Start with a 3–5 minute walk or easy jog.
+steps:
+  - Run at a pace where you can speak in short sentences for a steady run of 15–30
+    minutes.
+  - For intervals, alternate 1–2 minutes fast with equal time easy.
+  - Finish with a few minutes of walking.
+cues:
+  - Run in the middle of the belt with short, quick steps.
+  - Eyes forward, not on the console.
+mistakes:
+  - Holding the rails.
+  - Overstriding ahead of the body.
+safety:
+  - Clip the safety key on. Lower the speed before stepping off.
+breathing: Relaxed, rhythmic breathing.
+videos:
+  youtube: https://www.youtube.com/watch?v=56hogeADi5U
+tags: [cardio, conditioning, gym, intervals, running, steady]
+notes: >-
+  Covers sprint and hill intervals

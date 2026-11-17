@@ -1,0 +1,39 @@
+slug: bodyweight-bulgarian-split-squat
+name: Bodyweight Bulgarian Split Squat
+status: draft
+level: intermediate
+category: strength
+movement: lunge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [adductors, hamstrings]
+equipment: [box]
+lists: [lower]
+summary: >-
+  A split squat with the rear foot on a bench or chair, no weight. The home version of
+  the Bulgarian split squat.
+setup:
+  - Stand a long step in front of a bench and place the top of one foot on it.
+  - Hands on the hips or out for balance.
+steps:
+  - Lower the back knee toward the floor, keeping the torso upright.
+  - Go as deep as you can with the front heel down.
+  - Drive through the front foot to stand. Switch legs after the set.
+cues:
+  - Front knee over the toes.
+  - Most of the weight on the front leg.
+mistakes:
+  - Standing too close to the bench.
+  - Pushing off the back foot.
+safety:
+  - Use a sturdy bench; hold a wall if needed.
+breathing: Breathe in down, out up.
+regressions: [reverse-lunge]
+progressions: [bulgarian-split-squat]
+videos:
+  youtube: https://www.youtube.com/watch?v=4-qkLYDckys
+tags: [bodyweight, home, lunge, quads]
+notes: >-
+  Bodyweight, rear foot on a bench or chair. Your Home version

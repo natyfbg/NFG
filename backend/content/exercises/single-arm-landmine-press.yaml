@@ -1,0 +1,36 @@
+slug: single-arm-landmine-press
+name: Single-Arm Landmine Press
+status: draft
+level: intermediate
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [front_delts, upper_chest]
+  secondary: [triceps, abs]
+equipment: [barbell]
+summary: >-
+  Pressing one end of a barbell anchored in a landmine, one arm at a time. The arc of
+  the bar makes it the most shoulder-friendly overhead press.
+setup:
+  - Set a barbell in a landmine (or a corner). Stand facing the end with a staggered
+    stance, the loaded end at your shoulder, hand under it.
+steps:
+  - Press the bar up and forward along its arc until the arm is straight.
+  - Pause at the top.
+  - Lower back to the shoulder under control.
+cues:
+  - Brace the core; don't rotate away from the bar.
+  - Keep the wrist straight and the elbow under the bar.
+mistakes:
+  - Leaning back to press.
+  - Letting the hips rotate.
+safety:
+  - Use the staggered stance with the same-side foot back.
+breathing: Breathe out as you press.
+videos:
+  youtube: https://www.youtube.com/watch?v=v7mjvEDG8ro
+tags: [barbell, gym, press, shoulders, unilateral]
+notes: >-
+  Shoulder-friendly press

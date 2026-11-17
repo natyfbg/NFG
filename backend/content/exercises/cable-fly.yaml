@@ -10,6 +10,7 @@ muscles:
   primary: [chest]
   secondary: [front_delts]
 equipment: [cable]
+lists: [full_push, chest_focus, shoulder_focus]
 summary: >-
   A standing chest isolation exercise. Bringing the cable handles together in a wide
   hugging arc trains the chest without much help from the triceps.

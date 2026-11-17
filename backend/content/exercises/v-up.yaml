@@ -1,0 +1,36 @@
+slug: v-up
+name: V-Up
+status: draft
+level: intermediate
+category: strength
+movement: core
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [hip_flexors]
+equipment: []
+summary: >-
+  Lying flat and folding the arms and legs together into a V. A full-range crunch and
+  leg raise in one.
+setup:
+  - Lie on your back with the arms overhead and the legs straight.
+steps:
+  - Lift the arms and legs together, reaching the hands toward the feet.
+  - Pause at the top.
+  - Lower slowly without letting the feet touch.
+cues:
+  - Keep the legs straight.
+  - Reach for the toes, not the knees.
+mistakes:
+  - Bending the knees.
+  - Jerking up.
+safety:
+  - Do a tuck-up (bent knees) if the lower back arches.
+breathing: Breathe out as you fold.
+regressions: [crunch]
+videos:
+  youtube: https://www.youtube.com/watch?v=1tK3CQsgxIY
+tags: [abs, core, home]
+notes: >-
+  Tuck-ups are the easier version, covered in the how-to

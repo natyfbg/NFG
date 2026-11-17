@@ -1,0 +1,36 @@
+slug: elliptical
+name: Elliptical
+status: draft
+level: beginner
+category: cardio
+movement: cardio
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [hamstrings, calves]
+equipment: [cardio_machine]
+summary: >-
+  A gliding stride with handles, so the whole body works without any impact. Good for
+  steady cardio when the knees need a break from running.
+setup:
+  - Step on and hold the moving handles. Set a resistance that lets you move smoothly.
+steps:
+  - Drive the feet forward and back in a smooth stride, pushing and pulling the handles.
+  - Keep the heels down on the pedals.
+  - Hold a steady pace for 15–30 minutes, or alternate 1 minute hard with 2 minutes
+    easy.
+cues:
+  - Stand tall; don't lean on the handles.
+  - Keep the stride long and even.
+mistakes:
+  - Letting the machine's momentum do the work.
+  - Hanging on the handles with the arms locked.
+safety:
+  - Raise the resistance rather than the speed if your feet start bouncing.
+breathing: Steady breathing in time with the stride.
+videos:
+  youtube: https://www.youtube.com/watch?v=tbChqvQ4LHQ
+tags: [cardio, conditioning, gym, low-impact, steady]
+notes: >-
+  Covers the arc trainer

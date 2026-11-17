@@ -1,0 +1,37 @@
+slug: cross-body-hammer-curl
+name: Cross-Body Hammer Curl
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [biceps, forearms]
+equipment: [dumbbell]
+lists: [pull]
+summary: >-
+  A hammer curl where the dumbbell crosses to the opposite shoulder. Emphasises the
+  brachialis and forearm for thicker arms.
+setup:
+  - Stand with dumbbells at your sides, palms facing in.
+steps:
+  - Curl one dumbbell across the body toward the opposite shoulder, keeping the palm
+    facing in.
+  - Squeeze.
+  - Lower slowly and repeat with the other arm.
+cues:
+  - Elbow stays at the side.
+  - Keep the thumb up.
+mistakes:
+  - Rotating the torso.
+  - Swinging.
+safety:
+  - Moderate weight.
+breathing: Breathe out as you curl.
+regressions: [hammer-curl]
+videos:
+  youtube: https://www.youtube.com/watch?v=TXgqIvYORgU
+tags: [biceps, curl, hybrid, unilateral]
+notes: >-
+  Aka pinwheel curl

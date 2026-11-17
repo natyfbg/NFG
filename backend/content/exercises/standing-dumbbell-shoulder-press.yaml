@@ -1,0 +1,37 @@
+slug: standing-dumbbell-shoulder-press
+name: Standing Dumbbell Shoulder Press
+status: draft
+level: beginner
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts, side_delts]
+  secondary: [triceps, abs]
+equipment: [dumbbell]
+lists: [shoulder_focus]
+summary: >-
+  Pressing two dumbbells overhead from a standing position. Standing adds core and
+  balance work to the shoulder press and is the most practical version at home.
+setup:
+  - Stand with feet hip-width apart, dumbbells at shoulder height, palms forward or
+    slightly turned in.
+  - Brace the core and squeeze the glutes.
+steps:
+  - Press the dumbbells overhead until the arms are straight.
+  - Bring them slightly together at the top.
+  - Lower under control back to the shoulders.
+cues:
+  - Ribs down; don't arch the lower back to press.
+  - Head moves slightly back so the weights go straight up.
+mistakes:
+  - Leaning back and turning it into an incline press.
+  - Stopping short of lockout.
+safety:
+  - Use a weight you can control on the way down. Brace before every rep.
+breathing: Breathe in as you lower, out as you press.
+regressions: [dumbbell-shoulder-press]
+videos:
+  youtube: https://www.youtube.com/watch?v=bmy7tIopNt4
+tags: [hybrid, press, shoulders]

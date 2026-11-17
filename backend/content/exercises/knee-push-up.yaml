@@ -1,0 +1,39 @@
+slug: knee-push-up
+name: Knee Push-Up
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [triceps, front_delts]
+equipment: []
+summary: >-
+  A push-up from the knees instead of the toes. The step between incline push-ups and
+  the full version, with the same body line from knees to head.
+setup:
+  - Kneel and place your hands slightly wider than your shoulders.
+  - Walk the hands forward so your body forms a straight line from knees to head; cross
+    the ankles if you like.
+steps:
+  - Lower your chest toward the floor, elbows about 45 degrees from the body.
+  - Pause an inch off the floor.
+  - Press back up to straight arms.
+cues:
+  - Hips stay in line; don't pike or sag.
+  - Chest leads, head stays neutral.
+mistakes:
+  - Hips bending so only the shoulders move.
+  - Flaring the elbows straight out.
+safety:
+  - Use a mat under the knees.
+breathing: Breathe in down, out up.
+regressions: [wall-push-up, incline-push-up]
+progressions: [push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=6DFAEphpiE0
+tags: [chest, home, push-up]
+notes: >-
+  Step between incline and full push-up

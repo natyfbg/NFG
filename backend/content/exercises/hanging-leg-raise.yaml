@@ -1,0 +1,35 @@
+slug: hanging-leg-raise
+name: Hanging Leg Raise
+status: draft
+level: advanced
+category: strength
+movement: core
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [hip_flexors, obliques]
+equipment: [pullup_bar]
+summary: >-
+  Hanging from a bar and raising straight legs to hip height or above. The harder
+  version of the hanging knee raise.
+setup:
+  - Hang from the bar with straight arms and the shoulders active.
+steps:
+  - Raise the straight legs together until they're at least level with the hips.
+  - Pause.
+  - Lower slowly without swinging.
+cues:
+  - Tilt the pelvis up at the top.
+  - No swinging between reps.
+mistakes:
+  - Swinging.
+  - Using momentum from the hips.
+safety:
+  - Bend the knees slightly if the hamstrings are tight.
+breathing: Breathe out as you raise.
+regressions: [hanging-knee-raise]
+progressions: [toes-to-bar]
+videos:
+  youtube: https://www.youtube.com/watch?v=ByPKcOzBH1g
+tags: [abs, core, home]

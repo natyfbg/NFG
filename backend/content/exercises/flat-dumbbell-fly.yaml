@@ -1,0 +1,35 @@
+slug: flat-dumbbell-fly
+name: Flat Dumbbell Fly
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [front_delts]
+equipment: [dumbbell, bench]
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  Opening the arms out wide and bringing the dumbbells back together over the chest.
+  Pure chest work with a big stretch at the bottom.
+setup:
+  - Lie on a flat bench holding light dumbbells over your chest, palms facing each
+    other, elbows slightly bent.
+steps:
+  - Open the arms out and down in a wide arc until you feel a stretch across the chest.
+  - Keep the slight elbow bend fixed throughout.
+  - Bring the dumbbells back together over the chest, squeezing at the top.
+cues:
+  - Imagine hugging a big tree.
+  - Don't go below the level of the bench.
+mistakes:
+  - Bending the elbows more at the bottom, turning it into a press.
+  - Going too heavy and dropping into the stretch.
+safety:
+  - Use lighter weights than you think; the stretched position is vulnerable.
+breathing: Breathe in as you open, out as you close.
+videos:
+  youtube: https://www.youtube.com/watch?v=y_Z2LftZDvk
+tags: [chest, fly, hybrid]

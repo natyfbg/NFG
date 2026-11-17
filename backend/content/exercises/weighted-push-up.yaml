@@ -1,0 +1,38 @@
+slug: weighted-push-up
+name: Weighted Push-Up
+status: draft
+level: intermediate
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [triceps, front_delts]
+equipment: []
+lists: [full_push]
+summary: >-
+  A push-up with a plate on your back or a weighted vest. The way to keep progressing
+  push-ups once bodyweight sets get long.
+setup:
+  - Have a partner place a plate on your upper back, or wear a vest.
+  - Set up in a strong plank, hands slightly wider than shoulders.
+steps:
+  - Lower your chest to the floor under control.
+  - Pause briefly.
+  - Press up to full lockout, keeping the plate still.
+cues:
+  - Brace harder than usual; the load is on the core too.
+  - Keep the plate high on the back, between the shoulder blades.
+mistakes:
+  - Plate sliding onto the lower back.
+  - Shortening the range as the weight goes up.
+safety:
+  - Add weight in small steps and keep full range. Take the plate off before you fail.
+breathing: Breathe in down, out up.
+regressions: [push-up, deficit-push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=Q_FnrwhkdpU
+tags: [chest, home, push-up]
+notes: >-
+  Backpack or plate on the back. Only on Full Push

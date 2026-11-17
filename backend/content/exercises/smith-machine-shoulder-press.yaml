@@ -1,0 +1,36 @@
+slug: smith-machine-shoulder-press
+name: Smith Machine Shoulder Press
+status: draft
+level: beginner
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts, side_delts]
+  secondary: [triceps]
+equipment: [smith, bench]
+lists: [shoulder_focus]
+summary: >-
+  A seated overhead press on the Smith machine. The guided bar lets you press hard
+  safely and set a hard floor with the safety catches.
+setup:
+  - Set an upright bench under the bar so it comes down to your upper chest. Grip
+    slightly wider than the shoulders.
+steps:
+  - Unhook the bar and lower it to the upper chest.
+  - Press back up to straight arms.
+  - Set the safety catches at chest level before starting.
+cues:
+  - Keep the ribs down and the back against the bench.
+  - Elbows under the bar.
+mistakes:
+  - Bench too far forward so the bar comes down on the face.
+  - Bouncing off the bottom.
+safety:
+  - Position the bench so the bar path lines up with the upper chest, then set the
+    catches.
+breathing: Breathe in down, out up.
+videos:
+  youtube: https://www.youtube.com/watch?v=kYZ0aUEzgEQ
+tags: [gym, press, shoulders, smith-machine]

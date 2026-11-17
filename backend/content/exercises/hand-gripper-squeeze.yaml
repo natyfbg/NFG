@@ -1,0 +1,35 @@
+slug: hand-gripper-squeeze
+name: Hand Gripper Squeeze
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [forearms]
+equipment: [hand_gripper]
+summary: >-
+  Closing a spring hand gripper fully and releasing slowly. Direct crushing-grip
+  strength.
+setup:
+  - Hold the gripper with the handle set in the palm and the fingers wrapped around the
+    other handle.
+steps:
+  - Squeeze until the handles touch.
+  - Hold for a second.
+  - Open slowly. Do 8–15 reps per hand.
+cues:
+  - Full close each rep.
+  - Control the opening.
+mistakes:
+  - Partial squeezes.
+  - Letting it spring open.
+safety:
+  - Start with a gripper you can close for 10 reps.
+breathing: Breathe out as you squeeze.
+videos:
+  youtube: https://www.youtube.com/watch?v=uF93rqPrYI4
+tags: [forearms, grip, hybrid]
+notes: >-
+  Covers timed holds too

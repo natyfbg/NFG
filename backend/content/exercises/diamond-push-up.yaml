@@ -1,0 +1,38 @@
+slug: diamond-push-up
+name: Diamond Push-Up
+status: draft
+level: intermediate
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [triceps]
+  secondary: [chest, front_delts]
+equipment: []
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  A push-up with the thumbs and index fingers touching under the chest. The narrow
+  hands put the load on the triceps.
+setup:
+  - Start in a plank with your hands together under your chest, thumbs and index fingers
+    forming a diamond.
+steps:
+  - Lower your chest to your hands, keeping the elbows close to the body.
+  - Pause just above the hands.
+  - Press back up to lockout.
+cues:
+  - Elbows brush the ribs.
+  - Body straight from head to heels.
+mistakes:
+  - Flaring the elbows out.
+  - Hips sagging.
+safety:
+  - Do them from the knees if the full version strains the wrists or elbows.
+breathing: Breathe in down, out up.
+regressions: [knee-push-up, push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=_4EGPVJuqfA
+tags: [home, push-up, triceps]
+notes: >-
+  Harder step after Close-Grip Push-Up. Keeping both

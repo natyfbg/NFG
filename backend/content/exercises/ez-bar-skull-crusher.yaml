@@ -1,0 +1,36 @@
+slug: ez-bar-skull-crusher
+name: EZ-Bar Skull Crusher
+status: draft
+level: intermediate
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [triceps]
+equipment: [barbell, bench]
+lists: [full_push]
+summary: >-
+  Lowering an EZ bar toward the forehead from straight arms while lying on a bench.
+  The classic triceps builder, with the angled grip easy on the wrists.
+setup:
+  - Lie on a flat bench holding the EZ bar on the inner grips, arms straight over the
+    chest.
+  - Let the arms tilt slightly back toward the head.
+steps:
+  - Bend only at the elbows and lower the bar toward the top of your head.
+  - Stop just short of touching.
+  - Extend the arms back to the start, keeping the upper arms still.
+cues:
+  - Upper arms stay fixed; only the forearms move.
+  - Lower behind the head, not to the face.
+mistakes:
+  - Letting the elbows flare out.
+  - Moving the upper arms to help.
+safety:
+  - Have a spotter for heavy sets. Lower to behind the head, which is safer and better
+    for the triceps.
+breathing: Breathe in as you lower, out as you extend.
+videos:
+  youtube: https://www.youtube.com/watch?v=GaK2da6B2zM
+tags: [barbell, extension, gym, triceps]

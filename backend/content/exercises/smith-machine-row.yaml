@@ -1,0 +1,35 @@
+slug: smith-machine-row
+name: Smith Machine Row
+status: draft
+level: beginner
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats, upper_back]
+  secondary: [rear_delts, biceps, lower_back]
+equipment: [smith]
+lists: [pull]
+summary: >-
+  A bent-over row on the Smith machine. The fixed bar path keeps the pull consistent
+  and lets you focus on the squeeze.
+setup:
+  - Set the bar low. Hinge at the hips with a flat back and grip overhand at
+    shoulder-width.
+steps:
+  - Unhook and row the bar to the lower chest or upper stomach.
+  - Squeeze the shoulder blades.
+  - Lower under control.
+cues:
+  - Back flat, hips still.
+  - Elbows drive back.
+mistakes:
+  - Standing up as you row.
+  - Rounding the back.
+safety:
+  - Keep the knees bent and the core braced.
+breathing: Breathe out as you row.
+videos:
+  youtube: https://www.youtube.com/watch?v=sTuwq4Vcvag
+tags: [back, gym, row, smith-machine]

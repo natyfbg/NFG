@@ -1,0 +1,37 @@
+slug: dragon-flag
+name: Dragon Flag
+status: draft
+level: advanced
+category: strength
+movement: core
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [abs]
+  secondary: [hip_flexors, lats]
+equipment: [bench]
+summary: >-
+  Holding a bench behind the head and raising and lowering the whole body as one
+  straight line. A legendary core move.
+setup:
+  - Lie on a bench and grip the edge behind your head.
+steps:
+  - Raise the legs and hips until only the shoulders touch the bench, body straight.
+  - Lower the body slowly as one piece, stopping before the back arches.
+  - Raise again.
+cues:
+  - Body straight from shoulders to toes.
+  - Squeeze the glutes and brace hard.
+mistakes:
+  - Bending at the hips.
+  - Arching the lower back on the way down.
+safety:
+  - Only after hanging leg raises and ab wheel rollouts are easy. Start with a bent-knee
+    version.
+breathing: Breathe out as you lower.
+regressions: [ab-wheel-rollout, hanging-leg-raise]
+videos:
+  youtube: https://www.youtube.com/watch?v=69AnMt9Fq9A
+tags: [abs, core, hybrid]
+notes: >-
+  Hold the bench behind your head

@@ -1,0 +1,36 @@
+slug: assisted-pull-up
+name: Assisted Pull-Up
+status: draft
+level: beginner
+category: strength
+movement: vertical_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats]
+  secondary: [biceps, upper_back]
+equipment: [machine]
+lists: [pull]
+summary: >-
+  Pull-ups on the assisted machine, with the knee pad counterbalancing part of your
+  weight. Easy to adjust week by week.
+setup:
+  - Set the assist weight (more weight = more help). Kneel on the pad and take the
+    handles.
+steps:
+  - Pull the chest up toward the handles.
+  - Pause at the top.
+  - Lower to straight arms.
+cues:
+  - Shoulders down first, then pull.
+  - Chest up.
+mistakes:
+  - Too much assistance.
+  - Rushing the lowering.
+safety:
+  - Reduce the assist a plate at a time.
+breathing: Breathe out as you pull.
+progressions: [pull-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=H_Z5BBiJxLY
+tags: [back, gym, machine, pull-up]

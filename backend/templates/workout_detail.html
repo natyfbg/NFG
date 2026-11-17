@@ -88,6 +88,28 @@
     <div class="nfg-ex-info">
       {% if w.info %}<p class="nfg-ex-summary">{{ w.info }}</p>{% endif %}
 
+      {% if form_steps %}
+        <section class="nfg-form" aria-labelledby="formTitle">
+          <h2 class="nfg-form-title" id="formTitle">How to do it</h2>
+          <ol class="nfg-form-steps" data-no-page-swipe>
+            {% for s in form_steps %}
+              <li class="nfg-form-step">
+                <div class="nfg-form-media">
+                  {% if s.img %}
+                    <img src="{{ s.img }}" alt="{{ w.name }}: {{ s.title|lower }}" loading="lazy">
+                  {% else %}
+                    {{ s.svg|safe }}
+                  {% endif %}
+                  <span class="nfg-form-badge"><b>{{ s.n }}</b>{{ s.title }}</span>
+                </div>
+                <p class="nfg-form-caption">{{ s.caption }}</p>
+                {% if s.tip %}<p class="nfg-form-tip">{{ ui.icon('lightbulb') }}<span>{{ s.tip }}</span></p>{% endif %}
+              </li>
+            {% endfor %}
+          </ol>
+        </section>
+      {% endif %}
+
       {% if easier or harder %}
         <div class="nfg-ex-variations">
           {% for x in easier %}

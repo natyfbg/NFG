@@ -1,0 +1,36 @@
+slug: assault-bike
+name: Assault Bike
+status: draft
+level: intermediate
+category: cardio
+movement: cardio
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [front_delts, lats, triceps]
+equipment: [cardio_machine]
+summary: >-
+  A fan bike you drive with arms and legs together. The harder you go, the harder it
+  pushes back, which makes it the best tool for short, brutal intervals.
+setup:
+  - Set the seat so your knee has a slight bend at the bottom of the pedal stroke.
+  - Sit tall with a light grip on the handles.
+steps:
+  - Push and pull the handles while pedalling, letting the arms and legs share the work.
+  - "Intervals: 20–30 seconds hard, 60–90 seconds easy, for 6–10 rounds."
+  - "Steady: hold a pace you could talk through for 10–20 minutes."
+cues:
+  - Drive through the whole foot, not just the toes.
+  - Keep the shoulders down and the torso still.
+mistakes:
+  - Rocking the body side to side.
+  - Going all-out on round one and fading.
+safety:
+  - Start with shorter intervals; the fan bike is harder than it looks.
+breathing: Breathe deeply and rhythmically; don't hold your breath on hard efforts.
+videos:
+  youtube: https://www.youtube.com/watch?v=RPY7HTGfOiU
+tags: [cardio, conditioning, gym, intervals]
+notes: >-
+  Aka air bike

@@ -1,0 +1,38 @@
+slug: rack-pull
+name: Rack Pull
+status: draft
+level: intermediate
+category: strength
+movement: hinge
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [upper_back, traps, lower_back]
+  secondary: [glutes, hamstrings, forearms]
+equipment: [barbell]
+summary: >-
+  A deadlift from the rack with the bar starting above the knees. The shortened range
+  lets you load the upper back and traps heavier than a full pull.
+setup:
+  - Set the bar on rack pins or blocks just above knee height. Stand with the shins
+    close, overhand or mixed grip.
+steps:
+  - Brace, pull the bar up the thighs to lockout, squeezing the glutes and pulling the
+    shoulders back.
+  - Pause at the top.
+  - Lower to the pins under control.
+cues:
+  - Chest up, back flat.
+  - Shoulders back at the top, no leaning back.
+mistakes:
+  - Rounding the upper back.
+  - Bouncing the bar off the pins.
+safety:
+  - Use straps if the grip fails. Don't hyperextend at lockout.
+breathing: Breathe in and brace before each pull; breathe out at the top.
+regressions: [deadlift]
+videos:
+  youtube: https://www.youtube.com/watch?v=e11lVmLsvFU
+tags: [back, barbell, deadlift, gym]
+notes: >-
+  Top half of a deadlift. Heavy upper-back work

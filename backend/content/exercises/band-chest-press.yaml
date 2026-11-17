@@ -1,0 +1,36 @@
+slug: band-chest-press
+name: Band Chest Press
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [front_delts, triceps]
+equipment: [bands]
+summary: >-
+  A chest press with a band anchored behind you. It's a bench press you can do
+  anywhere, and the band gets harder as you lock out.
+setup:
+  - Anchor a band behind you at chest height, or run it around your back.
+  - Hold the ends at your chest, elbows bent, and step forward until it's taut.
+steps:
+  - Press the hands forward until the arms are straight.
+  - Squeeze the chest at the end.
+  - Return slowly, keeping tension on the band.
+cues:
+  - Staggered stance for balance.
+  - Don't let the band pull the shoulders forward.
+mistakes:
+  - Standing so close that the band is slack at the start.
+  - Rushing the return.
+safety:
+  - Check the band for nicks before every use.
+breathing: Breathe out as you press.
+videos:
+  youtube: https://www.youtube.com/watch?v=8aQL3sguvV8
+tags: [bands, chest, hybrid, press]
+notes: >-
+  Band anchored behind you

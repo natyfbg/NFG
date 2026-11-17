@@ -1,0 +1,34 @@
+slug: iso-lateral-machine-row
+name: Iso-Lateral Machine Row
+status: draft
+level: beginner
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [upper_back, lats]
+  secondary: [rear_delts, biceps]
+equipment: [machine]
+lists: [pull]
+summary: >-
+  A plate-loaded row with independent arms and a chest pad. Heavy rowing with no
+  lower-back work and each side held honest.
+setup:
+  - Set the seat so the handles line up with the chest. Lean the chest on the pad.
+steps:
+  - Row the handles back, elbows close to the body.
+  - Squeeze the shoulder blades.
+  - Return slowly to a full stretch.
+cues:
+  - Chest on the pad.
+  - Pull with the elbows.
+mistakes:
+  - Lifting off the pad.
+  - Short reps.
+safety:
+  - Set the seat first.
+breathing: Breathe out as you row.
+videos:
+  youtube: https://www.youtube.com/watch?v=4KmUkufLnPc
+tags: [back, gym, machine, row]

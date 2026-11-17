@@ -1,0 +1,35 @@
+slug: smith-machine-bench-press
+name: Smith Machine Bench Press
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [front_delts, triceps]
+equipment: [smith, bench]
+lists: [shoulder_focus]
+summary: >-
+  A bench press on the Smith machine's fixed bar path. The bar can't drift, so you can
+  push hard safely without a spotter.
+setup:
+  - Set a flat bench so the bar lines up with your mid-chest when you lie down.
+  - Grip slightly wider than shoulder-width, shoulder blades back and down, feet flat.
+steps:
+  - Unhook the bar and lower it to your chest under control.
+  - Touch lightly, then press back up.
+  - Set the safety stops just below chest level before starting.
+cues:
+  - Tuck the elbows to about 45 degrees.
+  - Keep the shoulder blades pinned to the bench.
+mistakes:
+  - Setting the bench so the bar lands on the neck or stomach.
+  - Letting the shoulders roll forward at the top.
+safety:
+  - Set the safety catches and check the hook direction before unracking.
+breathing: Breathe in down, out up.
+videos:
+  youtube: https://www.youtube.com/watch?v=7FyJdsXeta8
+tags: [chest, gym, press, smith-machine]

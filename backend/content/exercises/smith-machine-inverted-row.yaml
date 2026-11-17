@@ -1,0 +1,39 @@
+slug: smith-machine-inverted-row
+name: Smith Machine Inverted Row
+status: draft
+level: beginner
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [upper_back, lats]
+  secondary: [rear_delts, biceps, abs]
+equipment: [smith]
+lists: [pull]
+summary: >-
+  Pulling your chest to a Smith machine bar from underneath, heels on the floor. A
+  horizontal pull-up: scale it by moving the feet.
+setup:
+  - Set the bar at hip height. Lie under it and grip overhand at shoulder-width, body
+    straight, heels on the floor.
+steps:
+  - Pull the chest to the bar, squeezing the shoulder blades.
+  - Pause at the top.
+  - Lower to straight arms.
+cues:
+  - Body straight from head to heels.
+  - Chest to the bar, not chin.
+mistakes:
+  - Hips sagging.
+  - Half reps.
+safety:
+  - Lower the bar or raise the feet to make it harder; raise the bar to make it easier.
+breathing: Breathe out as you pull.
+regressions: [inverted-row]
+videos:
+  youtube: https://www.youtube.com/watch?v=I640fMJC80s
+tags: [back, bodyweight, gym, row, smith-machine]
+notes: >-
+  Kept separate from Inverted Row, because the equipment decides whether it shows for
+  Home or Gym

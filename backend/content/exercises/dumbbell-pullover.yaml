@@ -1,0 +1,36 @@
+slug: dumbbell-pullover
+name: Dumbbell Pullover
+status: draft
+level: intermediate
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [chest, lats]
+  secondary: [triceps]
+equipment: [dumbbell, bench]
+summary: >-
+  Lowering one dumbbell behind your head with nearly straight arms, then pulling it
+  back over the chest. It stretches the chest and lats together.
+setup:
+  - Lie across or along a bench holding one dumbbell with both hands under the top
+    plate, over your chest.
+  - Elbows slightly bent, hips a little lower than the shoulders.
+steps:
+  - Lower the dumbbell in an arc behind your head until you feel a stretch in the chest
+    and lats.
+  - Keep the elbow bend fixed.
+  - Pull the weight back over the chest.
+cues:
+  - Ribs down; don't let the lower back arch to go deeper.
+  - Move slowly through the stretched position.
+mistakes:
+  - Bending the elbows a lot, which turns it into a triceps extension.
+  - Arching the back hard at the bottom.
+safety:
+  - Start light and increase the range over weeks. Keep a firm grip on the dumbbell.
+breathing: Breathe in as you lower, out as you pull over.
+videos:
+  youtube: https://www.youtube.com/watch?v=l0YnKjgikm0
+tags: [chest, hybrid, lats]

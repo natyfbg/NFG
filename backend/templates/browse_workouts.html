@@ -4,37 +4,13 @@
 {% block title %}Browse exercises – {{ app_name }}{% endblock %}
 {% block back_url %}{{ url_for('workouts') }}{% endblock %}
 
-{% macro choice(name, value, label, current) %}
-  <label class="nfg-choice">
-    <input type="radio" name="{{ name }}" value="{{ value }}" {% if value == current %}checked{% endif %}>
-    <span>{{ label }}</span>
-  </label>
-{% endmacro %}
-
 {% block page %}
 <div class="nfg-discover nfg-browse">
 
   <header class="nfg-page-head">
     <h1 class="nfg-page-title">Browse exercises</h1>
-    <div class="nfg-toolbar">
-      <form class="nfg-searchbar" action="{{ url_for('workouts_browse') }}" method="get" role="search">
-        {{ ui.icon('search') }}
-        <input type="search" name="q" value="{{ q }}" placeholder="Search exercises" aria-label="Search exercises">
-        {% for k, v in page_args.items() if k != 'q' %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
-      </form>
-      <button class="nfg-filter-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterSheet"
-              aria-controls="filterSheet">
-        {{ ui.icon('sliders') }}<span>Filters</span>{% if filter_count %}<span class="nfg-count">{{ filter_count }}</span>{% endif %}
-      </button>
-    </div>
-    {% if active_filters %}
-      {% call ui.rail() %}
-        {% for f in active_filters %}
-          <a class="nfg-active-chip" href="{{ f.href }}" aria-label="Remove filter {{ f.label }}">{{ f.label }} {{ ui.icon('x-lg') }}</a>
-        {% endfor %}
-      {% endcall %}
-    {% endif %}
   </header>
+  {% include "_filterbar.html" %}
 
   <section class="nfg-section">
     <div class="nfg-results-head">
@@ -45,6 +21,11 @@
         {% for w in items %}{{ ui.exercise_card(w) }}{% endfor %}
       </div>
       {{ ui.pagination(page, pages, 'workouts_browse', page_args) }}
+    {% elif drop_last %}
+      <div class="nfg-empty">
+        No exercise works all of these muscles yet.
+        <a href="{{ drop_last.href }}">Remove {{ drop_last.label }}</a>.
+      </div>
     {% else %}
       <div class="nfg-empty">
         Nothing matches yet — the library is still growing.
@@ -57,57 +38,5 @@
 {% endblock %}
 
 {% block overlays %}
-<div class="offcanvas offcanvas-bottom nfg-sheet" tabindex="-1" id="filterSheet" aria-labelledby="filterSheetTitle">
-  <form method="get" action="{{ url_for('workouts_browse') }}">
-    <div class="nfg-sheet-head">
-      <h2 class="nfg-sheet-title" id="filterSheetTitle">Filters</h2>
-      <button type="button" class="nfg-iconbtn is-dark" data-bs-dismiss="offcanvas" aria-label="Close">{{ ui.icon('x-lg') }}</button>
-    </div>
-    <div class="nfg-sheet-body">
-      {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
-
-      <fieldset class="nfg-fieldset">
-        <legend>Training at</legend>
-        <div class="nfg-choices">
-          {% for key, e in environments.items() %}{{ choice('env', key, e.label, env) }}{% endfor %}
-        </div>
-      </fieldset>
-
-      <fieldset class="nfg-fieldset">
-        <legend>Muscle group</legend>
-        <div class="nfg-choices">
-          {{ choice('group', '', 'Any', group) }}
-          {% for key, label in group_choices %}{{ choice('group', key, label, group) }}{% endfor %}
-        </div>
-      </fieldset>
-
-      <fieldset class="nfg-fieldset">
-        <legend>Equipment</legend>
-        <div class="nfg-choices">
-          {{ choice('eq', '', 'Any', eq) }}
-          {% for key, label in equipment_choices %}{{ choice('eq', key, label, eq) }}{% endfor %}
-        </div>
-      </fieldset>
-
-      <fieldset class="nfg-fieldset">
-        <legend>Level</legend>
-        <div class="nfg-choices">
-          {{ choice('level', '', 'Any', level) }}
-          {% for label in level_choices %}{{ choice('level', label, label, level) }}{% endfor %}
-        </div>
-      </fieldset>
-
-      <fieldset class="nfg-fieldset">
-        <legend>Sort</legend>
-        <div class="nfg-choices">
-          {% for key, label in sorts.items() %}{{ choice('sort', key, label, sort if sort in sorts else 'name') }}{% endfor %}
-        </div>
-      </fieldset>
-    </div>
-    <div class="nfg-sheet-foot">
-      <a class="nfg-btn is-ghost" href="{{ url_for('workouts_browse') }}">Clear all</a>
-      <button class="nfg-btn" type="submit">Show results</button>
-    </div>
-  </form>
-</div>
+{% include "_filterpanel.html" %}
 {% endblock %}

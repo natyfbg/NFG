@@ -86,7 +86,7 @@ def test_landing_sections(client, library):
     assert "New in the library" in html
     for text in ("Simple, stable moves", "More load, balance", "Heavy, technical"):
         assert text in html
-    assert "Home &amp; gym" in html  # equipment tiles say where it works
+    assert "Anywhere" in html and "Home kit &amp; gym" in html  # tiles say where it works
     # 14 muscle groups: six shown, the rest behind "Show all".
     assert "Show all 14 muscle groups" in html and 'data-more-visible="6"' in html
 
@@ -119,7 +119,8 @@ def _names(html):
         ("?eq=bodyweight", ["Floor Press", "Wall Press"]),
         ("?eq=barbell", ["Bench Press"]),
         ("?level=Intermediate", ["Bench Press"]),
-        ("?env=home", ["Floor Press", "Wall Press", "DB Row"]),
+        ("?env=home", ["Floor Press", "Wall Press"]),  # dumbbells are hybrid kit now
+        ("?env=hybrid", ["Floor Press", "Wall Press", "DB Row"]),
         ("?q=row", ["DB Row", "Cable Row"]),
         ("?body=Back", ["DB Row", "Cable Row"]),  # legacy label filter still works
         ("?group=wings", ["Floor Press", "Wall Press", "Bench Press", "DB Row", "Cable Row"]),
@@ -135,7 +136,8 @@ def test_browse_active_filter_chips_remove_one_filter(client, library):
     html = client.get("/workouts/browse?group=chest&eq=bodyweight").get_data(as_text=True)
     assert "Remove filter Chest" in html and "Remove filter Bodyweight" in html
     assert 'href="/workouts/browse?eq=bodyweight"' in html  # removing Chest keeps equipment
-    assert '<span class="nfg-count">2</span>' in html
+    assert "Clear all" in html  # two filters: one tap clears both
+    assert 'class="nfg-fchip is-on" href="#filterPanel" data-filter-open="muscles"' in html
 
 
 def test_browse_paginates_with_numbers(client, library):
@@ -147,11 +149,14 @@ def test_browse_paginates_with_numbers(client, library):
     assert 'aria-current="page">3<' in last  # out-of-range page clamps to the last page
 
 
-def test_browse_filter_sheet_present(client, library):
+def test_browse_filter_panel_present(client, library):
     html = client.get("/workouts/browse").get_data(as_text=True)
-    assert 'id="filterSheet"' in html
-    for legend in ("Training at", "Muscle group", "Equipment", "Level", "Sort"):
+    assert 'id="filterPanel"' in html and "data-filterbar" in html
+    assert "<legend>Muscles <span" in html  # several muscles at once
+    for legend in ("Training at", "Equipment", "Level", "Sort"):
         assert f"<legend>{legend}</legend>" in html
+    assert 'type="checkbox" name="group"' in html  # muscles: many
+    assert 'type="radio" name="eq"' in html and 'type="radio" name="level"' in html  # one each
 
 
 # --------------------------------------------------------------------------
@@ -185,7 +190,7 @@ def test_search_programs_skip_internal_tracks(client, library):
 def test_exercise_page_layout(client, library):
     html = client.get("/workouts/floor-press").get_data(as_text=True)
     assert (
-        'nfg-mchip is-primary" style="--group-color: #B4532A;" href="/workouts/mix?g=chest">Chest<'
+        'nfg-mchip is-primary" style="--group-color: #D63A2F;" href="/workouts/mix?g=chest">Chest<'
         in html
     )
     assert "nfg-mchip is-primary" in html and ">Triceps<" in html
@@ -326,7 +331,7 @@ def sessions(nfg_app):
     return nfg_app
 
 
-def _session(nfg_app, key, extra=(), env="hybrid"):
+def _session(nfg_app, key, extra=(), env="gym"):
     import taxonomy as tx
 
     with nfg_app.app.test_request_context("/"):
@@ -428,3 +433,56 @@ def test_swipe_pages_prefetch_their_neighbours(client, library):
     assert '["/", "/programs"]' in exercises
     detail = client.get("/workouts/floor-press").get_data(as_text=True)
     assert "speculationrules" not in detail
+
+
+# --------------------------------------------------------------------------
+# Muscles combine (AND); live count
+# --------------------------------------------------------------------------
+
+
+def test_browse_several_muscles_must_all_match(client, nfg_app):
+    import content_sync as cs
+
+    base = {
+        "status": "published",
+        "level": "beginner",
+        "category": "strength",
+        "movement": "horizontal_push",
+        "equipment": [],
+        "summary": "x",
+        "steps": ["x"],
+        "cues": ["x"],
+    }
+    exercises = [
+        {
+            **base,
+            "slug": "press-a",
+            "name": "Press A",
+            "muscles": {"primary": ["chest"], "secondary": ["triceps"]},
+        },
+        {
+            **base,
+            "slug": "press-b",
+            "name": "Press B",
+            "muscles": {"primary": ["chest"], "secondary": []},
+        },
+        {
+            **base,
+            "slug": "dip-c",
+            "name": "Dip C",
+            "muscles": {"primary": ["triceps", "chest"], "secondary": []},
+        },
+    ]
+    cs.apply_sync(nfg_app.db, cs.plan_sync(nfg_app.db, exercises))
+    html = client.get("/workouts/browse?group=chest&group=triceps").get_data(as_text=True)
+    assert "Press A" in html and "Dip C" in html and "Press B" not in html
+    assert html.index("Dip C") < html.index("Press A")  # both as main targets ranks first
+    assert (
+        client.get("/workouts/browse?group=chest,triceps").get_data(as_text=True).count("Press B")
+        == 0
+    )
+    resp = client.get("/workouts/browse/count?group=chest&group=triceps")
+    assert resp.get_json() == {"total": 2}
+    html = client.get("/workouts/browse?group=chest&group=calves").get_data(as_text=True)
+    assert "No exercise works all of these muscles yet." in html
+    assert "Remove Calves" in html and 'href="/workouts/browse?group=chest"' in html

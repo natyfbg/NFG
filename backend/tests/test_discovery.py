@@ -79,21 +79,23 @@ def test_env_choice_is_remembered_in_cookie(client, library):
     everywhere = _push_count(client.get("/").get_data(as_text=True))
     resp = client.get("/?env=home")
     assert any(c.startswith("nfg_env=home") for c in resp.headers.getlist("Set-Cookie"))
-    # Next visit without ?env= keeps "home": barbell press no longer counted.
+    # Next visit without ?env= keeps "home": the barbell press (gym) and the dumbbell
+    # extension (hybrid kit) are no longer counted.
     html = client.get("/").get_data(as_text=True)
     assert 'aria-current="true">Home<' in html
-    assert _push_count(html) == everywhere - 1
+    assert _push_count(html) == everywhere - 2
     assert 'p=pull"' not in html  # the only pull exercise needs a gym
 
 
-def test_invalid_env_falls_back_to_hybrid(client, library):
+def test_invalid_env_falls_back_to_gym(client, library):
+    # Gym is the setting that shows everything, so it is the default.
     html = client.get("/?env=moon").get_data(as_text=True)
-    assert 'aria-current="true">Hybrid<' in html
+    assert 'aria-current="true">Gym<' in html
 
 
 def test_group_counts_respect_environment(nfg_app, library):
     with nfg_app.app.test_request_context("/"):
-        all_counts = nfg_app._group_counts("hybrid")
+        all_counts = nfg_app._group_counts("gym")
         home_counts = nfg_app._group_counts("home")
     assert all_counts["chest"] == 2 and home_counts["chest"] == 1
     assert all_counts.get("back") == 1 and "back" not in home_counts
@@ -124,7 +126,7 @@ def test_coach_picks_render_and_skip_missing(client, library, nfg_app, monkeypat
 
 def test_mixer_ranks_by_coverage(nfg_app, library):
     with nfg_app.app.test_request_context("/"):
-        results = nfg_app._mix_results(["chest", "triceps"], "hybrid")
+        results = nfg_app._mix_results(["chest", "triceps"], "gym")
     names = [r["name"] for r in results]
     # Presses hit chest (primary) + triceps (secondary) = 3; extension hits triceps only = 2.
     assert names[:2] == ["BW Press", "Bar Press"]  # beginner before intermediate on ties

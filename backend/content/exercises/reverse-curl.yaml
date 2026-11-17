@@ -1,0 +1,35 @@
+slug: reverse-curl
+name: Reverse Curl
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [forearms, biceps]
+equipment: [barbell]
+lists: [pull]
+summary: >-
+  A curl with the palms facing down. The overhand grip moves the work from the biceps
+  to the forearms and brachialis.
+setup:
+  - Hold a barbell or EZ bar with an overhand grip, arms straight.
+steps:
+  - Curl the bar up to the shoulders, keeping the wrists straight.
+  - Squeeze.
+  - Lower slowly.
+cues:
+  - Knuckles up the whole way.
+  - Elbows pinned.
+mistakes:
+  - Letting the wrists bend back.
+  - Swinging.
+safety:
+  - Lighter than a normal curl.
+breathing: Breathe out as you curl.
+videos:
+  youtube: https://www.youtube.com/watch?v=YO98hq3vX7g
+tags: [curl, forearms, gym]
+notes: >-
+  Palms down. Covers the EZ-bar, cable and dumbbell versions

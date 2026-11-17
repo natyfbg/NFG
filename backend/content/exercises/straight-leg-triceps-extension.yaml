@@ -1,0 +1,38 @@
+slug: straight-leg-triceps-extension
+name: Straight-Leg Triceps Extension
+status: draft
+level: advanced
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [triceps]
+  secondary: [abs]
+equipment: []
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  The bodyweight triceps extension from the toes instead of the knees. Much harder:
+  the whole body weight rests on the triceps.
+setup:
+  - Take a plank position with the hands slightly forward of the shoulders, body
+    straight.
+steps:
+  - Bend only the elbows and lower until the forearms touch the floor.
+  - Pause.
+  - Extend the elbows to push back up, keeping the body straight.
+cues:
+  - Brace hard so the hips don't sag.
+  - Elbows back, not out.
+mistakes:
+  - Letting the shoulders move forward and back.
+  - Dropping the hips.
+safety:
+  - Master the kneeling version first.
+breathing: Breathe in down, out up.
+regressions: [kneeling-triceps-extension]
+videos:
+  youtube: https://www.youtube.com/watch?v=W7j2dnr5lHs
+tags: [bodyweight, extension, home, triceps]
+notes: >-
+  Same, from a plank

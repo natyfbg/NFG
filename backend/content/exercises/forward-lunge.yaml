@@ -1,0 +1,38 @@
+slug: forward-lunge
+name: Forward Lunge
+status: draft
+level: beginner
+category: strength
+movement: lunge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [adductors, hamstrings]
+equipment: []
+lists: [lower]
+summary: >-
+  Stepping forward into a lunge and pushing back to standing. Quads, glutes and
+  balance, with the push-back adding a little deceleration work.
+setup:
+  - Stand tall with the feet hip-width apart.
+steps:
+  - Step forward and lower until the back knee is just off the floor, front shin
+    vertical.
+  - Push off the front foot to return to standing.
+  - Alternate legs.
+cues:
+  - Torso upright.
+  - Front knee tracks over the toes.
+mistakes:
+  - Stepping too short so the knee shoots past the toes.
+  - Letting the front knee cave in.
+safety:
+  - Keep the front heel down.
+breathing: Breathe in as you step, out as you push back.
+progressions: [walking-lunge]
+videos:
+  youtube: https://www.youtube.com/watch?v=B7VQJiVv3xw
+tags: [bodyweight, home, lunge, quads]
+notes: >-
+  Your "Body weight lunges"

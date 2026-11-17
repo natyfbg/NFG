@@ -1,0 +1,39 @@
+slug: wall-push-up
+name: Wall Push-Up
+status: draft
+level: beginner
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest]
+  secondary: [triceps, front_delts]
+equipment: []
+summary: >-
+  A push-up done standing, hands on a wall. The easiest starting point for pressing:
+  it teaches the straight-body position and the elbow path with very little load.
+setup:
+  - Stand an arm's length from a wall and place your hands on it at shoulder height,
+    slightly wider than your shoulders.
+  - Walk the feet back a little so you're leaning in, body in a straight line.
+steps:
+  - Bend the elbows and bring your chest toward the wall, elbows at about 45 degrees
+    from your body.
+  - Pause with your nose close to the wall.
+  - Press back to straight arms.
+cues:
+  - Squeeze the glutes so the hips don't sag.
+  - Elbows back, not flared out to the sides.
+mistakes:
+  - Leading with the head instead of the chest.
+  - Bending at the hips.
+safety:
+  - Move the feet further from the wall to make it harder, closer to make it easier.
+breathing: Breathe in as you lower, out as you press.
+progressions: [incline-push-up, knee-push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=ZUuYbRgcHmg
+tags: [chest, home, push-up]
+notes: >-
+  Easiest starting point. Your home lists have few true beginner options

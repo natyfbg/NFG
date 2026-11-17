@@ -1,0 +1,36 @@
+slug: pistol-squat
+name: Pistol Squat
+status: draft
+level: advanced
+category: strength
+movement: lunge
+mechanics: compound
+laterality: unilateral
+muscles:
+  primary: [quads, glutes]
+  secondary: [abs]
+equipment: []
+lists: [lower]
+summary: >-
+  A full squat on one leg with the other leg held out in front. Strength, balance and
+  mobility in one hard move.
+setup:
+  - Stand on one leg with the other leg straight out in front, arms forward for balance.
+steps:
+  - Squat down on the standing leg as low as you can, keeping the free leg off the
+    floor.
+  - Pause at the bottom.
+  - Drive back up. Switch legs after the set.
+cues:
+  - Heel down, knee tracking over the toes.
+  - Reach the arms forward as you descend.
+mistakes:
+  - Heel lifting.
+  - Falling backward at the bottom.
+safety:
+  - Hold a post or a band for assistance until the balance is there.
+breathing: Breathe in down, out up.
+regressions: [bodyweight-bulgarian-split-squat]
+videos:
+  youtube: https://www.youtube.com/watch?v=KRwKF3QVX8I
+tags: [bodyweight, home, quads, squat, unilateral]

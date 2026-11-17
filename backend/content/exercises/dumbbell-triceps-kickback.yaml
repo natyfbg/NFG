@@ -1,0 +1,34 @@
+slug: dumbbell-triceps-kickback
+name: Dumbbell Triceps Kickback
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: unilateral
+muscles:
+  primary: [triceps]
+equipment: [dumbbell]
+summary: >-
+  Extending a dumbbell straight back behind you while hinged forward. Simple, portable
+  triceps isolation.
+setup:
+  - Hold a light dumbbell, hinge forward with a flat back, and bring the upper arm
+    beside the ribs, parallel to the floor.
+  - Support the other hand on a bench or your knee.
+steps:
+  - Extend the elbow until the arm is straight behind you.
+  - Pause and squeeze.
+  - Lower under control to 90 degrees.
+cues:
+  - Upper arm stays fixed.
+  - Don't let the elbow drop.
+mistakes:
+  - Swinging the weight.
+  - Using so much weight the upper arm has to move.
+safety:
+  - Keep the back flat throughout.
+breathing: Breathe out as you extend.
+videos:
+  youtube: https://www.youtube.com/watch?v=AbOUz070DC4
+tags: [hybrid, kickback, triceps]

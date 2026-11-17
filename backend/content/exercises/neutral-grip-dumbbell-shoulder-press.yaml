@@ -1,0 +1,36 @@
+slug: neutral-grip-dumbbell-shoulder-press
+name: Neutral-Grip Dumbbell Shoulder Press
+status: draft
+level: beginner
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts]
+  secondary: [triceps, side_delts]
+equipment: [dumbbell]
+summary: >-
+  A shoulder press with the palms facing each other. The neutral grip keeps the elbows
+  forward and is the most shoulder-friendly way to press overhead.
+setup:
+  - Sit or stand with dumbbells at shoulder height, palms facing each other, elbows
+    pointing forward.
+steps:
+  - Press the dumbbells straight up until the arms are straight.
+  - Pause at the top.
+  - Lower slowly back to the shoulders.
+cues:
+  - Elbows stay in front of the body, not out to the sides.
+  - Keep the wrists straight.
+mistakes:
+  - Letting the elbows drift out as you tire.
+  - Arching the back.
+safety:
+  - Good first choice if overhead pressing pinches the shoulders.
+breathing: Breathe in down, out up.
+videos:
+  youtube: https://www.youtube.com/watch?v=00bjCsQz25A
+tags: [hybrid, press, shoulders]
+notes: >-
+  Palms facing each other, seated or standing. Easier on the shoulders

@@ -1,0 +1,34 @@
+slug: leg-press-calf-raise
+name: Leg Press Calf Raise
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [calves]
+equipment: [machine]
+lists: [lower]
+summary: >-
+  Calf raises on the leg press with the balls of the feet on the bottom of the
+  platform. Heavy loading with the back supported.
+setup:
+  - Sit in the leg press with the balls of the feet on the lower edge of the platform,
+    legs straight but not locked.
+steps:
+  - Push the platform away by pointing the toes.
+  - Pause at the top.
+  - Lower until the calves are fully stretched.
+cues:
+  - Keep the knees nearly straight and still.
+  - Slow lowering.
+mistakes:
+  - Bending the knees to push.
+  - Letting the feet slip.
+safety:
+  - Keep the safety catches engaged in case the feet slip.
+breathing: Breathe out as you push.
+videos:
+  youtube: https://www.youtube.com/watch?v=sluiSitVePs
+tags: [calves, gym, machine]

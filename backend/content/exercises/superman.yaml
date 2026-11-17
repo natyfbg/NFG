@@ -1,0 +1,34 @@
+slug: superman
+name: Superman
+status: draft
+level: beginner
+category: strength
+movement: isolation
+mechanics: isolation
+laterality: bilateral
+muscles:
+  primary: [lower_back]
+  secondary: [glutes, upper_back]
+equipment: []
+lists: [pull]
+summary: >-
+  Lying face down and lifting the arms and legs together. Simple lower-back and glute
+  work with no equipment.
+setup:
+  - Lie face down with the arms extended overhead.
+steps:
+  - Lift the arms, chest and legs off the floor together.
+  - Hold for 1–2 seconds.
+  - Lower slowly.
+cues:
+  - Squeeze the glutes.
+  - Look at the floor, neck neutral.
+mistakes:
+  - Jerking up.
+  - Looking up and craning the neck.
+safety:
+  - Lift only as high as is comfortable for the lower back.
+breathing: Breathe out as you lift.
+videos:
+  youtube: https://www.youtube.com/watch?v=lII2hY1m4AU
+tags: [back, bodyweight, home, lower-back]

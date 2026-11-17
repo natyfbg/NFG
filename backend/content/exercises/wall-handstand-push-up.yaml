@@ -1,0 +1,40 @@
+slug: wall-handstand-push-up
+name: Wall Handstand Push-Up
+status: draft
+level: advanced
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts]
+  secondary: [triceps, side_delts, traps]
+equipment: []
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  A push-up in a wall handstand. The hardest bodyweight shoulder press there is, with
+  the full body weight on the shoulders.
+setup:
+  - Kick up into a handstand with the heels on the wall, hands a little wider than the
+    shoulders.
+steps:
+  - Lower by bending the elbows until the head lightly touches the floor (or a pad).
+  - Pause.
+  - Press back up to straight arms.
+cues:
+  - Elbows at about 45 degrees, not flared.
+  - Keep the body tight; don't let the hips sag off the wall.
+mistakes:
+  - Dropping onto the head.
+  - Elbows flaring straight out.
+safety:
+  - Only after you can hold the wall handstand for 45 seconds. Use a pad under the head
+    and keep the range partial at first.
+breathing: Breathe in down, out up.
+regressions: [wall-handstand-hold, feet-elevated-pike-push-up]
+progressions: [freestanding-handstand-push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=abdkULQ2ZWQ
+tags: [bodyweight, handstand, home, shoulders]
+notes: >-
+  Your "wall supported hand stand push up"

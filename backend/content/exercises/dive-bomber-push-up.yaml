@@ -1,0 +1,38 @@
+slug: dive-bomber-push-up
+name: Dive Bomber Push-Up
+status: draft
+level: intermediate
+category: strength
+movement: horizontal_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [chest, front_delts]
+  secondary: [triceps]
+equipment: []
+summary: >-
+  Sweeping from a pike position down and through to a cobra, then back. It works the
+  chest, shoulders and triceps and takes the spine and shoulders through a big range.
+setup:
+  - Start in a pike with hips high, hands and feet wider than shoulder-width.
+steps:
+  - Bend the elbows and dive the chest forward and down, skimming just above the floor.
+  - Continue the arc until your arms are straight and your chest is up (cobra), hips
+    low.
+  - Reverse the path back to the pike.
+cues:
+  - Keep the elbows tucked as the chest sweeps through.
+  - Move slowly; the path is the point.
+mistakes:
+  - Dropping the hips straight down instead of sweeping forward.
+  - Shrugging the shoulders at the top.
+safety:
+  - Skip the cobra arch if your lower back doesn't like extension; stop at the bottom
+    instead.
+breathing: Breathe in as you dive, out as you push back.
+regressions: [push-up]
+videos:
+  youtube: https://www.youtube.com/watch?v=gyNX1HoaEs0
+tags: [chest, home, push-up, shoulders]
+notes: >-
+  Bridges push-ups and pike work

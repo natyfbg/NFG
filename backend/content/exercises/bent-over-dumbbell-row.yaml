@@ -1,0 +1,39 @@
+slug: bent-over-dumbbell-row
+name: Bent-Over Dumbbell Row
+status: draft
+level: beginner
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [lats, upper_back]
+  secondary: [rear_delts, biceps, lower_back]
+equipment: [dumbbell]
+lists: [pull]
+summary: >-
+  Rowing two dumbbells while hinged at the hips. The basic two-arm row with dumbbells,
+  loading the upper back, lats and lower back.
+setup:
+  - Hold dumbbells, hinge at the hips with a flat back until the torso is near 45
+    degrees, knees soft.
+  - Let the dumbbells hang under the shoulders.
+steps:
+  - Row the dumbbells to the hips, elbows driving back.
+  - Squeeze the shoulder blades together.
+  - Lower slowly to straight arms.
+cues:
+  - Back flat, chest proud.
+  - Elbows close to the body.
+mistakes:
+  - Rounding the back.
+  - Standing up as you row.
+safety:
+  - Keep the core braced and the spine neutral.
+breathing: Breathe out as you row.
+regressions: [one-arm-dumbbell-row]
+videos:
+  youtube: https://www.youtube.com/watch?v=PFTMBwL3GV0
+tags: [back, hybrid, row]
+notes: >-
+  Both arms at once. Kept separate from One-Arm Dumbbell Row

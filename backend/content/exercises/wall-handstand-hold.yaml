@@ -1,0 +1,39 @@
+slug: wall-handstand-hold
+name: Wall Handstand Hold
+status: draft
+level: intermediate
+category: strength
+movement: vertical_push
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [front_delts]
+  secondary: [triceps, traps, abs]
+equipment: []
+lists: [full_push, chest_focus, shoulder_focus]
+summary: >-
+  Holding a handstand with the heels resting on a wall. Builds the shoulder strength
+  and body tension for handstand push-ups.
+setup:
+  - Place the hands a hand's width from the wall, fingers spread.
+  - Kick up so the heels rest on the wall.
+steps:
+  - Push the floor away, lock the elbows and squeeze the glutes and core.
+  - Hold for 15–45 seconds.
+  - Come down one leg at a time.
+cues:
+  - Ribs in, body in a straight line.
+  - Look at the floor between the hands.
+mistakes:
+  - Banana back with the hips arched.
+  - Bent elbows.
+safety:
+  - Learn to come down safely (cartwheel out or walk down the wall) before holding long.
+breathing: Breathe steadily; don't hold your breath.
+regressions: [pike-push-up]
+progressions: [wall-handstand-push-up, freestanding-handstand]
+videos:
+  youtube: https://www.youtube.com/watch?v=5kalrTkvm-8
+tags: [bodyweight, handstand, home, shoulders]
+notes: >-
+  Your "Hand Stand" / "wall supported handstand"

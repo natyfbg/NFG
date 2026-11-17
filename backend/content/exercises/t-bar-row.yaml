@@ -1,0 +1,34 @@
+slug: t-bar-row
+name: T-Bar Row
+status: draft
+level: intermediate
+category: strength
+movement: horizontal_pull
+mechanics: compound
+laterality: bilateral
+muscles:
+  primary: [upper_back, lats]
+  secondary: [rear_delts, biceps, lower_back]
+equipment: [barbell]
+lists: [pull]
+summary: >-
+  Rowing a barbell anchored in a landmine with a V-handle under the bar. A heavy row
+  with a flat back and a strong squeeze.
+setup:
+  - Straddle the bar, hook the V-handle under it, hinge at the hips with a flat back.
+steps:
+  - Row the bar to the chest, elbows driving back.
+  - Squeeze the back.
+  - Lower under control.
+cues:
+  - Chest up, back flat.
+  - Hips stay down; don't stand up as you pull.
+mistakes:
+  - Rounding the back.
+  - Jerking the weight.
+safety:
+  - Keep the knees bent and the core braced.
+breathing: Breathe out as you row.
+videos:
+  youtube: https://www.youtube.com/watch?v=oa-WYYfTYcM
+tags: [back, barbell, gym, row]
