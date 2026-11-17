@@ -18,6 +18,7 @@ from urllib.parse import parse_qs, urlparse, urlsplit
 from xml.sax.saxutils import escape as xml_escape
 
 import curation
+import formfigures
 import mailer
 import program_content
 import taxonomy as tx
@@ -4838,6 +4839,44 @@ def _has_muscle_map(slug: str) -> bool:
     return _MUSCLE_MAP_FILES[slug]
 
 
+FORM_IMAGE_EXTS = ("webp", "jpg", "jpeg", "png")
+_FORM_IMAGE_FILES: Dict[Tuple[str, int], Optional[str]] = {}
+
+
+def _form_image(slug: str, n: int) -> Optional[str]:
+    """static/img/exercises/<slug>/step-<n>.<ext>, if Nate has added one."""
+    key = (slug, n)
+    if key not in _FORM_IMAGE_FILES:
+        found = None
+        for ext in FORM_IMAGE_EXTS:
+            rel = f"img/exercises/{slug}/step-{n}.{ext}"
+            if slug and os.path.isfile(os.path.join(app.static_folder, rel)):
+                found = rel
+                break
+        _FORM_IMAGE_FILES[key] = found
+    rel = _FORM_IMAGE_FILES[key]
+    return url_for("static", filename=rel) if rel else None
+
+
+def _form_steps(w: dict, accent: str) -> List[dict]:
+    """Start · Movement · Finish: caption + tip each, with Nate's photo for the step when
+    there is one, otherwise the illustrated figure."""
+    texts = formfigures.step_texts(w)
+    figures = None
+    steps = []
+    for i, text in enumerate(texts):
+        step = dict(text, n=i + 1)
+        src = _form_image(w.get("slug") or "", i + 1)
+        if src:
+            step["img"] = src
+        else:
+            if figures is None:
+                figures = formfigures.figures_for(w, formfigures.lighten(accent))
+            step["svg"] = figures[i]
+        steps.append(step)
+    return steps
+
+
 def _exercise_slides(w: dict) -> List[dict]:
     """The exercise viewer: real photos first (form, in order), the muscle map last."""
     slides = [
@@ -4954,10 +4993,12 @@ def workout_detail(slug):
         or w.get("mistakes")
         or w.get("safety")
     )
+    accent = _accent_for(w)
     return render_template(
         "workout_detail.html",
         w=w,
-        accent=_accent_for(w),
+        accent=accent,
+        form_steps=_form_steps(w, accent["color"]),
         muscle_chips=_muscle_chips(w),
         slides=_exercise_slides(w),
         video_links=_video_links(w),

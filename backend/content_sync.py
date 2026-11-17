@@ -72,11 +72,15 @@ OPTIONAL_KEYS = (
         "videos",
         "notes",  # free-form authoring notes; never synced
         "lists",  # session lists from the planner (full_push, chest_focus, …); synced
+        "form_pose",  # force a form-figure family (formfigures.F); synced
+        "form",  # up to 3 {caption, tip} overrides for the form steps; synced
     )
     + TEXT_LIST_KEYS
     + SLUG_LIST_KEYS
 )
 ALLOWED_KEYS = set(REQUIRED_KEYS) | set(OPTIONAL_KEYS)
+# Session lists from Nate's planner: which session presets an exercise belongs to.
+SESSION_LISTS = ("full_push", "chest_focus", "shoulder_focus", "pull", "lower")
 
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "mongo"}
 
@@ -188,6 +192,33 @@ def validate_exercise(raw, filename: str) -> Tuple[List[str], List[str]]:
             err(f"{key} must be a list of exercise slugs")
     if "images" in raw and not _is_text_list(raw["images"]):
         err("images must be a list of image paths/URLs")
+    if "lists" in raw:
+        bad = (
+            [x for x in raw["lists"] or [] if x not in SESSION_LISTS]
+            if isinstance(raw["lists"], list)
+            else ["(not a list)"]
+        )
+        if bad:
+            err(f"unknown list(s) {bad}; valid: {list(SESSION_LISTS)}")
+    if "form_pose" in raw:
+        import formfigures
+
+        if raw["form_pose"] not in formfigures.F:
+            err("form_pose must be one of the families in formfigures.F")
+    if "form" in raw:
+        form = raw["form"]
+        ok = (
+            isinstance(form, list)
+            and len(form) <= 3
+            and all(
+                isinstance(x, dict)
+                and set(x) <= {"caption", "tip"}
+                and all(isinstance(v, str) and v.strip() for v in x.values())
+                for x in form
+            )
+        )
+        if not ok:
+            err("form must be a list of up to 3 items with 'caption' and/or 'tip' text")
     videos = raw.get("videos")
     if videos is not None:
         if not isinstance(videos, dict) or set(videos) - set(VIDEO_HOSTS):
@@ -327,6 +358,12 @@ def build_doc(ex: dict) -> dict:
         doc["youtube_id"] = ex["youtube_id"] or ""
     if "videos" in ex:
         doc["videos"] = {k: v.strip() for k, v in ex["videos"].items()}
+    if "lists" in ex:
+        doc["lists"] = list(ex["lists"] or [])
+    if "form_pose" in ex:
+        doc["form_pose"] = ex["form_pose"]
+    if "form" in ex:
+        doc["form_steps"] = [{k: v.strip() for k, v in x.items()} for x in ex["form"]]
     return doc
 
 
