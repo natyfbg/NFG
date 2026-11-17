@@ -1,18 +1,19 @@
-# CLAUDE.md — working guide for the NFG fitness app
+# CLAUDE.md — working guide for the Qiltsim fitness app (repo: NFG)
 
 This repo is public. Never put secrets, connection strings, IP allowlists or
 account details in this file, in code, in logs or in commits.
 
 ## What this is
 
-NFG is a mobile-first fitness app: exercise library, structured programs,
-progress tracking. It is **not** Nate's separate Next.js coaching website — do not
+Qiltsim (qiltsim.com; called NFG until 2026-11-16) is a mobile-first fitness app:
+exercise library, structured programs, progress tracking. It is **not** Nate's separate Next.js coaching website — do not
 migrate this app to Next.js/React or that project's architecture.
 
 - Python 3.11 · Flask 3 · Jinja2 server-rendered templates · Bootstrap 5 (CDN, SRI)
   · vanilla JS · PyMongo (raw dicts, no ODM) · Gunicorn · Docker
 - Production: Render (`nfg-app` web service + manual `nfg-seed` job) → MongoDB Atlas.
-  Uploaded media lives on a Render disk.
+  Uploaded media lives on a Render disk. Domain qiltsim.com (DNS on Cloudflare, DNS-only
+  records pointing at Render). Email goes out through Resend's HTTP API (`mailer.py`).
 - Local: Docker Compose with a local `mongo:7` container. Never point local dev at Atlas.
 - Nearly all backend code is in `backend/app.py` (monolith, ~6.6k lines). Do not split
   it up without an agreed plan; tests come first.
@@ -147,6 +148,27 @@ as committer, so GitHub shows them as Verified.
   New code should read the new fields.
 - Draft exercises are hidden from visitors via `_public_workout_query()` but visible
   to a signed-in admin (with a Draft badge) for previewing.
+- **The name lives in one place:** `APP_NAME` (env, default "Qiltsim") → `app_name` in
+  every template; the wordmark is `app_name|upper`; placeholders use
+  `placeholders.BRAND_MARK`. Internal names keep "nfg" on purpose: the Mongo database
+  (`NFG`), Render service names, cookies (`nfg_vid`, `nfg_env`, `nfg_level`), CSS classes
+  (`nfg-*`). Renaming any of those breaks data, sessions or styles.
+- **Canonical domain:** `CANONICAL_HOST` (Render env) makes www. and `*.onrender.com`
+  301 to it (GET/HEAD only; `/healthz` exempt) and adds `<link rel="canonical">`. Set it
+  only after the custom domain is verified in Render, or the site redirects to a domain
+  that doesn't answer yet. Links that leave the site (emails, sitemap) use
+  `_public_url()`, which never trusts the request's Host header when hosted.
+- **Email:** `mailer.send()` posts to Resend when `RESEND_API_KEY` is set; without it the
+  email is logged (that's how reset links show up locally). Email-dependent features
+  check `mail_enabled`, which is off on Render until the key exists.
+- **Password reset:** `/account/forgot` → emailed link `/account/reset/<token>`. Only the
+  token's SHA-256 is stored (`password_resets`, TTL on `expires_at`), 1 hour, single use,
+  3 emails per account per hour, the forgot form shares the login throttle per IP, and
+  the reply is the same whether or not the email has an account. A reset bumps the
+  user's `auth_gen`, which is part of the session id (`member:<id>:<gen>`), so every
+  other session is signed out.
+- `robots.txt` and `sitemap.xml` are routes (public pages, published exercises,
+  program hubs; no drafts even for an admin).
 
 ## Decisions log
 
@@ -245,6 +267,14 @@ as committer, so GitHub shows them as Verified.
   OPEX) over influencer videos; every id came from a search result for that exercise.
   `content_sync.py check-videos` confirms channel/title and flags dead or
   non-embeddable links. Nate can swap any link.
+- 2026-11-16 — **Renamed NFG → Qiltsim**, domain qiltsim.com (Cloudflare DNS, DNS-only
+  so Render issues the certificate; www redirects to the bare domain). Email through
+  Resend (free tier: 3,000 emails/month, 100/day — plenty for password resets).
+  Password reset by email shipped first; the favicon stays Nate's glyph until there's a
+  Qiltsim logo.
+- 2026-11-16 — Muscle Mixer stays in the menu (no floating button). Picker design:
+  body first, picked muscles listed under the body as chips with × to remove
+  (canvas option E2). Phase 1 code is stashed until the revamp starts.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
@@ -268,8 +298,9 @@ Next six sprints, in order:
    — awaiting Nate's review. ✅ Core batch (15 new, 82 total): holds, crunches, leg raises,
    Pallof press, woodchop, suitcase carry; the program's Plank/Side Plank lines now link
    to real exercises and Coach's Picks resolves fully.
-5. Accounts and trust — new design for auth/account; password reset (email); delete account
-   + export; privacy/terms; skippable training profile; error alerts; backups confirmed.
+5. Accounts and trust — new design for auth/account; ✅ password reset (email, 2026-11-16);
+   delete account + export; privacy/terms; skippable training profile; error alerts;
+   backups confirmed.
 6. Workouts + session mode — saved workouts (exercise + sets/reps/rest), "Save as workout",
    set logging, rest timer, swap exercise, history (guests and members).
 Alongside: full body (S3), cardio + mobility (S5), first 12 recipes (S6).

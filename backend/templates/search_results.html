@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% import "_components.html" as ui %}
 
-{% block title %}{{ ('“' ~ q ~ '” – ') if q }}Search – NFG{% endblock %}
+{% block title %}{{ ('“' ~ q ~ '” – ') if q }}Search – {{ app_name }}{% endblock %}
 
 {% block page %}
 <div class="nfg-discover nfg-search">

@@ -43,6 +43,7 @@ _USER_STATE_COLLECTIONS = (
     "program_week_progress",
     "login_failures",
     "favorites",
+    "password_resets",
 )
 
 

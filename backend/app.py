@@ -3,17 +3,22 @@ from __future__ import annotations
 
 import datetime
 import difflib
+import hashlib
 import hmac
 import logging
 import os
 import re
+import secrets
+import threading
 import uuid
 from logging.handlers import RotatingFileHandler
 from time import monotonic, perf_counter
 from typing import Dict, List, Optional, Tuple
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, urlsplit
+from xml.sax.saxutils import escape as xml_escape
 
 import curation
+import mailer
 import program_content
 import taxonomy as tx
 from bson.objectid import ObjectId
@@ -24,6 +29,7 @@ from flask import (
     abort,
     flash,
     g,
+    make_response,
     redirect,
     render_template,
     render_template_string,
@@ -42,7 +48,7 @@ from flask_login import (
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from jinja2 import TemplateNotFound
 from PIL import Image, UnidentifiedImageError
-from pymongo import ASCENDING, MongoClient
+from pymongo import ASCENDING, MongoClient, ReturnDocument
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -68,6 +74,14 @@ SECRET_KEY = os.environ.get("SECRET_KEY", DEV_SECRET_KEY)
 
 # Render sets RENDER=true. Anything hosted gets strict config rules below.
 IS_HOSTED = bool(os.getenv("RENDER"))
+
+# The name people see. Internal names (repo, DB, nfg_* cookies, nfg- CSS) stay as they are.
+APP_NAME = (os.getenv("APP_NAME") or "Qiltsim").strip() or "Qiltsim"
+# The public domain (e.g. qiltsim.com). When set, the onrender.com address and www
+# redirect here, and links in emails and the sitemap use it. Empty = no redirect.
+CANONICAL_HOST = (os.getenv("CANONICAL_HOST") or "").strip().lower()
+# Email needs a Resend key on a hosted site; locally, messages go to the log instead.
+MAIL_ENABLED = mailer.configured() or not IS_HOSTED
 
 # Upload/media configuration (Render Disk ready)
 MEDIA_ROOT = os.getenv("MEDIA_ROOT", "").strip()
@@ -343,6 +357,39 @@ def _start_timer():
     g._t0 = perf_counter()
 
 
+def _redirect_host(host: str) -> bool:
+    """Hosts that should send visitors on to CANONICAL_HOST (never the health check's)."""
+    host = (host or "").split(":", 1)[0].lower()
+    if not CANONICAL_HOST or host == CANONICAL_HOST:
+        return False
+    return host == f"www.{CANONICAL_HOST}" or host.endswith(".onrender.com")
+
+
+@app.before_request
+def _to_canonical_host():
+    if request.method not in ("GET", "HEAD") or request.path == "/healthz":
+        return None
+    if not _redirect_host(request.host):
+        return None
+    # request.url is already percent-encoded; swap only the scheme and host.
+    target = urlsplit(request.url)._replace(scheme="https", netloc=CANONICAL_HOST).geturl()
+    return redirect(target, code=301)
+
+
+def _public_url(endpoint: str, **values) -> str:
+    """Absolute URL for emails and the sitemap: the canonical domain when one is set."""
+    path = url_for(endpoint, **values)
+    if CANONICAL_HOST:
+        return f"https://{CANONICAL_HOST}{path}"
+    if IS_HOSTED:
+        # Never trust the request's Host header for links that leave the site
+        # (a forged Host would put someone else's domain in a reset email).
+        hosted = (os.getenv("RENDER_EXTERNAL_HOSTNAME") or "").strip().lower()
+        if hosted:
+            return f"https://{hosted}{path}"
+    return f"{request.scheme}://{request.host}{path}"
+
+
 @app.before_request
 def _ensure_viewer_id():
     viewer_id = (request.cookies.get("nfg_vid") or "").strip()
@@ -524,12 +571,16 @@ def load_user(user_id):
         return User("admin", role="admin")
 
     if (user_id or "").startswith("member:"):
-        oid = user_id.split(":", 1)[1]
+        # "member:<id>" or "member:<id>:<auth_gen>". auth_gen goes up when the
+        # password is reset, which signs out every older session.
+        parts = user_id.split(":")
+        oid = parts[1] if len(parts) > 1 else ""
+        gen = parts[2] if len(parts) > 2 else "0"
         try:
             doc = db.users.find_one({"_id": ObjectId(oid), "active": {"$ne": False}})
         except Exception:
             doc = None
-        if doc:
+        if doc and str(int(doc.get("auth_gen") or 0)) == gen:
             return User(
                 user_id,
                 role="member",
@@ -537,6 +588,11 @@ def load_user(user_id):
                 username=doc.get("username"),
             )
     return None
+
+
+def _member_login_id(doc) -> str:
+    gen = int(doc.get("auth_gen") or 0)
+    return f"member:{doc['_id']}" + (f":{gen}" if gen else "")
 
 
 def _check_admin_credentials(username: str, password: str) -> bool:
@@ -2979,6 +3035,12 @@ def _ensure_indexes() -> None:
         )
         db.login_failures.create_index([("key", 1), ("at", -1)])
 
+        db.password_resets.create_index([("token_hash", 1)], unique=True)
+        db.password_resets.create_index([("user_id", 1), ("created_at", -1)])
+        db.password_resets.create_index(
+            [("expires_at", 1)], expireAfterSeconds=0, name="password_resets_ttl"
+        )
+
         db.favorites.create_index(
             [("viewer_id", 1), ("item_type", 1), ("item_slug", 1)], unique=True
         )
@@ -3211,6 +3273,9 @@ def inject_globals():
         "csrf_token": generate_csrf,
         "program_favorite_slugs": _LazySet(_favorite_slug_set_for_request),
         "asset_v": _asset_version() if DEV_RELOAD else ASSET_VERSION,
+        "app_name": APP_NAME,
+        "mail_enabled": MAIL_ENABLED,
+        "canonical_url": (f"https://{CANONICAL_HOST}{request.path}" if CANONICAL_HOST else None),
         **_brand_assets(),
     }
 
@@ -3732,7 +3797,7 @@ def home():
     ]
     return render_template(
         "home.html",
-        name="NFG",
+        name=APP_NAME,
         env=env,
         environments=tx.ENVIRONMENTS,
         splits=_home_splits(env),
@@ -5051,7 +5116,7 @@ def account_login():
         _migrate_guest_state_to_member(_viewer_id(), member_key)
         login_user(
             User(
-                f"member:{doc['_id']}",
+                _member_login_id(doc),
                 role="member",
                 user_oid=str(doc["_id"]),
                 username=doc.get("username"),
@@ -5076,6 +5141,183 @@ def account_logout():
     logout_user()
     flash("Signed out.", "success")
     return redirect(url_for("home"))
+
+
+# -----------------------------------------------------------------------------
+# Password reset by email
+# -----------------------------------------------------------------------------
+# The link carries a random token; only its SHA-256 is stored, so a database
+# leak can't be turned into working links. Tokens last an hour, work once, and
+# a used one cancels the account's other open links.
+RESET_TOKEN_TTL_SEC = 60 * 60
+RESET_PER_ACCOUNT_PER_HOUR = 3
+MIN_PASSWORD_LENGTH = 8
+
+
+def _reset_token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _deliver_email(to: str, subject: str, text: str, html: Optional[str] = None) -> None:
+    """Send in the background, so the page answers at once and takes the same time
+    whether or not the address has an account."""
+
+    def run():
+        try:
+            mailer.send(to, subject, text, html)
+        except mailer.MailError as e:
+            app.logger.warning("Email could not be sent: %s", e)
+
+    threading.Thread(target=run, daemon=True).start()
+
+
+def _reset_email(doc, link: str) -> Tuple[str, str, str]:
+    name = doc.get("username") or "there"
+    subject = f"Reset your {APP_NAME} password"
+    text = (
+        f"Hi {name},\n\n"
+        f"Someone asked to reset the password for your {APP_NAME} account. "
+        "If it was you, open this link within the next hour:\n\n"
+        f"{link}\n\n"
+        "If it wasn't you, ignore this email. Your password stays the same.\n\n"
+        f"{APP_NAME}\n"
+    )
+    html = render_template("email_reset.html", name=name, link=link)
+    return subject, text, html
+
+
+def _start_password_reset(email_lower: str) -> None:
+    """Email a reset link if the address belongs to an active member. Silent either way."""
+    doc = db.users.find_one({"email_lower": email_lower, "active": {"$ne": False}})
+    if not doc or not doc.get("email"):
+        return
+    now = datetime.datetime.utcnow()
+    recent = db.password_resets.count_documents(
+        {"user_id": doc["_id"], "created_at": {"$gte": now - datetime.timedelta(hours=1)}}
+    )
+    if recent >= RESET_PER_ACCOUNT_PER_HOUR:
+        app.logger.info("Password reset skipped: hourly limit reached for one account")
+        return
+    token = secrets.token_urlsafe(32)
+    db.password_resets.insert_one(
+        {
+            "token_hash": _reset_token_hash(token),
+            "user_id": doc["_id"],
+            "created_at": now,
+            "expires_at": now + datetime.timedelta(seconds=RESET_TOKEN_TTL_SEC),
+            "used_at": None,
+        }
+    )
+    subject, text, html = _reset_email(doc, _public_url("account_reset", token=token))
+    _deliver_email(doc["email"], subject, text, html)
+
+
+def _open_reset(token: str):
+    """The reset record for a token that is still usable, else None."""
+    if not token or len(token) > 200:
+        return None
+    rec = db.password_resets.find_one({"token_hash": _reset_token_hash(token)})
+    if not rec or rec.get("used_at") or rec.get("expires_at") is None:
+        return None
+    if rec["expires_at"] <= datetime.datetime.utcnow():
+        return None
+    return rec
+
+
+def _private_page(resp):
+    """Reset pages hold a secret in the URL: keep them out of caches and referrers."""
+    resp = make_response(resp)
+    resp.headers["Cache-Control"] = "no-store"
+    resp.headers["Referrer-Policy"] = "no-referrer"
+    return resp
+
+
+@app.route("/account/forgot", methods=["GET", "POST"])
+def account_forgot():
+    if not MAIL_ENABLED:
+        abort(404)
+    if getattr(current_user, "is_authenticated", False):
+        return redirect(url_for("account_profile"))
+
+    if request.method == "POST":
+        throttle_key = _login_throttle_key("forgot")
+        if not _allowed_login_attempt(throttle_key):
+            flash("Too many requests. Try again in about 15 minutes.", "danger")
+            return render_template("account_forgot.html"), 429
+        email = (request.form.get("email") or "").strip()
+        if not email or "@" not in email or len(email) > 254:
+            flash("Enter the email you signed up with.", "danger")
+            return render_template("account_forgot.html", email=email)
+        _record_failed_login(throttle_key)  # counts requests, not failures
+        try:
+            _start_password_reset(email.lower())
+        except PyMongoError as e:
+            app.logger.error("Password reset could not start: %s", e)
+        return render_template("account_forgot.html", sent_to=email)
+
+    return render_template("account_forgot.html")
+
+
+@app.route("/account/reset/<token>", methods=["GET", "POST"])
+def account_reset(token):
+    if not MAIL_ENABLED:
+        abort(404)
+    rec = _open_reset(token)
+    if not rec:
+        return _private_page(render_template("account_reset.html", expired=True))
+
+    if request.method == "POST":
+        password = request.form.get("password") or ""
+        confirm = request.form.get("confirm_password") or ""
+        error = None
+        if len(password.strip()) < MIN_PASSWORD_LENGTH:
+            error = f"Use at least {MIN_PASSWORD_LENGTH} characters."
+        elif password != confirm:
+            error = "The two passwords don't match."
+        if error:
+            flash(error, "danger")
+            return _private_page(render_template("account_reset.html", token=token))
+
+        now = datetime.datetime.utcnow()
+        # Claim the token first, so two quick submits can't both use it.
+        claimed = db.password_resets.update_one(
+            {"_id": rec["_id"], "used_at": None}, {"$set": {"used_at": now}}
+        )
+        if not claimed.modified_count:
+            return _private_page(render_template("account_reset.html", expired=True))
+        db.password_resets.update_many(
+            {"user_id": rec["user_id"], "used_at": None}, {"$set": {"used_at": now}}
+        )
+        doc = db.users.find_one_and_update(
+            {"_id": rec["user_id"], "active": {"$ne": False}},
+            {
+                "$set": {
+                    # Same normalisation as sign-up and sign-in, which strip.
+                    "password_hash": generate_password_hash(password.strip()),
+                    "password_changed_at": now,
+                },
+                "$inc": {"auth_gen": 1},
+            },
+            return_document=ReturnDocument.AFTER,
+        )
+        if not doc:
+            return _private_page(render_template("account_reset.html", expired=True))
+
+        if getattr(current_user, "is_authenticated", False):
+            logout_user()
+        _migrate_guest_state_to_member(_viewer_id(), f"user:{doc['_id']}")
+        login_user(
+            User(
+                _member_login_id(doc),
+                role="member",
+                user_oid=str(doc["_id"]),
+                username=doc.get("username"),
+            )
+        )
+        flash("Password changed. You're signed in.", "success")
+        return redirect(url_for("home"))
+
+    return _private_page(render_template("account_reset.html", token=token))
 
 
 @app.route("/account")
@@ -7639,6 +7881,62 @@ def healthz():
     except PyMongoError as e:
         app.logger.warning("Healthz DB ping failed: %s", e)
         return {"status": "degraded", "mongo": "down"}, 503
+
+
+# -----------------------------------------------------------------------------
+# Search engines: robots.txt and sitemap.xml
+# -----------------------------------------------------------------------------
+ROBOTS_DISALLOW = ("/admin", "/account", "/login", "/favorites", "/search")
+
+
+@app.route("/robots.txt")
+def robots_txt():
+    lines = ["User-agent: *"] + [f"Disallow: {path}" for path in ROBOTS_DISALLOW]
+    lines += ["", f"Sitemap: {_public_url('sitemap_xml')}", ""]
+    resp = make_response("\n".join(lines))
+    resp.mimetype = "text/plain"
+    resp.headers["Cache-Control"] = "public, max-age=3600"
+    return resp
+
+
+def _sitemap_urls() -> List[str]:
+    """Public pages only, built without the viewer's admin rights (no drafts)."""
+    urls = [
+        _public_url(endpoint)
+        for endpoint in ("home", "workouts", "workouts_all", "programs_index", "recipes")
+    ]
+    urls.append(_public_url("about_page"))
+    hubs = db.programs.find(
+        {
+            "kind": "hub",
+            "active": {"$ne": False},
+            "$or": [{"publish_status": {"$exists": False}}, {"publish_status": "published"}],
+        },
+        {"slug": 1},
+    ).sort([("order", 1)])
+    urls += [_public_url("program_detail", slug=h["slug"]) for h in hubs if h.get("slug")]
+    exercises = db.workouts.find({"publish_status": {"$ne": "draft"}}, {"slug": 1}).sort(
+        [("slug", 1)]
+    )
+    urls += [_public_url("workout_detail", slug=w["slug"]) for w in exercises if w.get("slug")]
+    return urls
+
+
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    try:
+        urls = _sitemap_urls()
+    except PyMongoError as e:
+        app.logger.warning("Sitemap unavailable: %s", e)
+        abort(503)
+    body = ['<?xml version="1.0" encoding="UTF-8"?>']
+    body.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+    body += [f"  <url><loc>{xml_escape(u)}</loc></url>" for u in urls]
+    body.append("</urlset>")
+    resp = make_response("\n".join(body) + "\n")
+    resp.mimetype = "application/xml"
+    resp.headers["Cache-Control"] = "public, max-age=3600"
+    return resp
 
 
 # -----------------------------------------------------------------------------

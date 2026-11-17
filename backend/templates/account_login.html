@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Sign in – NFG{% endblock %}
+{% block title %}Sign in – {{ app_name }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-center">
@@ -13,13 +13,19 @@
       {% endif %}
 
       <div class="mb-3">
-        <label class="form-label">Email or Username</label>
-        <input class="form-control" name="identity" required>
+        <label class="form-label" for="login-identity">Email or Username</label>
+        <input class="form-control" id="login-identity" name="identity" autocomplete="username" required>
       </div>
 
       <div class="mb-3">
-        <label class="form-label">Password</label>
-        <input class="form-control" type="password" name="password" required>
+        <div class="d-flex justify-content-between align-items-baseline">
+          <label class="form-label" for="login-password">Password</label>
+          {% if mail_enabled %}
+            <a class="small" href="{{ url_for('account_forgot') }}">Forgot your password?</a>
+          {% endif %}
+        </div>
+        <input class="form-control" id="login-password" type="password" name="password"
+               autocomplete="current-password" required>
       </div>
 
       <button type="submit" class="btn btn-dark w-100">Sign in</button>

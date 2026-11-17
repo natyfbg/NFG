@@ -1,5 +1,5 @@
 # render.yaml
-# Defines infrastructure and services for deploying NFG on Render
+# Defines infrastructure and services for deploying Qiltsim (service names keep "nfg") on Render
 
 services:
   # === 1) Web Service (Flask + Gunicorn) ===
@@ -25,6 +25,10 @@ services:
         sync: false   # set in Render dashboard
       - key: UPLOAD_FOLDER
         value: /app/static/uploads
+      - key: CANONICAL_HOST
+        sync: false   # qiltsim.com, only after the custom domain is verified (turns on redirects)
+      - key: RESEND_API_KEY
+        sync: false   # Resend sending key; password reset is hidden until it is set
     healthCheckPath: /healthz
     numInstances: 1
     disk:

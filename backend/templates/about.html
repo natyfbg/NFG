@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% import "_components.html" as ui %}
 
-{% block title %}About – NFG{% endblock %}
+{% block title %}About – {{ app_name }}{% endblock %}
 
 {% block page %}
 <div class="nfg-discover nfg-about">
@@ -9,7 +9,7 @@
   <header class="nfg-page-head">
     <div class="app-page-kicker">About</div>
     <h1 class="nfg-page-title">Train with a plan, not a guess</h1>
-    <p class="nfg-about-lead">NFG helps you decide what to train and how to do it well, at home, at the gym or both.</p>
+    <p class="nfg-about-lead">{{ app_name }} helps you decide what to train and how to do it well, at home, at the gym or both.</p>
   </header>
 
   {# Coach section goes here once Nate sends his own words (see the plan doc). #}
@@ -43,7 +43,7 @@
   <section class="nfg-section">
     <div class="nfg-about-note">
       <h2 class="nfg-about-note-title">Train safely</h2>
-      <p>NFG gives general fitness guidance, not medical advice. Start lighter than you think, stop if something hurts, and check with a doctor or physiotherapist if you have an injury or a health condition.</p>
+      <p>{{ app_name }} gives general fitness guidance, not medical advice. Start lighter than you think, stop if something hurts, and check with a doctor or physiotherapist if you have an injury or a health condition.</p>
     </div>
   </section>
 
