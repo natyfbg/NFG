@@ -2,6 +2,7 @@
 {% import "_components.html" as ui %}
 
 {% block title %}{{ w.name }} – {{ app_name }}{% endblock %}
+{% block back_url %}{{ back_to_week_url or url_for('workouts') }}{% endblock %}
 {% block meta_description %}How to do the {{ w.name }}: step-by-step form, the muscles it works and a video demo.{% endblock %}
 
 {% block page %}

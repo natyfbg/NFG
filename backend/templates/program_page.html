@@ -2,6 +2,7 @@
 {% import "_components.html" as ui %}
 
 {% block title %}{{ hub.title or 'Program' }} – {{ app_name }}{% endblock %}
+{% block back_url %}{{ url_for('programs_index') }}{% endblock %}
 {% block meta_description %}{{ hub.title or 'Program' }}: a week-by-week plan with every session laid out, for home, the gym or both.{% endblock %}
 
 {% set days_per_week = track.days_per_week or (focus_week.days|length if focus_week else 0) %}

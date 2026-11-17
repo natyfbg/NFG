@@ -2,6 +2,7 @@
 {% import "_components.html" as ui %}
 
 {% block title %}All exercises (A–Z) – {{ app_name }}{% endblock %}
+{% block back_url %}{{ url_for('workouts') }}{% endblock %}
 
 {% block page %}
 <div class="nfg-discover">

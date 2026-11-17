@@ -266,9 +266,25 @@ SESSION_SPLITS = [
         ],
     },
     {
+        "key": "stretch",
+        "label": "Stretching",
+        "color": "#2A8C8C",
+        "presets": [
+            {
+                "key": "stretch",
+                "label": "Stretching",
+                "covers": "Mobility · stretches · warm-ups",
+                "movements": [],
+                "muscles": [],
+                "categories": ["mobility"],
+            },
+        ],
+    },
+    {
         "key": "full-body",
         "label": "Full body",
         "color": "#6A44A8",
+        "home": False,  # reachable from the Mixer and programs, not a Home card
         "presets": [
             {
                 "key": "full-body",

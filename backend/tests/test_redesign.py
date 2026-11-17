@@ -262,7 +262,7 @@ def test_navbar_wordmark_and_icons_only_when_files_exist(client, nfg_app, monkey
     (tmp_path / "favicon-32.png").write_bytes(b"png")
     html = client.get("/").get_data(as_text=True)
     assert 'rel="icon"' in html
-    assert "nfg-brand-logo" not in html  # wordmark in the bar for now
+    assert "nfg-brand-logo" in html  # logo tile next to the wordmark
 
 
 # --------------------------------------------------------------------------

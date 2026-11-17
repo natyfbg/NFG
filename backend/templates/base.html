@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en"{% if theme_pref != 'system' %} data-theme="{{ theme_pref }}" data-bs-theme="{{ theme_pref }}"{% endif %}>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,12 +14,26 @@
     <meta name="twitter:card" content="summary">
     <meta name="apple-mobile-web-app-title" content="{{ app_name }}">
 
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
           integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
           crossorigin="anonymous">
 
     <meta name="theme-color" content="#121512">
     <meta name="view-transition" content="same-origin">
+    <script>
+      /* Theme: the cookie wins (rendered server-side); otherwise follow the device.
+         Runs before the stylesheet so there is no flash. */
+      (function () {
+        var root = document.documentElement;
+        var apply = function (t) { root.dataset.theme = t; root.dataset.bsTheme = t; };
+        var mq = window.matchMedia('(prefers-color-scheme: dark)');
+        if (!root.dataset.theme) apply(mq.matches ? 'dark' : 'light');
+        mq.addEventListener('change', function (e) {
+          if (!/(^|; )nfg_theme=/.test(document.cookie)) apply(e.matches ? 'dark' : 'light');
+        });
+      })();
+    </script>
     <script>
       /* Direction of a swipe/tab change, set by the previous page, so the view
          transition slides the right way. Cleared once the page is shown. */
@@ -44,8 +58,11 @@
 
   {% import "_components.html" as ui %}
   {% set page_ep = request.endpoint or '' %}
+  {# Sub-pages name the page "one step back" (block back_url); a right-swipe goes there. #}
+  {% set back_url = self.back_url() | trim %}
   <body class="bg-light{% if page_ep in ['home','workouts','programs_index','recipes'] %} has-mobile-swipe-rail has-top-level-swipe{% endif %}"
-        {% if page_ep in ['home','workouts','programs_index','recipes'] %}data-top-level-swipe="true"{% endif %}>
+        {% if page_ep in ['home','workouts','programs_index','recipes'] %}data-top-level-swipe="true"{% endif %}
+        data-back-url="{% block back_url %}{% endblock %}">
     {% set ep = request.endpoint or '' %}
 
     {# Public endpoints #}
@@ -75,8 +92,8 @@
 
     <header class="nfg-topbar">
       <div class="container nfg-topbar-inner">
-        {# Wordmark for now; the logo is used for the browser and home-screen icons. #}
         <a class="nfg-brand" href="{{ url_for('home') }}" aria-label="{{ app_name }} home">
+          {% if brand_logo %}<img class="nfg-brand-logo" src="{{ brand_logo }}" alt="" width="30" height="30" decoding="async">{% endif %}
           <span class="nfg-brand-word">{{ app_name|upper }}</span>
         </a>
 
@@ -115,6 +132,17 @@
               <a class="dropdown-item nfg-menu-link{% if ep == 'workouts_mix' %} is-active{% endif %}" href="{{ url_for('workouts_mix') }}">{{ ui.icon('shuffle') }} Muscle Mixer</a>
               <a class="dropdown-item nfg-menu-link{% if ep == 'search' %} is-active{% endif %}" href="{{ url_for('search') }}">{{ ui.icon('search') }} Search</a>
               <a class="dropdown-item nfg-menu-link{% if ep == 'about_page' %} is-active{% endif %}" href="{{ url_for('about_page') }}">{{ ui.icon('info-circle') }} About {{ app_name }}</a>
+              <div class="nfg-menu-sep" role="separator"></div>
+              <form class="nfg-theme-row" action="{{ url_for('set_theme') }}" method="post" data-theme-switch>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="next" value="{{ request.full_path if request.query_string else request.path }}">
+                <span class="nfg-theme-label">{{ ui.icon('circle-half') }} Theme</span>
+                <span class="nfg-theme-seg" role="group" aria-label="Theme">
+                  <button type="submit" name="theme" value="light" class="{% if theme_pref == 'light' %}is-on{% endif %}" aria-pressed="{{ 'true' if theme_pref == 'light' else 'false' }}">Light</button>
+                  <button type="submit" name="theme" value="dark" class="{% if theme_pref == 'dark' %}is-on{% endif %}" aria-pressed="{{ 'true' if theme_pref == 'dark' else 'false' }}">Dark</button>
+                  <button type="submit" name="theme" value="system" class="{% if theme_pref == 'system' %}is-on{% endif %}" aria-pressed="{{ 'true' if theme_pref == 'system' else 'false' }}">Auto</button>
+                </span>
+              </form>
               <div class="nfg-menu-sep" role="separator"></div>
               {% if current_user.is_authenticated %}
                 {% if current_user.is_admin %}
@@ -248,6 +276,103 @@
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
 
+    {% if back_url %}
+    <script>
+      /* Swipe back: on any sub-page a right-swipe takes one step back (the page
+         declares where that is in data-back-url). The page follows the finger;
+         letting go past a quarter of the screen, or a quick flick, commits. Links
+         with .nfg-back slide the same way. Uses the browser's history when the
+         previous page is the same site, so scroll position comes back too. */
+      (function () {
+        const root = document.documentElement;
+        const shell = document.getElementById('page-shell');
+        const backUrl = document.body.dataset.backUrl;
+        if (!shell || !backUrl) return;
+        const isMobile = () => window.matchMedia('(max-width: 991.98px)').matches;
+        const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const BLOCK = [
+          'input', 'textarea', 'select', '[contenteditable="true"]',
+          '[data-no-page-swipe]', '.nfg-rail', '.carousel', '.overflow-auto', '.swipe-block',
+          '.modal', '.offcanvas', '.bottom-nav', '.nfg-topbar', '.dropdown-menu', '.nfg-gallery', '[data-bodymap]'
+        ].join(',');
+        const LOCK_PX = 10, COMMIT_RATIO = 0.25, FLICK_SPEED = 0.5, EDGE_GUARD = 10;
+        let state = null, swiped = false, navigating = false;
+
+        function sameSiteReferrer() {
+          try { return !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) { return false; }
+        }
+        function goBack() {
+          if (navigating) return;
+          navigating = true;
+          root.dataset.navDir = 'prev';
+          try { sessionStorage.setItem('nfgNavDir', 'prev'); } catch (e) {}
+          const leave = () => {
+            if (sameSiteReferrer() && history.length > 1) history.back(); else window.location.href = backUrl;
+          };
+          if (reduceMotion()) { leave(); return; }
+          shell.classList.add('is-leaving');
+          shell.style.setProperty('--swipe-x', (window.innerWidth * 0.35) + 'px');
+          setTimeout(leave, 90);
+        }
+        document.querySelectorAll('a.nfg-back').forEach((a) => a.addEventListener('click', (e) => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+          e.preventDefault(); goBack();
+        }));
+        window.addEventListener('pageshow', (e) => {
+          if (!e.persisted) return;
+          navigating = false; delete root.dataset.navDir;
+          shell.classList.remove('is-leaving'); shell.style.removeProperty('--swipe-x');
+        });
+
+        function setDrag(px) {
+          shell.style.setProperty('--swipe-x', px + 'px');
+          shell.style.setProperty('--swipe-opacity', String(Math.max(0.55, 1 - px / 500)));
+        }
+        function clearDrag() {
+          shell.classList.add('is-settling'); shell.classList.remove('is-swiping');
+          shell.style.removeProperty('--swipe-x'); shell.style.removeProperty('--swipe-opacity');
+          setTimeout(() => shell.classList.remove('is-settling'), 220);
+        }
+        document.addEventListener('pointerdown', (e) => {
+          if (!isMobile() || navigating) return;
+          if (e.pointerType === 'mouse' || (e.pointerType === 'touch' && !e.isPrimary)) return;
+          if (!shell.contains(e.target) || e.target.closest(BLOCK)) return;
+          if (e.clientX < EDGE_GUARD || window.innerWidth - e.clientX < EDGE_GUARD) return;
+          swiped = false;
+          state = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, locked: false, lastX: e.clientX, lastT: performance.now(), v: 0 };
+        }, { passive: true, capture: true });
+        window.addEventListener('pointermove', (e) => {
+          if (!state || e.pointerId !== state.id) return;
+          const dx = e.clientX - state.x, dy = e.clientY - state.y;
+          if (!state.locked) {
+            if (Math.abs(dy) > LOCK_PX && Math.abs(dy) > Math.abs(dx)) { state = null; return; }
+            if (dx < LOCK_PX || dx < Math.abs(dy) * 1.2) return;   // only rightwards
+            state.locked = true; shell.classList.add('is-swiping');
+          }
+          if (e.cancelable) e.preventDefault();
+          swiped = true;
+          const now = performance.now();
+          state.v = (e.clientX - state.lastX) / Math.max(1, now - state.lastT);
+          state.lastX = e.clientX; state.lastT = now; state.dx = dx;
+          setDrag(Math.max(0, dx) * 0.9);
+        }, { passive: false });
+        function end(e) {
+          if (!state || (e && e.pointerId !== state.id)) return;
+          const { dx, v, locked } = state; state = null;
+          if (!locked) return;
+          if (dx > window.innerWidth * COMMIT_RATIO || (v > FLICK_SPEED && dx > 30)) goBack(); else clearDrag();
+        }
+        window.addEventListener('pointerup', end, { passive: true });
+        window.addEventListener('pointercancel', () => { if (state) { state = null; clearDrag(); } }, { passive: true });
+        document.addEventListener('click', (e) => {
+          if (!swiped && !navigating) return;
+          if (e.target.closest && e.target.closest('.bottom-nav')) return;
+          e.preventDefault(); e.stopPropagation(); swiped = false;
+        }, true);
+      })();
+    </script>
+    {% endif %}
+
     <script>
       /* Top-level swipe navigation: Home <-> Exercises <-> Programs <-> Recipes.
          Smoothness comes from three things: neighbouring pages are prefetched
@@ -297,8 +422,8 @@
           '.modal', '.offcanvas', '.bottom-nav', '.nfg-topbar', '.dropdown-menu'
         ].join(',');
 
-        const LOCK_PX = 12;          // movement before we decide horizontal vs vertical
-        const COMMIT_RATIO = 0.22;   // share of screen width that commits a swipe
+        const LOCK_PX = 9;           // movement before we decide horizontal vs vertical
+        const COMMIT_RATIO = 0.2;    // share of screen width that commits a swipe
         const FLICK_SPEED = 0.45;    // px per ms that commits a quick flick
         const EDGE_GUARD = 12;       // leave the OS back-gesture edges alone
         let state = null;
@@ -360,7 +485,7 @@
           state.lastX = e.clientX; state.lastT = now;
           state.dx = dx;
           const atEdge = (dx > 0 && active === 0) || (dx < 0 && active === routes.length - 1);
-          setDrag(atEdge ? dx * 0.18 : dx * 0.6);  // resistance when there's no page that way
+          setDrag(atEdge ? dx * 0.18 : dx * 0.9);  // resistance when there's no page that way
         }, { passive: false });
 
         function end(e) {
@@ -388,6 +513,34 @@
           e.stopPropagation();
           swiped = false;
         }, true);
+      })();
+    </script>
+
+    <script>
+      /* Theme switch in the menu: apply at once and remember it in the cookie (no reload). */
+      (function () {
+        var form = document.querySelector('[data-theme-switch]');
+        if (!form) return;
+        var root = document.documentElement;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        var dark = window.matchMedia('(prefers-color-scheme: dark)');
+        var apply = function (choice) {
+          var t = choice === 'system' ? (dark.matches ? 'dark' : 'light') : choice;
+          root.dataset.theme = t; root.dataset.bsTheme = t;
+          if (meta) meta.content = t === 'dark' ? '#0d0f0d' : '#121512';
+          var base = 'nfg_theme=' + (choice === 'system' ? '' : choice) + '; path=/; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+          document.cookie = base + (choice === 'system' ? '; max-age=0' : '; max-age=31536000');
+          form.querySelectorAll('button[name="theme"]').forEach(function (b) {
+            var on = b.value === choice;
+            b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          });
+        };
+        form.addEventListener('click', function (e) {
+          var b = e.target.closest('button[name="theme"]');
+          if (!b) return;
+          e.preventDefault(); e.stopPropagation();
+          apply(b.value);
+        });
       })();
     </script>
 

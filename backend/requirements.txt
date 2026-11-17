@@ -14,6 +14,8 @@ Flask-WTF==1.2.1
 
 # Production server (Render or Docker)
 gunicorn==22.0.0
+Flask-Compress==1.17  # gzip/brotli for HTML, CSS, JS, SVG (Render doesn't compress for us)
+Brotli==1.1.0
 
 # Image processing
 Pillow==10.4.0

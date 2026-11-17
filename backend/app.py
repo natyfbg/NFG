@@ -37,6 +37,7 @@ from flask import (
     send_from_directory,
     url_for,
 )
+from flask_compress import Compress
 from flask_login import (
     LoginManager,
     UserMixin,
@@ -480,10 +481,33 @@ def _security_headers(resp):
         and not DEV_RELOAD
     ):
         resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif request.path.startswith("/static/img/") and resp.status_code == 200 and not DEV_RELOAD:
+        # Placeholders, icons and brand files change rarely: a day in the browser,
+        # then revalidate (ETags are on), with stale-while-revalidate for snappiness.
+        resp.headers["Cache-Control"] = "public, max-age=86400, stale-while-revalidate=604800"
     return resp
 
 
 csrf = CSRFProtect(app)
+
+# Compress text responses (HTML, CSS, JS, SVG, JSON). app.css alone goes from ~90 KB
+# to ~15 KB; Render's proxy does not compress on our behalf.
+app.config.setdefault(
+    "COMPRESS_MIMETYPES",
+    [
+        "text/html",
+        "text/css",
+        "text/plain",
+        "text/xml",
+        "application/json",
+        "application/javascript",
+        "image/svg+xml",
+    ],
+)
+app.config.setdefault("COMPRESS_MIN_SIZE", 1024)
+app.config.setdefault("COMPRESS_LEVEL", 6)
+app.config.setdefault("COMPRESS_BR_LEVEL", 5)
+Compress(app)
 
 # -----------------------------------------------------------------------------
 # Auth (admin + members)
@@ -3274,6 +3298,7 @@ def inject_globals():
         "program_favorite_slugs": _LazySet(_favorite_slug_set_for_request),
         "asset_v": _asset_version() if DEV_RELOAD else ASSET_VERSION,
         "app_name": APP_NAME,
+        "theme_pref": _theme_pref(),
         "mail_enabled": MAIL_ENABLED,
         "canonical_url": (f"https://{CANONICAL_HOST}{request.path}" if CANONICAL_HOST else None),
         **_brand_assets(),
@@ -3346,6 +3371,36 @@ def render_or_fallback(template_name: str, **ctx):
 # -----------------------------------------------------------------------------
 ENV_COOKIE = "nfg_env"
 LEVEL_COOKIE = "nfg_level"
+THEME_COOKIE = "nfg_theme"  # "light" | "dark"; absent = follow the device
+THEMES = ("light", "dark", "system")
+
+
+def _theme_pref() -> str:
+    value = (request.cookies.get(THEME_COOKIE) or "").strip().lower()
+    return value if value in ("light", "dark") else "system"
+
+
+@app.route("/theme", methods=["POST"])
+def set_theme():
+    """No-JS fallback for the menu's theme switch (JS sets the cookie itself)."""
+    choice = (request.form.get("theme") or "").strip().lower()
+    if choice not in THEMES:
+        abort(400)
+    resp = redirect(_safe_next_url(default_endpoint="home"))
+    if choice == "system":
+        resp.delete_cookie(THEME_COOKIE, samesite="Lax")
+    else:
+        resp.set_cookie(
+            THEME_COOKIE,
+            choice,
+            max_age=60 * 60 * 24 * 365,
+            samesite="Lax",
+            secure=IS_HOSTED,
+            httponly=False,  # the menu toggle updates it from JS without a round trip
+        )
+    return resp
+
+
 DEFAULT_ENV = "hybrid"
 MIX_MAX_GROUPS = 6
 FAVORITE_ITEM_TYPES = {"exercise"}
@@ -3514,10 +3569,13 @@ def _session_results(
     excluded = set(preset.get("exclude_movements") or [])
     muscles = set(preset.get("muscles") or []) | set(tx.muscles_for_groups(extra_groups))
     groups = set(preset.get("groups") or []) | {g for g in extra_groups if g in tx.MUSCLE_GROUPS}
-    if not (movements or muscles or groups):
+    categories = set(preset.get("categories") or [])  # e.g. Stretching = mobility exercises
+    if not (movements or muscles or groups or categories):
         return []
 
     def wanted(doc: dict) -> bool:
+        if categories:
+            return doc.get("category") in categories
         if doc.get("category") in ("cardio", "mobility"):
             return False
         if excluded and doc.get("movement") in excluded:
@@ -3735,7 +3793,7 @@ def _render_session(preset: dict, env: str):
 
 
 def _home_splits(env: str) -> List[dict]:
-    """One card per session split for Home (Push, Pull, Lower, Core, Full body).
+    """One card per session split for Home (Push, Pull, Lower, Core, Stretching).
 
     The card opens the split's first preset that has exercises (normally the full
     session); its focus variants are listed on the card and switchable on the session
@@ -3743,6 +3801,8 @@ def _home_splits(env: str) -> List[dict]:
     """
     splits = []
     for split in tx.SESSION_SPLITS:
+        if split.get("home") is False:
+            continue
         presets = []
         for preset in split["presets"]:
             n = len(_session_results(tx.SESSION_PRESETS[preset["key"]], [], env))

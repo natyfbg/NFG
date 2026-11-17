@@ -7,8 +7,8 @@
 <div class="nfg-discover nfg-home">
 
   <header class="nfg-hero">
-    <div class="app-page-kicker">{{ app_name }}</div>
-    <h1 class="nfg-hero-title">What are you training today?</h1>
+    <div class="app-page-kicker is-greeting">Hi{% if current_user.is_authenticated and current_user.username %}, {{ current_user.username }}{% else %} there{% endif %}</div>
+    <h1 class="nfg-hero-title">What are we training today?</h1>
   </header>
 
   {# Only shown once someone has progress; guests keep theirs without signing up. #}
@@ -88,7 +88,7 @@
   {% endif %}
 
   <section class="nfg-section">
-    {{ ui.section_head("Programs", "Follow a plan", url_for("programs_index"), "All programs") }}
+    {{ ui.section_head("Programs", "Coach's Plans", url_for("programs_index"), "All programs") }}
     {% set saved_slugs = favorite_programs | map(attribute='slug') | list %}
     {% if home_programs %}
       {% call ui.rail() %}

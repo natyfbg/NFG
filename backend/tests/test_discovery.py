@@ -51,7 +51,7 @@ def library(nfg_app):
 
 def test_home_shows_session_builder(client, library):
     html = client.get("/").get_data(as_text=True)
-    for text in ("What are you training today?", "Pick a session", "Where are you training?"):
+    for text in ("What are we training today?", "Pick a session", "Where are you training?"):
         assert text in html
     # Inline Muscle Mixer chips; no duplicate muscle-group grid on Home.
     assert 'name="g" value="chest"' in html
