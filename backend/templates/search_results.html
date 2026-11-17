@@ -2,6 +2,7 @@
 {% import "_components.html" as ui %}
 
 {% block title %}{{ ('“' ~ q ~ '” – ') if q }}Search – {{ app_name }}{% endblock %}
+{% block back_url %}{{ url_for('home') }}{% endblock %}
 
 {% block page %}
 <div class="nfg-discover nfg-search">

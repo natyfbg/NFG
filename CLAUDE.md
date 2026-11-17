@@ -169,6 +169,28 @@ as committer, so GitHub shows them as Verified.
   other session is signed out.
 - `robots.txt` and `sitemap.xml` are routes (public pages, published exercises,
   program hubs; no drafts even for an admin).
+- **Theme tokens:** every colour in `app.css` is a `:root` variable; dark mode is the
+  `:root[data-theme="dark"]` block of overrides and nothing else. `data-theme` (and
+  Bootstrap's `data-bs-theme`) is set on `<html>` from the `nfg_theme` cookie
+  (light/dark; absent = follow the device, decided by the inline script before the
+  stylesheet, so no flash). The menu's Light/Dark/Auto switch writes the cookie from
+  JS; `POST /theme` is the no-JS fallback. Rules: solid controls use `--solid-bg/fg`
+  (ink on light, cream on dark); text on muscle-colour or gold surfaces uses
+  `--on-color`/`--on-gold` (constant); dark cards and media use `--card-dark`/
+  `--media-bg`; `color-mix()` ramps end in `--mix-deep`/`--mix-base`, which swap in dark
+  mode so tints go lighter instead of darker. Never write a literal colour into a
+  component rule for a light surface. Check new pages in both themes (the preview
+  screenshot scripts take a `nfg_theme` cookie).
+- **Swipe back:** every sub-page declares `{% block back_url %}` (where one step back
+  goes). `base.html` puts it in `data-back-url` on `<body>`, and a right-swipe (or a
+  `.nfg-back` link) slides the page out and goes there, via the browser's history when
+  the previous page was ours. Horizontal scrollers still need `data-no-page-swipe`.
+  Sub-pages get `touch-action: pan-y` on `#page-shell` so the browser leaves sideways
+  drags to us.
+- Responses are compressed by Flask-Compress (gzip/brotli; `app.css` ~90 KB → ~17 KB).
+  `/static/img/*` is cached for a day with stale-while-revalidate; versioned links keep
+  the one-year immutable cache. Dead CSS was removed on 2026-11-16 (171 rules): check
+  `templates/` + `static/js` for a class before deleting a rule.
 
 ## Decisions log
 
@@ -275,6 +297,16 @@ as committer, so GitHub shows them as Verified.
 - 2026-11-16 — Muscle Mixer stays in the menu (no floating button). Picker design:
   body first, picked muscles listed under the body as chips with × to remove
   (canvas option E2). Phase 1 code is stashed until the revamp starts.
+- 2026-11-16 — **Revamp phase 1 (foundation):** colour tokens + dark mode (menu
+  switch Light/Dark/Auto, cookie `nfg_theme`); top bar shows the logo tile and the
+  QILTSIM wordmark; bottom nav slightly translucent with blur; Home/Gym/Hybrid active
+  segment is charcoal (#2A2A26) in light mode, cream in dark; Home says "Hi, <name>
+  · What are we training today?", sessions are Push · Pull · Lower · Core · Stretching
+  (Full body lives in the Mixer and programs; Stretching shows once mobility exercises
+  exist), programs section is "Coach's Plans" with dark gold cards; swipe-back on all
+  sub-pages; tab swipe follows the finger more closely; compression + image caching.
+  Full plan: project doc `qiltsim-revamp-plan-2026-11-16.md` (phases 2–6: library,
+  sessions + Mixer, programs, recipes + macros, account/admin/polish).
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
@@ -308,6 +340,6 @@ Later, each gated: progress analytics · PWA · personalised Home · nutrition �
 native/wearables research · paid tier.
 
 Standing decisions: workouts/session mode is the signature feature; programs and recipes
-are content-as-code (Claude drafts, Nate approves); no AI-generated form images (Nate films,
-Claude processes); admin is frozen (no new features); guests stay first-class; analytics
-cookie-free.
+are content-as-code (Claude drafts, Nate approves); form images are consistent illustrated
+figures (Nate, 2026-11-16) until real photos exist, never AI-generated photos; admin is
+frozen except the Coach's Picks screen; guests stay first-class; analytics cookie-free.

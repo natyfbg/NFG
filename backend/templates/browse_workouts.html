@@ -2,6 +2,7 @@
 {% import "_components.html" as ui %}
 
 {% block title %}Browse exercises – {{ app_name }}{% endblock %}
+{% block back_url %}{{ url_for('workouts') }}{% endblock %}
 
 {% macro choice(name, value, label, current) %}
   <label class="nfg-choice">

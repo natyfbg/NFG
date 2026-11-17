@@ -331,3 +331,60 @@ def test_reset_signs_out_other_sessions(nfg_app, make_user, outbox):
     # Signing in again with the new password works and sticks.
     assert _sign_in(other_device, "lifter", "new-password").status_code == 302
     assert other_device.get("/account").status_code == 200
+
+
+# --------------------------------------------------------------------------
+# Phase 1 foundation: theme, Home copy, swipe-back targets
+# --------------------------------------------------------------------------
+
+
+def test_theme_follows_the_cookie(client):
+    html = client.get("/").get_data(as_text=True)
+    assert '<html lang="en">' in html  # no cookie: the inline script decides
+    client.set_cookie("nfg_theme", "dark")
+    html = client.get("/").get_data(as_text=True)
+    assert 'data-theme="dark" data-bs-theme="dark"' in html
+    assert 'name="theme" value="dark" class="is-on"' in html
+
+
+def test_theme_route_sets_and_clears_the_cookie(client):
+    resp = client.post("/theme", data={"theme": "dark", "next": "/about"})
+    assert resp.status_code == 302 and resp.headers["Location"].endswith("/about")
+    assert "nfg_theme=dark" in resp.headers.get("Set-Cookie", "")
+    resp = client.post("/theme", data={"theme": "system"})
+    assert "nfg_theme=;" in resp.headers.get("Set-Cookie", "")
+    assert client.post("/theme", data={"theme": "neon"}).status_code == 400
+
+
+def test_home_greeting_and_sessions(client, make_user):
+    html = client.get("/").get_data(as_text=True)
+    assert "Hi there" in html and "What are we training today?" in html
+    assert "Coach&#39;s Plans" in html
+    assert "Full body" not in html.split("Or mix muscles")[0]  # no Full body session card
+    make_user("nate", password="password123")
+    client.post("/account/login", data={"identity": "nate", "password": "password123"})
+    assert "Hi, nate" in client.get("/").get_data(as_text=True)
+
+
+def test_sub_pages_declare_a_back_target(client, nfg_app):
+    nfg_app.db.workouts.insert_one(
+        {"slug": "back-squat-x", "name": "X", "publish_status": "published"}
+    )
+    assert 'data-back-url="/workouts"' in client.get("/workouts/back-squat-x").get_data(
+        as_text=True
+    )
+    assert 'data-back-url="/programs"' in client.get("/programs/8-week-challenge").get_data(
+        as_text=True
+    )
+    assert 'data-back-url=""' in client.get("/").get_data(as_text=True)
+    assert "a.nfg-back" in client.get("/about").get_data(as_text=True)  # swipe-back script present
+
+
+def test_text_responses_are_compressed_and_images_cached(client, nfg_app, monkeypatch):
+    monkeypatch.setattr(nfg_app, "DEV_RELOAD", False)
+    resp = client.get("/", headers={"Accept-Encoding": "gzip"})
+    assert resp.headers.get("Content-Encoding") == "gzip"
+    resp = client.get("/static/img/exercise-placeholder.svg", headers={"Accept-Encoding": "gzip"})
+    assert resp.status_code == 200
+    assert resp.headers["Cache-Control"].startswith("public, max-age=86400")
+    assert resp.headers.get("Content-Encoding") == "gzip"
