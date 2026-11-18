@@ -54,6 +54,9 @@ def rest_seconds(rest: Optional[str]) -> int:
     m = re.match(r"^(\d+):(\d{2})$", text)
     if m:
         return int(m.group(1)) * 60 + int(m.group(2))
+    m = re.match(r"^(\d+)\s*(?:m|min|mins|minutes?)\s*(\d+)\s*(?:s|sec|secs|seconds?)?$", text)
+    if m:
+        return int(m.group(1)) * 60 + int(m.group(2))
     m = re.match(r"^(\d+(?:\.\d+)?)\s*(s|sec|secs|seconds?)?$", text)
     if m:
         return int(float(m.group(1)))
@@ -116,6 +119,14 @@ def validate_program(raw, filename: str, exercises: Dict[str, dict]) -> List[str
         errors.append(f"{filename}: slug '{raw['slug']}' must match the file name")
     if raw.get("status", "published") not in tx.PUBLISH_STATUSES:
         errors.append(f"{filename}: status must be one of {list(tx.PUBLISH_STATUSES)}")
+    accent = raw.get("accent")
+    if accent is not None and not (
+        isinstance(accent, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", accent)
+    ):
+        errors.append(f"{filename}: accent must be a colour like '#E07A2E'")
+    order = raw.get("order")
+    if order is not None and (not isinstance(order, int) or isinstance(order, bool)):
+        errors.append(f"{filename}: order must be a whole number")
     weeks = raw["weeks"]
     if not isinstance(weeks, int) or not 1 <= weeks <= 52:
         errors.append(f"{filename}: weeks must be a whole number from 1 to 52")
@@ -246,6 +257,7 @@ def _item_rows(day: dict, env: str, phase: dict, exercises: Dict[str, dict]) -> 
             ex = exercises[slug]
             role = item.get("role") or _default_role(ex)
             name = ex["name"]
+        swap_for = None if item.get("custom") or slug == item["exercise"] else item["exercise"]
         scheme = phase.get(role) or {}
         rows.append(
             {
@@ -257,6 +269,7 @@ def _item_rows(day: dict, env: str, phase: dict, exercises: Dict[str, dict]) -> 
                 "reps": str(item.get("reps") or scheme.get("reps") or ""),
                 "rest": str(item.get("rest") or scheme.get("rest") or ""),
                 "notes": item.get("note") or "",
+                "swap_for": swap_for,
             }
         )
     return rows
@@ -321,6 +334,8 @@ def expand_program(raw: dict, exercises: List[dict]) -> dict:
             "weeks": weeks,
             "session_minutes": raw.get("session_minutes"),
             "days_per_week": counts,
+            "accent": raw.get("accent") or "",
+            "order": raw.get("order"),
             "status": raw.get("status", "published"),
             "phases": [
                 {
@@ -398,10 +413,16 @@ def apply_program_sync(db, plan: List[dict], force: bool = False) -> None:
         publish = "published" if hub["status"] == "published" else "draft"
         if hub["slug"] not in hubs_done:
             hubs_done.add(hub["slug"])
+            # A file's `order:` sets the list position; otherwise Admin's order is kept.
+            on_insert = {"created_at": now, "show_on_home": True}
+            placed = {"order": hub["order"]} if hub.get("order") is not None else {}
+            if not placed:
+                on_insert["order"] = 0
             db.programs.update_one(
                 {"slug": hub["slug"]},
                 {
                     "$set": {
+                        **placed,
                         "title": hub["title"],
                         "kind": "hub",
                         "summary": hub["summary"],
@@ -411,12 +432,13 @@ def apply_program_sync(db, plan: List[dict], force: bool = False) -> None:
                         "session_minutes": hub["session_minutes"],
                         "days_per_week": hub["days_per_week"],
                         "phases": hub["phases"],
+                        "accent": hub.get("accent") or "",
                         "publish_status": publish,
                         "active": True,
                         "content_managed": True,
                         "content_synced_at": now,
                     },
-                    "$setOnInsert": {"created_at": now, "show_on_home": True, "order": 0},
+                    "$setOnInsert": on_insert,
                 },
                 upsert=True,
             )
@@ -495,6 +517,7 @@ def apply_program_sync(db, plan: List[dict], force: bool = False) -> None:
                             "reps": it["reps"],
                             "rest": it["rest"],
                             "notes": it["notes"],
+                            "swap_for": it.get("swap_for"),
                             "content_managed": True,
                             "created_at": now,
                         }

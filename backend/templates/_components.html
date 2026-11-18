@@ -105,15 +105,24 @@
 
 {# Compact program card for rails. #}
 {% macro program_rail_card(p, saved=False) %}
-  <a class="nfg-program-card" href="{{ url_for('program_detail', slug=p.slug) }}">
+  {% set started = p.started is defined and p.started %}
+  <a class="nfg-program-card{% if started %} is-started{% endif %}" href="{{ p.href if p.href is defined and p.href else url_for('program_detail', slug=p.slug) }}"{% if p.accent %} style="--accent: {{ p.accent }};"{% endif %}>
     <span class="nfg-program-badges">
       {% if p.category %}<span class="nfg-badge">{{ p.category }}</span>{% endif %}
       {% if p.duration_label %}<span class="nfg-badge is-light">{{ p.duration_label }}</span>{% endif %}
       {% if saved %}<span class="nfg-badge is-saved">Saved</span>{% endif %}
     </span>
     <span class="nfg-program-title">{{ p.title or 'Program' }}</span>
-    {% if p.summary %}<span class="nfg-program-copy">{{ p.summary }}</span>{% endif %}
-    <span class="nfg-program-cta">Open program →</span>
+    {% if started %}
+      <span class="nfg-program-status">
+        {% if p.day_color is defined and p.day_color %}<span class="nfg-dot" style="--dot: {{ p.day_color }};"></span>{% endif %}{{ p.status }}
+      </span>
+      <span class="nfg-program-bar" aria-hidden="true"><span style="width: {{ p.percent }}%;"></span></span>
+      <span class="nfg-program-cta">{{ 'Review plan' if p.finished else 'Continue' }} →</span>
+    {% else %}
+      {% if p.summary %}<span class="nfg-program-copy">{{ p.summary }}</span>{% endif %}
+      <span class="nfg-program-cta">Open program →</span>
+    {% endif %}
   </a>
 {% endmacro %}
 

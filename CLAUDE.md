@@ -348,6 +348,25 @@ as committer, so GitHub shows them as Verified.
   muscles glow in their group colour), picked chips with × underneath, "Pick from a
   list" for the rest; results in tiers ("Hits all of them", "Hits 2 of 3", "One at a
   time") and every picked group gets at least one main-target exercise.
+- 2026-11-17 — **Revamp phase 4 (programs):** programs are **Home/Gym only** in the UI
+  (old `?env=hybrid` links mean Gym; a viewer whose progress is on a Hybrid track keeps
+  using it, `_viewer_track`). **Day names say the workout type** (`_day_style`: "Full Body
+  A" → "Full body", "Upper B" → "Upper") with a colour per type and a distinct colour per
+  full-body day; labels and day keys are unchanged, so progress is untouched. Program
+  cards (Programs + Home) go **straight to today's day** once started, with "Week 3 ·
+  Pull" and a progress bar (`_program_cards`, one progress query, none for viewers with
+  no progress). Program page: first visit shows two rows of pills (level, Home/Gym; a
+  single-level plan shows the level as text), return visits a slim toggle row; Next up
+  card in the day's colour with the first exercises; coloured day cards; week strip.
+  Day page: title left, **day pills top-right**, rows with the muscle-group colour bar,
+  sets × reps on the right, rest and a "Home swap for <gym lift>" note (`swap_for` on
+  items); **Mark complete** + **Next** pills with a small **Undo** at the far right;
+  week pills at the bottom. Program files gain `accent` and `order`. New programs:
+  **12-Week Body Recomposition** (intermediate, Push/Pull/Legs, 3 days; Foundation →
+  Build → Strength → Peak → deload/retest) and **16-Week Muscle Building**
+  (intermediate + advanced, Push/Pull/Legs/Upper/Lower; Accumulation → Hypertrophy →
+  Strength → Overload → Deload). Two main lifts a day, the rest accessories, keeps days
+  at about 35–80 minutes.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 

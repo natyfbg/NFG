@@ -2918,14 +2918,25 @@ def _resume_target_for_track(
     return week_numbers[0], ""
 
 
+def _latest_progress_row(owner_key: str) -> Optional[dict]:
+    """The viewer's most recent done day (one query per request, shared by Home's
+    Continue card and the program cards)."""
+    if not owner_key:
+        return None
+    cache = g.setdefault("_latest_progress", {})
+    if owner_key not in cache:
+        cache[owner_key] = db.program_day_progress.find_one(
+            {"viewer_id": owner_key},
+            sort=[("completed_at", -1)],
+        )
+    return cache[owner_key]
+
+
 def _continue_plan_for_owner(owner_key: str) -> Optional[dict]:
     if not owner_key:
         return None
 
-    row = db.program_day_progress.find_one(
-        {"viewer_id": owner_key},
-        sort=[("completed_at", -1)],
-    )
+    row = _latest_progress_row(owner_key)
     if not row:
         return None
 
@@ -2957,6 +2968,7 @@ def _continue_plan_for_owner(owner_key: str) -> Optional[dict]:
 
     level = _track_level_for_url(track)
     env = _track_env_for_url(track)
+    env = "gym" if env == "hybrid" else env  # programs are Home/Gym; the day page finds the track
     args = {
         "hub_slug": hub_slug,
         "week_number": resume_week_number,
@@ -2975,7 +2987,7 @@ def _continue_plan_for_owner(owner_key: str) -> Optional[dict]:
     return {
         "track_title": title,
         "week_number": resume_week_number,
-        "day_label": resume_day_key.replace("-", " ").title() if resume_day_key else None,
+        "day_label": (_day_style(resume_day_key.replace("-", " "))[0] if resume_day_key else None),
         "url": url_for("program_hub_week_detail", **args),
         "completed_at": row.get("completed_at"),
         "done_days": done_days,
@@ -3827,7 +3839,7 @@ def home():
         coach_picks_meta=picks,
         saved_exercises=_saved_exercises(owner_key),
         featured_programs=featured_programs,
-        home_programs=featured_programs or hub_programs,
+        home_programs=_program_cards(featured_programs or hub_programs),
         favorite_programs=favorite_programs,
         continue_plan=continue_plan,
     )
@@ -3848,7 +3860,7 @@ def programs_index():
         .sort([("order", 1), ("created_at", -1)])
         .limit(50)
     )
-    return render_template("programs.html", programs=programs)
+    return render_template("programs.html", programs=_program_cards(programs))
 
 
 @app.route("/programs/<slug>/favorite", methods=["POST"])
@@ -3938,6 +3950,137 @@ def program_detail(slug):
 # day page per program day. Level and Home/Gym are remembered (nfg_level and the
 # shared nfg_env cookie); the old level -> environment -> weeks steps redirect here.
 # -----------------------------------------------------------------------------
+# Day names say the workout type (no more A/B/C), with a colour per type. Full-body days
+# each get their own colour so "today" is easy to tell apart from the rest of the week.
+DAY_TYPES = (
+    ("push", "Push", "#D63A2F"),
+    ("pull", "Pull", "#2F64A0"),
+    ("legs", "Legs", "#2E8A5F"),
+    ("lower", "Lower", "#2E8A5F"),
+    ("upper", "Upper", "#6A44A8"),
+    ("full body", "Full body", ""),
+    ("core", "Core", "#C79A1E"),
+    ("cardio", "Cardio", "#C0392B"),
+)
+FULL_BODY_DAY_COLORS = ("#6A44A8", "#B5631F", "#1F8A8A", "#9C3F8C", "#2F64A0")
+DAY_DEFAULT_COLOR = "#B8952F"
+
+
+def _day_style(label: str, full_body_index: int = 0) -> Tuple[str, str]:
+    """("Full body", colour) for "Full Body A"; ("Push", red) for "Push"."""
+    base = re.sub(r"\s+(?:[a-d]|[1-9])$", "", (label or "").strip(), flags=re.I).strip()
+    low = base.lower()
+    for key, name, color in DAY_TYPES:
+        if low.startswith(key):
+            if key == "full body":
+                color = FULL_BODY_DAY_COLORS[full_body_index % len(FULL_BODY_DAY_COLORS)]
+            return name, color
+    return (base or label or "Day"), DAY_DEFAULT_COLOR
+
+
+def _style_days(days: List[dict]) -> None:
+    n_full = 0
+    for day in days:
+        is_full = (day.get("label") or "").lower().startswith("full body")
+        day["name"], day["color"] = _day_style(day.get("label") or "", n_full)
+        if is_full:
+            n_full += 1
+
+
+def _program_envs(hub_slug: str, level: str) -> List[str]:
+    """Home or Gym. Programs no longer offer Hybrid (Nate, 2026-11-16); old Hybrid
+    tracks are the gym version and are still used for people who trained on them."""
+    envs = _envs_for_hub_level(hub_slug, level)
+    shown = [e for e in envs if e != "hybrid"]
+    return shown or envs
+
+
+def _viewer_track(hub_slug: str, level: str, env: str) -> Optional[dict]:
+    """The track for this setup. Gym falls back to the old Hybrid track when that's
+    where this viewer's progress is, so nobody loses their place."""
+    track = _pick_track_for(hub_slug, level, env)
+    if env != "gym":
+        return track
+    hybrid = _pick_track_for(hub_slug, level, "hybrid")
+    owner_key = _progress_owner_key()
+    if not (hybrid and owner_key and track) or hybrid.get("slug") == track.get("slug"):
+        return track or hybrid
+    on_hybrid = db.program_day_progress.find_one(
+        {"viewer_id": owner_key, "track_slug": hybrid.get("slug")}, {"_id": 1}
+    )
+    on_gym = db.program_day_progress.find_one(
+        {"viewer_id": owner_key, "track_slug": track.get("slug")}, {"_id": 1}
+    )
+    return hybrid if on_hybrid and not on_gym else track
+
+
+def _program_choice(hub_slug: str, level, env) -> Tuple[str, str, Optional[dict]]:
+    """Level, Home/Gym and track from a link or form (old ?env=hybrid links mean gym)."""
+    levels = _levels_for_hub(hub_slug)
+    level = _norm_choice(level)
+    level = level if level in levels else (levels[0] if levels else "beginner")
+    envs = _program_envs(hub_slug, level)
+    env = _norm_choice(env)
+    if env == "hybrid" and "gym" in envs:
+        env = "gym"
+    if env not in envs:
+        env = "gym" if "gym" in envs else (envs[0] if envs else "home")
+    return level, env, _viewer_track(hub_slug, level, env)
+
+
+def _program_cards(hubs: List[dict]) -> List[dict]:
+    """Program cards with where they go: today's day for someone already training in
+    the program (with "Week 3 · Pull" and a progress bar), the program page otherwise.
+    One progress query for every card; plans are only built for started programs."""
+    owner_key = _progress_owner_key()
+    last_by_hub: Dict[str, dict] = {}
+    slugs = [h.get("slug") for h in hubs if h.get("slug")]
+    if owner_key and slugs and _latest_progress_row(owner_key):
+        for row in db.program_day_progress.find(
+            {"viewer_id": owner_key, "hub_slug": {"$in": slugs}},
+            {"hub_slug": 1, "level": 1, "env": 1, "completed_at": 1},
+        ).sort([("completed_at", -1)]):
+            last_by_hub.setdefault(row.get("hub_slug"), row)
+    cards = []
+    for hub in hubs:
+        card = dict(hub, href=url_for("program_detail", slug=hub.get("slug")), started=False)
+        last = last_by_hub.get(hub.get("slug"))
+        if last:
+            _program_card_progress(card, last)
+        cards.append(card)
+    return cards
+
+
+def _program_card_progress(card: dict, last: dict) -> None:
+    hub_slug = card["slug"]
+    level, env, track = _program_choice(hub_slug, last.get("level"), last.get("env"))
+    if not track:
+        return
+    duration = _week_count_from_duration_label(
+        track.get("duration_label") or card.get("duration_label")
+    )
+    plan = _track_plan(track, duration)
+    progress = _plan_progress(_progress_owner_key(), track, plan)
+    if not progress["started"]:
+        return
+    card.update(started=True, percent=progress["percent"], finished=progress["finished"])
+    if progress["finished"] or not progress["next_day"]:
+        card["href"] = url_for("program_detail", slug=hub_slug, level=level, env=env)
+        card["status"] = "Finished"
+        return
+    week, day = progress["next_week"], progress["next_day"]
+    card["status"] = f"Week {week['number']} · {day['name']}"
+    card["day_color"] = day["color"]
+    card["href"] = url_for(
+        "program_hub_week_detail",
+        hub_slug=hub_slug,
+        week_number=week["number"],
+        level=level,
+        env=env,
+        day=day["key"],
+    )
+
+
 def _program_setup(hub_slug: str) -> Tuple[str, str]:
     """Level and environment for this visit: the URL, else where the viewer last
     trained in this program, else their saved preferences, else sensible defaults."""
@@ -3967,15 +4110,20 @@ def _program_setup(hub_slug: str) -> Tuple[str, str]:
             (lv for lv in (_norm_choice(last.get("level")), saved) if lv in levels), levels[0]
         )
 
-    envs = _envs_for_hub_level(hub_slug, level)
-    if asked_env in envs:
-        env = asked_env
-        if asked_env != _norm_choice(request.cookies.get(ENV_COOKIE)):
-            g._set_env = asked_env
+    envs = _program_envs(hub_slug, level)
+
+    def norm_env(value: str) -> str:
+        value = _norm_choice(value)
+        return "gym" if value == "hybrid" and "gym" in envs else value
+
+    if norm_env(asked_env) in envs:
+        env = norm_env(asked_env)
+        if env != _norm_choice(request.cookies.get(ENV_COOKIE)):
+            g._set_env = env
     else:
-        saved = _norm_choice(request.cookies.get(ENV_COOKIE))
+        saved = norm_env(request.cookies.get(ENV_COOKIE))
         fallback = "gym" if "gym" in envs else envs[0]
-        env = next((e for e in (_norm_choice(last.get("env")), saved) if e in envs), fallback)
+        env = next((e for e in (norm_env(last.get("env")), saved) if e in envs), fallback)
     return level, env
 
 
@@ -4032,10 +4180,12 @@ def _track_plan(track: dict, duration_weeks: int) -> List[dict]:
         name = (
             it.get("custom_name") or (ex or {}).get("name") or it.get("workout_name") or "Exercise"
         )
+        swap = by_slug.get(it.get("swap_for")) if it.get("swap_for") else None
         day["items"].append(
             {
                 "name": name,
                 "exercise": _with_metadata_fallbacks(dict(ex)) if ex else None,
+                "swap_for": (swap or {}).get("name") or "",
                 "sets": it.get("sets"),
                 "reps": it.get("reps"),
                 "rest": it.get("rest"),
@@ -4055,6 +4205,7 @@ def _track_plan(track: dict, duration_weeks: int) -> List[dict]:
                     for i in day["items"]
                 ]
             )
+        _style_days(days)
         plan.append(dict(week, days=days))
     return plan
 
@@ -4104,7 +4255,7 @@ def _plan_progress(owner_key: str, track: dict, plan: List[dict]) -> dict:
 def _render_program_page(hub: dict):
     hub_slug = hub["slug"]
     level, env = _program_setup(hub_slug)
-    track = _pick_track_for(hub_slug, level, env)
+    track = _viewer_track(hub_slug, level, env)
     if not track:
         abort(404)
     duration = _week_count_from_duration_label(
@@ -4121,7 +4272,7 @@ def _render_program_page(hub: dict):
         level=level,
         env=env,
         levels=levels,
-        envs=_envs_for_hub_level(hub_slug, level),
+        envs=_program_envs(hub_slug, level),
         plan=plan,
         progress=progress,
         focus_week=focus_week,
@@ -4160,18 +4311,9 @@ def program_hub_weeks(hub_slug):
 def program_hub_reset_progress(hub_slug):
     _get_hub_or_404(hub_slug)
 
-    level = _norm_choice(request.form.get("level")) or "beginner"
-    env = _norm_choice(request.form.get("env")) or "home"
-
-    levels = _levels_for_hub(hub_slug)
-    if level not in levels:
-        level = levels[0] if levels else "beginner"
-
-    envs = _envs_for_hub_level(hub_slug, level)
-    if env not in envs:
-        env = envs[0] if envs else "home"
-
-    track = _pick_track_for(hub_slug, level, env)
+    level, env, track = _program_choice(
+        hub_slug, request.form.get("level"), request.form.get("env")
+    )
     if not track:
         abort(404)
 
@@ -4192,14 +4334,9 @@ def program_hub_week_detail(hub_slug, week_number: int):
     """One training day: the week's day switcher, the exercises with sets, reps and
     rest, and "Mark day done"."""
     hub = _get_hub_or_404(hub_slug)
-    levels = _levels_for_hub(hub_slug)
-    level = _norm_choice(request.args.get("level"))
-    level = level if level in levels else (levels[0] if levels else "beginner")
-    envs = _envs_for_hub_level(hub_slug, level)
-    env = _norm_choice(request.args.get("env"))
-    env = env if env in envs else (envs[0] if envs else "home")
-
-    track = _pick_track_for(hub_slug, level, env)
+    level, env, track = _program_choice(
+        hub_slug, request.args.get("level"), request.args.get("env")
+    )
     if not track:
         abort(404)
     duration = _week_count_from_duration_label(
@@ -4236,6 +4373,7 @@ def program_hub_week_detail(hub_slug, week_number: int):
         next_day=next_day,
         next_week=next_week,
         progress=progress,
+        plan=plan,
         environments=tx.ENVIRONMENTS,
         level_meta=tx.LEVELS,
         muscle_groups=tx.MUSCLE_GROUPS,
@@ -4244,18 +4382,9 @@ def program_hub_week_detail(hub_slug, week_number: int):
 
 @app.route("/programs/<hub_slug>/week/<int:week_number>/day-status", methods=["POST"])
 def program_hub_week_day_status(hub_slug, week_number: int):
-    level = _norm_choice(request.form.get("level")) or "beginner"
-    env = _norm_choice(request.form.get("env")) or "home"
-
-    levels = _levels_for_hub(hub_slug)
-    if level not in levels:
-        level = levels[0] if levels else "beginner"
-
-    envs = _envs_for_hub_level(hub_slug, level)
-    if env not in envs:
-        env = envs[0] if envs else "home"
-
-    track = _pick_track_for(hub_slug, level, env)
+    level, env, track = _program_choice(
+        hub_slug, request.form.get("level"), request.form.get("env")
+    )
     if not track:
         abort(404)
 

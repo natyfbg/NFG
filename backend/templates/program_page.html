@@ -3,21 +3,30 @@
 
 {% block title %}{{ hub.title or 'Program' }} – {{ app_name }}{% endblock %}
 {% block back_url %}{{ url_for('programs_index') }}{% endblock %}
-{% block meta_description %}{{ hub.title or 'Program' }}: a week-by-week plan with every session laid out, for home, the gym or both.{% endblock %}
+{% block meta_description %}{{ hub.title or 'Program' }}: a week-by-week plan with every session laid out, for home or the gym.{% endblock %}
 
 {% set days_per_week = track.days_per_week or (focus_week.days|length if focus_week else 0) %}
 {% set next_week = progress.next_week %}
 {% set next_day = progress.next_day %}
+{% set weeks_total = plan|length %}
 
 {% macro day_link(week_n, d) -%}
   {{ url_for('program_hub_week_detail', hub_slug=hub.slug, week_number=week_n, level=level, env=env, day=d.key) }}
 {%- endmacro %}
 
+{% macro level_label(lv) -%}{{ level_meta[lv].label if lv in level_meta else lv|capitalize }}{%- endmacro %}
+{% macro env_label(e) -%}{{ environments[e].label if e in environments else e|capitalize }}{%- endmacro %}
+
+{% set level_options = [] %}
+{% for lv in levels %}{% set _ = level_options.append((lv, level_label(lv), url_for('program_detail', slug=hub.slug, level=lv, env=env))) %}{% endfor %}
+{% set env_options = [] %}
+{% for e in envs %}{% set _ = env_options.append((e, env_label(e), url_for('program_detail', slug=hub.slug, level=level, env=e))) %}{% endfor %}
+
 {% block page %}
 <div class="nfg-discover nfg-prog">
 
   <header class="nfg-page-head nfg-prog-head">
-    <div class="app-page-kicker">Program</div>
+    <div class="app-page-kicker">Coach's Plan</div>
     <div class="nfg-title-row">
       <h1 class="nfg-page-title">{{ hub.title or 'Program' }}</h1>
       <form class="nfg-save-form" method="post" action="{{ url_for('program_favorite_toggle', slug=hub.slug) }}">
@@ -29,37 +38,79 @@
         </button>
       </form>
     </div>
-    {% if hub.summary %}<p class="nfg-prog-summary">{{ hub.summary | visitor_text }}</p>{% endif %}
     <div class="nfg-prog-facts">
       {% if hub.duration_label %}<span>{{ hub.duration_label }}</span>{% endif %}
       {% if days_per_week %}<span>{{ days_per_week }} days a week</span>{% endif %}
       {% if hub.session_minutes %}<span>~{{ hub.session_minutes }} min</span>{% endif %}
       {% if hub.goal %}<span>{{ hub.goal }}</span>{% endif %}
     </div>
+    {% if progress.started %}
+      {# Return visit: the setup is one slim row. #}
+      <div class="nfg-prog-toggles">
+        {% if level_options|length > 1 %}{{ ui.seg_links(level_options, level, "Level", "is-env") }}{% endif %}
+        {% if env_options|length > 1 %}{{ ui.seg_links(env_options, env, "Where you train", "is-env") }}{% endif %}
+      </div>
+    {% elif hub.summary %}
+      <p class="nfg-prog-summary">{{ hub.summary | visitor_text }}</p>
+    {% endif %}
   </header>
 
-  {# Next session: the one thing to do. #}
   {% if next_day %}
-    <section class="nfg-prog-next" aria-label="Next session">
-      <div class="nfg-prog-next-kicker">
-        {% if progress.finished %}Program complete · go again{% elif progress.started %}Next up{% else %}Start here{% endif %}
-        · Week {{ next_week.number }}{% if next_week.title %} · {{ next_week.title }}{% endif %}
+    {% if not progress.started %}
+      {# First visit: two rows of pills, then start. #}
+      <section class="nfg-prog-setup" aria-label="Set up your plan">
+        <div class="nfg-prog-setup-row">
+          <span class="nfg-prog-label">Level</span>
+          {% if level_options|length > 1 %}
+            {{ ui.seg_links(level_options, level, "Level", "nfg-prog-seg") }}
+          {% else %}
+            <span class="nfg-prog-fixed">{{ level_label(level) }}<small>Written for {{ level_label(level)|lower }} lifters</small></span>
+          {% endif %}
+        </div>
+        {% if env_options|length > 1 %}
+          <div class="nfg-prog-setup-row">
+            <span class="nfg-prog-label">Where</span>
+            {{ ui.seg_links(env_options, env, "Where you train", "nfg-prog-seg") }}
+          </div>
+        {% endif %}
+        {% if track.summary %}<p class="nfg-prog-note">{{ track.summary | visitor_text }}</p>{% endif %}
+      </section>
+    {% endif %}
+
+    {# Next up: the one thing to do, in the day's colour. #}
+    <section class="nfg-prog-next" style="--day: {{ next_day.color }};" aria-label="Next session">
+      <div class="nfg-prog-next-top">
+        <span class="nfg-prog-next-kicker">
+          {% if progress.finished %}Plan complete · go again{% elif progress.started %}Next up{% else %}Start here{% endif %}
+        </span>
+        <span class="nfg-prog-next-week">Week {{ next_week.number }}{% if weeks_total %} of {{ weeks_total }}{% endif %}{% if next_week.title %} · {{ next_week.title }}{% endif %}</span>
       </div>
-      <div class="nfg-prog-next-title">{{ next_day.label }}</div>
+      <div class="nfg-prog-next-title">
+        <span class="nfg-day-tag">Day {{ next_week.days.index(next_day) + 1 }}</span>
+        {{ next_day.name }}
+      </div>
       <div class="nfg-prog-next-meta">
-        {% if next_day.focus %}{{ next_day.focus }} · {% endif %}{{ next_day['items']|length }} exercises{% if next_day.minutes %} · ~{{ next_day.minutes }} min{% endif %}
+        {% if next_day.focus %}<span>{{ next_day.focus }}</span>{% endif %}
+        <span>{{ next_day['items']|length }} exercises{% if next_day.minutes %} · ~{{ next_day.minutes }} min{% endif %}</span>
       </div>
-      {% if progress.total_days %}
+      {% set preview = next_day['items'][:3] %}
+      {% if preview %}
+        <ul class="nfg-prog-next-list">
+          {% for it in preview %}<li>{{ it.name }}</li>{% endfor %}
+          {% if next_day['items']|length > 3 %}<li class="is-more">+{{ next_day['items']|length - 3 }} more</li>{% endif %}
+        </ul>
+      {% endif %}
+      {% if progress.started and progress.total_days %}
         <div class="nfg-prog-progress">
           <span class="nfg-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"
-                aria-valuenow="{{ progress.percent }}" aria-label="Program progress">
+                aria-valuenow="{{ progress.percent }}" aria-label="Plan progress">
             <span class="nfg-progress-bar" style="width: {{ progress.percent }}%;"></span>
           </span>
           <span>{{ progress.done_days }} of {{ progress.total_days }} days · {{ progress.percent }}%</span>
         </div>
       {% endif %}
       <a class="nfg-btn nfg-prog-start" href="{{ day_link(next_week.number, next_day) }}">
-        {% if progress.started and not progress.finished %}Continue{% else %}Start{% endif %} {{ ui.icon('arrow-right') }}
+        {% if progress.started and not progress.finished %}Continue · {{ next_day.name }}{% elif progress.finished %}Start again{% else %}Start week 1{% endif %} {{ ui.icon('arrow-right') }}
       </a>
     </section>
   {% else %}
@@ -70,50 +121,6 @@
     </section>
   {% endif %}
 
-  {# Setup: one screen, remembered. #}
-  <section class="nfg-prog-setup" aria-label="Your setup">
-    <div>
-      <div class="nfg-prog-label">Your level</div>
-      <div class="nfg-env-switch nfg-prog-switch" role="group" aria-label="Level">
-        {% for lv in levels %}
-          <a class="nfg-env-option{% if lv == level %} is-active{% endif %}"
-             href="{{ url_for('program_detail', slug=hub.slug, level=lv, env=env) }}"
-             {% if lv == level %}aria-current="true"{% endif %}>{{ level_meta[lv].label if lv in level_meta else lv|capitalize }}</a>
-        {% endfor %}
-      </div>
-    </div>
-    <div>
-      <div class="nfg-prog-label">Where you train</div>
-      <div class="nfg-env-switch nfg-prog-switch" role="group" aria-label="Where you train">
-        {% for e in envs %}
-          <a class="nfg-env-option{% if e == env %} is-active{% endif %}"
-             href="{{ url_for('program_detail', slug=hub.slug, level=level, env=e) }}"
-             {% if e == env %}aria-current="true"{% endif %}>{{ environments[e].label if e in environments else e|capitalize }}</a>
-        {% endfor %}
-      </div>
-    </div>
-    {% if track.summary %}<p class="nfg-prog-note">{{ track.summary | visitor_text }}</p>{% endif %}
-  </section>
-
-  {# Weeks at a glance. #}
-  <section class="nfg-section">
-    {{ ui.section_head(None, "Weeks") }}
-    {% call ui.rail() %}
-      {% for w in plan %}
-        {% set state = 'is-done' if w.complete else ('is-current' if next_week and w.number == next_week.number else ('is-locked' if not w.unlocked else '')) %}
-        {% if w.unlocked and w.days %}
-          <a class="nfg-week-chip {{ state }}" href="{{ url_for('program_hub_week_detail', hub_slug=hub.slug, week_number=w.number, level=level, env=env) }}">
-        {% else %}
-          <span class="nfg-week-chip {{ state }}" aria-disabled="true">
-        {% endif %}
-            <span class="nfg-week-n">{{ w.number }}</span>
-            <span class="nfg-week-label">{% if w.complete %}Done{% elif not w.unlocked %}Locked{% elif w.title %}{{ w.title }}{% else %}Week{% endif %}</span>
-            {% if w.days %}<span class="nfg-week-dots">{% for d in w.days %}<i class="{% if d.done %}is-on{% endif %}"></i>{% endfor %}</span>{% endif %}
-        {% if w.unlocked and w.days %}</a>{% else %}</span>{% endif %}
-      {% endfor %}
-    {% endcall %}
-  </section>
-
   {# The days of the week you're on. #}
   {% if focus_week and focus_week.days %}
     <section class="nfg-section">
@@ -121,10 +128,11 @@
       {% if focus_week.notes %}<p class="nfg-prog-note">{{ focus_week.notes }}</p>{% endif %}
       <div class="nfg-day-list">
         {% for d in focus_week.days %}
-          <a class="nfg-day-card{% if d.done %} is-done{% endif %}" href="{{ day_link(focus_week.number, d) }}">
+          {% set is_next = next_day and d.key == next_day.key and focus_week.number == next_week.number and not progress.finished %}
+          <a class="nfg-day-card{% if d.done %} is-done{% endif %}{% if is_next %} is-next{% endif %}" style="--day: {{ d.color }};" href="{{ day_link(focus_week.number, d) }}">
             <span class="nfg-day-num">{% if d.done %}{{ ui.icon('check-lg') }}{% else %}{{ loop.index }}{% endif %}</span>
             <span class="nfg-day-body">
-              <span class="nfg-day-name">{{ d.label }}</span>
+              <span class="nfg-day-name">{{ d.name }}{% if is_next %}<span class="nfg-day-flag">Next</span>{% endif %}</span>
               <span class="nfg-day-meta">{% if d.focus %}{{ d.focus }} · {% endif %}{{ d['items']|length }} exercises{% if d.minutes %} · ~{{ d.minutes }} min{% endif %}</span>
             </span>
             <span class="nfg-day-go" aria-hidden="true">{{ ui.icon('chevron-right') }}</span>
@@ -134,11 +142,32 @@
     </section>
   {% endif %}
 
+  {# Weeks at a glance. #}
+  <section class="nfg-section">
+    {{ ui.section_head(None, "All weeks") }}
+    {% call ui.rail() %}
+      {% for w in plan %}
+        {% set is_current = next_week and w.number == next_week.number and not progress.finished %}
+        {% set state = 'is-done' if w.complete else ('is-current' if is_current else ('is-locked' if not w.unlocked else '')) %}
+        {% if w.unlocked and w.days %}
+          <a class="nfg-week-chip {{ state }}" href="{{ url_for('program_hub_week_detail', hub_slug=hub.slug, week_number=w.number, level=level, env=env) }}"{% if is_current %} aria-current="step"{% endif %}>
+        {% else %}
+          <span class="nfg-week-chip {{ state }}" aria-disabled="true">
+        {% endif %}
+            <span class="nfg-week-n">{% if w.complete %}{{ ui.icon('check-lg') }}{% elif not w.unlocked %}{{ ui.icon('lock') }}{% else %}{{ w.number }}{% endif %}</span>
+            <span class="nfg-week-label">{% if w.complete %}Week {{ w.number }}{% elif w.title %}{{ w.title }}{% else %}Week {{ w.number }}{% endif %}</span>
+            {% if w.days %}<span class="nfg-week-dots">{% for d in w.days %}<i class="{% if d.done %}is-on{% endif %}" style="--day: {{ d.color }};"></i>{% endfor %}</span>{% endif %}
+        {% if w.unlocked and w.days %}</a>{% else %}</span>{% endif %}
+      {% endfor %}
+    {% endcall %}
+  </section>
+
   {# How it works. #}
-  {% if hub.phases or hub.rules or track.rules %}
+  {% if hub.phases or hub.rules or track.rules or (progress.started and hub.summary) %}
     <section class="nfg-section">
       <details class="nfg-prog-how">
-        <summary>How this program works</summary>
+        <summary>How this plan works</summary>
+        {% if progress.started and hub.summary %}<p class="nfg-prog-note nfg-prog-how-lead">{{ hub.summary | visitor_text }}</p>{% endif %}
         {% if hub.phases %}
           <ol class="nfg-phase-list">
             {% for ph in hub.phases %}
