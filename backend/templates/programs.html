@@ -7,6 +7,7 @@
 <div class="nfg-discover nfg-prog">
 
   <header class="nfg-page-head">
+    <div class="app-page-kicker">Coach's Plans</div>
     <h1 class="nfg-page-title">Programs</h1>
     <p class="nfg-prog-summary">A plan for every week, so you don't have to decide what to train each day.</p>
   </header>
@@ -14,19 +15,34 @@
   {% if programs %}
     <div class="nfg-prog-cards">
       {% for p in programs %}
-        <a class="nfg-prog-card" href="{{ url_for('program_detail', slug=p.slug) }}">
-          <span class="nfg-prog-card-kicker">
-            {% if p.slug in program_favorite_slugs %}{{ ui.icon('heart-fill') }} Saved · {% endif %}{{ p.goal or 'Program' }}
+        {% set weeks_n = (p.duration_label or '').split(' ')[0] %}
+        <a class="nfg-prog-card{% if p.started %} is-started{% endif %}" href="{{ p.href }}"{% if p.accent %} style="--accent: {{ p.accent }};"{% endif %}>
+          <span class="nfg-prog-card-main">
+            <span class="nfg-prog-card-kicker">
+              {% if p.slug in program_favorite_slugs %}{{ ui.icon('heart-fill') }} Saved · {% endif %}{{ p.goal or 'Program' }}
+            </span>
+            <span class="nfg-prog-card-title">{{ p.title or 'Program' }}</span>
+            {% if p.started %}
+              <span class="nfg-prog-card-status">
+                {% if p.day_color is defined and p.day_color %}<span class="nfg-dot" style="--dot: {{ p.day_color }};"></span>{% endif %}{{ p.status }}
+              </span>
+            {% elif p.summary %}
+              <span class="nfg-prog-card-copy">{{ p.summary | visitor_text }}</span>
+            {% endif %}
           </span>
-          <span class="nfg-prog-card-title">{{ p.title or 'Program' }}</span>
-          {% if p.summary %}<span class="nfg-prog-card-copy">{{ p.summary | visitor_text }}</span>{% endif %}
-          <span class="nfg-prog-facts is-dark">
-            {% if p.duration_label %}<span>{{ p.duration_label }}</span>{% endif %}
-            {% set dpw = p.days_per_week %}
-            {% if dpw %}<span>{% if dpw is iterable and dpw is not string %}{{ dpw|first }}{% if dpw|length > 1 %}–{{ dpw|last }}{% endif %}{% else %}{{ dpw }}{% endif %} days a week</span>{% endif %}
-            {% if p.session_minutes %}<span>~{{ p.session_minutes }} min</span>{% endif %}
-          </span>
-          <span class="nfg-prog-card-cta">Open program {{ ui.icon('arrow-right') }}</span>
+          {% if weeks_n is number or weeks_n.isdigit() %}
+            <span class="nfg-prog-card-weeks" aria-hidden="true"><b>{{ weeks_n }}</b>weeks</span>
+          {% endif %}
+          {% if p.started %}
+            <span class="nfg-prog-card-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ p.percent }}" aria-label="Progress"><span style="width: {{ p.percent }}%;"></span></span>
+          {% else %}
+            <span class="nfg-prog-facts is-dark">
+              {% set dpw = p.days_per_week %}
+              {% if dpw %}<span>{% if dpw is iterable and dpw is not string %}{{ dpw|first }}{% if dpw|length > 1 %}–{{ dpw|last }}{% endif %}{% else %}{{ dpw }}{% endif %} days a week</span>{% endif %}
+              {% if p.session_minutes %}<span>~{{ p.session_minutes }} min</span>{% endif %}
+            </span>
+          {% endif %}
+          <span class="nfg-prog-card-cta">{% if p.started %}{{ 'Review plan' if p.finished else 'Continue' }}{% else %}Open plan{% endif %} {{ ui.icon('arrow-right') }}</span>
         </a>
       {% endfor %}
     </div>

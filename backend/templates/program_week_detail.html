@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% import "_components.html" as ui %}
 
-{% block title %}{{ day.label if day else 'Week ' ~ week_number }} – {{ hub.title or 'Program' }} – {{ app_name }}{% endblock %}
+{% block title %}{{ day.name if day else 'Week ' ~ week_number }} – {{ hub.title or 'Program' }} – {{ app_name }}{% endblock %}
 {% block back_url %}{{ url_for('program_detail', slug=hub.slug, level=level, env=env) }}{% endblock %}
 
 {% macro day_url(d, wn=week_number) -%}
@@ -9,80 +9,96 @@
 {%- endmacro %}
 
 {% block page %}
-<div class="nfg-discover nfg-prog nfg-prog-day">
+<div class="nfg-discover nfg-prog nfg-prog-day"{% if day %} style="--day: {{ day.color }};"{% endif %}>
 
   <a class="nfg-back" href="{{ url_for('program_detail', slug=hub.slug, level=level, env=env) }}">{{ ui.icon('chevron-left') }} {{ hub.title or 'Program' }}</a>
 
   {% if day %}
-    <header class="nfg-page-head">
-      <div class="app-page-kicker">Week {{ week_number }}{% if week.title %} · {{ week.title }}{% endif %}</div>
-      <h1 class="nfg-page-title">{{ day.label }}</h1>
-      <div class="nfg-prog-facts">
-        {% if day.focus %}<span>{{ day.focus }}</span>{% endif %}
-        <span>{{ day['items']|length }} exercises</span>
-        {% if day.minutes %}<span>~{{ day.minutes }} min</span>{% endif %}
-        <span>{{ level_meta[level].label if level in level_meta else level|capitalize }} · {{ environments[env].label if env in environments else env|capitalize }}</span>
+    {% set day_n = week.days.index(day) + 1 %}
+    <header class="nfg-pday-head">
+      <div class="nfg-pday-id">
+        <div class="app-page-kicker">Week {{ week_number }}{% if week.title %} · {{ week.title }}{% endif %} · Day {{ day_n }}</div>
+        <h1 class="nfg-page-title">{{ day.name }}</h1>
       </div>
+      {% if week.days|length > 1 %}
+        <nav class="nfg-day-pills" aria-label="Days this week">
+          {% for d in week.days %}
+            <a class="nfg-day-pill{% if d.key == day.key %} is-active{% endif %}{% if d.done %} is-done{% endif %}"
+               style="--day: {{ d.color }};" href="{{ day_url(d) }}"
+               aria-label="Day {{ loop.index }}: {{ d.name }}{% if d.done %} (done){% endif %}"
+               title="Day {{ loop.index }} · {{ d.name }}"
+               {% if d.key == day.key %}aria-current="page"{% endif %}>{% if d.done %}{{ ui.icon('check-lg') }}{% else %}{{ loop.index }}{% endif %}</a>
+          {% endfor %}
+        </nav>
+      {% endif %}
     </header>
+    <div class="nfg-prog-facts nfg-pday-facts">
+      {% if day.focus %}<span class="is-focus">{{ day.focus }}</span>{% endif %}
+      <span>{{ day['items']|length }} exercises</span>
+      {% if day.minutes %}<span>~{{ day.minutes }} min</span>{% endif %}
+      <span>{{ level_meta[level].label if level in level_meta else level|capitalize }} · {{ environments[env].label if env in environments else env|capitalize }}</span>
+    </div>
 
-    {% if week.days|length > 1 %}
-      {% call ui.rail() %}
-        {% for d in week.days %}
-          <a class="nfg-focus{% if d.key == day.key %} is-active{% endif %}" href="{{ day_url(d) }}"
-             {% if d.key == day.key %}aria-current="page"{% endif %}>{% if d.done %}✓ {% endif %}{{ d.label }}</a>
-        {% endfor %}
-      {% endcall %}
-    {% endif %}
+    {% if week.notes and day_n == 1 %}<p class="nfg-prog-note">{{ week.notes }}</p>{% endif %}
 
-    {% if week.notes %}<p class="nfg-prog-note">{{ week.notes }}</p>{% endif %}
-
-    <section class="nfg-section">
-      <ol class="nfg-plan-list">
-        {% for it in day['items'] %}
-          {% set w = it.exercise %}
-          <li>
-            {% if w %}<a class="nfg-plan-row" href="{{ url_for('workout_detail', slug=w.slug) }}">{% else %}<div class="nfg-plan-row is-custom">{% endif %}
-              <span class="nfg-plan-thumb">
-                {% if w %}<img src="{{ ui.exercise_image(w) }}" alt="" loading="lazy">{% else %}<span class="nfg-plan-n">{{ loop.index }}</span>{% endif %}
+    <ol class="nfg-pday-list">
+      {% for it in day['items'] %}
+        {% set w = it.exercise %}
+        {% set group = w.primary_groups[0] if w and w.primary_groups else none %}
+        {% set color = muscle_groups[group].color if group and group in muscle_groups else day.color %}
+        <li>
+          {% if w %}<a class="nfg-pday-row" href="{{ url_for('workout_detail', slug=w.slug) }}" style="--row: {{ color }};">{% else %}<div class="nfg-pday-row is-custom" style="--row: {{ color }};">{% endif %}
+            <span class="nfg-pday-thumb">
+              {% if w %}<img src="{{ ui.exercise_image(w) }}" alt="" loading="lazy">{% endif %}
+              <span class="nfg-pday-n">{{ loop.index }}</span>
+            </span>
+            <span class="nfg-pday-body">
+              <span class="nfg-pday-name">{{ it.name }}</span>
+              <span class="nfg-pday-meta">
+                {% if group and group in muscle_groups %}<span class="nfg-pday-group">{{ muscle_groups[group].label }}</span>{% endif %}
+                {% if it.rest %}<span>Rest {{ it.rest }}</span>{% endif %}
               </span>
-              <span class="nfg-plan-body">
-                <span class="nfg-plan-name">{{ it.name }}</span>
-                <span class="nfg-plan-dose">
-                  {% if it.sets %}<b>{{ it.sets }} × {{ it.reps }}</b>{% elif it.reps %}<b>{{ it.reps }}</b>{% endif %}
-                  {% if it.rest %}<span>rest {{ it.rest }}</span>{% endif %}
-                </span>
-                {% if it.notes %}<span class="nfg-plan-note">{{ it.notes }}</span>{% endif %}
-              </span>
-              {% if w %}<span class="nfg-day-go" aria-hidden="true">{{ ui.icon('chevron-right') }}</span>{% endif %}
-            {% if w %}</a>{% else %}</div>{% endif %}
-          </li>
-        {% endfor %}
-      </ol>
-    </section>
+              {% if it.swap_for %}<span class="nfg-pday-swap">Home swap for {{ it.swap_for }}</span>{% endif %}
+              {% if it.notes %}<span class="nfg-pday-note">{{ it.notes }}</span>{% endif %}
+            </span>
+            <span class="nfg-pday-dose">
+              {% if it.sets %}<b>{{ it.sets }} × {{ it.reps }}</b><small>sets × reps</small>{% elif it.reps %}<b>{{ it.reps }}</b>{% endif %}
+            </span>
+          {% if w %}</a>{% else %}</div>{% endif %}
+        </li>
+      {% endfor %}
+    </ol>
 
-    <section class="nfg-section nfg-prog-done">
-      <form method="post" action="{{ url_for('program_hub_week_day_status', hub_slug=hub.slug, week_number=week_number) }}">
+    {# Mark complete · Next … Undo #}
+    {% if next_day %}{% set go = (day_url(next_day), next_day.name) %}
+    {% elif next_week %}{% set go = (day_url(next_week.days[0], next_week.number), 'Week ' ~ next_week.number) %}
+    {% else %}{% set go = none %}{% endif %}
+    <section class="nfg-pday-actions" aria-label="Finish this day">
+      <form class="nfg-pday-form" method="post" action="{{ url_for('program_hub_week_day_status', hub_slug=hub.slug, week_number=week_number) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="level" value="{{ level }}">
         <input type="hidden" name="env" value="{{ env }}">
         <input type="hidden" name="day_key" value="{{ day.key }}">
         {% if day.done %}
-          <input type="hidden" name="action" value="undo">
-          <div class="nfg-done-row">
-            <span class="nfg-done-badge">{{ ui.icon('check-lg') }} Done</span>
-            <button class="nfg-link-btn" type="submit">Undo</button>
-          </div>
+          <span class="nfg-act is-done">{{ ui.icon('check-lg') }} Completed</span>
         {% else %}
           <input type="hidden" name="action" value="done">
           {% if next_day %}<input type="hidden" name="next_day_key" value="{{ next_day.key }}">{% endif %}
-          <button class="nfg-btn nfg-prog-start" type="submit">Mark day done</button>
+          <button class="nfg-act is-primary" type="submit">{{ ui.icon('check-lg') }} Mark complete</button>
         {% endif %}
       </form>
-
-      {% if next_day %}
-        <a class="nfg-browse-link" href="{{ day_url(next_day) }}">Next: {{ next_day.label }} {{ ui.icon('arrow-right') }}</a>
-      {% elif next_week %}
-        <a class="nfg-browse-link" href="{{ day_url(next_week.days[0], next_week.number) }}">Next: Week {{ next_week.number }} · {{ next_week.days[0].label }} {{ ui.icon('arrow-right') }}</a>
+      {% if go %}
+        <a class="nfg-act is-ghost" href="{{ go[0] }}">Next: {{ go[1] }} {{ ui.icon('arrow-right') }}</a>
+      {% endif %}
+      {% if day.done %}
+        <form class="nfg-pday-undo" method="post" action="{{ url_for('program_hub_week_day_status', hub_slug=hub.slug, week_number=week_number) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="level" value="{{ level }}">
+          <input type="hidden" name="env" value="{{ env }}">
+          <input type="hidden" name="day_key" value="{{ day.key }}">
+          <input type="hidden" name="action" value="undo">
+          <button class="nfg-undo-btn" type="submit">{{ ui.icon('arrow-counterclockwise') }} Undo</button>
+        </form>
       {% endif %}
     </section>
 
@@ -97,6 +113,30 @@
       {% if current_user.is_authenticated and current_user.is_admin %}
         <a class="nfg-browse-link" href="{{ url_for('admin_programs') }}">Admin → Programs {{ ui.icon('arrow-right') }}</a>
       {% endif %}
+    </section>
+  {% endif %}
+
+  {# Weeks: done, this one, and what's coming. #}
+  {% if plan %}
+    <section class="nfg-section nfg-pday-weeks" aria-label="Weeks">
+      <div class="nfg-pday-weeks-head">
+        <span>Weeks</span>
+        <span class="nfg-pday-weeks-count">{{ progress.done_days }} of {{ progress.total_days }} days done</span>
+      </div>
+      {% call ui.rail() %}
+        {% for w in plan %}
+          {% set state = 'is-done' if w.complete else ('is-locked' if not w.unlocked else '') %}
+          {% set is_here = w.number == week_number %}
+          {% if w.unlocked and w.days %}
+            <a class="nfg-week-pill {{ state }}{% if is_here %} is-current{% endif %}" href="{{ url_for('program_hub_week_detail', hub_slug=hub.slug, week_number=w.number, level=level, env=env) }}"
+               aria-label="Week {{ w.number }}{% if w.complete %} (done){% endif %}"{% if is_here %} aria-current="page"{% endif %}>
+          {% else %}
+            <span class="nfg-week-pill {{ state }}" aria-label="Week {{ w.number }} (locked)">
+          {% endif %}
+              {% if w.complete %}{{ ui.icon('check-lg') }}{% endif %}{{ w.number }}
+          {% if w.unlocked and w.days %}</a>{% else %}</span>{% endif %}
+        {% endfor %}
+      {% endcall %}
     </section>
   {% endif %}
 

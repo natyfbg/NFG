@@ -1,0 +1,105 @@
+# 12-week Body Recomposition (Nate, 2026-11-16): Push / Pull / Legs, three days a week,
+# intermediate, progressive overload. Lose fat and build muscle at the same time by
+# training hard, eating close to maintenance and adding weight week by week.
+slug: 12-week-body-recomposition
+title: 12-Week Body Recomposition
+accent: "#23A08F"
+order: 2
+status: published
+goal: Lose fat, build muscle
+summary: >-
+  Three strength days a week, Push, Pull and Legs, with the weights going up every
+  few weeks. Eat close to maintenance and lose fat while you build muscle.
+weeks: 12
+session_minutes: 50
+rules:
+  - "Train 3 days a week with a rest day between sessions (for example Monday, Wednesday, Friday)."
+  - "Eat close to maintenance: about 300 kcal under on rest days, maintenance on training days."
+  - "Protein every day: 1.6–2.2 g per kg of body weight, spread over 3–4 meals."
+  - "Hit the top of the rep range on every set? Add the smallest step of weight next session."
+  - "Finish most sets with 1–3 reps left in the tank. Clean form first, always."
+  - "Walk 8,000–10,000 steps a day and sleep 7–9 hours. That's where the fat loss and recovery happen."
+
+phases:
+  - name: Foundation
+    weeks: [1, 2, 3]
+    note: Learn the lifts and find weights you can move for every rep with clean form.
+    main: {sets: 3, reps: "10–12", rest: 90s}
+    accessory: {sets: 3, reps: "12–15", rest: 60s}
+  - name: Build
+    weeks: [4, 5, 6]
+    note: One more set on the main lifts. Add weight whenever you hit 10 on every set.
+    main: {sets: 4, reps: "8–10", rest: 2 min}
+    accessory: {sets: 3, reps: "10–12", rest: 60s}
+  - name: Strength
+    weeks: [7, 8, 9]
+    note: Heavier and fewer reps. Rest the full 2–3 minutes on the main lifts.
+    main: {sets: 4, reps: "6–8", rest: 2 min 30s}
+    accessory: {sets: 3, reps: "10–12", rest: 60s}
+  - name: Peak
+    weeks: [10, 11]
+    note: Your heaviest weeks. Five hard sets of five on the first two lifts.
+    main: {sets: 5, reps: "5", rest: 3 min}
+    accessory: {sets: 3, reps: "8–10", rest: 75s}
+  - name: Deload and retest
+    weeks: [12]
+    note: Lighter on purpose. At the end of the week, compare your weights with week 1.
+    main: {sets: 3, reps: "6", rest: 2 min}
+    accessory: {sets: 2, reps: "12", rest: 45s}
+
+levels:
+  intermediate:
+    summary: Push, Pull and Legs once a week each, about 45–60 minutes per session.
+    days:
+      - label: Push
+        focus: Chest · shoulders · triceps
+        items:
+          - exercise: barbell-bench-press
+            home: dumbbell-bench-press
+          - exercise: dumbbell-shoulder-press
+          - exercise: incline-dumbbell-press
+            role: accessory
+          - exercise: cable-fly
+            home: decline-push-up
+            role: accessory
+          - exercise: dumbbell-lateral-raise
+            role: accessory
+          - exercise: cable-pushdown
+            role: accessory
+            home: overhead-dumbbell-extension
+      - label: Pull
+        focus: Back · rear delts · biceps
+        items:
+          - exercise: pull-up
+            note: Use a band or the assisted machine until you can do every rep.
+          - exercise: barbell-row
+            home: one-arm-dumbbell-row
+          - exercise: seated-cable-row
+            role: accessory
+            home: chest-supported-dumbbell-row
+          - exercise: rear-delt-fly
+            role: accessory
+          - exercise: barbell-curl
+            role: accessory
+            home: dumbbell-curl
+          - exercise: hammer-curl
+            role: accessory
+      - label: Legs
+        focus: Squat · hinge · single leg · core
+        items:
+          - exercise: barbell-back-squat
+            home: goblet-squat
+          - exercise: romanian-deadlift
+            home: dumbbell-romanian-deadlift
+          - exercise: bulgarian-split-squat
+            role: accessory
+          - exercise: lying-leg-curl
+            role: accessory
+            home: single-leg-glute-bridge
+          - exercise: standing-calf-raise
+            role: accessory
+          - exercise: hanging-knee-raise
+            role: accessory
+            sets: 3
+            reps: "10–15"
+            rest: 45s

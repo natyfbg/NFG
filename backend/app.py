@@ -17,10 +17,12 @@ from typing import Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse, urlsplit
 from xml.sax.saxutils import escape as xml_escape
 
+import bodymap
 import curation
 import formfigures
 import mailer
 import program_content
+import session_builder as sb
 import taxonomy as tx
 from bson.objectid import ObjectId
 from bson.regex import Regex
@@ -2916,14 +2918,25 @@ def _resume_target_for_track(
     return week_numbers[0], ""
 
 
+def _latest_progress_row(owner_key: str) -> Optional[dict]:
+    """The viewer's most recent done day (one query per request, shared by Home's
+    Continue card and the program cards)."""
+    if not owner_key:
+        return None
+    cache = g.setdefault("_latest_progress", {})
+    if owner_key not in cache:
+        cache[owner_key] = db.program_day_progress.find_one(
+            {"viewer_id": owner_key},
+            sort=[("completed_at", -1)],
+        )
+    return cache[owner_key]
+
+
 def _continue_plan_for_owner(owner_key: str) -> Optional[dict]:
     if not owner_key:
         return None
 
-    row = db.program_day_progress.find_one(
-        {"viewer_id": owner_key},
-        sort=[("completed_at", -1)],
-    )
+    row = _latest_progress_row(owner_key)
     if not row:
         return None
 
@@ -2955,6 +2968,7 @@ def _continue_plan_for_owner(owner_key: str) -> Optional[dict]:
 
     level = _track_level_for_url(track)
     env = _track_env_for_url(track)
+    env = "gym" if env == "hybrid" else env  # programs are Home/Gym; the day page finds the track
     args = {
         "hub_slug": hub_slug,
         "week_number": resume_week_number,
@@ -2973,7 +2987,7 @@ def _continue_plan_for_owner(owner_key: str) -> Optional[dict]:
     return {
         "track_title": title,
         "week_number": resume_week_number,
-        "day_label": resume_day_key.replace("-", " ").title() if resume_day_key else None,
+        "day_label": (_day_style(resume_day_key.replace("-", " "))[0] if resume_day_key else None),
         "url": url_for("program_hub_week_detail", **args),
         "completed_at": row.get("completed_at"),
         "done_days": done_days,
@@ -3432,6 +3446,20 @@ def _current_env() -> str:
     return saved if saved in tx.ENVIRONMENTS else DEFAULT_ENV
 
 
+def _current_level() -> str:
+    """Session/Mixer level from ?level=, else the remembered cookie (shared with programs)."""
+    requested = _norm_choice(request.args.get("level"))
+    if requested in sb.LEVELS:
+        if requested != _norm_choice(request.cookies.get(LEVEL_COOKIE)):
+            g._set_level = requested
+        return requested
+    saved = _norm_choice(request.cookies.get(LEVEL_COOKIE))
+    return saved if saved in sb.LEVELS else sb.DEFAULT_LEVEL
+
+
+LEVEL_CHOICES = [(k, tx.LEVELS[k]["label"]) for k in sb.LEVELS if k in tx.LEVELS]
+
+
 # -----------------------------------------------------------------------------
 # Library snapshot: Home and the Exercises page read the whole public library many
 # times per request (one pass per session preset, counts per group/equipment/level).
@@ -3532,110 +3560,6 @@ def _selected_groups() -> List[str]:
     return selected[:MIX_MAX_GROUPS]
 
 
-def _mix_results(groups: List[str], env: str, limit: int = 60) -> List[dict]:
-    """Exercises hitting the selected groups, ranked by how many they train.
-
-    A selected group trained as a primary target scores 2, as a secondary 1.
-    Ties go to easier exercises first, then name.
-    """
-    if not groups:
-        return []
-    clauses = [{"muscle_groups": {"$in": groups}}]
-    env_clause = _env_filter(env)
-    if env_clause:
-        clauses.append(env_clause)
-    docs = list(db.workouts.find(_public_workout_query({"$and": clauses})).limit(500))
-    for doc in docs:
-        primary = set(doc.get("primary_groups") or [])
-        trained = set(doc.get("muscle_groups") or [])
-        doc["mix_primary"] = [gk for gk in groups if gk in primary]
-        doc["mix_secondary"] = [gk for gk in groups if gk in trained and gk not in primary]
-        doc["mix_score"] = 2 * len(doc["mix_primary"]) + len(doc["mix_secondary"])
-        _with_metadata_fallbacks(doc)
-    docs.sort(
-        key=lambda d: (-d["mix_score"], LEVEL_ORDER.get(d.get("level"), 3), d.get("name") or "")
-    )
-    return docs[:limit]
-
-
-def _session_results(
-    preset: dict, extra_groups: List[str], env: str, limit: int = 60
-) -> List[dict]:
-    """Exercises for a session preset (e.g. Pull > Vertical pull), main lifts first.
-
-    Included: the preset's movement patterns, plus any exercise whose primary
-    muscles are preset targets (accessories), minus excluded patterns. Add-on
-    groups (e.g. calves) contribute their muscles as extra targets.
-    Each result gets `session_role` = "main" (a compound in the preset's
-    patterns) or "accessory".
-    """
-    movements = set(preset.get("movements") or [])
-    excluded = set(preset.get("exclude_movements") or [])
-    muscles = set(preset.get("muscles") or []) | set(tx.muscles_for_groups(extra_groups))
-    groups = set(preset.get("groups") or []) | {g for g in extra_groups if g in tx.MUSCLE_GROUPS}
-    categories = set(preset.get("categories") or [])  # e.g. Stretching = mobility exercises
-    if not (movements or muscles or groups or categories):
-        return []
-
-    def wanted(doc: dict) -> bool:
-        if categories:
-            return doc.get("category") in categories
-        if doc.get("category") in ("cardio", "mobility"):
-            return False
-        if excluded and doc.get("movement") in excluded:
-            return False
-        primary = set((doc.get("muscles") or {}).get("primary") or [])
-        return (
-            doc.get("movement") in movements
-            or bool(primary & muscles)
-            or bool(set(doc.get("primary_groups") or []) & groups)
-        )
-
-    docs = [dict(d) for d in _library_for_env(env) if wanted(d)][:500]
-
-    shown_groups = tx.groups_for_muscles(sorted(muscles)) + sorted(
-        g for g in groups if g not in tx.groups_for_muscles(sorted(muscles))
-    )
-    for doc in docs:
-        m = doc.get("muscles") or {}
-        primary_hits = set(m.get("primary") or []) & muscles
-        secondary_hits = set(m.get("secondary") or []) & muscles
-        main_pattern = doc.get("movement") in movements
-        # Holds (wall sit, planks) are finishers, not main lifts.
-        holds = "isometric" in (doc.get("tags") or [])
-        doc["session_role"] = (
-            "main"
-            if main_pattern and doc.get("mechanics") != "isolation" and not holds
-            else "accessory"
-        )
-        doc["mix_score"] = (
-            (3 if main_pattern else 0)
-            + 2 * len(primary_hits)
-            + len(secondary_hits)
-            + (2 if groups & set(doc.get("primary_groups") or []) else 0)
-        )
-        pg = set(doc.get("primary_groups") or [])
-        mg = set(doc.get("muscle_groups") or [])
-        doc["mix_primary"] = [g for g in shown_groups if g in pg]
-        doc["mix_secondary"] = [g for g in shown_groups if g in mg and g not in pg]
-        _with_metadata_fallbacks(doc)
-    # Main lifts lead with two-legged/two-armed compounds, grouped in the preset's
-    # movement order (a lower day: squats, then hinges, then lunges), so the anchor
-    # lifts come first instead of whatever is tagged with the most muscles.
-    order = {m: i for i, m in enumerate(preset.get("movements") or [])}
-    docs.sort(
-        key=lambda d: (
-            d["session_role"] != "main",
-            d["session_role"] == "main" and d.get("laterality") == "unilateral",
-            order.get(d.get("movement"), len(order)) if d["session_role"] == "main" else 0,
-            -d["mix_score"],
-            LEVEL_ORDER.get(d.get("level"), 3),
-            d.get("name") or "",
-        )
-    )
-    return docs[:limit]
-
-
 def _favorite_slugs(owner_key: str, item_type: str, limit: int = 0) -> List[str]:
     if not owner_key:
         return []
@@ -3683,85 +3607,125 @@ def favorite_toggle(item_type, slug):
 @app.route("/workouts/mix")
 def workouts_mix():
     env = _current_env()
+    level = _current_level()
     preset = tx.SESSION_PRESETS.get(_norm_choice(request.args.get("p")))
     if preset:
-        return _render_session(preset, env)
+        return _render_session(preset, env, level)
     groups = _selected_groups()
-    group_cards = _group_cards(env)
+    counts = _group_counts(env)
 
-    chips = []
-    for card in group_cards:
-        selected = card["key"] in groups
-        if selected:
-            next_groups = [gk for gk in groups if gk != card["key"]]
+    def toggle_url(key: str) -> str:
+        if key in groups:
+            nxt = [x for x in groups if x != key]
         else:
-            next_groups = (groups + [card["key"]])[-MIX_MAX_GROUPS:]
-        chips.append(
-            dict(
-                card,
-                selected=selected,
-                href=(
-                    url_for("workouts_mix", g=next_groups)
-                    if next_groups
-                    else url_for("workouts_mix")
-                ),
-            )
-        )
+            nxt = (groups + [key])[-MIX_MAX_GROUPS:]
+        return url_for("workouts_mix", g=nxt) if nxt else url_for("workouts_mix")
 
-    # Selected groups first (in the order picked) so they're visible without scrolling.
-    chips.sort(key=lambda c: groups.index(c["key"]) if c["selected"] else len(groups))
-
-    results = _mix_results(groups, env)
+    groups_meta = {
+        key: {
+            "label": grp["label"],
+            "color": grp["color"],
+            "count": counts.get(key, 0),
+            "on": key in groups,
+            "href": toggle_url(key),
+        }
+        for key, grp in tx.MUSCLE_GROUPS.items()
+    }
+    picked = [
+        {
+            "key": key,
+            "label": tx.MUSCLE_GROUPS[key]["label"],
+            "color": tx.MUSCLE_GROUPS[key]["color"],
+            "remove": toggle_url(key),
+        }
+        for key in groups
+    ]
+    built = sb.build_mix(_library_for_env(env), groups, level)
+    for tier in built["tiers"]:
+        for item in tier["items"]:
+            _with_metadata_fallbacks(item)
+    for item in built["more"]:
+        _with_metadata_fallbacks(item)
+    body = bodymap.body_groups()
     return render_template(
         "mix.html",
         preset=None,
+        mix_title=" + ".join(p["label"] for p in picked),
         env=env,
-        env_note=ENV_NOTES.get(env, ""),
+        level=level,
+        level_choices=LEVEL_CHOICES,
+        level_urls={
+            k: (
+                url_for("workouts_mix", g=groups, level=k)
+                if groups
+                else url_for("workouts_mix", level=k)
+            )
+            for k, _ in LEVEL_CHOICES
+        },
         environments=tx.ENVIRONMENTS,
+        env_extra={"g": groups},
         muscle_groups=tx.MUSCLE_GROUPS,
         groups=groups,
-        selected_labels=[tx.MUSCLE_GROUPS[gk]["label"] for gk in groups],
-        chips=chips,
-        group_cards=group_cards,
-        results=results,
+        groups_meta=groups_meta,
+        body_groups=body,
+        other_groups=[k for k in tx.MUSCLE_GROUPS if k not in body],
+        figures=[bodymap.figure(view) for view in bodymap.VIEWS],
+        picked=picked,
+        clear_url=url_for("workouts_mix"),
+        tiers=built["tiers"],
+        more=built["more"],
+        workout_count=built["count"],
+        max_groups=MIX_MAX_GROUPS,
         saved_slugs=set(_favorite_slugs(_progress_owner_key(), "exercise")),
     )
 
 
-def _render_session(preset: dict, env: str):
-    """Mixer page for a session preset, e.g. /workouts/mix?p=pull-vertical&g=calves."""
-    split = next(s for s in tx.SESSION_SPLITS if s["key"] == preset["split"])
-    covered = set(tx.groups_for_muscles(preset.get("muscles") or [])) | set(
-        preset.get("groups") or []
-    )
-    addons = [g for g in tx.SESSION_ADDONS if g not in covered]
-    extra = [g for g in _selected_groups() if g in addons]
-    results = _session_results(preset, extra, env)
+def _session_adds(split_key: str) -> List[str]:
+    """Add options picked on a session page (?add=calves); old ?g= add-on links still work."""
+    allowed = sb.add_options_for(split_key)
+    raw = request.args.getlist("add") + [
+        sb.LEGACY_ADD.get(_norm_choice(x), "") for x in request.args.getlist("g")
+    ]
+    out: List[str] = []
+    for value in raw:
+        key = _norm_choice(value)
+        if key in allowed and key not in out:
+            out.append(key)
+    return out
 
-    def session_url(key, groups):
-        return (
-            url_for("workouts_mix", p=key, g=groups) if groups else url_for("workouts_mix", p=key)
-        )
+
+def _render_session(preset: dict, env: str, level: str):
+    """A session page, e.g. /workouts/mix?p=pull-vertical&level=intermediate&add=traps."""
+    split = next(s for s in tx.SESSION_SPLITS if s["key"] == preset["split"])
+    adds = _session_adds(split["key"])
+    built = sb.build_session(_library_for_env(env), preset, level, adds)
+    for key in ("main", "secondary", "more"):
+        for item in built[key]:
+            _with_metadata_fallbacks(item)
+
+    def session_url(key: Optional[str] = None, next_adds: Optional[List[str]] = None, **extra):
+        args: Dict[str, object] = {"p": key or preset["key"]}
+        chosen = adds if next_adds is None else next_adds
+        if chosen:
+            args["add"] = chosen
+        args.update(extra)
+        return url_for("workouts_mix", **args)
 
     focus_options = [
-        {
-            "label": p["label"],
-            "href": session_url(p["key"], extra),
-            "active": p["key"] == preset["key"],
-        }
+        {"label": p["label"], "href": session_url(p["key"]), "active": p["key"] == preset["key"]}
         for p in split["presets"]
     ]
-    addon_chips = []
-    for key in addons:
-        on = key in extra
-        nxt = [x for x in extra if x != key] if on else extra + [key]
-        addon_chips.append(
+    add_options = []
+    for key in sb.add_options_for(split["key"]):
+        on = key in adds
+        nxt = [a for a in adds if a != key] if on else adds + [key]
+        add_options.append(
             {
                 "key": key,
-                "label": tx.MUSCLE_GROUPS[key]["label"],
-                "color": tx.MUSCLE_GROUPS[key]["color"],
-                "selected": on,
-                "href": session_url(preset["key"], nxt),
+                "label": sb.ADD_OPTIONS[key]["label"],
+                "color": sb.add_option_color(key),
+                "on": on,
+                "href": session_url(next_adds=nxt),
             }
         )
     title = (
@@ -3779,19 +3743,20 @@ def _render_session(preset: dict, env: str):
         preset=preset,
         session_title=title,
         focus_options=focus_options if len(focus_options) > 1 else [],
-        addon_chips=addon_chips,
+        add_options=add_options,
+        added=[o for o in add_options if o["on"]],
         env=env,
+        level=level,
+        level_choices=LEVEL_CHOICES,
+        level_urls={k: session_url(level=k) for k, _ in LEVEL_CHOICES},
         env_note=ENV_NOTES.get(env, ""),
         environments=tx.ENVIRONMENTS,
-        env_extra={"p": preset["key"], "g": extra},
+        env_extra={"p": preset["key"], "add": adds},
         muscle_groups=tx.MUSCLE_GROUPS,
-        groups=[],
-        selected_labels=[title],
-        chips=[],
-        group_cards=[],
-        main_results=[r for r in results if r["session_role"] == "main"],
-        accessory_results=[r for r in results if r["session_role"] == "accessory"],
-        results=results,
+        main_results=built["main"],
+        secondary_results=built["secondary"],
+        more=built["more"],
+        workout_count=built["count"],
         saved_slugs=set(_favorite_slugs(_progress_owner_key(), "exercise")),
     )
 
@@ -3808,8 +3773,10 @@ def _home_splits(env: str) -> List[dict]:
         if split.get("home") is False:
             continue
         presets = []
+        pool = _library_for_env(env)
         for preset in split["presets"]:
-            n = len(_session_results(tx.SESSION_PRESETS[preset["key"]], [], env))
+            full = tx.SESSION_PRESETS[preset["key"]]
+            n = sum(1 for d in pool if sb.preset_wants(d, full))
             if n:
                 presets.append(dict(preset, count=n, href=url_for("workouts_mix", p=preset["key"])))
         if not presets:
@@ -3872,7 +3839,7 @@ def home():
         coach_picks_meta=picks,
         saved_exercises=_saved_exercises(owner_key),
         featured_programs=featured_programs,
-        home_programs=featured_programs or hub_programs,
+        home_programs=_program_cards(featured_programs or hub_programs),
         favorite_programs=favorite_programs,
         continue_plan=continue_plan,
     )
@@ -3893,7 +3860,7 @@ def programs_index():
         .sort([("order", 1), ("created_at", -1)])
         .limit(50)
     )
-    return render_template("programs.html", programs=programs)
+    return render_template("programs.html", programs=_program_cards(programs))
 
 
 @app.route("/programs/<slug>/favorite", methods=["POST"])
@@ -3983,6 +3950,137 @@ def program_detail(slug):
 # day page per program day. Level and Home/Gym are remembered (nfg_level and the
 # shared nfg_env cookie); the old level -> environment -> weeks steps redirect here.
 # -----------------------------------------------------------------------------
+# Day names say the workout type (no more A/B/C), with a colour per type. Full-body days
+# each get their own colour so "today" is easy to tell apart from the rest of the week.
+DAY_TYPES = (
+    ("push", "Push", "#D63A2F"),
+    ("pull", "Pull", "#2F64A0"),
+    ("legs", "Legs", "#2E8A5F"),
+    ("lower", "Lower", "#2E8A5F"),
+    ("upper", "Upper", "#6A44A8"),
+    ("full body", "Full body", ""),
+    ("core", "Core", "#C79A1E"),
+    ("cardio", "Cardio", "#C0392B"),
+)
+FULL_BODY_DAY_COLORS = ("#6A44A8", "#B5631F", "#1F8A8A", "#9C3F8C", "#2F64A0")
+DAY_DEFAULT_COLOR = "#B8952F"
+
+
+def _day_style(label: str, full_body_index: int = 0) -> Tuple[str, str]:
+    """("Full body", colour) for "Full Body A"; ("Push", red) for "Push"."""
+    base = re.sub(r"\s+(?:[a-d]|[1-9])$", "", (label or "").strip(), flags=re.I).strip()
+    low = base.lower()
+    for key, name, color in DAY_TYPES:
+        if low.startswith(key):
+            if key == "full body":
+                color = FULL_BODY_DAY_COLORS[full_body_index % len(FULL_BODY_DAY_COLORS)]
+            return name, color
+    return (base or label or "Day"), DAY_DEFAULT_COLOR
+
+
+def _style_days(days: List[dict]) -> None:
+    n_full = 0
+    for day in days:
+        is_full = (day.get("label") or "").lower().startswith("full body")
+        day["name"], day["color"] = _day_style(day.get("label") or "", n_full)
+        if is_full:
+            n_full += 1
+
+
+def _program_envs(hub_slug: str, level: str) -> List[str]:
+    """Home or Gym. Programs no longer offer Hybrid (Nate, 2026-11-16); old Hybrid
+    tracks are the gym version and are still used for people who trained on them."""
+    envs = _envs_for_hub_level(hub_slug, level)
+    shown = [e for e in envs if e != "hybrid"]
+    return shown or envs
+
+
+def _viewer_track(hub_slug: str, level: str, env: str) -> Optional[dict]:
+    """The track for this setup. Gym falls back to the old Hybrid track when that's
+    where this viewer's progress is, so nobody loses their place."""
+    track = _pick_track_for(hub_slug, level, env)
+    if env != "gym":
+        return track
+    hybrid = _pick_track_for(hub_slug, level, "hybrid")
+    owner_key = _progress_owner_key()
+    if not (hybrid and owner_key and track) or hybrid.get("slug") == track.get("slug"):
+        return track or hybrid
+    on_hybrid = db.program_day_progress.find_one(
+        {"viewer_id": owner_key, "track_slug": hybrid.get("slug")}, {"_id": 1}
+    )
+    on_gym = db.program_day_progress.find_one(
+        {"viewer_id": owner_key, "track_slug": track.get("slug")}, {"_id": 1}
+    )
+    return hybrid if on_hybrid and not on_gym else track
+
+
+def _program_choice(hub_slug: str, level, env) -> Tuple[str, str, Optional[dict]]:
+    """Level, Home/Gym and track from a link or form (old ?env=hybrid links mean gym)."""
+    levels = _levels_for_hub(hub_slug)
+    level = _norm_choice(level)
+    level = level if level in levels else (levels[0] if levels else "beginner")
+    envs = _program_envs(hub_slug, level)
+    env = _norm_choice(env)
+    if env == "hybrid" and "gym" in envs:
+        env = "gym"
+    if env not in envs:
+        env = "gym" if "gym" in envs else (envs[0] if envs else "home")
+    return level, env, _viewer_track(hub_slug, level, env)
+
+
+def _program_cards(hubs: List[dict]) -> List[dict]:
+    """Program cards with where they go: today's day for someone already training in
+    the program (with "Week 3 · Pull" and a progress bar), the program page otherwise.
+    One progress query for every card; plans are only built for started programs."""
+    owner_key = _progress_owner_key()
+    last_by_hub: Dict[str, dict] = {}
+    slugs = [h.get("slug") for h in hubs if h.get("slug")]
+    if owner_key and slugs and _latest_progress_row(owner_key):
+        for row in db.program_day_progress.find(
+            {"viewer_id": owner_key, "hub_slug": {"$in": slugs}},
+            {"hub_slug": 1, "level": 1, "env": 1, "completed_at": 1},
+        ).sort([("completed_at", -1)]):
+            last_by_hub.setdefault(row.get("hub_slug"), row)
+    cards = []
+    for hub in hubs:
+        card = dict(hub, href=url_for("program_detail", slug=hub.get("slug")), started=False)
+        last = last_by_hub.get(hub.get("slug"))
+        if last:
+            _program_card_progress(card, last)
+        cards.append(card)
+    return cards
+
+
+def _program_card_progress(card: dict, last: dict) -> None:
+    hub_slug = card["slug"]
+    level, env, track = _program_choice(hub_slug, last.get("level"), last.get("env"))
+    if not track:
+        return
+    duration = _week_count_from_duration_label(
+        track.get("duration_label") or card.get("duration_label")
+    )
+    plan = _track_plan(track, duration)
+    progress = _plan_progress(_progress_owner_key(), track, plan)
+    if not progress["started"]:
+        return
+    card.update(started=True, percent=progress["percent"], finished=progress["finished"])
+    if progress["finished"] or not progress["next_day"]:
+        card["href"] = url_for("program_detail", slug=hub_slug, level=level, env=env)
+        card["status"] = "Finished"
+        return
+    week, day = progress["next_week"], progress["next_day"]
+    card["status"] = f"Week {week['number']} · {day['name']}"
+    card["day_color"] = day["color"]
+    card["href"] = url_for(
+        "program_hub_week_detail",
+        hub_slug=hub_slug,
+        week_number=week["number"],
+        level=level,
+        env=env,
+        day=day["key"],
+    )
+
+
 def _program_setup(hub_slug: str) -> Tuple[str, str]:
     """Level and environment for this visit: the URL, else where the viewer last
     trained in this program, else their saved preferences, else sensible defaults."""
@@ -4012,15 +4110,20 @@ def _program_setup(hub_slug: str) -> Tuple[str, str]:
             (lv for lv in (_norm_choice(last.get("level")), saved) if lv in levels), levels[0]
         )
 
-    envs = _envs_for_hub_level(hub_slug, level)
-    if asked_env in envs:
-        env = asked_env
-        if asked_env != _norm_choice(request.cookies.get(ENV_COOKIE)):
-            g._set_env = asked_env
+    envs = _program_envs(hub_slug, level)
+
+    def norm_env(value: str) -> str:
+        value = _norm_choice(value)
+        return "gym" if value == "hybrid" and "gym" in envs else value
+
+    if norm_env(asked_env) in envs:
+        env = norm_env(asked_env)
+        if env != _norm_choice(request.cookies.get(ENV_COOKIE)):
+            g._set_env = env
     else:
-        saved = _norm_choice(request.cookies.get(ENV_COOKIE))
+        saved = norm_env(request.cookies.get(ENV_COOKIE))
         fallback = "gym" if "gym" in envs else envs[0]
-        env = next((e for e in (_norm_choice(last.get("env")), saved) if e in envs), fallback)
+        env = next((e for e in (norm_env(last.get("env")), saved) if e in envs), fallback)
     return level, env
 
 
@@ -4077,10 +4180,12 @@ def _track_plan(track: dict, duration_weeks: int) -> List[dict]:
         name = (
             it.get("custom_name") or (ex or {}).get("name") or it.get("workout_name") or "Exercise"
         )
+        swap = by_slug.get(it.get("swap_for")) if it.get("swap_for") else None
         day["items"].append(
             {
                 "name": name,
                 "exercise": _with_metadata_fallbacks(dict(ex)) if ex else None,
+                "swap_for": (swap or {}).get("name") or "",
                 "sets": it.get("sets"),
                 "reps": it.get("reps"),
                 "rest": it.get("rest"),
@@ -4100,6 +4205,7 @@ def _track_plan(track: dict, duration_weeks: int) -> List[dict]:
                     for i in day["items"]
                 ]
             )
+        _style_days(days)
         plan.append(dict(week, days=days))
     return plan
 
@@ -4149,7 +4255,7 @@ def _plan_progress(owner_key: str, track: dict, plan: List[dict]) -> dict:
 def _render_program_page(hub: dict):
     hub_slug = hub["slug"]
     level, env = _program_setup(hub_slug)
-    track = _pick_track_for(hub_slug, level, env)
+    track = _viewer_track(hub_slug, level, env)
     if not track:
         abort(404)
     duration = _week_count_from_duration_label(
@@ -4166,7 +4272,7 @@ def _render_program_page(hub: dict):
         level=level,
         env=env,
         levels=levels,
-        envs=_envs_for_hub_level(hub_slug, level),
+        envs=_program_envs(hub_slug, level),
         plan=plan,
         progress=progress,
         focus_week=focus_week,
@@ -4205,18 +4311,9 @@ def program_hub_weeks(hub_slug):
 def program_hub_reset_progress(hub_slug):
     _get_hub_or_404(hub_slug)
 
-    level = _norm_choice(request.form.get("level")) or "beginner"
-    env = _norm_choice(request.form.get("env")) or "home"
-
-    levels = _levels_for_hub(hub_slug)
-    if level not in levels:
-        level = levels[0] if levels else "beginner"
-
-    envs = _envs_for_hub_level(hub_slug, level)
-    if env not in envs:
-        env = envs[0] if envs else "home"
-
-    track = _pick_track_for(hub_slug, level, env)
+    level, env, track = _program_choice(
+        hub_slug, request.form.get("level"), request.form.get("env")
+    )
     if not track:
         abort(404)
 
@@ -4237,14 +4334,9 @@ def program_hub_week_detail(hub_slug, week_number: int):
     """One training day: the week's day switcher, the exercises with sets, reps and
     rest, and "Mark day done"."""
     hub = _get_hub_or_404(hub_slug)
-    levels = _levels_for_hub(hub_slug)
-    level = _norm_choice(request.args.get("level"))
-    level = level if level in levels else (levels[0] if levels else "beginner")
-    envs = _envs_for_hub_level(hub_slug, level)
-    env = _norm_choice(request.args.get("env"))
-    env = env if env in envs else (envs[0] if envs else "home")
-
-    track = _pick_track_for(hub_slug, level, env)
+    level, env, track = _program_choice(
+        hub_slug, request.args.get("level"), request.args.get("env")
+    )
     if not track:
         abort(404)
     duration = _week_count_from_duration_label(
@@ -4281,6 +4373,7 @@ def program_hub_week_detail(hub_slug, week_number: int):
         next_day=next_day,
         next_week=next_week,
         progress=progress,
+        plan=plan,
         environments=tx.ENVIRONMENTS,
         level_meta=tx.LEVELS,
         muscle_groups=tx.MUSCLE_GROUPS,
@@ -4289,18 +4382,9 @@ def program_hub_week_detail(hub_slug, week_number: int):
 
 @app.route("/programs/<hub_slug>/week/<int:week_number>/day-status", methods=["POST"])
 def program_hub_week_day_status(hub_slug, week_number: int):
-    level = _norm_choice(request.form.get("level")) or "beginner"
-    env = _norm_choice(request.form.get("env")) or "home"
-
-    levels = _levels_for_hub(hub_slug)
-    if level not in levels:
-        level = levels[0] if levels else "beginner"
-
-    envs = _envs_for_hub_level(hub_slug, level)
-    if env not in envs:
-        env = envs[0] if envs else "home"
-
-    track = _pick_track_for(hub_slug, level, env)
+    level, env, track = _program_choice(
+        hub_slug, request.form.get("level"), request.form.get("env")
+    )
     if not track:
         abort(404)
 

@@ -329,6 +329,44 @@ as committer, so GitHub shows them as Verified.
   and a popup under the bar on desktop, with a live "Show N exercises" count from
   `/workouts/browse/count` and a one-tap "Remove <last muscle>" when nothing matches.
   All 12 equipment tiles show on the Exercises page.
+- 2026-11-17 — **Revamp phase 3 (sessions + Mixer):** one builder for both,
+  `session_builder.py` (pure, no Flask). Main lifts by level: sessions Beginner 6–7,
+  Intermediate 7–9, Advanced 8–9; the Mixer 6–7 / 7–8 / 8–9. Beginner sessions never
+  use Advanced exercises. "Accessories" are now **Secondary lifts** (2–3 complements);
+  each **Add** option joins them with one exercise. Add is contextual (Push: forearms,
+  core, rotator cuff · Pull: rear delts, traps, forearms · Lower: calves, hips, core ·
+  Core: lower back, hips · Full body: core, calves, forearms), `?add=` (old `?g=` add-on
+  links still work). Variety: one version per exercise (`stem()` drops equipment and
+  grip words, so Smith/Dumbbell "Bench Press" count once), at most two per movement on
+  the main group and one on the others, one isolation per muscle, about 60% compounds
+  on split days, every preset movement and target group covered; Nate's planner
+  `lists:` and a short list of staples lead the ranking. Full body picks one lift per
+  slot (squat, push, pull, hinge, core, ...). Every row shows sets × reps for its role
+  and level. Session page: title left, Home/Gym/Hybrid and **+ Add** top-right, level
+  switch under it (level remembered in `nfg_level`, shared with programs), "More
+  options" collapsed at the end. **Mixer:** tap the body (licensed figures, picked
+  muscles glow in their group colour), picked chips with × underneath, "Pick from a
+  list" for the rest; results in tiers ("Hits all of them", "Hits 2 of 3", "One at a
+  time") and every picked group gets at least one main-target exercise.
+- 2026-11-17 — **Revamp phase 4 (programs):** programs are **Home/Gym only** in the UI
+  (old `?env=hybrid` links mean Gym; a viewer whose progress is on a Hybrid track keeps
+  using it, `_viewer_track`). **Day names say the workout type** (`_day_style`: "Full Body
+  A" → "Full body", "Upper B" → "Upper") with a colour per type and a distinct colour per
+  full-body day; labels and day keys are unchanged, so progress is untouched. Program
+  cards (Programs + Home) go **straight to today's day** once started, with "Week 3 ·
+  Pull" and a progress bar (`_program_cards`, one progress query, none for viewers with
+  no progress). Program page: first visit shows two rows of pills (level, Home/Gym; a
+  single-level plan shows the level as text), return visits a slim toggle row; Next up
+  card in the day's colour with the first exercises; coloured day cards; week strip.
+  Day page: title left, **day pills top-right**, rows with the muscle-group colour bar,
+  sets × reps on the right, rest and a "Home swap for <gym lift>" note (`swap_for` on
+  items); **Mark complete** + **Next** pills with a small **Undo** at the far right;
+  week pills at the bottom. Program files gain `accent` and `order`. New programs:
+  **12-Week Body Recomposition** (intermediate, Push/Pull/Legs, 3 days; Foundation →
+  Build → Strength → Peak → deload/retest) and **16-Week Muscle Building**
+  (intermediate + advanced, Push/Pull/Legs/Upper/Lower; Accumulation → Hypertrophy →
+  Strength → Overload → Deload). Two main lifts a day, the rest accessories, keeps days
+  at about 35–80 minutes.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 

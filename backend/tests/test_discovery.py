@@ -124,13 +124,17 @@ def test_coach_picks_render_and_skip_missing(client, library, nfg_app, monkeypat
 # --------------------------------------------------------------------------
 
 
-def test_mixer_ranks_by_coverage(nfg_app, library):
+def test_mixer_tiers_put_exercises_hitting_every_group_first(nfg_app, library):
+    import session_builder as sb
+
     with nfg_app.app.test_request_context("/"):
-        results = nfg_app._mix_results(["chest", "triceps"], "gym")
-    names = [r["name"] for r in results]
-    # Presses hit chest (primary) + triceps (secondary) = 3; extension hits triceps only = 2.
-    assert names[:2] == ["BW Press", "Bar Press"]  # beginner before intermediate on ties
-    assert names[2] == "DB Extension"
+        built = sb.build_mix(nfg_app._library_for_env("gym"), ["chest", "triceps"], "intermediate")
+    tiers = built["tiers"]
+    assert tiers[0]["label"] == "Hits both"
+    first = [r["name"] for r in tiers[0]["items"]]
+    assert set(first) == {"BW Press", "Bar Press"}  # chest (main) + triceps (also works)
+    names = [r["name"] for t in tiers for r in t["items"]]
+    assert names.index("DB Extension") > max(names.index("BW Press"), names.index("Bar Press"))
     assert "Cable Row" not in names and "Hidden Press" not in names
 
 
@@ -141,7 +145,9 @@ def test_mixer_page_filters_by_environment(client, library):
 
 def test_mixer_without_groups_shows_picker(client, library):
     html = client.get("/workouts/mix").get_data(as_text=True)
-    assert "Build your mix" in html and "nfg-group-card" in html
+    assert "What do you want to train?" in html
+    assert 'class="nfg-bm-link' in html  # tap the body
+    assert "Pick from a list" in html
 
 
 def test_mixer_ignores_unknown_groups_and_caps_selection(client, library):

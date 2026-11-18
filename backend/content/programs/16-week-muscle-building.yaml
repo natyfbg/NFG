@@ -1,0 +1,282 @@
+# 16-week Muscle Building (Nate, 2026-11-16): five days, Push / Pull / Legs / Upper /
+# Lower, more intense than the challenge programs, eaten in a small surplus (bulk).
+slug: 16-week-muscle-building
+title: 16-Week Muscle Building
+accent: "#C8402F"
+order: 3
+status: published
+goal: Build muscle (bulk)
+summary: >-
+  Five days a week, Push, Pull, Legs, Upper and Lower, with more volume and heavier
+  weights every month. Eat in a small surplus and grow.
+weeks: 16
+session_minutes: 60
+rules:
+  - "Train 5 days a week: Push, Pull, Legs, rest, Upper, Lower, rest."
+  - "Eat in a small surplus: about 250–500 kcal over maintenance. Aim to gain 0.25–0.5% of your body weight a week."
+  - "Protein every day: 1.8–2.2 g per kg of body weight. Most of your carbs around training."
+  - "Add a rep or a little weight every week while your form stays clean."
+  - "Most sets stop 1–2 reps short of failure; the last set of an isolation exercise can go all the way."
+  - "Sleep 7–9 hours. Week 16 is lighter on purpose: recover, then start again heavier."
+
+phases:
+  - name: Accumulation
+    weeks: [1, 2, 3, 4]
+    note: Higher reps to build work capacity and groove every lift.
+    main: {sets: 4, reps: "10–12", rest: 90s}
+    accessory: {sets: 3, reps: "12–15", rest: 60s}
+  - name: Hypertrophy
+    weeks: [5, 6, 7, 8]
+    note: The muscle-building sweet spot. Push every set close to failure.
+    main: {sets: 4, reps: "8–10", rest: 2 min}
+    accessory: {sets: 3, reps: "10–12", rest: 60s}
+  - name: Strength
+    weeks: [9, 10, 11, 12]
+    note: Heavier main lifts with one more set. The extra strength drives more growth later.
+    main: {sets: 5, reps: "6–8", rest: 2 min 30s}
+    accessory: {sets: 3, reps: "10–12", rest: 75s}
+  - name: Overload
+    weeks: [13, 14, 15]
+    note: The hardest block. Eat and sleep well; this is where you grow.
+    main: {sets: 5, reps: "5–6", rest: 3 min}
+    accessory: {sets: 4, reps: "8–10", rest: 75s}
+  - name: Deload
+    weeks: [16]
+    note: Lighter week to recover before you run it again with heavier weights.
+    main: {sets: 3, reps: "8", rest: 2 min}
+    accessory: {sets: 2, reps: "12", rest: 60s}
+
+levels:
+  intermediate:
+    summary: Five sessions a week, about 45–75 minutes each.
+    days:
+      - label: Push
+        focus: Chest · shoulders · triceps
+        items:
+          - exercise: barbell-bench-press
+            home: dumbbell-bench-press
+          - exercise: barbell-overhead-press
+            home: dumbbell-shoulder-press
+          - exercise: incline-dumbbell-press
+            role: accessory
+          - exercise: cable-fly
+            home: decline-push-up
+            role: accessory
+          - exercise: dumbbell-lateral-raise
+            role: accessory
+          - exercise: dumbbell-skull-crusher
+            role: accessory
+          - exercise: cable-pushdown
+            role: accessory
+            home: overhead-dumbbell-extension
+      - label: Pull
+        focus: Back · rear delts · biceps
+        items:
+          - exercise: pull-up
+            note: Add weight once you can do 10 clean reps.
+          - exercise: barbell-row
+            home: one-arm-dumbbell-row
+          - exercise: lat-pulldown
+            role: accessory
+            home: chin-up
+          - exercise: seated-cable-row
+            role: accessory
+            home: chest-supported-dumbbell-row
+          - exercise: rear-delt-fly
+            role: accessory
+          - exercise: barbell-curl
+            role: accessory
+            home: dumbbell-curl
+          - exercise: hammer-curl
+            role: accessory
+      - label: Legs
+        focus: Squat · hinge · quads · hamstrings
+        items:
+          - exercise: barbell-back-squat
+            home: goblet-squat
+          - exercise: romanian-deadlift
+            home: dumbbell-romanian-deadlift
+          - exercise: leg-press
+            role: accessory
+            home: bulgarian-split-squat
+          - exercise: lying-leg-curl
+            role: accessory
+            home: single-leg-glute-bridge
+          - exercise: leg-extension
+            role: accessory
+            home: dumbbell-step-up
+          - exercise: standing-calf-raise
+            role: accessory
+      - label: Upper
+        focus: Incline · vertical pull · shoulders · arms
+        items:
+          - exercise: incline-dumbbell-press
+          - exercise: chin-up
+          - exercise: dumbbell-shoulder-press
+            role: accessory
+          - exercise: chest-supported-dumbbell-row
+            role: accessory
+          - exercise: incline-dumbbell-curl
+            role: accessory
+          - exercise: overhead-dumbbell-extension
+            role: accessory
+          - exercise: band-face-pull
+            role: accessory
+      - label: Lower
+        focus: Front squat · glutes · single leg · core
+        items:
+          - exercise: barbell-front-squat
+            home: goblet-squat
+          - exercise: barbell-hip-thrust
+            home: glute-bridge
+          - exercise: walking-lunge
+            role: accessory
+          - exercise: seated-calf-raise
+            role: accessory
+            home: standing-calf-raise
+          - exercise: hanging-knee-raise
+            role: accessory
+            sets: 3
+            reps: "10–15"
+            rest: 45s
+          - exercise: cable-crunch
+            role: accessory
+            home: crunch
+            sets: 3
+            reps: "12–15"
+            rest: 45s
+
+  advanced:
+    summary: The same five days with more sets, heavier blocks and an extra lift each day.
+    phases:
+      - name: Accumulation
+        weeks: [1, 2, 3, 4]
+        note: Higher reps to build work capacity and groove every lift.
+        main: {sets: 4, reps: "10–12", rest: 90s}
+        accessory: {sets: 4, reps: "12–15", rest: 60s}
+      - name: Hypertrophy
+        weeks: [5, 6, 7, 8]
+        note: Five sets on the main lifts. Push every set close to failure.
+        main: {sets: 5, reps: "8–10", rest: 2 min}
+        accessory: {sets: 4, reps: "10–12", rest: 60s}
+      - name: Strength
+        weeks: [9, 10, 11, 12]
+        note: Heavier main lifts. Rest the full 3 minutes.
+        main: {sets: 5, reps: "6–8", rest: 3 min}
+        accessory: {sets: 3, reps: "8–12", rest: 75s}
+      - name: Overload
+        weeks: [13, 14, 15]
+        note: The heaviest block, low reps on the main lifts. Recovery is part of the plan.
+        main: {sets: 5, reps: "4–6", rest: 3 min}
+        accessory: {sets: 3, reps: "8–10", rest: 75s}
+      - name: Deload
+        weeks: [16]
+        note: Lighter week to recover before the next run.
+        main: {sets: 3, reps: "6", rest: 2 min}
+        accessory: {sets: 2, reps: "12", rest: 60s}
+    days:
+      - label: Push
+        focus: Chest · shoulders · triceps
+        items:
+          - exercise: barbell-bench-press
+            home: dumbbell-bench-press
+          - exercise: barbell-overhead-press
+            home: dumbbell-shoulder-press
+          - exercise: incline-dumbbell-press
+            role: accessory
+          - exercise: bench-dip
+            role: accessory
+          - exercise: cable-fly
+            home: decline-push-up
+            role: accessory
+          - exercise: cable-lateral-raise
+            role: accessory
+            home: dumbbell-lateral-raise
+          - exercise: dumbbell-skull-crusher
+            role: accessory
+          - exercise: cable-pushdown
+            role: accessory
+            home: overhead-dumbbell-extension
+      - label: Pull
+        focus: Back · rear delts · biceps
+        items:
+          - exercise: deadlift
+            home: single-leg-romanian-deadlift
+          - exercise: pull-up
+            note: Add weight once you can do 10 clean reps.
+          - exercise: barbell-row
+            role: accessory
+            home: one-arm-dumbbell-row
+          - exercise: seated-cable-row
+            role: accessory
+            home: chest-supported-dumbbell-row
+          - exercise: rear-delt-fly
+            role: accessory
+          - exercise: barbell-curl
+            role: accessory
+            home: dumbbell-curl
+          - exercise: hammer-curl
+            role: accessory
+      - label: Legs
+        focus: Squat · hinge · quads · hamstrings
+        items:
+          - exercise: barbell-back-squat
+            home: goblet-squat
+          - exercise: romanian-deadlift
+            home: dumbbell-romanian-deadlift
+          - exercise: hack-squat
+            role: accessory
+            home: bulgarian-split-squat
+          - exercise: lying-leg-curl
+            role: accessory
+            home: nordic-hamstring-curl
+          - exercise: leg-extension
+            role: accessory
+            home: dumbbell-step-up
+          - exercise: standing-calf-raise
+            role: accessory
+          - exercise: seated-calf-raise
+            role: accessory
+            home: single-leg-glute-bridge
+      - label: Upper
+        focus: Incline · vertical pull · shoulders · arms
+        items:
+          - exercise: incline-dumbbell-press
+          - exercise: chin-up
+          - exercise: dumbbell-shoulder-press
+            role: accessory
+          - exercise: chest-supported-dumbbell-row
+            role: accessory
+          - exercise: incline-dumbbell-curl
+            role: accessory
+          - exercise: overhead-dumbbell-extension
+            role: accessory
+          - exercise: band-face-pull
+            role: accessory
+          - exercise: dumbbell-lateral-raise
+            role: accessory
+      - label: Lower
+        focus: Front squat · glutes · single leg · core
+        items:
+          - exercise: barbell-front-squat
+            home: goblet-squat
+          - exercise: barbell-hip-thrust
+            home: glute-bridge
+          - exercise: walking-lunge
+            role: accessory
+          - exercise: single-leg-romanian-deadlift
+            role: accessory
+          - exercise: seated-calf-raise
+            role: accessory
+            home: standing-calf-raise
+          - exercise: hanging-knee-raise
+            role: accessory
+            sets: 3
+            reps: "12–15"
+            rest: 45s
+          - exercise: cable-crunch
+            role: accessory
+            home: crunch
+            sets: 3
+            reps: "12–15"
+            rest: 45s

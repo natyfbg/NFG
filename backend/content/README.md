@@ -120,9 +120,19 @@ goal, rules and `phases` (which weeks use which sets/reps/rest for `main` and
   reps: "20–40 s"
 ```
 
+Program-level keys besides the basics: `accent: "#E07A2E"` (the card colour on
+Programs and Home), `order: 1` (position in the list; leave it out to keep Admin's
+order) and `session_minutes` (shown on the page; keep it close to the day estimates).
+Each level can carry its own `phases`. Day labels name the workout type (`Push`,
+`Pull`, `Legs`, `Upper`, `Lower`, `Full Body A`): the app shows "Full body" or the type
+with its colour, so a trailing A/B/C only keeps two same-type days apart. Give the first
+two lifts of a day the `main` scheme and mark the rest `role: accessory`, or every
+compound gets the heavy sets and long rests.
+
 `content_sync.py check` validates programs too: every slug must exist, Home tracks may
 only use home equipment, and phases must cover every week once. `sync` writes one track
-per level × Home/Gym/Hybrid (Hybrid uses the gym version) and replaces their weeks; it
+per level × Home/Gym/Hybrid (the app only offers Home and Gym now; Hybrid tracks stay for
+people who trained on them) and replaces their weeks; it
 never touches weeks built by hand in Admin unless you pass `--force-programs`. Progress
 is keyed by track + week + day label, so re-syncing keeps everyone's progress — but
 renaming a day label resets that day's ticks.

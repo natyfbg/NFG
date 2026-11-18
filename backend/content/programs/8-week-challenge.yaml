@@ -4,6 +4,8 @@
 # own sets/reps/rest override them. `home:` names the swap used in the Home track.
 slug: 8-week-challenge
 title: 8 Week Challenge
+accent: "#E07A2E"
+order: 1
 status: published
 goal: Lose fat, keep muscle
 summary: >-
