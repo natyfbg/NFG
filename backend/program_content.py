@@ -17,6 +17,8 @@ The sync never overwrites weeks that were built by hand in Admin unless forced.
 from __future__ import annotations
 
 import datetime
+import hashlib
+import json
 import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -355,24 +357,55 @@ def expand_program(raw: dict, exercises: List[dict]) -> dict:
 # -----------------------------------------------------------------------------
 # Sync
 # -----------------------------------------------------------------------------
+def content_hash(hub: dict, track: dict) -> str:
+    """Fingerprint of what a sync writes for a track (its hub's fields included), so an
+    unchanged track is left alone instead of being rewritten every time."""
+    payload = json.dumps({"hub": hub, "track": track}, sort_keys=True, default=str)
+    return hashlib.sha1(payload.encode("utf-8")).hexdigest()
+
+
 def plan_program_sync(db, programs: List[dict], exercises: List[dict]) -> List[dict]:
     """What a sync would do, per track: new, replace (content-managed) or skip (Admin-built)."""
     plan = []
-    for raw in programs:
-        expanded = expand_program(raw, exercises)
+    expanded_all = [expand_program(raw, exercises) for raw in programs]
+    slugs = [t["slug"] for e in expanded_all for t in e["tracks"]]
+    # Two reads for every track: their docs, then weeks built by hand in Admin.
+    docs = {
+        d["slug"]: d
+        for d in db.programs.find(
+            {"slug": {"$in": slugs}}, {"_id": 1, "slug": 1, "content_hash": 1}
+        )
+    }
+    hand_built_by_id: Dict[object, int] = {}
+    synced_weeks_by_id: Dict[object, int] = {}
+    if docs:
+        for w in db.program_weeks.find(
+            {"program_id": {"$in": [d["_id"] for d in docs.values()]}},
+            {"program_id": 1, "content_managed": 1},
+        ):
+            counts = synced_weeks_by_id if w.get("content_managed") is True else hand_built_by_id
+            counts[w["program_id"]] = counts.get(w["program_id"], 0) + 1
+    for expanded in expanded_all:
         for track in expanded["tracks"]:
-            doc = db.programs.find_one({"slug": track["slug"]}, {"_id": 1})
-            hand_built = 0
-            if doc:
-                hand_built = db.program_weeks.count_documents(
-                    {"program_id": doc["_id"], "content_managed": {"$ne": True}}
-                )
+            doc = docs.get(track["slug"])
+            hand_built = hand_built_by_id.get(doc["_id"], 0) if doc else 0
             items = sum(len(d["items"]) for w in track["weeks"] for d in w["days"])
+            digest = content_hash(expanded["hub"], track)
+            if hand_built:
+                action = "skip"
+            elif not doc:
+                action = "new"
+            else:
+                complete = synced_weeks_by_id.get(doc["_id"], 0) == len(track["weeks"])
+                action = (
+                    "unchanged" if complete and doc.get("content_hash") == digest else "replace"
+                )
             plan.append(
                 {
                     "hub": expanded["hub"],
                     "track": track,
-                    "action": "skip" if hand_built else ("replace" if doc else "new"),
+                    "hash": digest,
+                    "action": action,
                     "hand_built_weeks": hand_built,
                     "item_count": items,
                 }
@@ -390,6 +423,8 @@ def describe_program_plan(plan: List[dict], force: bool = False) -> List[str]:
                 f"  ! {t['slug']}: {row['hand_built_weeks']} week(s) built in Admin; "
                 "skipped (use --force to replace)"
             )
+        elif action == "unchanged":
+            lines.append(f"  = {t['slug']}: unchanged")
         else:
             sign = "+" if action == "new" else "~"
             lines.append(
@@ -408,7 +443,7 @@ def apply_program_sync(db, plan: List[dict], force: bool = False) -> None:
     hubs_done = set()
     for row in plan:
         hub, track = row["hub"], row["track"]
-        if row["action"] == "skip" and not force:
+        if row["action"] in ("skip", "unchanged") and not force:
             continue
         publish = "published" if hub["status"] == "published" else "draft"
         if hub["slug"] not in hubs_done:
@@ -461,6 +496,7 @@ def apply_program_sync(db, plan: List[dict], force: bool = False) -> None:
                     "active": True,
                     "content_managed": True,
                     "content_synced_at": now,
+                    "content_hash": row.get("hash"),
                 },
                 "$setOnInsert": {"created_at": now, "show_on_home": False, "order": order},
             },

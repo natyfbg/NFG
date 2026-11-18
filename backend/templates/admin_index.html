@@ -50,6 +50,11 @@
        href="{{ url_for('admin_coach_picks') }}">
       Coach's Picks
     </a>
+
+    <a class="list-group-item list-group-item-action {% if ep == 'admin_content_sync' %}active{% endif %}"
+       href="{{ url_for('admin_content_sync') }}">
+      Content sync
+    </a>
   </div>
 </div>
 {% endblock %}
@@ -86,6 +91,9 @@
 
   <a class="btn btn-outline-secondary" href="{{ url_for('admin_programs') }}">
     Manage Programs
+  </a>
+  <a class="btn btn-dark" href="{{ url_for('admin_content_sync') }}">
+    Content sync
   </a>
   <a class="btn btn-outline-secondary" href="{{ url_for('admin_coach_picks') }}">
     Coach's Picks

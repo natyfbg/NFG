@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+{% block title %}Admin – Content sync{% endblock %}
+{% block back_url %}{{ url_for('admin_index') }}{% endblock %}
+
+{% block page %}
+<div class="nfg-discover nfg-sync">
+
+  <a class="nfg-back" href="{{ url_for('admin_index') }}">{{ ui.icon('chevron-left') }} Admin</a>
+
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">Admin · Content</div>
+    <h1 class="nfg-page-title">Content sync</h1>
+    <p class="nfg-prog-summary">Brings the site's exercises and programs in line with the content files in the deployed code{% if commit %} (<code>{{ commit }}</code>){% endif %}. It never deletes anything, keeps everyone's progress, and leaves exercises edited in Admin alone.</p>
+  </header>
+
+  {% if run %}
+    <section class="nfg-sync-run is-{{ run.status }}" aria-live="polite"{% if run.status == 'running' %} data-sync-running{% endif %}>
+      {% if run.status == 'running' %}
+        <b>Syncing…</b> <span>started {{ run.started_at.strftime('%H:%M:%S') }} UTC. This page updates by itself.</span>
+      {% elif run.status == 'done' %}
+        {% set c = run.counts or {} %}
+        <b>{{ ui.icon('check-lg') }} Last sync finished</b>
+        <span>{{ run.finished_at.strftime('%b %d, %H:%M') }} UTC · {{ c.created or 0 }} exercise{{ 's' if (c.created or 0) != 1 }} added, {{ c.updated or 0 }} updated, {{ c.tracks or 0 }} program track{{ 's' if (c.tracks or 0) != 1 }} written{% if c.kept %} · {{ c.kept }} kept (edited in Admin){% endif %}</span>
+      {% elif run.status == 'failed' %}
+        <b>The last sync stopped</b>
+        <span>{{ run.finished_at.strftime('%b %d, %H:%M') }} UTC ({{ run.error }}). Nothing is half-deleted: a sync only adds and updates, so it's safe to run again. The Render logs have the details.</span>
+      {% else %}
+        <b>The last sync didn't report back</b>
+        <span>Started {{ run.started_at.strftime('%b %d, %H:%M') }} UTC. The server probably restarted mid-run. It's safe to run again.</span>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {% if error %}
+    <section class="nfg-form-alert" role="alert">
+      The content files have problems, so nothing can be applied until they're fixed:
+      <pre class="nfg-sync-pre">{{ error }}</pre>
+    </section>
+  {% elif plan %}
+    {% set ex = plan.exercises %}
+
+    <section class="nfg-sync-card">
+      <h2 class="nfg-section-title">Exercises <small>{{ ex.total }} files</small></h2>
+      <ul class="nfg-sync-list">
+        <li class="{% if ex.creates %}is-change{% endif %}"><b>{{ ex.creates|length }}</b> new{% if ex.creates %}{% set pub = ex.creates|length - ex.creates_draft %} ({% if ex.creates_draft %}{{ ex.creates_draft }} draft{{ 's' if ex.creates_draft != 1 }}, hidden from visitors{% endif %}{% if ex.creates_draft and pub %} · {% endif %}{% if pub %}{{ pub }} published{% endif %}){% endif %}</li>
+        <li class="{% if ex.updates %}is-change{% endif %}"><b>{{ ex.updates|length }}</b> updated</li>
+        <li><b>{{ ex.unchanged }}</b> already up to date</li>
+        {% if ex.kept %}<li><b>{{ ex.kept|length }}</b> kept as they are (edited in Admin since the last sync)</li>{% endif %}
+        {% if ex.unmanaged %}<li><b>{{ ex.unmanaged|length }}</b> only in the database (made in Admin; left alone)</li>{% endif %}
+      </ul>
+      {% if ex.creates or ex.updates %}
+        <details class="nfg-sync-details">
+          <summary>See which</summary>
+          {% if ex.creates %}
+            <h3>New</h3>
+            <p>{% for c in ex.creates %}{{ c.name }}{% if c.status == 'draft' %} <small>(draft)</small>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+          {% endif %}
+          {% if ex.updates %}
+            <h3>Updated</h3>
+            <ul>{% for u in ex.updates %}<li>{{ u.name }} <small>{{ u.fields|join(', ') }}</small></li>{% endfor %}</ul>
+          {% endif %}
+          {% if ex.kept %}
+            <h3>Kept (edited in Admin)</h3>
+            <p>{% for k in ex.kept %}{{ k.name }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+          {% endif %}
+        </details>
+      {% endif %}
+    </section>
+
+    <section class="nfg-sync-card">
+      <h2 class="nfg-section-title">Programs</h2>
+      <ul class="nfg-sync-programs">
+        {% for h in plan.programs %}
+          <li>
+            <span class="nfg-sync-prog-title"><b>{{ h.title }}</b>{% if h.status == 'draft' %} <span class="nfg-sync-badge">Draft: only you see it</span>{% endif %}</span>
+            <span class="nfg-sync-prog-meta">
+              {% if h.new %}{{ h.new }} new track{{ 's' if h.new != 1 }}{% endif %}{% if h.new and h.replace %} · {% endif %}{% if h.replace %}{{ h.replace }} track{{ 's' if h.replace != 1 }} rewritten (progress kept){% endif %}{% if h.unchanged %}{% if h.new or h.replace %} · {% endif %}{{ h.unchanged }} up to date{% endif %}{% if h.skip %} · {{ h.skip }} skipped (weeks built in Admin){% endif %}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="nfg-prog-note">A changed track's weeks are rewritten from the files, so the latest sets, reps and swaps show. Progress is kept by day, so nobody loses a tick.</p>
+    </section>
+
+    {% if plan.warnings %}
+      <details class="nfg-sync-details">
+        <summary>{{ plan.warnings|length }} note{{ 's' if plan.warnings|length != 1 }} from the content check</summary>
+        <ul>{% for w in plan.warnings %}<li><small>{{ w }}</small></li>{% endfor %}</ul>
+      </details>
+    {% endif %}
+
+    <section class="nfg-sync-apply">
+      <p class="nfg-sync-backup">{{ ui.icon('info-circle') }} <span><b>Before you apply:</b> check that Atlas → Backup has a snapshot from today (free clusters take one a day once backups are on).</span></p>
+      {% if run and run.status == 'running' %}
+        <button class="nfg-btn" type="button" disabled>Syncing…</button>
+      {% elif plan.changes %}
+        <form method="post" action="{{ url_for('admin_content_sync_apply') }}"
+              onsubmit="return confirm('Apply {{ plan.changes }} change{{ 's' if plan.changes != 1 }} to the live site?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="nfg-btn nfg-sync-btn" type="submit">Apply {{ plan.changes }} change{{ 's' if plan.changes != 1 }}</button>
+        </form>
+      {% else %}
+        <p class="nfg-sync-done">{{ ui.icon('check-lg') }} Everything is up to date.</p>
+      {% endif %}
+    </section>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block overlays %}
+<script>
+  /* While a sync runs, check every 3 seconds and reload when it's done. */
+  (function () {
+    if (!document.querySelector('[data-sync-running]')) return;
+    var url = "{{ url_for('admin_content_sync_status') }}";
+    var timer = setInterval(function () {
+      fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d.status !== 'running') { clearInterval(timer); location.reload(); }
+      }).catch(function () {});
+    }, 3000);
+  })();
+</script>
+{% endblock %}

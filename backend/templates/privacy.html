@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+{% block title %}Privacy – {{ app_name }}{% endblock %}
+{% block meta_description %}What {{ app_name }} keeps about you, why, who helps run it, and how to download or delete your data.{% endblock %}
+{% block back_url %}{{ url_for('about_page') }}{% endblock %}
+
+{% block page %}
+<div class="nfg-discover nfg-legal">
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">Last updated {{ updated }}</div>
+    <h1 class="nfg-page-title">Privacy</h1>
+    <p class="nfg-prog-summary">{{ app_name }} keeps as little as it can, only to run the app for you. No ads, no selling data, no tracking across other sites.</p>
+  </header>
+
+  <section class="nfg-legal-section">
+    <h2>What we keep</h2>
+    <ul>
+      <li><b>Your account</b>, if you make one: username, email and a scrambled version of your password (the password itself is never stored).</li>
+      <li><b>Your training</b>: days you mark complete, which plan, level and setting you use, and exercises or programs you save.</li>
+      <li><b>Your macros</b>, if you use the calculator or tracker: sex, age, height, weight, activity level, goal, optional tape measurements, the food you log and weigh-ins. These are only used to work out and show your numbers.</li>
+      <li><b>Without an account</b>, the same things are kept against a random ID stored in a cookie on your device. If you sign up later, they move to your account.</li>
+      <li><b>Basic server logs</b> (pages requested, time, IP address) for security and fixing errors. They're kept briefly by our host.</li>
+    </ul>
+  </section>
+
+  <section class="nfg-legal-section">
+    <h2>Cookies</h2>
+    <p>Only the ones the app needs. None are for ads or analytics.</p>
+    <ul class="nfg-legal-table">
+      <li><code>session</code> keeps you signed in.</li>
+      <li><code>nfg_vid</code> is your device's random ID for progress and saved items.</li>
+      <li><code>nfg_env</code>, <code>nfg_level</code> and <code>nfg_theme</code> remember where you train, your level and light or dark mode.</li>
+      <li><code>nfg_tzo</code> is your time-zone offset, so the macros tracker's "today" is your own day.</li>
+    </ul>
+  </section>
+
+  <section class="nfg-legal-section">
+    <h2>Who helps run {{ app_name }}</h2>
+    <p>These services handle data only to provide their part of the app:</p>
+    <ul>
+      <li><b>Render</b> hosts the app.</li>
+      <li><b>MongoDB Atlas</b> stores the database.</li>
+      <li><b>Resend</b> sends password-reset emails.</li>
+      <li><b>Cloudflare</b> runs the domain's DNS.</li>
+      <li><b>jsDelivr</b> serves part of the page styling, so it sees your IP address when pages load.</li>
+      <li><b>YouTube</b> plays exercise demos. A video only loads when you open it, from YouTube's privacy-enhanced domain.</li>
+    </ul>
+  </section>
+
+  <section class="nfg-legal-section">
+    <h2>Your choices</h2>
+    <ul>
+      <li><b>Download your data</b> as a file from <a href="{{ url_for('account_profile') }}#your-data">your account</a>.</li>
+      <li><b>Delete your account</b> there too. It removes your account and everything saved with it, straight away.</li>
+      <li><b>No account?</b> You can clear everything saved for this device:</li>
+    </ul>
+    {% if not current_user.is_authenticated %}
+      <form method="post" action="{{ url_for('privacy_forget_device') }}" class="nfg-legal-form"
+            onsubmit="return confirm('Delete your progress, saved items and macros on this device?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="nfg-act is-ghost" type="submit">{{ ui.icon('trash3') }} Forget this device</button>
+      </form>
+    {% endif %}
+    <p>We keep your data until you delete it. We don't sell it or share it with anyone else, unless the law requires it.</p>
+  </section>
+
+  <section class="nfg-legal-section">
+    <h2>Health information</h2>
+    <p>Weight, measurements and food logs are there for your own tracking. {{ app_name }} gives general fitness and nutrition guidance, not medical advice. The macros calculator is for adults.</p>
+  </section>
+
+  <section class="nfg-legal-section">
+    <h2>Questions</h2>
+    <p>{% if contact_email %}Email <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.{% else %}Everything above can be done yourself from your account page.{% endif %} If this page changes in a way that matters, we'll say so here and change the date at the top.</p>
+  </section>
+
+  <p class="nfg-legal-links"><a href="{{ url_for('terms_page') }}">Terms</a> · <a href="{{ url_for('about_page') }}">About {{ app_name }}</a></p>
+</div>
+{% endblock %}

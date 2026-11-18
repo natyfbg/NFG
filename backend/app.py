@@ -18,6 +18,7 @@ from urllib.parse import parse_qs, urlparse, urlsplit
 from xml.sax.saxutils import escape as xml_escape
 
 import bodymap
+import content_admin
 import curation
 import formfigures
 import mailer
@@ -3011,6 +3012,7 @@ def _continue_plan_for_owner(owner_key: str) -> Optional[dict]:
 # -----------------------------------------------------------------------------
 def _ensure_indexes() -> None:
     try:
+        db.error_alerts.create_index([("at", 1)], expireAfterSeconds=2 * 24 * 3600)
         db.workouts.create_index([("slug", 1)], unique=True, sparse=True)
         db.workouts.create_index([("name", 1)])
         db.workouts.create_index([("level", 1)])
@@ -5697,6 +5699,128 @@ def account_reset(token):
     return _private_page(render_template("account_reset.html", token=token))
 
 
+# -----------------------------------------------------------------------------
+# Your data: export, delete account, forget this device; privacy and terms pages.
+# Every collection keyed by `_progress_owner_key()` is listed here, so export and
+# delete always cover the same data (add new per-viewer collections to this list).
+# -----------------------------------------------------------------------------
+VIEWER_COLLECTIONS = (
+    "favorites",
+    "program_favorites",
+    "program_day_progress",
+    "program_week_progress",
+    "macro_profiles",
+    "food_log",
+    "weight_log",
+)
+CONTACT_EMAIL = (os.getenv("CONTACT_EMAIL") or "").strip()
+LEGAL_UPDATED = "18 November 2026"
+
+
+def _delete_viewer_data(owner_key: str) -> int:
+    removed = 0
+    for name in VIEWER_COLLECTIONS:
+        removed += db[name].delete_many({"viewer_id": owner_key}).deleted_count
+    return removed
+
+
+def _export_value(value):
+    if isinstance(value, (datetime.datetime, datetime.date)):
+        return value.isoformat()
+    if isinstance(value, ObjectId):
+        return str(value)
+    if isinstance(value, dict):
+        return {k: _export_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_export_value(v) for v in value]
+    return value
+
+
+@app.route("/privacy")
+def privacy_page():
+    return render_template("privacy.html", contact_email=CONTACT_EMAIL, updated=LEGAL_UPDATED)
+
+
+@app.route("/terms")
+def terms_page():
+    return render_template("terms.html", contact_email=CONTACT_EMAIL, updated=LEGAL_UPDATED)
+
+
+@app.route("/privacy/forget-device", methods=["POST"])
+def privacy_forget_device():
+    """Guests: delete everything saved against this device and start fresh."""
+    if getattr(current_user, "is_authenticated", False):
+        flash("You're signed in: delete your account from the account page instead.", "info")
+        return redirect(url_for("account_profile"))
+    removed = _delete_viewer_data(_viewer_id())
+    resp = redirect(url_for("privacy_page"))
+    resp.delete_cookie("nfg_vid", samesite="Lax")
+    flash(
+        (
+            "Done. Nothing from this device is kept any more."
+            if removed
+            else "There was nothing saved for this device."
+        ),
+        "success",
+    )
+    return resp
+
+
+@app.route("/account/export")
+def account_export():
+    """Everything Qiltsim keeps about this member, as one JSON file."""
+    owner_key = _member_owner_key()
+    oid = getattr(current_user, "user_oid", None)
+    if not owner_key or not oid:
+        return redirect(url_for("account_login", next=request.path))
+    user = db.users.find_one({"_id": ObjectId(oid)}) or {}
+    data = {
+        "exported_at": datetime.datetime.utcnow().isoformat() + "Z",
+        "account": {
+            "username": user.get("username"),
+            "email": user.get("email"),
+            "created_at": user.get("created_at"),
+            "password_changed_at": user.get("password_changed_at"),
+        },
+    }
+    for name in VIEWER_COLLECTIONS:
+        data[name] = [
+            {k: v for k, v in doc.items() if k not in ("_id", "viewer_id")}
+            for doc in db[name].find({"viewer_id": owner_key})
+        ]
+    resp = make_response(jsonify(_export_value(data)))
+    stamp = datetime.date.today().isoformat()
+    resp.headers["Content-Disposition"] = f'attachment; filename="qiltsim-data-{stamp}.json"'
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@app.route("/account/delete", methods=["POST"])
+def account_delete():
+    """Delete the account and everything linked to it. Needs the current password."""
+    oid = getattr(current_user, "user_oid", None)
+    owner_key = _member_owner_key()
+    if not owner_key or not oid:
+        return redirect(url_for("account_login"))
+    throttle_key = _login_throttle_key("password")
+    if not _allowed_login_attempt(throttle_key):
+        flash("Too many attempts. Try again in about 15 minutes.", "danger")
+        return redirect(url_for("account_profile") + "#your-data")
+    user = db.users.find_one({"_id": ObjectId(oid)})
+    password = (request.form.get("password") or "").strip()
+    if not user or not check_password_hash(user.get("password_hash") or "", password):
+        _record_failed_login(throttle_key)
+        flash("That password isn't right, so nothing was deleted.", "danger")
+        return redirect(url_for("account_profile") + "#your-data")
+    _delete_viewer_data(owner_key)
+    db.password_resets.delete_many({"user_id": user["_id"]})
+    db.users.delete_one({"_id": user["_id"]})
+    logout_user()
+    app.logger.info("Account deleted at the member's request.")
+    flash("Your account and everything saved with it are deleted.", "success")
+    return redirect(url_for("home"))
+
+
 @app.route("/account/password", methods=["POST"])
 def account_password():
     """Change password while signed in: needs the current one; signs out other sessions."""
@@ -5867,6 +5991,10 @@ def admin_index():
         link_health=link_health,
         program_summary=program_summary,
     )
+
+
+# Admin → Content sync (content_admin.py): the dry run and Apply, from a browser.
+content_admin.register(app, db=db, invalidate=lambda: _invalidate_library_cache())
 
 
 @app.route("/admin/coach-picks", methods=["GET", "POST"])
@@ -8413,9 +8541,88 @@ def not_found(e):
     return render_template("404.html"), 404
 
 
+# Error alerts: an email to ALERT_EMAIL (Render env) when a page fails with a 500.
+# One per error type + route every 15 minutes, at most 20 a day, sent in the
+# background. The email carries the route pattern (never the URL: reset links hold
+# tokens), the exception type and where it was raised, never the message (database
+# errors can include host names).
+ALERT_EMAIL = (os.getenv("ALERT_EMAIL") or "").strip()
+ALERT_WINDOW = datetime.timedelta(minutes=15)
+ALERT_DAILY_CAP = 20
+_alert_memory: Dict[str, object] = {"day": None, "count": 0, "last": {}}
+
+
+def _alert_allowed(signature: str, now: datetime.datetime) -> bool:
+    """Shared across workers through Mongo; falls back to this worker's memory when
+    the database is the thing that's down."""
+    try:
+        day = now.strftime("%Y-%m-%d")
+        sent_today = db.error_alerts.count_documents({"day": day})
+        if sent_today >= ALERT_DAILY_CAP:
+            return False
+        claimed = db.error_alerts.update_one(
+            {"signature": signature, "at": {"$gte": now - ALERT_WINDOW}},
+            {"$setOnInsert": {"signature": signature, "at": now, "day": day}},
+            upsert=True,
+        )
+        return claimed.upserted_id is not None
+    except PyMongoError:
+        if _alert_memory["day"] != now.date():
+            _alert_memory.update(day=now.date(), count=0, last={})
+        last = _alert_memory["last"].get(signature)  # type: ignore[union-attr]
+        if int(_alert_memory["count"]) >= ALERT_DAILY_CAP or (last and now - last < ALERT_WINDOW):
+            return False
+        _alert_memory["last"][signature] = now  # type: ignore[index]
+        _alert_memory["count"] = int(_alert_memory["count"]) + 1
+        return True
+
+
+def _send_error_alert(exc: BaseException) -> None:
+    if not ALERT_EMAIL or not mailer.configured():
+        return
+    rule = request.url_rule.rule if request.url_rule else "(no route)"
+    where = "unknown"
+    tb = exc.__traceback__
+    while tb is not None and tb.tb_next is not None:
+        tb = tb.tb_next
+    if tb is not None:
+        code = tb.tb_frame.f_code
+        where = f"{os.path.basename(code.co_filename)}:{tb.tb_lineno} in {code.co_name}"
+    now = datetime.datetime.utcnow()
+    signature = f"{type(exc).__name__} {request.method} {rule}"
+    if not _alert_allowed(signature, now):
+        return
+    commit = (os.getenv("RENDER_GIT_COMMIT") or "local")[:7]
+    text = (
+        f"A page on {APP_NAME} failed.\n\n"
+        f"When: {now:%Y-%m-%d %H:%M:%S} UTC\n"
+        f"Page: {request.method} {rule}\n"
+        f"Error: {type(exc).__name__} at {where}\n"
+        f"Build: {commit}\n\n"
+        "The full traceback is in the Render logs for that time. "
+        "Further alerts for this error are paused for 15 minutes."
+    )
+    subject = f"[{APP_NAME}] Error: {type(exc).__name__} on {rule}"
+
+    def deliver():
+        try:
+            mailer.send(ALERT_EMAIL, subject, text)
+        except Exception as send_error:  # an alert must never cause another failure
+            app.logger.warning("Error alert not sent: %s", type(send_error).__name__)
+
+    if app.config.get("ALERTS_INLINE"):
+        deliver()
+    else:
+        threading.Thread(target=deliver, name="error-alert", daemon=True).start()
+
+
 @app.errorhandler(500)
 def server_error(e):
     app.logger.exception("500 on %s %s", request.method, request.path)
+    try:
+        _send_error_alert(getattr(e, "original_exception", None) or e)
+    except Exception:  # never let alerting break the error page
+        app.logger.warning("Error alert failed")
     return render_template("500.html"), 500
 
 
@@ -8453,7 +8660,7 @@ def _sitemap_urls() -> List[str]:
         _public_url(endpoint)
         for endpoint in ("home", "workouts", "workouts_all", "programs_index", "recipes")
     ]
-    urls.append(_public_url("about_page"))
+    urls += [_public_url(e) for e in ("about_page", "privacy_page", "terms_page")]
     urls += [_public_url("recipe_detail", slug=r["slug"]) for r in nutrition.RECIPES]
     hubs = db.programs.find(
         {

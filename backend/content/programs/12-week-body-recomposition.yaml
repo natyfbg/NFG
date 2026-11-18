@@ -5,7 +5,7 @@ slug: 12-week-body-recomposition
 title: 12-Week Body Recomposition
 accent: "#23A08F"
 order: 2
-status: published
+status: draft  # Nate reviews as admin on the live site, then this becomes published
 goal: Lose fat, build muscle
 summary: >-
   Three strength days a week, Push, Pull and Legs, with the weights going up every

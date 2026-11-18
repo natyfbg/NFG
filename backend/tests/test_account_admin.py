@@ -39,6 +39,10 @@ def test_account_shows_profile_and_empty_states(member):
 def test_account_lists_plans_and_macros(member, nfg_app):
     client, key, _ = member
     _program_sync(nfg_app)
+    nfg_app.db.programs.update_many(  # the new programs start as drafts
+        {"slug": {"$regex": "^12-week-body-recomposition"}},
+        {"$set": {"publish_status": "published"}},
+    )
     client.post(
         "/programs/12-week-body-recomposition/week/1/day-status",
         data={"level": "intermediate", "env": "gym", "day_key": "push"},
