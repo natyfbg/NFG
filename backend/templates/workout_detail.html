@@ -45,6 +45,9 @@
         {% if w.equipment_label or w.equipment %}<span class="nfg-mchip is-neutral">{{ w.equipment_label or w.equipment }}</span>{% endif %}
         {% if w.level %}<span class="nfg-mchip is-neutral">{{ w.level }}</span>{% endif %}
       </div>
+      {% if w.publish_status != 'draft' %}
+        <div class="nfg-ex-train">{{ ui.start_workout(train_key, train_fields, "Log your sets", variant="is-ghost") }}</div>
+      {% endif %}
     </header>
 
     <div class="nfg-ex-media-col">

@@ -117,7 +117,10 @@ as committer, so GitHub shows them as Verified.
   content stretches the page wider than the phone screen.
 - **Bottom sheets / modals go in `{% block overlays %}`**, never inside `page`/`content`:
   `#page-shell` gets a transform while being swiped, which traps `position: fixed`
-  children inside it and under the bottom nav.
+  children inside it and under the bottom nav. Same for any fixed bar (the workout rest
+  timer lives there, with its script after it, since `overlays` comes later in the DOM).
+- **A form input named `action` shadows `form.action`** in the DOM. Scripts read the URL
+  with `form.getAttribute("action")` (the workout logger's set forms have one).
 - Icons: `ui.icon('name')` inlines `templates/icons/<name>.svg` (Bootstrap Icons, MIT,
   copied from the npm package). Add new ones by copying from `bootstrap-icons`.
 - **`workouts` collection = the exercise library** (single exercises). Do not rename it
@@ -152,6 +155,18 @@ as committer, so GitHub shows them as Verified.
   `nutrition.migrate_guest` (called from `_migrate_guest_state_to_member`). The tracker's
   "today" is the viewer's date: the page sends it (hidden `date`, accepted within a day
   of UTC) and `base.html` keeps an `nfg_tzo` cookie with the time-zone offset.
+- **Session mode lives in its own files:** `training.py` (pure: items from each source,
+  set validation, units, last time, summary, stale rules) and `training_routes.py`
+  (`/train*` routes, `get_active`, `active_card`, `migrate_guest`). app.py only passes
+  `_training_source` (Start form → title, source, items), `_training_complete_program`
+  and `_training_exercise_lookup`, and `_train_key(...)` gives each Start button the
+  same identity the server uses (Start on the workout in progress = Resume).
+  `training_sessions` docs hold snapshots (name, group, kind, prescription, rows), so
+  history survives renames. One active workout per viewer; 6 hours untouched closes it
+  (kept if a set was logged). Weights are stored in kg; `nfg_units` cookie (default: the
+  macros profile's units, else lb). A finished program-day workout calls
+  `_set_program_day_done` (also used by Mark complete). Exercise docs keep equipment
+  keys in `equipment_all`; `equipment` there is a display label.
 - `backend/taxonomy.py` is the single source of truth for muscle/group/equipment/
   movement keys. Keys are stored in the DB and content files — never rename one
   without a migration. It has no Flask/Mongo imports on purpose.
@@ -440,6 +455,18 @@ as committer, so GitHub shows them as Verified.
   a Publish? checkbox per exercise); Claude flips the ticked ones to `published`.
   Nate's review (same day): **192 published, 42 stay drafts** (library 82 → 274). The
   sync page counts ticked drafts as "N now published".
+- 2026-11-18 — **Session mode, phase 1:** "Start workout" on program days, sessions and
+  Mixer builds ("Log your sets" on exercise pages) → `/train/session`, the logger: one
+  card per exercise, a row per set (weight + reps, reps, seconds or minutes by exercise),
+  greyed numbers from last time that a blank tick reuses, a rest timer bar (clock time,
+  vibrates at zero, +15s / Skip), screen kept on where the phone allows. Each tick saves
+  in the background (forms work without JS). Finish → summary (time, sets, exercises,
+  weight lifted); a program-day workout marks the day complete. Home shows "Workout in
+  progress"; menu → My workouts (`/train`, history by month, delete). One workout at a
+  time (a page offers Resume or Save-and-start). Guests too, moved to the account on
+  sign-in; covered by export, delete account and Forget this device; `/train` is in
+  robots.txt. Decisions: rest by role when the source has none (main 2 min, isolation
+  90s, secondary 60s, core/holds 45s, stretches 15s); lb default; bottom nav unchanged.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
@@ -466,8 +493,12 @@ Next six sprints, in order:
 5. Accounts and trust — ✅ account page (2026-11-17); ✅ password reset (email, 2026-11-16);
    ✅ delete account + export, privacy/terms, error alerts (2026-11-18); backups (Atlas
    toggle, Nate); still to do: new sign-in/sign-up design, skippable training profile.
-6. Workouts + session mode — saved workouts (exercise + sets/reps/rest), "Save as workout",
-   set logging, rest timer, swap exercise, history (guests and members).
+6. Workouts + session mode (plan: project doc `qiltsim-session-mode-plan-2026-11-18`) —
+   ✅ phase 1 (2026-11-18): Start from program day / session / Mixer / exercise, set
+   logging, rest timer, units, finish + summary, program-day completion, Home resume card,
+   My workouts history. Phase 2: saved workouts, "Save as workout", empty workout + add
+   exercise, swap mid-workout, Saved tab. Phase 3: last time / best on exercise pages,
+   personal bests, per-exercise chart.
 Alongside: full body (S3), cardio + mobility (S5), first 12 recipes (S6).
 Later, each gated: progress analytics · PWA · personalised Home · nutrition · AI coach ·
 native/wearables research · paid tier.

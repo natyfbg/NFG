@@ -11,6 +11,22 @@
     <h1 class="nfg-hero-title">What are we training today?</h1>
   </header>
 
+  {# A workout in progress comes first: one tap back into the logger. #}
+  {% if active_workout %}
+    <a class="nfg-continue is-compact is-live" href="{{ url_for('train_session') }}">
+      <span class="nfg-continue-body">
+        <span class="nfg-continue-kicker">{{ ui.icon('play-fill') }} Workout in progress</span>
+        <span class="nfg-continue-title">{{ active_workout.title }}</span>
+        <span class="nfg-continue-meta">{{ active_workout.sets.done }} of {{ active_workout.sets.total }} sets · Resume</span>
+        <span class="nfg-progress" role="progressbar" aria-valuemin="0" aria-valuemax="{{ active_workout.sets.total }}"
+              aria-valuenow="{{ active_workout.sets.done }}" aria-label="Sets done">
+          <span class="nfg-progress-bar" style="width: {{ (active_workout.sets.done * 100 / active_workout.sets.total)|round|int if active_workout.sets.total else 0 }}%;"></span>
+        </span>
+      </span>
+      <span class="nfg-continue-go" aria-hidden="true">{{ ui.icon('arrow-right') }}</span>
+    </a>
+  {% endif %}
+
   {# Only shown once someone has progress; guests keep theirs without signing up. #}
   {% if continue_plan %}
     <a class="nfg-continue is-compact" href="{{ continue_plan.url }}">

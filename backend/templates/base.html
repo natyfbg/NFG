@@ -137,6 +137,7 @@
             <button class="nfg-iconbtn nfg-menu-btn" type="button" data-bs-toggle="dropdown" data-bs-display="static"
                     aria-expanded="false" aria-controls="appMenu" aria-label="Menu">{{ ui.icon('list') }}</button>
             <nav class="dropdown-menu dropdown-menu-end nfg-menu" id="appMenu" aria-label="Menu">
+              <a class="dropdown-item nfg-menu-link{% if ep and ep.startswith('train_') %} is-active{% endif %}" href="{{ url_for('train_index') }}">{{ ui.icon('journal-check') }} My workouts</a>
               <a class="dropdown-item nfg-menu-link{% if ep == 'workouts_mix' %} is-active{% endif %}" href="{{ url_for('workouts_mix') }}">{{ ui.icon('shuffle') }} Muscle Mixer</a>
               <a class="dropdown-item nfg-menu-link{% if ep == 'macros' %} is-active{% endif %}" href="{{ url_for('macros') }}">{{ ui.icon('pie-chart') }} Macros</a>
               <a class="dropdown-item nfg-menu-link{% if ep == 'search' %} is-active{% endif %}" href="{{ url_for('search') }}">{{ ui.icon('search') }} Search</a>

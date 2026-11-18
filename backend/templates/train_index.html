@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+
+{% block title %}My workouts – {{ app_name }}{% endblock %}
+{% block back_url %}{{ url_for('home') }}{% endblock %}
+
+{% block page %}
+<div class="nfg-discover nfg-train-index">
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">Training log</div>
+    <h1 class="nfg-page-title">My workouts</h1>
+  </header>
+
+  {% if active %}
+    <a class="nfg-train-resume" href="{{ url_for('train_session') }}">
+      <span class="nfg-train-resume-icon">{{ ui.icon('play-fill') }}</span>
+      <span class="nfg-train-resume-body">
+        <span class="nfg-train-resume-kicker">In progress</span>
+        <b>{{ active.title }}</b>
+        <small>{{ active_sets.done }} of {{ active_sets.total }} sets</small>
+      </span>
+      <span class="nfg-train-resume-go">Resume {{ ui.icon('arrow-right') }}</span>
+    </a>
+  {% endif %}
+
+  <section class="nfg-section">
+    {{ ui.section_head(None, "History") }}
+    {% if months %}
+      {% for m in months %}
+        <h3 class="nfg-tier">{{ m.label }}</h3>
+        <div class="nfg-list nfg-train-hist">
+          {% for e in m.entries %}
+            <a class="nfg-list-row nfg-train-hist-row" href="{{ url_for('train_history_detail', session_id=e.id) }}">
+              <span class="nfg-train-hist-dots" aria-hidden="true">{% for c in e.colors %}<i style="--dot: {{ c }};"></i>{% endfor %}</span>
+              <span class="nfg-list-main">
+                <span class="nfg-list-title">{{ e.title }}</span>
+                <span class="nfg-list-meta">{{ e.date }} · {{ e.duration }} · {{ e.summary.sets }} set{{ 's' if e.summary.sets != 1 }}{% if e.volume %} · {{ e.volume }}{% endif %}</span>
+              </span>
+              {{ ui.icon('chevron-right') }}
+            </a>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      {% if older %}<a class="nfg-act is-ghost nfg-train-older" href="{{ url_for('train_index', before=older) }}">Older workouts</a>{% endif %}
+    {% else %}
+      <div class="nfg-train-empty">
+        <p>Workouts you log show up here. Start one from a program day, a session on Home or the Muscle Mixer, then tick off each set as you go.</p>
+        <div class="nfg-train-empty-go">
+          <a class="nfg-act is-primary" href="{{ url_for('home') }}">Pick a session</a>
+          <a class="nfg-act is-ghost" href="{{ url_for('programs_index') }}">Coach's Plans</a>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+
+  {% if not current_user.is_authenticated and months %}
+    <p class="nfg-prog-note nfg-train-guest">Your workouts are saved on this device. <a href="{{ url_for('account_register') }}">Create an account</a> to keep them on every device.</p>
+  {% endif %}
+</div>
+{% endblock %}
