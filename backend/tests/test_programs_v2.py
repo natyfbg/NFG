@@ -214,7 +214,7 @@ def test_day_page_lists_sets_reps_and_rest(synced, client):
     assert "Goblet Squat" in html and "3 × 10–12" in html and "Rest 75s" in html
     assert "Plank" in html and "20–40 s" in html
     assert 'href="/workouts/plank"' in html  # core lines are real exercise pages now
-    assert "Mark complete" in html and "Next: Full body" in html
+    assert "Mark complete" in html and "Next: Day 2 · Full body" in html
 
 
 def test_home_day_uses_home_swaps(synced, client):

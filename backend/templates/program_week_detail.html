@@ -70,7 +70,9 @@
     </ol>
 
     {# Mark complete · Next … Undo #}
-    {% if next_day %}{% set go = (day_url(next_day), next_day.name) %}
+    {% set names = week.days|map(attribute='name')|list %}
+    {% set repeats = names|length != names|unique|list|length %}
+    {% if next_day %}{% set go = (day_url(next_day), ('Day ' ~ (day_n + 1) ~ ' · ' if repeats else '') ~ next_day.name) %}
     {% elif next_week %}{% set go = (day_url(next_week.days[0], next_week.number), 'Week ' ~ next_week.number) %}
     {% else %}{% set go = none %}{% endif %}
     <section class="nfg-pday-actions" aria-label="Finish this day">

@@ -33,6 +33,7 @@ from flask import (
     abort,
     flash,
     g,
+    has_app_context,
     jsonify,
     make_response,
     redirect,
@@ -1421,10 +1422,16 @@ def _get_hub_or_404(hub_slug: str) -> dict:
 
 
 def _tracks_for_hub(hub_slug: str) -> List[dict]:
-    cursor = db.programs.find(_public_program_query({"kind": "track", "hub_slug": hub_slug})).sort(
-        [("order", 1), ("created_at", -1)]
-    )
-    return list(cursor)
+    """A hub's tracks, read once per request (levels, environments and the chosen track
+    all come from the same list)."""
+    cache = g.setdefault("_hub_tracks", {}) if has_app_context() else {}
+    if hub_slug not in cache:
+        cache[hub_slug] = list(
+            db.programs.find(_public_program_query({"kind": "track", "hub_slug": hub_slug})).sort(
+                [("order", 1), ("created_at", -1)]
+            )
+        )
+    return cache[hub_slug]
 
 
 def _levels_for_hub(hub_slug: str) -> List[str]:
@@ -3477,6 +3484,48 @@ _library_snapshot: Dict[str, object] = {"at": 0.0, "docs": None}
 def _invalidate_library_cache() -> None:
     _library_snapshot["at"] = 0.0
     _library_snapshot["docs"] = None
+    _picks_snapshot["at"] = 0.0
+    _picks_snapshot["doc"] = None
+
+
+# Coach's Picks: the content file is the seed; Admin → Coach's Picks saves an override in
+# `curated_collections` (key "coach-picks"). Cached like the library, cleared on admin POSTs.
+PICKS_KEY = "coach-picks"
+_picks_snapshot: Dict[str, object] = {"at": 0.0, "doc": None}
+
+
+def _coach_picks() -> dict:
+    """{"title", "subtitle", "items": [slugs], "source": "admin" | "file"}."""
+    now = monotonic()
+    cached = _picks_snapshot["doc"]
+    fresh = (
+        LIBRARY_CACHE_SECONDS > 0 and now - float(_picks_snapshot["at"]) <= LIBRARY_CACHE_SECONDS
+    )
+    if cached is not None and fresh and not getattr(current_user, "is_admin", False):
+        return cached  # type: ignore[return-value]
+    seed = CURATED.get(PICKS_KEY) or {}
+    picks = {
+        "title": seed.get("title") or "Coach's Picks",
+        "subtitle": seed.get("subtitle") or "",
+        "items": list(seed.get("items") or []),
+        "source": "file",
+    }
+    try:
+        doc = db.curated_collections.find_one({"key": PICKS_KEY})
+    except PyMongoError as e:
+        app.logger.warning("Coach's Picks override unavailable: %s", e)
+        doc = None
+    if doc and isinstance(doc.get("items"), list):
+        picks.update(
+            title=doc.get("title") or picks["title"],
+            subtitle=doc.get("subtitle") if doc.get("subtitle") is not None else picks["subtitle"],
+            items=[s for s in doc["items"] if isinstance(s, str)],
+            source="admin",
+            updated_at=doc.get("updated_at"),
+        )
+    _picks_snapshot["doc"] = picks
+    _picks_snapshot["at"] = now
+    return picks
 
 
 def _public_library() -> List[dict]:
@@ -3816,8 +3865,11 @@ def home():
     hub_programs = [p for p in home_candidates if p.get("kind") == "hub"][:6]
     owner_key = _progress_owner_key()
     favorite_programs = _favorite_programs_for_viewer(owner_key, limit=6)
-    continue_plan = _continue_plan_for_owner(owner_key)
-    picks = CURATED.get("coach-picks") or {}
+    program_cards = _program_cards(featured_programs or hub_programs)
+    continue_plan = _continue_from_cards(owner_key, program_cards) or _continue_plan_for_owner(
+        owner_key
+    )
+    picks = _coach_picks()
 
     # Today's session (inline Muscle Mixer): which groups each available exercise trains,
     # so the page can show live counts and hide presets with nothing behind them.
@@ -3842,7 +3894,7 @@ def home():
         coach_picks_meta=picks,
         saved_exercises=_saved_exercises(owner_key),
         featured_programs=featured_programs,
-        home_programs=_program_cards(featured_programs or hub_programs),
+        home_programs=program_cards,
         favorite_programs=favorite_programs,
         continue_plan=continue_plan,
     )
@@ -4008,13 +4060,26 @@ def _viewer_track(hub_slug: str, level: str, env: str) -> Optional[dict]:
     owner_key = _progress_owner_key()
     if not (hybrid and owner_key and track) or hybrid.get("slug") == track.get("slug"):
         return track or hybrid
-    on_hybrid = db.program_day_progress.find_one(
-        {"viewer_id": owner_key, "track_slug": hybrid.get("slug")}, {"_id": 1}
-    )
-    on_gym = db.program_day_progress.find_one(
-        {"viewer_id": owner_key, "track_slug": track.get("slug")}, {"_id": 1}
-    )
-    return hybrid if on_hybrid and not on_gym else track
+    trained = _trained_track_slugs(owner_key, hub_slug)
+    return hybrid if hybrid.get("slug") in trained and track.get("slug") not in trained else track
+
+
+def _trained_track_slugs(owner_key: str, hub_slug: str) -> set:
+    """Tracks of this hub the viewer has done days on (one query per request)."""
+    cache = g.setdefault("_trained_tracks", {})
+    key = (owner_key, hub_slug)
+    if key not in cache:
+        tracks = [t.get("slug") for t in _tracks_for_hub(hub_slug) if t.get("slug")]
+        cache[key] = (
+            set(
+                db.program_day_progress.distinct(
+                    "track_slug", {"viewer_id": owner_key, "track_slug": {"$in": tracks}}
+                )
+            )
+            if tracks
+            else set()
+        )
+    return cache[key]
 
 
 def _program_choice(hub_slug: str, level, env) -> Tuple[str, str, Optional[dict]]:
@@ -4052,6 +4117,26 @@ def _program_cards(hubs: List[dict]) -> List[dict]:
             _program_card_progress(card, last)
         cards.append(card)
     return cards
+
+
+def _continue_from_cards(owner_key: str, cards: List[dict]) -> Optional[dict]:
+    """Home's Continue card from the program card of the plan trained most recently
+    (the cards already know today's day and the progress), so no extra queries."""
+    last = _latest_progress_row(owner_key)
+    if not last:
+        return None
+    card = next((c for c in cards if c.get("slug") == last.get("hub_slug")), None)
+    if not card or not card.get("started") or card.get("finished"):
+        return None
+    week, _, day = (card.get("status") or "").partition(" · ")
+    return {
+        "track_title": card.get("title") or "Program",
+        "week_number": week.replace("Week ", ""),
+        "day_label": day or None,
+        "url": card["href"],
+        "completed_at": last.get("completed_at"),
+        "percent": card.get("percent"),
+    }
 
 
 def _program_card_progress(card: dict, last: dict) -> None:
@@ -5612,6 +5697,55 @@ def account_reset(token):
     return _private_page(render_template("account_reset.html", token=token))
 
 
+@app.route("/account/password", methods=["POST"])
+def account_password():
+    """Change password while signed in: needs the current one; signs out other sessions."""
+    oid = getattr(current_user, "user_oid", None)
+    if not getattr(current_user, "is_authenticated", False) or not oid:
+        return redirect(url_for("account_login"))
+    throttle_key = _login_throttle_key("password")
+    if not _allowed_login_attempt(throttle_key):
+        flash("Too many attempts. Try again in about 15 minutes.", "danger")
+        return redirect(url_for("account_profile") + "#password")
+    doc = db.users.find_one({"_id": ObjectId(oid), "active": {"$ne": False}})
+    current = (request.form.get("current_password") or "").strip()
+    password = request.form.get("password") or ""
+    confirm = request.form.get("confirm_password") or ""
+    error = None
+    if not doc or not check_password_hash(doc.get("password_hash") or "", current):
+        _record_failed_login(throttle_key)
+        error = "Your current password isn't right."
+    elif len(password.strip()) < MIN_PASSWORD_LENGTH:
+        error = f"Use at least {MIN_PASSWORD_LENGTH} characters."
+    elif password != confirm:
+        error = "The two new passwords don't match."
+    if error:
+        flash(error, "danger")
+        return redirect(url_for("account_profile") + "#password")
+    doc = db.users.find_one_and_update(
+        {"_id": doc["_id"]},
+        {
+            "$set": {
+                "password_hash": generate_password_hash(password.strip()),
+                "password_changed_at": datetime.datetime.utcnow(),
+            },
+            "$inc": {"auth_gen": 1},
+        },
+        return_document=ReturnDocument.AFTER,
+    )
+    # Stay signed in here with the new session generation; every other session ends.
+    login_user(
+        User(
+            _member_login_id(doc),
+            role="member",
+            user_oid=str(doc["_id"]),
+            username=doc.get("username"),
+        )
+    )
+    flash("Password changed. Other devices are signed out.", "success")
+    return redirect(url_for("account_profile"))
+
+
 @app.route("/account")
 def account_profile():
     if not getattr(current_user, "is_authenticated", False):
@@ -5624,22 +5758,56 @@ def account_profile():
     if not owner_key:
         return redirect(url_for("account_login"))
 
-    favorites_count = db.program_favorites.count_documents({"viewer_id": owner_key})
+    # Preferences: ?level= / ?env= links reuse the remembered-cookie logic.
+    level = _current_level()
+    env = _current_env()
+    oid = getattr(current_user, "user_oid", None)
+    user_doc = db.users.find_one({"_id": ObjectId(oid)}) if ObjectId.is_valid(str(oid)) else None
+
+    hubs = list(
+        db.programs.find(_public_program_query({"kind": "hub"})).sort(
+            [("order", 1), ("created_at", -1)]
+        )
+    )
+    plans = [c for c in _program_cards(hubs) if c.get("started")]
     completed_days = db.program_day_progress.count_documents({"viewer_id": owner_key})
     recent_days = list(
-        db.program_day_progress.find({"viewer_id": owner_key}).sort([("completed_at", -1)]).limit(8)
+        db.program_day_progress.find({"viewer_id": owner_key}).sort([("completed_at", -1)]).limit(5)
     )
+    hub_titles = {h.get("slug"): h.get("title") for h in hubs}
+    for r in recent_days:
+        r["day_name"], r["day_color"] = _day_style((r.get("day_key") or "").replace("-", " "))
+        r["hub_title"] = hub_titles.get(r.get("hub_slug")) or "Program"
 
-    track_slugs = [r.get("track_slug") for r in recent_days if r.get("track_slug")]
-    tracks = list(db.programs.find({"slug": {"$in": track_slugs}}, {"slug": 1, "title": 1}))
-    track_map = {t.get("slug"): t.get("title") for t in tracks if t.get("slug")}
+    saved_program_slugs = set(_favorite_slug_set_for_request())
+    saved_programs = [h for h in hubs if h.get("slug") in saved_program_slugs]
+    saved_slugs = _favorite_slugs(owner_key, "exercise")
+    by_slug = {d.get("slug"): d for d in _public_library()}
+    saved_exercises = [
+        _with_metadata_fallbacks(dict(by_slug[s])) for s in saved_slugs if s in by_slug
+    ]
 
+    joined = (user_doc or {}).get("created_at")
     return render_template(
         "account_profile.html",
-        favorites_count=favorites_count,
+        user_doc=user_doc or {},
+        joined=joined,
+        plans=plans,
         completed_days=completed_days,
         recent_days=recent_days,
-        track_map=track_map,
+        saved_programs=saved_programs,
+        saved_exercises=saved_exercises,
+        macros=nutrition.today_summary(db, owner_key),
+        macro_goals=nutrition.mx.GOALS,
+        level=level,
+        env=env,
+        theme=_theme_pref(),
+        level_options=[
+            (k, label, url_for("account_profile", level=k)) for k, label in LEVEL_CHOICES
+        ],
+        env_options=[
+            (k, e["label"], url_for("account_profile", env=k)) for k, e in tx.ENVIRONMENTS.items()
+        ],
     )
 
 
@@ -5699,6 +5867,94 @@ def admin_index():
         link_health=link_health,
         program_summary=program_summary,
     )
+
+
+@app.route("/admin/coach-picks", methods=["GET", "POST"])
+@login_required
+def admin_coach_picks():
+    """Add, remove and reorder Coach's Picks (Home's hand-picked rail). Saves an override
+    in `curated_collections`; "Reset" goes back to content/collections/coach-picks.yaml."""
+    picks = _coach_picks()
+    items = list(picks["items"])
+    if request.method == "POST":
+        action = (request.form.get("action") or "").strip()
+        slug = (request.form.get("slug") or "").strip()
+        title, subtitle = picks["title"], picks["subtitle"]
+        if action == "reset":
+            db.curated_collections.delete_one({"key": PICKS_KEY})
+            _invalidate_library_cache()
+            flash("Coach's Picks are back to the content file.", "success")
+            return redirect(url_for("admin_coach_picks"))
+        if action == "add":
+            query = slug or (request.form.get("q") or "").strip()
+            match = (
+                db.workouts.find_one(
+                    {"$or": [{"slug": query}, {"name": Regex(f"^{re.escape(query)}$", "i")}]},
+                    {"slug": 1, "name": 1},
+                )
+                if query
+                else None
+            )
+            if not match:
+                flash(f"No exercise called “{query}”.", "warning")
+                return redirect(url_for("admin_coach_picks"))
+            if match["slug"] in items:
+                flash(f"{match.get('name')} is already a pick.", "info")
+                return redirect(url_for("admin_coach_picks"))
+            items.append(match["slug"])
+        elif action in ("up", "down", "remove") and slug in items:
+            i = items.index(slug)
+            if action == "remove":
+                items.pop(i)
+            elif action == "up" and i > 0:
+                items[i - 1], items[i] = items[i], items[i - 1]
+            elif action == "down" and i < len(items) - 1:
+                items[i + 1], items[i] = items[i], items[i + 1]
+        elif action == "text":
+            title = (request.form.get("title") or "").strip()[:80] or "Coach's Picks"
+            subtitle = (request.form.get("subtitle") or "").strip()[:160]
+        else:
+            abort(400)
+        db.curated_collections.update_one(
+            {"key": PICKS_KEY},
+            {
+                "$set": {
+                    "title": title,
+                    "subtitle": subtitle,
+                    "items": items,
+                    "updated_at": datetime.datetime.utcnow(),
+                }
+            },
+            upsert=True,
+        )
+        _invalidate_library_cache()
+        return redirect(url_for("admin_coach_picks") + (f"#pick-{slug}" if slug else ""))
+
+    docs = {d["slug"]: d for d in db.workouts.find({"slug": {"$in": items}})}
+    rows = []
+    for s in items:
+        doc = docs.get(s)
+        rows.append(
+            {
+                "slug": s,
+                "doc": _with_metadata_fallbacks(dict(doc)) if doc else None,
+                "problem": (
+                    "No exercise with this slug: it's skipped on Home"
+                    if not doc
+                    else (
+                        "Draft: hidden on Home until it's published"
+                        if doc.get("publish_status") == "draft"
+                        else ""
+                    )
+                ),
+            }
+        )
+    choices = list(
+        db.workouts.find(
+            {"publish_status": {"$ne": "draft"}, "slug": {"$nin": items}}, {"slug": 1, "name": 1}
+        ).sort([("name", 1)])
+    )
+    return render_template("admin_coach_picks.html", picks=picks, rows=rows, choices=choices)
 
 
 @app.route("/admin/workouts/backfill-metadata", methods=["POST"])

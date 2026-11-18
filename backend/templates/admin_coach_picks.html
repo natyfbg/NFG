@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+{% block title %}Admin – Coach's Picks{% endblock %}
+{% block back_url %}{{ url_for('admin_index') }}{% endblock %}
+
+{% block page %}
+<div class="nfg-discover nfg-admin-picks">
+
+  <a class="nfg-back" href="{{ url_for('admin_index') }}">{{ ui.icon('chevron-left') }} Admin</a>
+
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">Admin · Home</div>
+    <h1 class="nfg-page-title">Coach's Picks</h1>
+    <p class="nfg-prog-summary">The hand-picked rail on Home, in this order. Changes show on Home within a minute.
+      {% if picks.source == 'admin' %}Edited here{% if picks.updated_at %} on {{ picks.updated_at.strftime('%b %d, %H:%M') }} UTC{% endif %}.{% else %}Currently from <code>content/collections/coach-picks.yaml</code>.{% endif %}</p>
+  </header>
+
+  <form class="nfg-picks-add" method="post" action="{{ url_for('admin_coach_picks') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="add">
+    <label class="nfg-field">
+      <span>Add an exercise</span>
+      <input type="text" name="q" list="pick-choices" placeholder="Start typing a name" autocomplete="off" required>
+    </label>
+    <datalist id="pick-choices">
+      {% for c in choices %}<option value="{{ c.name }}">{% endfor %}
+    </datalist>
+    <button class="nfg-act is-primary" type="submit">{{ ui.icon('plus-lg') }} Add</button>
+  </form>
+
+  {% if rows %}
+    <ol class="nfg-picks-list">
+      {% for r in rows %}
+        <li class="nfg-picks-row{% if r.problem %} has-problem{% endif %}" id="pick-{{ r.slug }}">
+          <span class="nfg-picks-n">{{ loop.index }}</span>
+          <span class="nfg-picks-thumb">{% if r.doc %}<img src="{{ ui.exercise_image(r.doc) }}" alt="" loading="lazy">{% endif %}</span>
+          <span class="nfg-picks-body">
+            <b>{{ r.doc.name if r.doc else r.slug }}</b>
+            {% if r.problem %}<small class="is-warning">{{ r.problem }}</small>
+            {% elif r.doc %}<small>{{ r.doc.equipment_label or r.doc.equipment or '' }}{% if r.doc.level %} · {{ r.doc.level }}{% endif %}</small>{% endif %}
+          </span>
+          <span class="nfg-picks-tools">
+            {% for action, icon, label, off in [('up', 'chevron-left', 'Move up', loop.first), ('down', 'chevron-right', 'Move down', loop.last), ('remove', 'x-lg', 'Remove', False)] %}
+              <form method="post" action="{{ url_for('admin_coach_picks') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="{{ action }}">
+                <input type="hidden" name="slug" value="{{ r.slug }}">
+                <button class="nfg-picks-btn is-{{ action }}" type="submit" aria-label="{{ label }}: {{ r.doc.name if r.doc else r.slug }}"{% if off %} disabled{% endif %}>{{ ui.icon(icon) }}</button>
+              </form>
+            {% endfor %}
+          </span>
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <p class="nfg-prog-note">No picks. Home hides the rail until you add one.</p>
+  {% endif %}
+
+  <details class="nfg-acct-password">
+    <summary>Title and subtitle</summary>
+    <form class="nfg-acct-password-form" method="post" action="{{ url_for('admin_coach_picks') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="text">
+      <label class="nfg-field"><span>Title</span><input type="text" name="title" maxlength="80" value="{{ picks.title }}"></label>
+      <label class="nfg-field"><span>Subtitle</span><input type="text" name="subtitle" maxlength="160" value="{{ picks.subtitle }}"></label>
+      <button class="nfg-act is-primary" type="submit">Save</button>
+    </form>
+  </details>
+
+  {% if picks.source == 'admin' %}
+    <form method="post" action="{{ url_for('admin_coach_picks') }}" onsubmit="return confirm('Go back to the picks in the content file? Your edits here are removed.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="reset">
+      <button class="nfg-link-btn" type="submit">Reset to the content file</button>
+    </form>
+  {% endif %}
+
+</div>
+{% endblock %}

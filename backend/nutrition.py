@@ -75,6 +75,36 @@ def migrate_guest(db, guest: str, member: str) -> None:
     db.weight_log.delete_many({"viewer_id": guest})
 
 
+def local_today() -> dt.date:
+    """The viewer's local date: an explicit `date` (from the page's script) within a
+    day of UTC, else the `nfg_tzo` offset cookie, else UTC."""
+    utc_now = dt.datetime.utcnow()
+    raw = (request.values.get("date") or "").strip()
+    if DATE_RE.match(raw):
+        try:
+            day = dt.date.fromisoformat(raw)
+            if abs((day - utc_now.date()).days) <= 1:
+                return day
+        except ValueError:
+            pass
+    try:
+        offset = int(request.cookies.get("nfg_tzo", ""))
+    except ValueError:
+        offset = None
+    if offset is not None and -900 <= offset <= 900:
+        return (utc_now - dt.timedelta(minutes=offset)).date()
+    return utc_now.date()
+
+
+def today_summary(db, key: str) -> Optional[dict]:
+    """Profile, targets and today's totals for a viewer (None without a profile)."""
+    profile = db.macro_profiles.find_one({"viewer_id": key}) if key else None
+    if not profile:
+        return None
+    entries = list(db.food_log.find({"viewer_id": key, "date": local_today().isoformat()}))
+    return {"profile": profile, "targets": mx.targets(profile), "totals": mx.day_totals(entries)}
+
+
 # -----------------------------------------------------------------------------
 # Chart geometry (rendered as inline SVG by the template; no chart library)
 # -----------------------------------------------------------------------------
@@ -230,25 +260,7 @@ def register(app, *, db, owner_key: Callable[[], str], is_safe_path: Callable[[s
         log.warning("nutrition indexes: %s", e)
 
     # ---- helpers -------------------------------------------------------------
-    def today() -> dt.date:
-        """The viewer's local date: an explicit `date` (from the page's script) within a
-        day of UTC, else the `nfg_tzo` offset cookie, else UTC."""
-        utc_now = dt.datetime.utcnow()
-        raw = (request.values.get("date") or "").strip()
-        if DATE_RE.match(raw):
-            try:
-                day = dt.date.fromisoformat(raw)
-                if abs((day - utc_now.date()).days) <= 1:
-                    return day
-            except ValueError:
-                pass
-        try:
-            offset = int(request.cookies.get("nfg_tzo", ""))
-        except ValueError:
-            offset = None
-        if offset is not None and -900 <= offset <= 900:
-            return (utc_now - dt.timedelta(minutes=offset)).date()
-        return utc_now.date()
+    today = local_today
 
     def profile_for(key: str) -> Optional[dict]:
         return db.macro_profiles.find_one({"viewer_id": key}) if key else None

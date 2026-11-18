@@ -394,6 +394,22 @@ as committer, so GitHub shows them as Verified.
   (`--macro-protein/carbs/fat`, checked for colour-blind separation in both themes);
   calories use the ink colour. Guests keep everything on their device and it moves to
   the account on sign-up.
+- 2026-11-17 — **Revamp phase 6 (account, admin, polish):** **Account page** (`/account`):
+  profile card (initial, email, member since, days trained, plans in progress), plans
+  in progress with today's day and progress, recently trained days, today's macros,
+  saved programs and exercises, preferences (level and Home/Gym/Hybrid through the
+  existing `?level=`/`?env=` cookies, theme through `POST /theme`), **change password**
+  while signed in (`POST /account/password`: needs the current password, shares the
+  login throttle, bumps `auth_gen` so other devices sign out, keeps this session), sign
+  out. **Admin → Coach's Picks** (`/admin/coach-picks`): add by name, reorder, remove,
+  edit title/subtitle, reset to the file; edits live in `curated_collections` (key
+  `coach-picks`), the content file stays the seed; Home reads them through
+  `_coach_picks()` (cached like the library, cleared on admin POSTs). Macros sits under
+  Muscle Mixer in the menu. Dark-mode sweep of every page (fixed: the Continue card and
+  plain badges). 404 page redone; About mentions recipes and macros. Performance:
+  per-request memo of a hub's tracks and of the viewer's trained tracks (program page
+  18 → 11 queries, day page 13 → 8), Home's Continue card reuses the program cards
+  (24 → 12 queries for someone mid-plan), unused CSS removed.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
