@@ -1,0 +1,18 @@
+slug: egg-edamame-snack-box
+name: Egg & Edamame Snack Box
+meal: snack
+minutes: 15
+servings: 1
+tags: [meal-prep]
+summary: Hard-boiled eggs, edamame, cucumber and hummus. A grab-and-go box with 34 g of protein.
+ingredients:
+- {amount: 2, item: large egg|large eggs, food: egg, grams: 100}
+- {amount: 150, unit: g, item: shelled edamame, food: edamame}
+- {amount: 100, unit: g, item: cucumber sticks, food: cucumber}
+- {amount: 40, unit: g, item: hummus, food: hummus}
+- {item: everything bagel seasoning or salt}
+steps:
+- Boil the eggs for 10 minutes, cool them in cold water and peel.
+- Boil or microwave the edamame for 3–4 minutes, then cool.
+- Pack everything into a container and sprinkle the eggs with seasoning.
+tip: Make three at once; they keep 3 days.

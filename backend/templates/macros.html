@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+{% import "_nutrition.html" as nut %}
+
+{% block title %}Macros – {{ app_name }}{% endblock %}
+{% block back_url %}{{ url_for('recipes') }}{% endblock %}
+
+{% macro add_hidden() %}
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="date" value="{{ day.isoformat() }}">
+{% endmacro %}
+
+{% block page %}
+<div class="nfg-discover nfg-macros" data-today="{{ day.isoformat() }}">
+
+  <header class="nfg-macros-head">
+    <div>
+      <div class="app-page-kicker">{{ 'Today' }} · {{ day.strftime('%a, %b %d').replace(' 0', ' ') }}</div>
+      <h1 class="nfg-page-title">Macros</h1>
+    </div>
+    <div class="nfg-goal-seg" role="group" aria-label="Goal">
+      {% for key, gl in goals.items() %}
+        <form method="post" action="{{ url_for('macros_goal') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="goal" value="{{ key }}">
+          <button class="nfg-seg-opt{% if key == goal %} is-on{% endif %}" type="submit" data-goal="{{ key }}"
+                  aria-pressed="{{ 'true' if key == goal else 'false' }}">{{ gl.label }}</button>
+        </form>
+      {% endfor %}
+    </div>
+  </header>
+
+  {# Today: calories big, macros small. #}
+  <section class="nfg-macro-today" aria-label="Today so far">
+    <div class="nfg-macro-today-big">
+      {{ nut.ring(rings.kcal, 'kcal', 'Calories', totals.kcal, goal_targets.kcal, 'kcal', big=True) }}
+    </div>
+    <div class="nfg-macro-today-small">
+      {{ nut.ring(rings.protein, 'protein', 'Protein', totals.protein, goal_targets.protein, 'g') }}
+      {{ nut.ring(rings.carbs, 'carbs', 'Carbs', totals.carbs, goal_targets.carbs, 'g') }}
+      {{ nut.ring(rings.fat, 'fat', 'Fat', totals.fat, goal_targets.fat, 'g') }}
+    </div>
+  </section>
+
+  {# Add food #}
+  <section class="nfg-section nfg-macro-add" aria-labelledby="add-title">
+    <div class="nfg-macro-add-head">
+      <h2 class="nfg-section-title" id="add-title">Add food</h2>
+      <a class="nfg-section-link" href="{{ url_for('recipes') }}">From a recipe</a>
+    </div>
+    <form class="nfg-quickadd" method="post" action="{{ url_for('macros_log_add') }}">
+      {{ add_hidden() }}
+      <label class="nfg-field nfg-quickadd-name">
+        <span>What</span>
+        <input type="text" name="name" maxlength="80" placeholder="e.g. Chicken wrap" autocomplete="off">
+      </label>
+      <div class="nfg-quickadd-nums">
+        <label class="nfg-field"><span>kcal</span><input type="number" name="kcal" inputmode="decimal" min="0" step="any" placeholder="auto"></label>
+        <label class="nfg-field is-protein"><span><i></i>Protein</span><input type="number" name="protein" inputmode="decimal" min="0" step="any" placeholder="g"></label>
+        <label class="nfg-field is-carbs"><span><i></i>Carbs</span><input type="number" name="carbs" inputmode="decimal" min="0" step="any" placeholder="g"></label>
+        <label class="nfg-field is-fat"><span><i></i>Fat</span><input type="number" name="fat" inputmode="decimal" min="0" step="any" placeholder="g"></label>
+      </div>
+      <button class="nfg-act is-primary nfg-quickadd-btn" type="submit">{{ ui.icon('plus-lg') }} Add</button>
+    </form>
+    {% if recent %}
+      <div class="nfg-recent" aria-label="Add again">
+        <span class="nfg-recent-label">Again</span>
+        {% call ui.rail() %}
+          {% for r in recent %}
+            <form method="post" action="{{ url_for('macros_log_add') }}">
+              {{ add_hidden() }}
+              {% if r.recipe_slug %}
+                <input type="hidden" name="recipe" value="{{ r.recipe_slug }}">
+                <input type="hidden" name="servings" value="{{ r.servings or 1 }}">
+              {% else %}
+                {% for k in ('name', 'kcal', 'protein', 'carbs', 'fat') %}<input type="hidden" name="{{ k }}" value="{{ r[k] }}">{% endfor %}
+              {% endif %}
+              <button class="nfg-recent-chip" type="submit">{{ ui.icon('plus-lg') }} {{ r.name }} <small>{{ r.kcal|round|int }}</small></button>
+            </form>
+          {% endfor %}
+        {% endcall %}
+      </div>
+    {% endif %}
+  </section>
+
+  {# Today's entries #}
+  <section class="nfg-section" aria-labelledby="log-title">
+    <h2 class="nfg-section-title" id="log-title">Today's food</h2>
+    {% if entries %}
+      <ul class="nfg-log">
+        {% for e in entries %}
+          <li class="nfg-log-row">
+            <span class="nfg-log-main">
+              {% if e.recipe_slug %}<a href="{{ url_for('recipe_detail', slug=e.recipe_slug) }}">{{ e.name }}</a>{% else %}{{ e.name }}{% endif %}
+              {% if e.servings and e.servings != 1 %}<small>× {{ e.servings|string|replace('.0', '')|replace('0.5', '½')|replace('1.5', '1½') }}</small>{% endif %}
+              <span class="nfg-log-macros"><span class="is-protein"><i></i>{{ e.protein|round|int }}</span><span class="is-carbs"><i></i>{{ e.carbs|round|int }}</span><span class="is-fat"><i></i>{{ e.fat|round|int }}</span></span>
+            </span>
+            <span class="nfg-log-kcal">{{ e.kcal|round|int }}<small>kcal</small></span>
+            <form method="post" action="{{ url_for('macros_log_delete', entry_id=e._id|string) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="nfg-log-del" type="submit" aria-label="Remove {{ e.name }}">{{ ui.icon('x-lg') }}</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="nfg-prog-note">Nothing logged yet today. Add what you eat above, or tap <b>Add to today</b> on any recipe.</p>
+    {% endif %}
+  </section>
+
+  {# Progress: intake history or the projection #}
+  <section class="nfg-section nfg-progress-card" id="progress" aria-labelledby="progress-title">
+    <div class="nfg-progress-head">
+      <h2 class="nfg-section-title" id="progress-title">Progress</h2>
+      {{ ui.seg_links(view_links, view, "Show", "is-env") }}
+    </div>
+
+    {% if view == 'intake' %}
+      {{ ui.seg_links(period_links, period, "Period", "is-env nfg-progress-sub") }}
+      <p class="nfg-progress-stat">
+        {% if hist.logged_days %}
+          <b>{{ hist.days_on_target }}</b> of {{ hist.logged_days }} logged day{{ 's' if hist.logged_days != 1 }} on target · average <b>{{ "{:,}".format(hist.average_kcal) }}</b> kcal
+        {% else %}
+          Log a few days and your intake shows up here.
+        {% endif %}
+      </p>
+      <svg class="nfg-chart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img"
+           aria-label="Calories per {{ 'week (daily average)' if period == 'year' else 'day' }}, target {{ chart.bars and hist.target }} kcal">
+        {% for t in chart.ticks %}
+          <line class="nfg-chart-grid" x1="{{ chart.left }}" x2="{{ chart.right }}" y1="{{ t.y }}" y2="{{ t.y }}"></line>
+          <text class="nfg-chart-tick" x="{{ chart.left - 6 }}" y="{{ t.y + 3 }}" text-anchor="end">{{ t.label }}</text>
+        {% endfor %}
+        {% for b in chart.bars %}
+          <g class="nfg-chart-col{% if b.key == day.isoformat() %} is-today{% endif %}">
+            <rect class="nfg-chart-hit" x="{{ b.hit_x }}" y="0" width="{{ b.hit_w }}" height="{{ chart.base }}"></rect>
+            {% if b.path %}<path class="nfg-chart-bar" d="{{ b.path }}"></path>{% endif %}
+            {% if period == 'week' and b.on_target %}<text class="nfg-chart-hitmark" x="{{ b.x }}" y="{{ chart.base - 4 }}" text-anchor="middle">✓</text>{% endif %}
+            <title>{{ b.label }}: {% if b.logged %}{{ "{:,}".format(b.kcal) }} kcal{% if period == 'year' %} a day ({{ b.logged }} logged){% endif %}{% if b.on_target %} · on target{% endif %}{% else %}nothing logged{% endif %}</title>
+          </g>
+          {% if b.short %}<text class="nfg-chart-x" x="{{ b.x }}" y="{{ chart.label_y }}" text-anchor="middle">{{ b.short }}</text>{% endif %}
+        {% endfor %}
+        <line class="nfg-chart-target" x1="{{ chart.left }}" x2="{{ chart.right }}" y1="{{ chart.target_y }}" y2="{{ chart.target_y }}"></line>
+        <text class="nfg-chart-target-label" x="{{ chart.right }}" y="{{ chart.target_y - 5 }}" text-anchor="end">Target {{ "{:,}".format(hist.target) }}</text>
+      </svg>
+      <details class="nfg-chart-table">
+        <summary>Show as a table</summary>
+        <table>
+          <thead><tr><th>{{ 'Week of' if period == 'year' else 'Day' }}</th><th>kcal{{ ' / day' if period == 'year' else '' }}</th>{% if period != 'year' %}<th>On target</th>{% endif %}</tr></thead>
+          <tbody>
+            {% for b in chart.bars|reverse if b.logged %}
+              <tr><td>{{ b.label }}</td><td>{{ "{:,}".format(b.kcal) }}</td>{% if period != 'year' %}<td>{{ 'Yes' if b.on_target else 'No' }}</td>{% endif %}</tr>
+            {% else %}
+              <tr><td colspan="3">Nothing logged in this period.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </details>
+    {% else %}
+      {{ ui.seg_links(horizon_links, weeks, "Horizon", "is-env nfg-progress-sub") }}
+      <p class="nfg-progress-big">
+        <span>{{ start_weight }}</span> {{ ui.icon('arrow-right') }} <b>{{ end_weight }}</b>
+        <small>{% if change >= 0 %}+{% endif %}{{ '%.0f'|format(change) if units == 'imperial' else '%.1f'|format(change) }} {{ unit }} in {{ weeks }} weeks at your {{ "{:,}".format(proj.intake) }} kcal {{ goals[goal].label|lower }} target</small>
+      </p>
+      <p class="nfg-prog-note">
+        {% if proj_logged %}At your logged average of <b>{{ "{:,}".format(proj_logged.intake) }}</b> kcal a day you'd be at <b>{{ logged_end }}</b> instead.{% else %}Log a few days of food to see where your actual eating is taking you, too.{% endif %}
+        Maintenance shifts as your weight changes.{% if proj.floor_reached or (proj_logged and proj_logged.floor_reached) %} Lines stop at a healthy minimum weight.{% endif %}
+        An estimate: real weight wobbles day to day.
+      </p>
+      {% macro proj_chart(c, label, value_suffix) %}
+        {% if c.lines|length > 1 %}
+          <div class="nfg-chart-legend">
+            <span><i class="is-target"></i>At your target</span>
+            <span><i class="is-logged"></i>At your logged average</span>
+          </div>
+        {% endif %}
+        <svg class="nfg-chart" viewBox="0 0 {{ c.width }} {{ c.height }}" role="img" aria-label="{{ label }}">
+          {% for t in c.ticks %}
+            <line class="nfg-chart-grid" x1="{{ c.left }}" x2="{{ c.right }}" y1="{{ t.y }}" y2="{{ t.y }}"></line>
+            <text class="nfg-chart-tick" x="{{ c.left - 6 }}" y="{{ t.y + 3 }}" text-anchor="end">{{ t.label }}</text>
+          {% endfor %}
+          {% for line in c.lines|reverse %}
+            {% set is_target = loop.last %}
+            {% if is_target %}<path class="nfg-chart-area" d="{{ line.area }}"></path>{% endif %}
+            <path class="nfg-chart-line{% if not is_target %} is-logged{% endif %}" d="{{ line.path }}"></path>
+            {% for pt in line.points %}
+              <g class="nfg-chart-pt"><circle class="nfg-chart-hitdot" cx="{{ pt.x }}" cy="{{ pt.y }}" r="7"></circle><title>{{ 'At your target' if is_target else 'At your logged average' }} · {{ pt.label }}: {{ pt.value }}{{ value_suffix }}</title></g>
+            {% endfor %}
+            <circle class="nfg-chart-dot{% if not is_target %} is-logged{% endif %}" cx="{{ line.last.x }}" cy="{{ line.last.y }}" r="4.5"></circle>
+            <text class="nfg-chart-end" x="{{ line.last.x + 8 }}" y="{{ line.last.label_y + 4 }}">{{ line.last.value }}{{ value_suffix }}</text>
+          {% endfor %}
+          {% for xl in c.x_labels %}
+            <text class="nfg-chart-x" x="{{ xl.x }}" y="{{ c.label_y }}" text-anchor="{{ xl.anchor }}">{{ xl.label }}</text>
+          {% endfor %}
+        </svg>
+      {% endmacro %}
+      {{ proj_chart(weight_chart, "Projected weight over " ~ weeks ~ " weeks, from " ~ start_weight ~ " to " ~ end_weight ~ " at your target", " " ~ unit) }}
+      {% if bf_chart %}
+        <h3 class="nfg-chart-title">Body fat <small>estimate</small></h3>
+        {{ proj_chart(bf_chart, "Projected body fat over " ~ weeks ~ " weeks", "") }}
+      {% else %}
+        <p class="nfg-prog-note">Add a waist and neck measurement in <a href="{{ url_for('macros', edit=1) }}">Recalculate</a> to see a body-fat line too.</p>
+      {% endif %}
+      <form class="nfg-weighin" method="post" action="{{ url_for('macros_weight') }}">
+        {{ add_hidden() }}
+        <label class="nfg-field">
+          <span>Today's weight</span>
+          <span class="nfg-field-unit"><input type="number" name="weight" inputmode="decimal" step="0.1" placeholder="{{ start_weight.split(' ')[0] }}"><i>{{ unit }}</i></span>
+        </label>
+        <button class="nfg-act is-ghost" type="submit">Log weight</button>
+      </form>
+    {% endif %}
+  </section>
+
+  {# Your numbers #}
+  <section class="nfg-section nfg-numbers" aria-labelledby="numbers-title">
+    <div class="nfg-macro-add-head">
+      <h2 class="nfg-section-title" id="numbers-title">Your numbers</h2>
+      <a class="nfg-section-link" href="{{ url_for('macros', edit=1) }}">Recalculate</a>
+    </div>
+    <p class="nfg-prog-note">
+      {{ sexes[profile.sex] }} · {{ profile.age }} · {{ height_text }} · {{ weight_text }} · {{ activity[profile.activity].label|lower }}{% if body_fat %} · ~{{ body_fat }}% body fat{% endif %}.
+      Maintenance is about <b>{{ "{:,}".format(goal_targets.tdee) }}</b> kcal a day.
+    </p>
+    <table class="nfg-numbers-table">
+      <thead><tr><th></th><th>kcal</th><th><i class="is-protein"></i>Protein</th><th><i class="is-carbs"></i>Carbs</th><th><i class="is-fat"></i>Fat</th></tr></thead>
+      <tbody>
+        {% for key, t in targets_all.items() %}
+          <tr class="{% if key == goal %}is-on{% endif %}" data-goal-row="{{ key }}">
+            <th>{{ goals[key].label }}</th><td>{{ "{:,}".format(t.kcal) }}</td><td>{{ t.protein }} g</td><td>{{ t.carbs }} g</td><td>{{ t.fat }} g</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block overlays %}
+<script type="application/json" id="macro-targets">{{ targets_all|tojson }}</script>
+<script>
+  (function () {
+    var page = document.querySelector('.nfg-macros');
+    if (!page) return;
+    var d = new Date();
+    var local = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    /* After midnight (or the first visit before the time-zone cookie existed), show
+       the viewer's own day. */
+    if (page.dataset.today !== local && !/[?&]date=/.test(location.search)) {
+      var sep = location.search ? '&' : '?';
+      location.replace(location.pathname + location.search + sep + 'date=' + local + location.hash);
+      return;
+    }
+    document.querySelectorAll('.nfg-macros form input[name="date"]').forEach(function (i) { i.value = local; });
+
+    /* Goal switch: re-target instantly, save in the background. */
+    var targets = JSON.parse(document.getElementById('macro-targets').textContent);
+    function fmt(n) { return Math.round(n).toLocaleString('en-US'); }
+    function retarget(goal) {
+      var t = targets[goal];
+      document.querySelectorAll('.nfg-macros .nfg-ring').forEach(function (r) {
+        var key = r.dataset.key, value = parseFloat(r.dataset.value), target = t[key];
+        var fill = r.querySelector('.nfg-ring-fill'), circ = parseFloat(fill.dataset.circ);
+        fill.setAttribute('stroke-dasharray', (circ * Math.min(value / target, 1)).toFixed(2) + ' ' + circ);
+        r.classList.toggle('is-over', value > target);
+        var small = r.querySelector('.nfg-ring-center small');
+        if (key === 'kcal') {
+          small.textContent = 'of ' + fmt(target);
+          var left = target - value;
+          r.querySelector('.nfg-ring-label').textContent = left >= 0 ? fmt(left) + ' kcal left' : fmt(-left) + ' kcal over';
+        } else {
+          small.textContent = '/' + target;
+        }
+      });
+      document.querySelectorAll('[data-goal-row]').forEach(function (row) { row.classList.toggle('is-on', row.dataset.goalRow === goal); });
+      document.querySelectorAll('.nfg-goal-seg [data-goal]').forEach(function (b) {
+        var on = b.dataset.goal === goal;
+        b.classList.toggle('is-on', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+    document.querySelectorAll('.nfg-goal-seg form').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var goal = form.querySelector('[name="goal"]').value;
+        retarget(goal);
+        fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { if (!r.ok) throw new Error(); return fetch(location.href, { credentials: 'same-origin' }); })
+          .then(function (r) { return r.text(); })
+          .then(function (html) {
+            /* Refresh the progress chart (its target line follows the goal). */
+            var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('progress');
+            var now = document.getElementById('progress');
+            if (fresh && now) now.innerHTML = fresh.innerHTML;
+          })
+          .catch(function () { form.submit(); });
+      });
+    });
+  })();
+</script>
+{% endblock %}

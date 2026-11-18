@@ -1,0 +1,56 @@
+{# Shared bits for Recipes and Macros. {% import "_nutrition.html" as nut %} #}
+
+{# kcal · protein · carbs · fat, each with its colour dot (identity never by colour alone). #}
+{% macro macro_strip(m, cls="") %}
+  <span class="nfg-mstrip {{ cls }}">
+    <span class="nfg-mstrip-kcal"><b>{{ "{:,}".format(m.kcal|int) }}</b> kcal</span>
+    <span class="is-protein"><i></i><b>{{ m.protein|round|int }}</b> g protein</span>
+    <span class="is-carbs"><i></i><b>{{ m.carbs|round|int }}</b> g carbs</span>
+    <span class="is-fat"><i></i><b>{{ m.fat|round|int }}</b> g fat</span>
+  </span>
+{% endmacro %}
+
+{# A progress ring: value of target, label underneath. #}
+{% macro ring(r, key, label, value, target, unit, big=False) %}
+  {% set size = (r.r + 8) * 2 %}
+  <div class="nfg-ring is-{{ key }}{% if big %} is-big{% endif %}{% if r.over %} is-over{% endif %}" data-key="{{ key }}" data-value="{{ value }}">
+    <svg viewBox="0 0 {{ size }} {{ size }}" width="{{ size }}" height="{{ size }}" role="img"
+         aria-label="{{ label }}: {{ value|round|int }} of {{ target }} {{ unit }}">
+      <circle class="nfg-ring-track" cx="{{ size / 2 }}" cy="{{ size / 2 }}" r="{{ r.r }}"></circle>
+      <circle class="nfg-ring-fill" cx="{{ size / 2 }}" cy="{{ size / 2 }}" r="{{ r.r }}" data-circ="{{ r.circ }}"
+              stroke-dasharray="{{ r.dash }} {{ r.circ }}" transform="rotate(-90 {{ size / 2 }} {{ size / 2 }})"></circle>
+    </svg>
+    <span class="nfg-ring-center">
+      {% if big %}
+        <b>{{ "{:,}".format(value|round|int) }}</b>
+        <small>of {{ "{:,}".format(target) }}</small>
+      {% else %}
+        <b>{{ value|round|int }}</b><small>/{{ target }}</small>
+      {% endif %}
+    </span>
+    <span class="nfg-ring-label">
+      {% if big %}
+        {% set left = target - value %}
+        {% if left >= 0 %}{{ "{:,}".format(left|round|int) }} kcal left{% else %}{{ "{:,}".format((-left)|round|int) }} kcal over{% endif %}
+      {% else %}
+        <i></i>{{ label }}
+      {% endif %}
+    </span>
+  </div>
+{% endmacro %}
+
+{# Recipe card: a colour tile by meal (no photos yet) with the protein up front. #}
+{% macro recipe_card(r) %}
+  <a class="nfg-rcard" href="{{ url_for('recipe_detail', slug=r.slug) }}" style="--meal: {{ r.color }};">
+    <span class="nfg-rcard-tile">
+      <span class="nfg-rcard-meal">{{ r.meal_label }}</span>
+      <span class="nfg-rcard-protein"><b>{{ r.macros.protein }}</b><small>g protein</small></span>
+      <span class="nfg-rcard-kcal">{{ r.macros.kcal }} kcal</span>
+    </span>
+    <span class="nfg-rcard-body">
+      <span class="nfg-rcard-name">{{ r.name }}</span>
+      <span class="nfg-rcard-meta">{{ r.minutes }} min · {{ r.servings }} serving{{ 's' if r.servings != 1 }}{% if 'meal-prep' in r.tags %} · Meal prep{% endif %}</span>
+      <span class="nfg-rcard-macros"><span class="is-carbs"><i></i>{{ r.macros.carbs }} g carbs</span><span class="is-fat"><i></i>{{ r.macros.fat }} g fat</span></span>
+    </span>
+  </a>
+{% endmacro %}

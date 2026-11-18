@@ -1,0 +1,17 @@
+slug: berry-protein-smoothie
+name: Berry Protein Smoothie
+meal: snack
+minutes: 5
+servings: 1
+tags: [no-cook]
+summary: Whey, Greek yogurt, berries, banana and peanut butter. A meal in a glass after training.
+ingredients:
+- {amount: 30, unit: g, item: whey protein, food: whey, note: 1 scoop}
+- {amount: 1, item: 'banana, frozen if you have it|bananas, frozen if you have them', food: banana, grams: 100}
+- {amount: 100, unit: g, item: frozen blueberries, food: blueberries}
+- {amount: 150, unit: g, item: nonfat Greek yogurt, food: greek-yogurt}
+- {amount: 250, unit: ml, item: skim milk, food: skim-milk}
+- {amount: 1, unit: tbsp, item: peanut butter, food: peanut-butter, grams: 15}
+steps:
+- Put everything in a blender, milk first.
+- Blend for 45–60 seconds until smooth. Add a splash more milk if it's too thick.

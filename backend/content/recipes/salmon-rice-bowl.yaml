@@ -1,0 +1,22 @@
+slug: salmon-rice-bowl
+name: Seared Salmon Rice Bowl
+meal: lunch
+minutes: 20
+servings: 2
+summary: Soy-glazed salmon over rice with edamame, cucumber and avocado.
+ingredients:
+- {amount: 300, unit: g, item: 'skinless salmon, cubed', food: salmon}
+- {amount: 300, unit: g, item: cooked white rice, food: rice-white-cooked}
+- {amount: 150, unit: g, item: shelled edamame, food: edamame}
+- {amount: 150, unit: g, item: 'cucumber, sliced', food: cucumber}
+- {amount: 1, item: 'small avocado, sliced|small avocados, sliced', food: avocado, grams: 100}
+- {amount: 2, unit: tbsp, item: reduced-sodium soy sauce, food: soy-sauce, grams: 30}
+- {amount: 1, unit: tsp, item: sriracha, food: sriracha, grams: 5}
+- {amount: 1, unit: tsp, item: honey, food: honey, grams: 7}
+- {item: sesame seeds and sliced green onion}
+steps:
+- Mix the soy sauce, sriracha and honey.
+- Toss the salmon with half the sauce and sear in a hot non-stick pan for 3–4 minutes, turning, until just cooked.
+- Boil or microwave the edamame for 3 minutes.
+- Fill two bowls with rice, salmon, edamame, cucumber and avocado. Drizzle with the rest of the sauce and finish
+  with sesame seeds and green onion.

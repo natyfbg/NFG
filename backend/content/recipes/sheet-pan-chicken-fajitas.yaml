@@ -1,0 +1,24 @@
+slug: sheet-pan-chicken-fajitas
+name: Sheet-Pan Chicken Fajitas
+meal: dinner
+minutes: 35
+servings: 4
+summary: Chicken, peppers and onion roasted on one tray. Wrap them up with yogurt and salsa.
+ingredients:
+- {amount: 700, unit: g, item: 'chicken breast, sliced into strips', food: chicken-breast}
+- {amount: 3, item: 'bell pepper, sliced|bell peppers, sliced', food: bell-pepper, grams: 450}
+- {amount: 1, item: 'large onion, sliced|large onions, sliced', food: onion, grams: 200}
+- {amount: 1.5, unit: tbsp, item: olive oil, food: olive-oil, grams: 20}
+- {amount: 1, unit: tbsp, item: 'fajita seasoning (or chili, cumin, paprika and garlic)'}
+- {amount: 8, item: small whole-wheat tortilla|small whole-wheat tortillas, food: tortilla, grams: 240}
+- {amount: 120, unit: g, item: nonfat Greek yogurt (instead of sour cream), food: greek-yogurt}
+- {amount: 120, unit: g, item: salsa, food: salsa}
+- {amount: 2, unit: tbsp, item: lime juice, food: lime-juice, grams: 30}
+- {item: salt}
+steps:
+- Heat the oven to 220°C / 425°F.
+- Toss the chicken, peppers and onion with the oil, seasoning and a pinch of salt. Spread in one layer on a large
+  tray (use two if it's crowded).
+- Roast 20–22 minutes, stirring halfway, until the chicken is cooked through and the peppers are charred at the
+  edges.
+- Squeeze the lime over, warm the tortillas and serve with the yogurt and salsa.

@@ -64,8 +64,8 @@
         {{ ui.section_head(None, "Recipes") }}
         <div class="nfg-list">
           {% for r in recipes %}
-            <a class="nfg-list-row" href="{{ r.url or url_for('recipes') }}"{% if r.url %} target="_blank" rel="noopener noreferrer"{% endif %}>
-              <span class="nfg-list-main"><span class="nfg-list-title">{{ r.name }}</span></span>
+            <a class="nfg-list-row" href="{{ url_for('recipe_detail', slug=r.slug) }}">
+              <span class="nfg-list-main"><span class="nfg-list-title">{{ r.name }}</span><span class="nfg-list-meta">{{ r.meal_label }} · {{ r.macros.protein }} g protein · {{ r.macros.kcal }} kcal</span></span>
               {{ ui.icon('chevron-right') }}
             </a>
           {% endfor %}

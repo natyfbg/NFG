@@ -1,0 +1,22 @@
+slug: protein-overnight-oats
+name: Protein Overnight Oats
+meal: breakfast
+minutes: 5
+wait: overnight in the fridge
+servings: 1
+tags: [no-cook, meal-prep]
+summary: Oats, whey and Greek yogurt soaked overnight. Breakfast is ready when you wake up.
+ingredients:
+- {amount: 50, unit: g, item: rolled oats, food: oats}
+- {amount: 30, unit: g, item: vanilla whey protein, food: whey, note: 1 scoop}
+- {amount: 100, unit: g, item: nonfat Greek yogurt, food: greek-yogurt}
+- {amount: 150, unit: ml, item: skim milk, food: skim-milk}
+- {amount: 75, unit: g, item: blueberries, food: blueberries}
+- {amount: 10, unit: g, item: chia seeds, food: chia}
+- {item: pinch of cinnamon}
+steps:
+- Stir the oats, whey, chia seeds and cinnamon together in a jar or container.
+- Add the milk and yogurt and stir until there are no dry pockets of protein powder.
+- Top with the blueberries, cover and refrigerate overnight (at least 4 hours).
+- Eat cold, or microwave for 1–2 minutes. Add a splash of milk if it's too thick.
+tip: Make 3–4 jars on Sunday; they keep for 4 days.

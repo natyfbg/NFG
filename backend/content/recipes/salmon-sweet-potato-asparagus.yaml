@@ -1,0 +1,20 @@
+slug: salmon-sweet-potato-asparagus
+name: Salmon, Sweet Potato & Asparagus
+meal: dinner
+minutes: 35
+servings: 2
+summary: 'A one-tray dinner: roasted sweet potato, asparagus and lemony salmon.'
+ingredients:
+- {amount: 2, item: salmon fillet|salmon fillets, food: salmon, grams: 340}
+- {amount: 2, item: 'medium sweet potato, cubed|medium sweet potatoes, cubed', food: sweet-potato, grams: 400}
+- {amount: 250, unit: g, item: 'asparagus, trimmed', food: asparagus}
+- {amount: 2, unit: tsp, item: olive oil, food: olive-oil, grams: 10}
+- {amount: 1, unit: tbsp, item: lemon juice, food: lemon-juice, grams: 15}
+- {amount: 1, unit: tsp, item: each smoked paprika and garlic powder}
+- {item: salt and pepper}
+steps:
+- Heat the oven to 220°C / 425°F.
+- Toss the sweet potato with half the oil, the paprika and a pinch of salt. Roast 15 minutes.
+- Toss the asparagus with the rest of the oil. Season the salmon with garlic powder, salt and pepper.
+- Push the sweet potato aside, add the asparagus and salmon and roast 12–15 minutes more, until the salmon flakes.
+  Squeeze the lemon over.

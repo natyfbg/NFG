@@ -1,0 +1,21 @@
+slug: veggie-egg-white-scramble
+name: Veggie Egg White Scramble
+meal: breakfast
+minutes: 15
+servings: 1
+summary: Two whole eggs plus egg whites, peppers, spinach and feta, with a slice of toast.
+ingredients:
+- {amount: 2, item: large egg|large eggs, food: egg, grams: 100}
+- {amount: 200, unit: ml, item: liquid egg whites, food: egg-white}
+- {amount: 60, unit: g, item: baby spinach, food: spinach}
+- {amount: 0.5, item: 'red bell pepper, diced|red bell peppers, diced', food: bell-pepper, grams: 75}
+- {amount: 0.25, item: 'onion, diced|onions, diced', food: onion, grams: 40}
+- {amount: 20, unit: g, item: 'feta, crumbled', food: feta}
+- {amount: 1, unit: slice|slices, item: whole-grain bread, food: bread, grams: 40}
+- {amount: 1, unit: tsp, item: olive oil, food: olive-oil, grams: 5}
+- {item: salt and pepper}
+steps:
+- Heat the oil in a non-stick pan over medium heat. Cook the onion and pepper for 3–4 minutes until soft.
+- Add the spinach and stir until it wilts, about 1 minute.
+- Whisk the eggs and egg whites with a pinch of salt and pepper, pour them in and stir gently until just set.
+- Take the pan off the heat, scatter the feta over and serve with the toast.

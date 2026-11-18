@@ -1,59 +1,146 @@
 {% extends "base.html" %}
+{% import "_components.html" as ui %}
+{% import "_nutrition.html" as nut %}
+
 {% block title %}Your account – {{ app_name }}{% endblock %}
 {% block back_url %}{{ url_for('home') }}{% endblock %}
 
-{% block content %}
-<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
-  <div>
-    <h1 class="mb-1">Your Account</h1>
-    <p class="text-muted mb-0">Progress and favorites sync to your account.</p>
-  </div>
-  <form action="{{ url_for('account_logout') }}" method="post" class="m-0">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button class="btn btn-outline-dark btn-sm" type="submit">Sign out</button>
-  </form>
-</div>
+{% set name = user_doc.username or current_user.username or 'You' %}
 
-<div class="row g-3 mb-3">
-  <div class="col-12 col-md-6">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <div class="small text-muted">Favorite programs</div>
-        <div class="h4 mb-0">{{ favorites_count }}</div>
-      </div>
-    </div>
-  </div>
-  <div class="col-12 col-md-6">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <div class="small text-muted">Completed day cards</div>
-        <div class="h4 mb-0">{{ completed_days }}</div>
-      </div>
-    </div>
-  </div>
-</div>
+{% block page %}
+<div class="nfg-discover nfg-account">
 
-<div class="card shadow-sm">
-  <div class="card-header bg-white">
-    <strong>Recent completed days</strong>
-  </div>
-  <div class="list-group list-group-flush">
-    {% if recent_days and recent_days|length > 0 %}
-      {% for r in recent_days %}
-        <div class="list-group-item">
-          <div class="fw-semibold">
-            {{ track_map.get(r.track_slug, r.track_slug) }}
-            • Week {{ r.week_number }}
-            • {{ r.day_key|replace('-', ' ')|title }}
-          </div>
-          <div class="small text-muted">
-            Completed: {{ r.completed_at if r.completed_at else '—' }}
-          </div>
-        </div>
-      {% endfor %}
+  {# Profile #}
+  <header class="nfg-acct-card">
+    <span class="nfg-acct-avatar" aria-hidden="true">{{ name[:1]|upper }}</span>
+    <span class="nfg-acct-id">
+      <h1 class="nfg-acct-name">{{ name }}</h1>
+      <span class="nfg-acct-meta">{{ user_doc.email or '' }}{% if joined %} · member since {{ joined.strftime('%b %Y') }}{% endif %}</span>
+    </span>
+    <span class="nfg-acct-stats">
+      <span><b>{{ completed_days }}</b> day{{ 's' if completed_days != 1 }} trained</span>
+      <span><b>{{ plans|length }}</b> plan{{ 's' if plans|length != 1 }} in progress</span>
+    </span>
+  </header>
+
+  {# Plans in progress #}
+  <section class="nfg-section">
+    {{ ui.section_head(None, "Your plans", url_for('programs_index'), "All programs") }}
+    {% if plans %}
+      <div class="nfg-acct-plans">
+        {% for p in plans %}
+          <a class="nfg-acct-plan" href="{{ p.href }}"{% if p.accent %} style="--accent: {{ p.accent }};"{% endif %}>
+            <span class="nfg-acct-plan-title">{{ p.title }}</span>
+            <span class="nfg-acct-plan-status">{% if p.day_color is defined and p.day_color %}<span class="nfg-dot" style="--dot: {{ p.day_color }};"></span>{% endif %}{{ p.status }}</span>
+            <span class="nfg-program-bar" aria-hidden="true"><span style="width: {{ p.percent }}%;"></span></span>
+            <span class="nfg-acct-plan-go">{{ p.percent }}% · {{ 'Review' if p.finished else 'Continue' }} {{ ui.icon('arrow-right') }}</span>
+          </a>
+        {% endfor %}
+      </div>
     {% else %}
-      <div class="list-group-item text-muted">No completed days yet.</div>
+      <a class="nfg-acct-empty" href="{{ url_for('programs_index') }}">No plan yet. <b>Pick a Coach's Plan</b> {{ ui.icon('arrow-right') }}</a>
     {% endif %}
-  </div>
+    {% if recent_days %}
+      <ul class="nfg-acct-recent" aria-label="Recently trained">
+        {% for r in recent_days %}
+          <li><span class="nfg-dot" style="--dot: {{ r.day_color }};"></span><b>{{ r.day_name }}</b> · {{ r.hub_title }} · week {{ r.week_number }}{% if r.completed_at %}<small>{{ r.completed_at.strftime('%b %d').replace(' 0', ' ') }}</small>{% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </section>
+
+  {# Macros #}
+  <section class="nfg-section">
+    {{ ui.section_head(None, "Macros", url_for('macros'), "Tracker" if macros else "Set up") }}
+    {% if macros %}
+      {% set t, v = macros.targets, macros.totals %}
+      <a class="nfg-acct-macros" href="{{ url_for('macros') }}">
+        <span class="nfg-acct-macros-goal">{{ macro_goals[t.goal].label }} · {{ "{:,}".format(t.kcal) }} kcal a day</span>
+        <span class="nfg-acct-macros-today">
+          <span class="is-kcal"><b>{{ "{:,}".format(v.kcal|round|int) }}</b> kcal today</span>
+          <span class="is-protein"><i></i><b>{{ v.protein|round|int }}</b>/{{ t.protein }} g protein</span>
+          <span class="is-carbs"><i></i><b>{{ v.carbs|round|int }}</b>/{{ t.carbs }} g carbs</span>
+          <span class="is-fat"><i></i><b>{{ v.fat|round|int }}</b>/{{ t.fat }} g fat</span>
+        </span>
+      </a>
+    {% else %}
+      <a class="nfg-acct-empty" href="{{ url_for('macros') }}">Work out your daily calories and protein. <b>One minute</b> {{ ui.icon('arrow-right') }}</a>
+    {% endif %}
+  </section>
+
+  {# Saved #}
+  {% if saved_programs or saved_exercises %}
+    <section class="nfg-section">
+      {{ ui.section_head(None, "Saved") }}
+      {% if saved_programs %}
+        <div class="nfg-list">
+          {% for p in saved_programs %}
+            <a class="nfg-list-row" href="{{ url_for('program_detail', slug=p.slug) }}">
+              <span class="nfg-list-main"><span class="nfg-list-title">{{ p.title }}</span><span class="nfg-list-meta">{{ p.duration_label or 'Program' }}</span></span>
+              {{ ui.icon('chevron-right') }}
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% if saved_exercises %}
+        {% call ui.rail() %}
+          {% for w in saved_exercises %}{{ ui.exercise_rail_card(w) }}{% endfor %}
+        {% endcall %}
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {# Preferences #}
+  <section class="nfg-section">
+    {{ ui.section_head(None, "Preferences") }}
+    <div class="nfg-acct-prefs">
+      <div class="nfg-acct-pref">
+        <span class="nfg-acct-pref-label">Level <small>sessions, the Mixer and programs</small></span>
+        {{ ui.seg_links(level_options, level, "Level") }}
+      </div>
+      <div class="nfg-acct-pref">
+        <span class="nfg-acct-pref-label">Where you train <small>sessions and the Mixer</small></span>
+        {{ ui.seg_links(env_options, env, "Where you train") }}
+      </div>
+      <div class="nfg-acct-pref">
+        <span class="nfg-acct-pref-label">Theme</span>
+        <div class="nfg-seg" role="group" aria-label="Theme">
+          {% for key, label in [('light', 'Light'), ('dark', 'Dark'), ('system', 'Auto')] %}
+            <form method="post" action="{{ url_for('set_theme') }}" class="nfg-seg-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="theme" value="{{ key }}">
+              <input type="hidden" name="next" value="{{ url_for('account_profile') }}">
+              <button class="nfg-seg-opt{% if theme == key %} is-on{% endif %}" type="submit"
+                      aria-pressed="{{ 'true' if theme == key else 'false' }}">{{ label }}</button>
+            </form>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# Account #}
+  <section class="nfg-section" id="password">
+    <details class="nfg-acct-password">
+      <summary>Change password</summary>
+      <form method="post" action="{{ url_for('account_password') }}" class="nfg-acct-password-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="text" name="username" value="{{ name }}" autocomplete="username" hidden>
+        <label class="nfg-field"><span>Current password</span><input type="password" name="current_password" autocomplete="current-password" required></label>
+        <label class="nfg-field"><span>New password</span><input type="password" name="password" autocomplete="new-password" minlength="8" required></label>
+        <label class="nfg-field"><span>New password again</span><input type="password" name="confirm_password" autocomplete="new-password" minlength="8" required></label>
+        <button class="nfg-act is-primary" type="submit">Change password</button>
+        <p class="nfg-prog-note">Other devices are signed out when you change it.</p>
+      </form>
+    </details>
+  </section>
+
+  <section class="nfg-section nfg-acct-actions">
+    <form action="{{ url_for('account_logout') }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="nfg-act is-ghost" type="submit">{{ ui.icon('box-arrow-right') }} Sign out</button>
+    </form>
+  </section>
+
 </div>
 {% endblock %}

@@ -1,0 +1,16 @@
+slug: cottage-cheese-pineapple-bowl
+name: Cottage Cheese Pineapple Bowl
+meal: snack
+minutes: 5
+servings: 1
+tags: [no-cook]
+summary: Creamy cottage cheese with sweet pineapple, almonds and chia. Two minutes, 35 g of protein.
+ingredients:
+- {amount: 300, unit: g, item: 2% cottage cheese, food: cottage-cheese}
+- {amount: 100, unit: g, item: pineapple chunks, food: pineapple}
+- {amount: 15, unit: g, item: 'almonds, chopped', food: almonds}
+- {amount: 10, unit: g, item: chia seeds, food: chia}
+steps:
+- Spoon the cottage cheese into a bowl.
+- Top with the pineapple, almonds and chia seeds.
+tip: 'Not a cottage cheese fan? Blend it first: it turns into a thick, smooth cream.'

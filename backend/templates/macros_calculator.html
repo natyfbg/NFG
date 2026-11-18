@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+
+{% block title %}Macros calculator – {{ app_name }}{% endblock %}
+{% block meta_description %}Free macros calculator: your daily calories, protein, carbs and fat for a cut, maintenance or a bulk, worked out with the Mifflin-St Jeor formula.{% endblock %}
+{% block back_url %}{{ url_for('macros') if profile else url_for('recipes') }}{% endblock %}
+
+{% macro choice(name, value, label, hint=None, checked=False) %}
+  <label class="nfg-choose-opt">
+    <input type="radio" name="{{ name }}" value="{{ value }}"{% if checked %} checked{% endif %} required>
+    <span><b>{{ label }}</b>{% if hint %}<small>{{ hint }}</small>{% endif %}</span>
+  </label>
+{% endmacro %}
+
+{% macro error(key) %}{% if errors[key] %}<span class="nfg-field-error">{{ errors[key] }}</span>{% endif %}{% endmacro %}
+
+{% block page %}
+<div class="nfg-discover nfg-macros">
+
+  {% if profile %}<a class="nfg-back" href="{{ url_for('macros') }}">{{ ui.icon('chevron-left') }} Macros</a>{% endif %}
+
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">Macros</div>
+    <h1 class="nfg-page-title">{{ 'Recalculate' if profile else 'Your daily numbers' }}</h1>
+    <p class="nfg-prog-summary">Calories, protein, carbs and fat for your goal. Saved {{ 'to your account' if current_user.is_authenticated else 'on this device (and moved to your account if you sign up)' }}.</p>
+  </header>
+
+  {% if errors %}
+    <div class="nfg-form-alert" role="alert">Check the highlighted fields.</div>
+  {% endif %}
+
+  <form class="nfg-calc" method="post" action="{{ url_for('macros_profile') }}" novalidate data-local-date>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="date" value="">
+
+    <fieldset class="nfg-calc-row">
+      <legend>Units</legend>
+      <div class="nfg-choose is-seg">
+        {% for key, label in units_options.items() %}
+          <label class="nfg-choose-opt"><input type="radio" name="units" value="{{ key }}" id="units-{{ key }}"{% if values.units == key %} checked{% endif %}><span><b>{{ label }}</b></span></label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <fieldset class="nfg-calc-row{% if errors.sex %} has-error{% endif %}">
+      <legend>Sex</legend>
+      <div class="nfg-choose is-seg">
+        {% for key, label in sexes.items() %}{{ choice('sex', key, label, checked=values.sex == key) }}{% endfor %}
+      </div>
+      {{ error('sex') }}
+    </fieldset>
+
+    <div class="nfg-calc-grid">
+      <label class="nfg-field{% if errors.age %} has-error{% endif %}">
+        <span>Age</span>
+        <input type="number" name="age" inputmode="numeric" min="18" max="90" value="{{ values.age or '' }}" placeholder="30">
+        {{ error('age') }}
+      </label>
+
+      <div class="nfg-field is-imperial{% if errors.height %} has-error{% endif %}">
+        <span>Height</span>
+        <span class="nfg-field-pair">
+          <label><input type="number" name="height_ft" inputmode="numeric" min="4" max="7" value="{{ values.height_ft if values.height_ft is not none else '' }}" placeholder="5" aria-label="Feet"><i>ft</i></label>
+          <label><input type="number" name="height_in" inputmode="numeric" min="0" max="11" value="{{ values.height_in if values.height_in is not none else '' }}" placeholder="10" aria-label="Inches"><i>in</i></label>
+        </span>
+        {{ error('height') }}
+      </div>
+      <label class="nfg-field is-metric{% if errors.height %} has-error{% endif %}">
+        <span>Height</span>
+        <span class="nfg-field-unit"><input type="number" name="height_cm" inputmode="decimal" min="120" max="230" value="{{ values.height_cm or '' }}" placeholder="178"><i>cm</i></span>
+        {{ error('height') }}
+      </label>
+
+      <label class="nfg-field is-imperial{% if errors.weight %} has-error{% endif %}">
+        <span>Weight</span>
+        <span class="nfg-field-unit"><input type="number" name="weight_lb" inputmode="decimal" min="80" max="660" value="{{ values.weight_lb or '' }}" placeholder="180"><i>lb</i></span>
+        {{ error('weight') }}
+      </label>
+      <label class="nfg-field is-metric{% if errors.weight %} has-error{% endif %}">
+        <span>Weight</span>
+        <span class="nfg-field-unit"><input type="number" name="weight_kg" inputmode="decimal" min="35" max="300" step="0.1" value="{{ values.weight_kg or '' }}" placeholder="80"><i>kg</i></span>
+        {{ error('weight') }}
+      </label>
+    </div>
+
+    <fieldset class="nfg-calc-row{% if errors.activity %} has-error{% endif %}">
+      <legend>How active are you?</legend>
+      <div class="nfg-choose is-list">
+        {% for key, a in activity.items() %}{{ choice('activity', key, a.label, a.hint, values.activity == key) }}{% endfor %}
+      </div>
+      {{ error('activity') }}
+    </fieldset>
+
+    <fieldset class="nfg-calc-row">
+      <legend>Goal</legend>
+      <div class="nfg-choose is-seg is-goal">
+        {% for key, gl in goals.items() %}{{ choice('goal', key, gl.label, gl.hint, values.goal == key) }}{% endfor %}
+      </div>
+    </fieldset>
+
+    <details class="nfg-calc-more"{% if values.waist or values.neck %} open{% endif %}>
+      <summary>Body-fat estimate <small>optional · tape measure</small></summary>
+      <p class="nfg-prog-note">Waist at the navel, neck just below the Adam's apple{% if values.sex != 'male' %}, hips at the widest point (women){% endif %}. Used for the body-fat line in your projection.</p>
+      <div class="nfg-calc-grid">
+        {% for key, label in [('waist', 'Waist'), ('neck', 'Neck'), ('hip', 'Hips')] %}
+          <label class="nfg-field">
+            <span>{{ label }}{% if key == 'hip' %} <small>(women)</small>{% endif %}</span>
+            <span class="nfg-field-unit"><input type="number" name="{{ key }}" inputmode="decimal" step="0.1" value="{{ values[key] or '' }}"><i class="is-imperial">in</i><i class="is-metric">cm</i></span>
+          </label>
+        {% endfor %}
+      </div>
+    </details>
+
+    <button class="nfg-btn nfg-calc-submit" type="submit">{{ 'Update my numbers' if profile else 'Work out my macros' }}</button>
+    <p class="nfg-recipe-note">Uses the Mifflin-St Jeor formula. A starting point, not medical advice: adjust after two or three weeks based on how your weight moves.</p>
+  </form>
+
+</div>
+{% endblock %}
+
+{% block overlays %}
+<script>
+  (function () {
+    var d = new Date();
+    var local = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    document.querySelectorAll('form[data-local-date] input[name="date"]').forEach(function (i) { i.value = local; });
+  })();
+</script>
+{% endblock %}

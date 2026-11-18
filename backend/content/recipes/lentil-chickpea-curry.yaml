@@ -1,0 +1,26 @@
+slug: lentil-chickpea-curry
+name: Lentil & Chickpea Curry
+meal: dinner
+minutes: 35
+servings: 4
+tags: [meal-prep]
+summary: A thick tomato curry with lentils, chickpeas and spinach, topped with cooling yogurt.
+ingredients:
+- {amount: 600, unit: g, item: cooked lentils, food: lentils, note: 'or 2 cans, drained'}
+- {amount: 480, unit: g, item: 'chickpeas, drained and rinsed', food: chickpeas, note: 2 cans}
+- {amount: 400, unit: g, item: crushed tomatoes, food: crushed-tomatoes, note: 1 can}
+- {amount: 1, item: 'large onion, diced|large onions, diced', food: onion, grams: 200}
+- {amount: 150, unit: g, item: spinach, food: spinach}
+- {amount: 3, item: 'garlic clove, minced|garlic cloves, minced', food: garlic, grams: 9}
+- {amount: 1, unit: tbsp, item: grated ginger}
+- {amount: 2, unit: tbsp, item: curry powder}
+- {amount: 1, unit: tsp, item: ground cumin}
+- {amount: 1, unit: tbsp, item: olive oil, food: olive-oil, grams: 14}
+- {amount: 200, unit: g, item: 'nonfat Greek yogurt, to serve', food: greek-yogurt}
+- {item: salt}
+steps:
+- Heat the oil in a large pan and cook the onion for 5 minutes.
+- Add the garlic, ginger, curry powder and cumin and stir for 1 minute.
+- Add the tomatoes, lentils, chickpeas and 150 ml water. Simmer 15 minutes, stirring now and then.
+- Stir in the spinach until it wilts and season with salt. Serve with a spoonful of yogurt.
+tip: Keeps 4 days in the fridge and freezes well.
