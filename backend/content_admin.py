@@ -69,8 +69,19 @@ def build_plan(db) -> dict:
         }
         for c in ex_plan["creates"]
     ]
+
+    def _fields(changes):
+        # "publish_status" reads as what it becomes: ticking an exercise in the review
+        # sheet shows up here as "now published".
+        return sorted(f"now {changes[k]}" if k == "publish_status" else k for k in changes)
+
     updates = [
-        {"slug": u["slug"], "name": names.get(u["slug"], u["slug"]), "fields": sorted(u["set"])}
+        {
+            "slug": u["slug"],
+            "name": names.get(u["slug"], u["slug"]),
+            "fields": _fields(u["set"]),
+            "publishes": u["set"].get("publish_status") == "published",
+        }
         for u in ex_plan["updates"]
     ]
     kept = [
@@ -82,6 +93,7 @@ def build_plan(db) -> dict:
             "creates": creates,
             "creates_draft": sum(1 for c in creates if c["status"] == "draft"),
             "updates": updates,
+            "updates_published": sum(1 for u in updates if u["publishes"]),
             "kept": kept,
             "unchanged": len(ex_plan["unchanged"]),
             "unmanaged": ex_plan["unmanaged"],

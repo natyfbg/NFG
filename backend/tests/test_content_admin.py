@@ -71,3 +71,25 @@ def test_failures_are_recorded_without_details(admin, nfg_app, monkeypatch):
     assert run["status"] == "failed" and run["error"] == "RuntimeError"
     html = admin.get("/admin/content-sync").get_data(as_text=True)
     assert "The last sync stopped" in html and "secret" not in html
+
+
+def test_publishing_a_synced_draft_is_an_update(admin, nfg_app):
+    """Ticking an exercise in the review sheet flips its file to published; a later sync
+    must update the draft that an earlier sync created, not skip it."""
+    import content_sync as cs
+
+    db = nfg_app.db
+    exercises, _ = cs.load_exercises()
+    ex = next(e for e in exercises if e.get("status") == "published")
+    doc = cs.build_doc(ex)
+    doc.update(publish_status="draft", content_synced_at=dt.datetime.utcnow())
+    db.workouts.delete_many({"slug": ex["slug"]})
+    db.workouts.insert_one(doc)
+    plan = content_admin.build_plan(db)
+    updates = {u["slug"]: u for u in plan["exercises"]["updates"]}
+    assert "now published" in updates[ex["slug"]]["fields"]
+    assert plan["exercises"]["updates_published"] >= 1
+    html = admin.get("/admin/content-sync").get_data(as_text=True)
+    assert "now published)" in html
+    admin.post("/admin/content-sync/apply")
+    assert db.workouts.find_one({"slug": ex["slug"]})["publish_status"] == "published"

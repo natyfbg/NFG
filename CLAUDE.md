@@ -438,6 +438,8 @@ as committer, so GitHub shows them as Verified.
   clusters keep a daily snapshot (last four) once Backup is switched on in Atlas —
   Nate's toggle. Draft exercises are reviewed in a Sheet ("Draft Exercise Review",
   a Publish? checkbox per exercise); Claude flips the ticked ones to `published`.
+  Nate's review (same day): **192 published, 42 stay drafts** (library 82 → 274). The
+  sync page counts ticked drafts as "N now published".
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 

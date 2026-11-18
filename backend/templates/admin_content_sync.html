@@ -44,7 +44,7 @@
       <h2 class="nfg-section-title">Exercises <small>{{ ex.total }} files</small></h2>
       <ul class="nfg-sync-list">
         <li class="{% if ex.creates %}is-change{% endif %}"><b>{{ ex.creates|length }}</b> new{% if ex.creates %}{% set pub = ex.creates|length - ex.creates_draft %} ({% if ex.creates_draft %}{{ ex.creates_draft }} draft{{ 's' if ex.creates_draft != 1 }}, hidden from visitors{% endif %}{% if ex.creates_draft and pub %} · {% endif %}{% if pub %}{{ pub }} published{% endif %}){% endif %}</li>
-        <li class="{% if ex.updates %}is-change{% endif %}"><b>{{ ex.updates|length }}</b> updated</li>
+        <li class="{% if ex.updates %}is-change{% endif %}"><b>{{ ex.updates|length }}</b> updated{% if ex.updates_published %} ({{ ex.updates_published }} now published){% endif %}</li>
         <li><b>{{ ex.unchanged }}</b> already up to date</li>
         {% if ex.kept %}<li><b>{{ ex.kept|length }}</b> kept as they are (edited in Admin since the last sync)</li>{% endif %}
         {% if ex.unmanaged %}<li><b>{{ ex.unmanaged|length }}</b> only in the database (made in Admin; left alone)</li>{% endif %}
