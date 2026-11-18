@@ -1,0 +1,18 @@
+slug: berry-yogurt-parfait
+name: Berry Yogurt Parfait
+meal: breakfast
+minutes: 5
+servings: 1
+tags: [no-cook]
+summary: A big bowl of Greek yogurt layered with berries, toasted oats and almonds.
+ingredients:
+- {amount: 300, unit: g, item: nonfat Greek yogurt, food: greek-yogurt}
+- {amount: 100, unit: g, item: 'strawberries, sliced', food: strawberries}
+- {amount: 50, unit: g, item: blueberries, food: blueberries}
+- {amount: 20, unit: g, item: rolled oats, food: oats}
+- {amount: 15, unit: g, item: 'almonds, chopped', food: almonds}
+- {amount: 2, unit: tsp, item: honey, food: honey, grams: 14}
+steps:
+- Toast the oats in a dry pan over medium heat for 2–3 minutes until they smell nutty (optional, but worth it).
+- Layer half the yogurt, half the berries and half the oats in a bowl or glass, then repeat.
+- Top with the almonds and drizzle with honey.

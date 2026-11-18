@@ -1,52 +1,81 @@
 {% extends "base.html" %}
+{% import "_components.html" as ui %}
+{% import "_nutrition.html" as nut %}
+
 {% block title %}Recipes – {{ app_name }}{% endblock %}
+{% block meta_description %}High-protein recipes with the macros worked out: breakfasts, lunches, dinners and snacks, all 30 g+ protein a serving, plus a free macros calculator.{% endblock %}
 
-{% block content %}
-  <div class="app-page">
-  <div class="app-page-header">
-    <div>
-      <div class="app-page-kicker">Recipes</div>
-      <h1 class="page-title mb-1">Recipes</h1>
-      <p class="app-page-copy">Quick meal ideas to support training without turning nutrition into another complicated workflow.</p>
-    </div>
-  </div>
+{% block page %}
+<div class="nfg-discover nfg-recipes">
 
-  {% if recipes and recipes|length > 0 %}
-    <div class="row g-3">
-      {% for recipe in recipes %}
-        <div class="col-12 col-lg-6">
-          <div class="card app-surface h-100">
-            <div class="card-body d-flex flex-column">
-              <div class="d-flex align-items-start justify-content-between">
-                <div class="me-3">
-                  <h5 class="card-title mb-1">{{ recipe.name }}</h5>
-                  <div class="text-muted small">
-                    Tap to open the recipe.
-                  </div>
-                </div>
-                <span class="flow-chip">Recipe</span>
-              </div>
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">Eat for your goal</div>
+    <h1 class="nfg-page-title">Recipes</h1>
+  </header>
 
-              <div class="mt-3 d-flex gap-2 align-items-center">
-                <a href="{{ recipe.url }}" class="btn btn-sm btn-outline-dark app-btn-secondary app-btn-compact" target="_blank" rel="noopener">
-                  View
-                </a>
-                <small class="text-muted">Opens in a new tab</small>
-              </div>
-
-              <div class="mt-auto"></div>
-            </div>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
+  {# Macros first: your numbers for today, or the calculator invite. #}
+  {% if summary %}
+    <a class="nfg-macro-card" href="{{ url_for('macros') }}">
+      <span class="nfg-macro-card-head">
+        <span class="nfg-macro-card-kicker">Today · {{ goals[summary.targets.goal].label }}</span>
+        <span class="nfg-macro-card-go">Tracker {{ ui.icon('arrow-right') }}</span>
+      </span>
+      <span class="nfg-macro-card-rings">
+        {{ nut.ring(rings.kcal, 'kcal', 'Calories', summary.totals.kcal, summary.targets.kcal, 'kcal', big=True) }}
+        <span class="nfg-macro-card-small">
+          {{ nut.ring(rings.protein, 'protein', 'Protein', summary.totals.protein, summary.targets.protein, 'g') }}
+          {{ nut.ring(rings.carbs, 'carbs', 'Carbs', summary.totals.carbs, summary.targets.carbs, 'g') }}
+          {{ nut.ring(rings.fat, 'fat', 'Fat', summary.totals.fat, summary.targets.fat, 'g') }}
+        </span>
+      </span>
+    </a>
   {% else %}
-    <div class="card app-surface app-surface-muted">
-      <div class="card-body">
-        <h5 class="mb-1">Recipes are on the way</h5>
-        <p class="text-muted mb-0">High-protein meals that fit around your training, coming soon.</p>
-      </div>
-    </div>
+    <a class="nfg-macro-invite" href="{{ url_for('macros') }}">
+      <span class="nfg-macro-invite-icon" aria-hidden="true">{{ ui.icon('pie-chart') }}</span>
+      <span class="nfg-macro-invite-text">
+        <b>Work out your macros</b>
+        <span>Your daily calories, protein, carbs and fat for a cut, maintenance or a bulk. One minute.</span>
+      </span>
+      <span class="nfg-macro-invite-go" aria-hidden="true">{{ ui.icon('arrow-right') }}</span>
+    </a>
   {% endif %}
-  </div>
+
+  {# Filters: meal, then a few toggles. #}
+  <nav class="nfg-rfilters" aria-label="Filter recipes">
+    {% call ui.rail() %}
+      {% for key, label, href in meal_links %}
+        <a class="nfg-rchip is-meal{% if key == meal %} is-on{% endif %}" href="{{ href }}"
+           {% if key %}style="--meal: {{ meals[key].color }};"{% endif %}
+           {% if key == meal %}aria-current="true"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    {% endcall %}
+    {% call ui.rail() %}
+      {% for key, label, href in tag_links %}
+        <a class="nfg-rchip{% if key == tag %} is-on{% endif %}" href="{{ href }}"{% if key == tag %} aria-pressed="true"{% endif %}>{{ label }}</a>
+      {% endfor %}
+      {% for key, label, href in goal_links %}
+        <a class="nfg-rchip{% if key == goal %} is-on{% endif %}" href="{{ href }}"{% if key == goal %} aria-pressed="true"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    {% endcall %}
+  </nav>
+
+  {% if recipes %}
+    <p class="nfg-rcount">{{ recipes|length }} recipe{{ 's' if recipes|length != 1 }}{% if recipes|length != total %} of {{ total }} · <a href="{{ clear_url }}">Show all</a>{% endif %} · every one 30 g+ protein a serving</p>
+    <div class="nfg-rgrid">
+      {% for r in recipes %}{{ nut.recipe_card(r) }}{% endfor %}
+    </div>
+  {% elif total %}
+    <section class="nfg-prog-empty">
+      <h2>No recipes match</h2>
+      <p>Try fewer filters.</p>
+      <a class="nfg-btn is-ghost" href="{{ clear_url }}">Show all recipes</a>
+    </section>
+  {% else %}
+    <section class="nfg-prog-empty">
+      <h2>Recipes are on the way</h2>
+      <p>High-protein meals that fit around your training, coming soon.</p>
+    </section>
+  {% endif %}
+
+</div>
 {% endblock %}

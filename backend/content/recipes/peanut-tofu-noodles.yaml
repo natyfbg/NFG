@@ -1,0 +1,23 @@
+slug: peanut-tofu-noodles
+name: Peanut Tofu Noodles
+meal: lunch
+minutes: 25
+servings: 2
+summary: Crispy tofu, noodles and edamame in a quick peanut-lime sauce. Plant protein, nearly 50 g a bowl.
+ingredients:
+- {amount: 300, unit: g, item: 'firm tofu, pressed and cubed', food: tofu}
+- {amount: 120, unit: g, item: whole-wheat spaghetti (dry), food: pasta}
+- {amount: 150, unit: g, item: shelled edamame, food: edamame}
+- {amount: 1, item: 'carrot, cut into thin sticks|carrots, cut into thin sticks', food: carrot, grams: 100}
+- {amount: 2, unit: tbsp, item: peanut butter, food: peanut-butter, grams: 30}
+- {amount: 2, unit: tbsp, item: reduced-sodium soy sauce, food: soy-sauce, grams: 30}
+- {amount: 1, unit: tbsp, item: lime juice, food: lime-juice, grams: 15}
+- {amount: 2, unit: tsp, item: honey, food: honey, grams: 14}
+- {amount: 1, unit: tsp, item: sriracha, food: sriracha, grams: 5}
+- {amount: 1, unit: tsp, item: olive oil, food: olive-oil, grams: 5}
+steps:
+- Cook the spaghetti as the pack says, adding the edamame for the last 3 minutes. Drain.
+- Meanwhile fry the tofu in the oil in a non-stick pan over medium-high, 8–10 minutes, turning until golden on most
+  sides.
+- Whisk the peanut butter, soy sauce, lime juice, honey and sriracha with 2–3 tablespoons of hot water until smooth.
+- Toss the noodles, edamame, carrot and tofu with the sauce.

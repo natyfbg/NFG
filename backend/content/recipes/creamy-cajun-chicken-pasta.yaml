@@ -1,0 +1,23 @@
+slug: creamy-cajun-chicken-pasta
+name: Creamy Cajun Chicken Pasta
+meal: dinner
+minutes: 30
+servings: 4
+summary: Spicy chicken and penne in a creamy sauce made from blended cottage cheese. Over 50 g of protein a plate.
+ingredients:
+- {amount: 600, unit: g, item: 'chicken breast, cubed', food: chicken-breast}
+- {amount: 280, unit: g, item: penne (dry), food: pasta}
+- {amount: 250, unit: g, item: 2% cottage cheese, food: cottage-cheese}
+- {amount: 100, unit: ml, item: skim milk, food: skim-milk}
+- {amount: 30, unit: g, item: 'parmesan, grated', food: parmesan}
+- {amount: 100, unit: g, item: spinach, food: spinach}
+- {amount: 2, item: 'garlic clove, minced|garlic cloves, minced', food: garlic, grams: 6}
+- {amount: 2, unit: tsp, item: olive oil, food: olive-oil, grams: 10}
+- {amount: 1, unit: tbsp, item: Cajun seasoning}
+steps:
+- Cook the penne as the pack says. Save half a cup of the cooking water, then drain.
+- Blend the cottage cheese, milk and parmesan until completely smooth.
+- Toss the chicken in the Cajun seasoning and cook in the oil over medium-high for 6–8 minutes until cooked through.
+  Add the garlic for the last 30 seconds.
+- Turn the heat to low, pour in the sauce, add the spinach and stir until it wilts. Don't let it boil.
+- Stir in the pasta, loosening with a splash of the cooking water.

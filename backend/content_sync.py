@@ -551,10 +551,17 @@ def cmd_check(_args) -> None:
         print("Collection validation failed:\n" + str(e), file=sys.stderr)
         sys.exit(1)
     programs = _load_programs_or_exit(exercises)
+    import recipes_content
+
+    try:
+        recipes, _ = recipes_content.load_recipes()
+    except recipes_content.RecipeError as e:
+        print("Recipe validation failed:\n" + str(e), file=sys.stderr)
+        sys.exit(1)
     drafts = sum(1 for ex in exercises if ex["status"] == "draft")
     print(
         f"OK: {len(exercises)} exercise files ({drafts} draft, {len(exercises) - drafts} published)"
-        f", {len(programs)} program file(s)"
+        f", {len(programs)} program file(s), {len(recipes)} recipe(s)"
     )
 
 

@@ -1,0 +1,67 @@
+# Nutrition per 100 g (edible part, as weighed in the recipe), rounded from USDA
+# FoodData Central (SR Legacy / Foundation). Recipes list grams per ingredient and the
+# app adds these up, so changing an amount in a recipe updates its macros.
+# kind: meat · fish · egg · dairy · plant · grain · veg · fruit · fat · sweet · sauce · supplement
+# (meat or fish anywhere in a recipe makes it non-vegetarian).
+chicken-breast:    {name: "Chicken breast, raw",            kcal: 120, protein: 22.5, carbs: 0,    fat: 2.6,  kind: meat}
+ground-turkey:     {name: "Ground turkey 93% lean, raw",    kcal: 150, protein: 18.7, carbs: 0,    fat: 8.3,  kind: meat}
+ground-beef:       {name: "Ground beef 93% lean, raw",      kcal: 152, protein: 20.9, carbs: 0,    fat: 7.0,  kind: meat}
+pork-tenderloin:   {name: "Pork tenderloin, raw",           kcal: 109, protein: 21.0, carbs: 0,    fat: 2.2,  kind: meat}
+salmon:            {name: "Salmon, raw",                    kcal: 208, protein: 20.4, carbs: 0,    fat: 13.4, kind: fish}
+cod:               {name: "Cod, raw",                       kcal: 82,  protein: 17.8, carbs: 0,    fat: 0.7,  kind: fish}
+shrimp:            {name: "Shrimp, raw",                    kcal: 85,  protein: 20.1, carbs: 0,    fat: 0.5,  kind: fish}
+tuna-canned:       {name: "Tuna in water, drained",         kcal: 116, protein: 25.5, carbs: 0,    fat: 0.8,  kind: fish}
+egg:               {name: "Egg, whole",                     kcal: 143, protein: 12.6, carbs: 0.7,  fat: 9.5,  kind: egg}
+egg-white:         {name: "Egg whites",                     kcal: 52,  protein: 10.9, carbs: 0.7,  fat: 0.2,  kind: egg}
+greek-yogurt:      {name: "Greek yogurt, nonfat",           kcal: 59,  protein: 10.2, carbs: 3.6,  fat: 0.4,  kind: dairy}
+cottage-cheese:    {name: "Cottage cheese, 2%",             kcal: 81,  protein: 10.5, carbs: 4.8,  fat: 2.3,  kind: dairy}
+skim-milk:         {name: "Skim milk",                      kcal: 34,  protein: 3.4,  carbs: 5.0,  fat: 0.1,  kind: dairy}
+cheddar:           {name: "Cheddar",                        kcal: 403, protein: 24.9, carbs: 1.3,  fat: 33.1, kind: dairy}
+parmesan:          {name: "Parmesan",                       kcal: 392, protein: 35.8, carbs: 3.2,  fat: 25.8, kind: dairy}
+feta:              {name: "Feta",                           kcal: 264, protein: 14.2, carbs: 4.1,  fat: 21.3, kind: dairy}
+butter:            {name: "Butter",                         kcal: 717, protein: 0.9,  carbs: 0.1,  fat: 81.1, kind: dairy}
+whey:              {name: "Whey protein powder",            kcal: 400, protein: 80.0, carbs: 10.0, fat: 5.0,  kind: supplement}
+tofu:              {name: "Firm tofu",                      kcal: 144, protein: 17.3, carbs: 2.8,  fat: 8.7,  kind: plant}
+edamame:           {name: "Edamame, shelled",               kcal: 121, protein: 11.9, carbs: 8.9,  fat: 5.2,  kind: plant}
+black-beans:       {name: "Black beans, cooked/drained",    kcal: 132, protein: 8.9,  carbs: 23.7, fat: 0.5,  kind: plant}
+chickpeas:         {name: "Chickpeas, cooked/drained",      kcal: 164, protein: 8.9,  carbs: 27.4, fat: 2.6,  kind: plant}
+lentils:           {name: "Lentils, cooked",                kcal: 116, protein: 9.0,  carbs: 20.1, fat: 0.4,  kind: plant}
+peanut-butter:     {name: "Peanut butter",                  kcal: 588, protein: 25.1, carbs: 19.6, fat: 50.4, kind: plant}
+almonds:           {name: "Almonds",                        kcal: 579, protein: 21.2, carbs: 21.6, fat: 49.9, kind: plant}
+chia:              {name: "Chia seeds",                     kcal: 486, protein: 16.5, carbs: 42.1, fat: 30.7, kind: plant}
+hummus:            {name: "Hummus",                         kcal: 166, protein: 7.9,  carbs: 14.3, fat: 9.6,  kind: plant}
+oats:              {name: "Rolled oats",                    kcal: 379, protein: 13.2, carbs: 67.7, fat: 6.5,  kind: grain}
+rice-white-cooked: {name: "White rice, cooked",             kcal: 130, protein: 2.7,  carbs: 28.2, fat: 0.3,  kind: grain}
+rice-brown-cooked: {name: "Brown rice, cooked",             kcal: 123, protein: 2.7,  carbs: 25.6, fat: 1.0,  kind: grain}
+pasta:             {name: "Pasta, dry",                     kcal: 371, protein: 13.0, carbs: 74.7, fat: 1.5,  kind: grain}
+tortilla:          {name: "Whole-wheat tortilla",           kcal: 300, protein: 9.0,  carbs: 50.0, fat: 7.0,  kind: grain}
+bread:             {name: "Whole-grain bread",              kcal: 252, protein: 12.4, carbs: 42.7, fat: 3.5,  kind: grain}
+potato:            {name: "Potato",                         kcal: 77,  protein: 2.0,  carbs: 17.5, fat: 0.1,  kind: veg}
+sweet-potato:      {name: "Sweet potato",                   kcal: 86,  protein: 1.6,  carbs: 20.1, fat: 0.1,  kind: veg}
+broccoli:          {name: "Broccoli",                       kcal: 34,  protein: 2.8,  carbs: 6.6,  fat: 0.4,  kind: veg}
+spinach:           {name: "Spinach",                        kcal: 23,  protein: 2.9,  carbs: 3.6,  fat: 0.4,  kind: veg}
+bell-pepper:       {name: "Bell pepper",                    kcal: 26,  protein: 1.0,  carbs: 6.0,  fat: 0.3,  kind: veg}
+onion:             {name: "Onion",                          kcal: 40,  protein: 1.1,  carbs: 9.3,  fat: 0.1,  kind: veg}
+tomato:            {name: "Tomato",                         kcal: 18,  protein: 0.9,  carbs: 3.9,  fat: 0.2,  kind: veg}
+crushed-tomatoes:  {name: "Crushed tomatoes, canned",       kcal: 32,  protein: 1.6,  carbs: 7.3,  fat: 0.3,  kind: veg}
+cucumber:          {name: "Cucumber",                       kcal: 15,  protein: 0.7,  carbs: 3.6,  fat: 0.1,  kind: veg}
+romaine:           {name: "Romaine lettuce",                kcal: 17,  protein: 1.2,  carbs: 3.3,  fat: 0.3,  kind: veg}
+cabbage:           {name: "Cabbage",                        kcal: 25,  protein: 1.3,  carbs: 5.8,  fat: 0.1,  kind: veg}
+asparagus:         {name: "Asparagus",                      kcal: 20,  protein: 2.2,  carbs: 3.9,  fat: 0.1,  kind: veg}
+green-beans:       {name: "Green beans",                    kcal: 31,  protein: 1.8,  carbs: 7.0,  fat: 0.2,  kind: veg}
+carrot:            {name: "Carrot",                         kcal: 41,  protein: 0.9,  carbs: 9.6,  fat: 0.2,  kind: veg}
+garlic:            {name: "Garlic",                         kcal: 149, protein: 6.4,  carbs: 33.1, fat: 0.5,  kind: veg}
+avocado:           {name: "Avocado",                        kcal: 160, protein: 2.0,  carbs: 8.5,  fat: 14.7, kind: fruit}
+banana:            {name: "Banana",                         kcal: 89,  protein: 1.1,  carbs: 22.8, fat: 0.3,  kind: fruit}
+blueberries:       {name: "Blueberries",                    kcal: 57,  protein: 0.7,  carbs: 14.5, fat: 0.3,  kind: fruit}
+strawberries:      {name: "Strawberries",                   kcal: 32,  protein: 0.7,  carbs: 7.7,  fat: 0.3,  kind: fruit}
+pineapple:         {name: "Pineapple",                      kcal: 50,  protein: 0.5,  carbs: 13.1, fat: 0.1,  kind: fruit}
+lemon-juice:       {name: "Lemon juice",                    kcal: 22,  protein: 0.4,  carbs: 6.9,  fat: 0.2,  kind: fruit}
+lime-juice:        {name: "Lime juice",                     kcal: 25,  protein: 0.4,  carbs: 8.4,  fat: 0.1,  kind: fruit}
+olive-oil:         {name: "Olive oil",                      kcal: 884, protein: 0,    carbs: 0,    fat: 100,  kind: fat}
+honey:             {name: "Honey",                          kcal: 304, protein: 0.3,  carbs: 82.4, fat: 0,    kind: sweet}
+maple-syrup:       {name: "Maple syrup",                    kcal: 260, protein: 0,    carbs: 67.0, fat: 0.1,  kind: sweet}
+cocoa:             {name: "Cocoa powder, unsweetened",      kcal: 228, protein: 19.6, carbs: 57.9, fat: 13.7, kind: sweet}
+soy-sauce:         {name: "Soy sauce, reduced sodium",      kcal: 53,  protein: 8.1,  carbs: 4.9,  fat: 0.6,  kind: sauce}
+salsa:             {name: "Salsa",                          kcal: 36,  protein: 1.5,  carbs: 7.0,  fat: 0.2,  kind: sauce}
+sriracha:          {name: "Sriracha",                       kcal: 93,  protein: 1.9,  carbs: 19.2, fat: 0.9,  kind: sauce}

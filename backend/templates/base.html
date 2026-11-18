@@ -32,6 +32,14 @@
         mq.addEventListener('change', function (e) {
           if (!/(^|; )nfg_theme=/.test(document.cookie)) apply(e.matches ? 'dark' : 'light');
         });
+        /* The device's time-zone offset, so the macros tracker's "today" is the
+           viewer's own day (it resets at their midnight). */
+        try {
+          var tzo = String(new Date().getTimezoneOffset());
+          if (!new RegExp('(^|; )nfg_tzo=' + tzo.replace('-', '\\-') + '(;|$)').test(document.cookie)) {
+            document.cookie = 'nfg_tzo=' + tzo + '; path=/; max-age=31536000; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+          }
+        } catch (e) {}
       })();
     </script>
     <script>
@@ -73,7 +81,7 @@
       'eight_week_hub_redirect'
     ] %}
     {% set account_eps = ['account_login','account_register','account_profile'] %}
-    {% set recipes_eps = ['recipes'] %}
+    {% set recipes_eps = ['recipes', 'recipe_detail', 'macros'] %}
     {% set about_eps = ['about_page'] %}
     {% set swipe_eps = ['home','workouts','programs_index','recipes'] %}
 
@@ -130,6 +138,7 @@
                     aria-expanded="false" aria-controls="appMenu" aria-label="Menu">{{ ui.icon('list') }}</button>
             <nav class="dropdown-menu dropdown-menu-end nfg-menu" id="appMenu" aria-label="Menu">
               <a class="dropdown-item nfg-menu-link{% if ep == 'workouts_mix' %} is-active{% endif %}" href="{{ url_for('workouts_mix') }}">{{ ui.icon('shuffle') }} Muscle Mixer</a>
+              <a class="dropdown-item nfg-menu-link{% if ep == 'macros' %} is-active{% endif %}" href="{{ url_for('macros') }}">{{ ui.icon('pie-chart') }} Macros</a>
               <a class="dropdown-item nfg-menu-link{% if ep == 'search' %} is-active{% endif %}" href="{{ url_for('search') }}">{{ ui.icon('search') }} Search</a>
               <a class="dropdown-item nfg-menu-link{% if ep == 'about_page' %} is-active{% endif %}" href="{{ url_for('about_page') }}">{{ ui.icon('info-circle') }} About {{ app_name }}</a>
               <div class="nfg-menu-sep" role="separator"></div>

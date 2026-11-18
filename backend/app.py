@@ -21,6 +21,7 @@ import bodymap
 import curation
 import formfigures
 import mailer
+import nutrition
 import program_content
 import session_builder as sb
 import taxonomy as tx
@@ -687,6 +688,8 @@ def _migrate_guest_state_to_member(guest_viewer_id: str, member_key: str) -> Non
     guest = (guest_viewer_id or "").strip()
     if not guest or guest == member_key:
         return
+
+    nutrition.migrate_guest(db, guest, member_key)
 
     guest_favs = list(db.program_favorites.find({"viewer_id": guest}))
     for row in guest_favs:
@@ -5194,10 +5197,8 @@ def workout_detail(slug):
 # -----------------------------------------------------------------------------
 # Recipes + Search
 # -----------------------------------------------------------------------------
-@app.route("/recipes")
-def recipes():
-    recs = list(db.recipes.find().sort([("name", ASCENDING)]))
-    return render_template("recipes.html", recipes=recs)
+# Recipes, macros calculator and tracker: nutrition.py (content files, no recipe sync).
+nutrition.register(app, db=db, owner_key=_progress_owner_key, is_safe_path=_is_safe_local_path)
 
 
 SEARCH_EXERCISE_LIMIT = 24
@@ -5248,7 +5249,7 @@ def search():
             .sort([("order", 1), ("title", 1)])
             .limit(10)
         )
-        recipes_found = list(db.recipes.find({"name": rx}).sort([("name", ASCENDING)]).limit(10))
+        recipes_found = nutrition.search(q)
 
     return render_template(
         "search_results.html",
@@ -8197,6 +8198,7 @@ def _sitemap_urls() -> List[str]:
         for endpoint in ("home", "workouts", "workouts_all", "programs_index", "recipes")
     ]
     urls.append(_public_url("about_page"))
+    urls += [_public_url("recipe_detail", slug=r["slug"]) for r in nutrition.RECIPES]
     hubs = db.programs.find(
         {
             "kind": "hub",

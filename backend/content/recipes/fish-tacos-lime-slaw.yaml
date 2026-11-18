@@ -1,0 +1,24 @@
+slug: fish-tacos-lime-slaw
+name: Fish Tacos with Lime Slaw
+meal: dinner
+minutes: 25
+servings: 2
+summary: Spiced cod in warm tortillas with a crunchy yogurt-lime slaw.
+ingredients:
+- {amount: 400, unit: g, item: cod fillets, food: cod}
+- {amount: 1, unit: tsp, item: olive oil, food: olive-oil, grams: 5}
+- {amount: 1, unit: tsp, item: chili powder}
+- {amount: 0.5, unit: tsp, item: ground cumin}
+- {amount: 150, unit: g, item: shredded cabbage, food: cabbage}
+- {amount: 80, unit: g, item: nonfat Greek yogurt, food: greek-yogurt}
+- {amount: 2, unit: tbsp, item: lime juice, food: lime-juice, grams: 30}
+- {amount: 4, item: small whole-wheat tortilla|small whole-wheat tortillas, food: tortilla, grams: 120}
+- {amount: 0.5, item: 'small avocado, sliced|small avocados, sliced', food: avocado, grams: 70}
+- {amount: 60, unit: g, item: salsa, food: salsa}
+- {item: salt}
+steps:
+- Mix the cabbage with the yogurt, half the lime juice and a pinch of salt.
+- Season the cod with the chili powder, cumin and salt. Cook in the oil in a non-stick pan, 3–4 minutes per side,
+  until it flakes.
+- Warm the tortillas in a dry pan.
+- Fill with the fish, slaw, avocado and salsa, and squeeze over the rest of the lime.

@@ -44,6 +44,9 @@ _USER_STATE_COLLECTIONS = (
     "login_failures",
     "favorites",
     "password_resets",
+    "macro_profiles",
+    "food_log",
+    "weight_log",
 )
 
 

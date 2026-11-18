@@ -1,0 +1,16 @@
+slug: chocolate-protein-pudding
+name: Chocolate Protein Pudding
+meal: snack
+minutes: 5
+servings: 1
+tags: [no-cook]
+summary: Cottage cheese, cocoa and whey blended into a thick chocolate pudding. 40 g of protein for a dessert.
+ingredients:
+- {amount: 250, unit: g, item: 2% cottage cheese, food: cottage-cheese}
+- {amount: 15, unit: g, item: chocolate whey protein, food: whey, note: ½ scoop}
+- {amount: 10, unit: g, item: unsweetened cocoa powder, food: cocoa}
+- {amount: 2, unit: tsp, item: honey, food: honey, grams: 14}
+- {amount: 50, unit: g, item: 'strawberries, to serve', food: strawberries}
+steps:
+- Blend the cottage cheese, whey, cocoa and honey for a full minute, until completely smooth.
+- Chill 15 minutes if you like it thicker. Top with the strawberries.

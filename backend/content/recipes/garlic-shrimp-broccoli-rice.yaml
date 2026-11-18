@@ -1,0 +1,22 @@
+slug: garlic-shrimp-broccoli-rice
+name: Garlic Shrimp, Broccoli & Rice
+meal: dinner
+minutes: 20
+servings: 2
+summary: Buttery garlic shrimp and broccoli over rice, on the table in 20 minutes.
+ingredients:
+- {amount: 400, unit: g, item: 'raw shrimp, peeled', food: shrimp}
+- {amount: 300, unit: g, item: broccoli florets, food: broccoli}
+- {amount: 300, unit: g, item: cooked white rice, food: rice-white-cooked}
+- {amount: 3, item: 'garlic clove, minced|garlic cloves, minced', food: garlic, grams: 9}
+- {amount: 1, unit: tbsp, item: olive oil, food: olive-oil, grams: 14}
+- {amount: 10, unit: g, item: butter, food: butter}
+- {amount: 1, unit: tbsp, item: reduced-sodium soy sauce, food: soy-sauce, grams: 15}
+- {amount: 1, unit: tbsp, item: lemon juice, food: lemon-juice, grams: 15}
+- {item: chili flakes (optional)}
+steps:
+- Steam or microwave the broccoli for 3–4 minutes until bright green and just tender.
+- Heat the oil in a large pan over medium-high. Cook the shrimp 1–2 minutes per side until pink, then lift them
+  out.
+- Lower the heat, add the butter, garlic and chili flakes and stir for 30 seconds.
+- Add the soy sauce, lemon juice, shrimp and broccoli and toss to coat. Serve over the rice.

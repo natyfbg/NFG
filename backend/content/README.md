@@ -136,3 +136,33 @@ people who trained on them) and replaces their weeks; it
 never touches weeks built by hand in Admin unless you pass `--force-programs`. Progress
 is keyed by track + week + day label, so re-syncing keeps everyone's progress — but
 renaming a day label resets that day's ticks.
+
+## Recipes (`recipes/<slug>.yaml` + `foods.yaml`)
+
+One file per recipe. The app reads them at startup (no database sync), so an edited
+recipe is live after the next deploy.
+
+```yaml
+slug: protein-overnight-oats       # must match the file name
+name: Protein Overnight Oats
+meal: breakfast                    # breakfast · lunch · dinner · snack
+minutes: 5                         # hands-on time; "Quick" means 15 or less
+wait: overnight in the fridge      # optional, shown after the minutes
+servings: 1
+tags: [no-cook, meal-prep]         # optional: no-cook, meal-prep
+summary: One sentence for the card and the page.
+ingredients:
+- {amount: 50, unit: g, item: rolled oats, food: oats}            # g/ml: grams = amount
+- {amount: 2, item: large egg|large eggs, food: egg, grams: 100}  # singular|plural
+- {amount: 30, unit: g, item: whey protein, food: whey, note: 1 scoop}  # note shows unscaled only
+- {amount: 1, unit: tsp, item: ground cinnamon}                   # no food: no macros
+- {item: salt and pepper}                                         # to taste
+steps:
+- One step per line.
+tip: Optional.
+```
+
+Macros per serving are worked out from `foods.yaml` (per 100 g, from USDA FoodData
+Central): change a gram amount and the numbers follow. "Vegetarian" (no meat or fish),
+"Quick" and which goals a serving suits (cut / maintain / bulk) are derived, not typed.
+Every recipe must reach 30 g protein a serving or `content_sync.py check` fails.

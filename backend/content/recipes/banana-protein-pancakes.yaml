@@ -1,0 +1,22 @@
+slug: banana-protein-pancakes
+name: Banana Protein Pancakes
+meal: breakfast
+minutes: 15
+servings: 1
+summary: Blender pancakes made from oats, whey, egg and banana. Fluffy, filling and nearly 50 g of protein.
+ingredients:
+- {amount: 50, unit: g, item: rolled oats, food: oats}
+- {amount: 30, unit: g, item: whey protein, food: whey, note: 1 scoop}
+- {amount: 1, item: large egg|large eggs, food: egg, grams: 50}
+- {amount: 100, unit: ml, item: liquid egg whites, food: egg-white}
+- {amount: 0.5, item: ripe banana|ripe bananas, food: banana, grams: 50}
+- {amount: 1, unit: tsp, item: baking powder}
+- {amount: 75, unit: g, item: 'blueberries, to serve', food: blueberries}
+- {amount: 2, unit: tsp, item: maple syrup, food: maple-syrup, grams: 13}
+steps:
+- Blend the oats into a fine flour.
+- Add the whey, egg, egg whites, banana and baking powder and blend until smooth. Let it sit for 2 minutes to thicken.
+- Heat a lightly oiled non-stick pan over medium-low. Pour in a quarter of the batter at a time.
+- Flip when bubbles cover the top (about 2 minutes) and cook 1 minute more.
+- Stack, top with the blueberries and drizzle with maple syrup.
+tip: 'Keep the heat low: protein batter browns fast.'

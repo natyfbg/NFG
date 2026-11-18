@@ -1,0 +1,23 @@
+slug: tuna-chickpea-salad
+name: Tuna Chickpea Salad
+meal: lunch
+minutes: 10
+servings: 2
+tags: [no-cook]
+summary: Tuna, chickpeas, cucumber, tomato and feta in a lemon dressing. No cooking at all.
+ingredients:
+- {amount: 240, unit: g, item: 'tuna in water, drained', food: tuna-canned, note: 2 cans}
+- {amount: 240, unit: g, item: 'chickpeas, drained and rinsed', food: chickpeas, note: 1 can}
+- {amount: 150, unit: g, item: 'cucumber, diced', food: cucumber}
+- {amount: 150, unit: g, item: 'cherry tomatoes, halved', food: tomato}
+- {amount: 0.25, item: 'red onion, finely diced|red onions, finely diced', food: onion, grams: 40}
+- {amount: 40, unit: g, item: 'feta, crumbled', food: feta}
+- {amount: 1, unit: tbsp, item: olive oil, food: olive-oil, grams: 14}
+- {amount: 2, unit: tbsp, item: lemon juice, food: lemon-juice, grams: 30}
+- {amount: 1, unit: tsp, item: dried oregano}
+- {item: salt and pepper}
+steps:
+- Whisk the oil, lemon juice, oregano and a pinch of salt and pepper in a large bowl.
+- Add everything else and toss gently, keeping the tuna in chunks.
+- Eat now or pack into two containers.
+tip: Keeps 2 days in the fridge.

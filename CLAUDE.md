@@ -137,7 +137,16 @@ as committer, so GitHub shows them as Verified.
 - Never pass a template variable named `session`, `request`, `g`, `config` or
   `current_user`: Flask/Flask-Login already define them in every template, so a missing
   value silently falls back to theirs (this caused the Mixer 500, f0df57e).
-- `seed.py` now seeds only the sample recipes; exercises come from content files.
+- `seed.py` seeds only the old sample recipes, which nothing reads any more: recipes are
+  content files (`content/recipes/`, `recipes_content.py`) loaded at startup, exercises
+  come from content files too. The `recipes` collection is unused.
+- **Nutrition lives in its own files:** `nutrition.py` registers `/recipes`, `/recipes/<slug>`
+  and `/macros*` with plain endpoint names (no blueprint prefix), `macros.py` is the pure
+  maths, `recipes_content.py` the recipe loader. Per-viewer collections `macro_profiles`,
+  `food_log`, `weight_log` use `_progress_owner_key()` and move to the account in
+  `nutrition.migrate_guest` (called from `_migrate_guest_state_to_member`). The tracker's
+  "today" is the viewer's date: the page sends it (hidden `date`, accepted within a day
+  of UTC) and `base.html` keeps an `nfg_tzo` cookie with the time-zone offset.
 - `backend/taxonomy.py` is the single source of truth for muscle/group/equipment/
   movement keys. Keys are stored in the DB and content files — never rename one
   without a migration. It has no Flask/Mongo imports on purpose.
@@ -367,6 +376,24 @@ as committer, so GitHub shows them as Verified.
   (intermediate + advanced, Push/Pull/Legs/Upper/Lower; Accumulation → Hypertrophy →
   Strength → Overload → Deload). Two main lifts a day, the rest accessories, keeps days
   at about 35–80 minutes.
+- 2026-11-17 — **Revamp phase 5 (recipes + macros):** 24 high-protein recipes as content
+  files (all 30 g+ protein a serving; macros computed from a USDA per-100 g food table,
+  `content/foods.yaml`), cards with a colour tile per meal and the protein up front,
+  filters (meal, quick, meal prep, vegetarian, no cooking, good for a cut/maintain/bulk),
+  recipe page with a servings stepper (scales amounts, fractions for spoons) and **Add to
+  today**. **Macros calculator** (Mifflin-St Jeor × activity; cut −20%, bulk +10%;
+  protein 2.2/1.8/2.0 g per kg, capped at the BMI-30 weight; fat 25–30%; adults only;
+  lb·ft or kg·cm; optional Navy tape body fat) at the top of Recipes and in the menu.
+  **Tracker** (`/macros`): calories ring + protein/carbs/fat rings, Cut/Maintain/Bulk switch
+  that re-targets instantly, quick add (kcal worked out from macros when left empty),
+  "Again" chips, today's list with remove. **Progress:** week/month/year intake bars with
+  the target line and days on target (on target = calories within 10% and 90%+ of
+  protein); **Projection** 12/26/52 weeks: weight (and body fat with tape measurements)
+  at the target and, once 3+ days are logged in the last two weeks, at the logged
+  average, labelled as an estimate and never below BMI 18.5. Macro colours are tokens
+  (`--macro-protein/carbs/fat`, checked for colour-blind separation in both themes);
+  calories use the ink colour. Guests keep everything on their device and it moves to
+  the account on sign-up.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 

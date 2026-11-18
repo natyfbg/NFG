@@ -1,0 +1,20 @@
+slug: peanut-butter-protein-bites
+name: Peanut Butter Protein Bites
+meal: snack
+minutes: 15
+servings: 4
+tags: [no-cook, meal-prep]
+summary: No-bake oat, whey and peanut butter balls. Twelve bites, three per serving.
+ingredients:
+- {amount: 120, unit: g, item: rolled oats, food: oats}
+- {amount: 90, unit: g, item: whey protein, food: whey, note: 3 scoops}
+- {amount: 128, unit: g, item: peanut butter, food: peanut-butter, note: ½ cup}
+- {amount: 3, unit: tbsp, item: honey, food: honey, grams: 60}
+- {amount: 20, unit: g, item: chia seeds, food: chia}
+- {amount: 60, unit: ml, item: skim milk, food: skim-milk}
+steps:
+- Mix the oats, whey and chia in a bowl.
+- Add the peanut butter, honey and milk and stir, then knead with your hands until it holds together. Add milk a
+  teaspoon at a time if it's crumbly.
+- Roll into 12 balls and chill for 20 minutes.
+tip: 'Keeps a week in the fridge. Calorie-dense: great for a bulk, go easy on a cut.'

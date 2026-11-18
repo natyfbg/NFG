@@ -1,0 +1,29 @@
+slug: chicken-burrito-bowls
+name: Chicken Burrito Bowls
+meal: lunch
+minutes: 35
+servings: 4
+tags: [meal-prep]
+summary: Spiced chicken, brown rice, black beans and peppers. Four lunches from one pan.
+ingredients:
+- {amount: 600, unit: g, item: chicken breast, food: chicken-breast}
+- {amount: 600, unit: g, item: cooked brown rice, food: rice-brown-cooked, note: about 3 cups}
+- {amount: 240, unit: g, item: 'black beans, drained and rinsed', food: black-beans, note: 1 can}
+- {amount: 2, item: 'bell pepper, sliced|bell peppers, sliced', food: bell-pepper, grams: 300}
+- {amount: 1, item: 'onion, sliced|onions, sliced', food: onion, grams: 150}
+- {amount: 200, unit: g, item: salsa, food: salsa}
+- {amount: 1, item: avocado (flesh)|avocados (flesh), food: avocado, grams: 150}
+- {amount: 1, unit: tbsp, item: olive oil, food: olive-oil, grams: 14}
+- {amount: 2, unit: tbsp, item: lime juice, food: lime-juice, grams: 30}
+- {amount: 2, unit: tsp, item: chili powder}
+- {amount: 1, unit: tsp, item: each ground cumin and garlic powder}
+- {item: salt}
+steps:
+- Rub the chicken with the chili powder, cumin, garlic powder and a good pinch of salt.
+- Heat half the oil in a large pan over medium-high and cook the chicken 6–7 minutes per side, until it reaches
+  74°C / 165°F inside. Rest 5 minutes, then slice.
+- Add the rest of the oil to the pan and cook the peppers and onion for 6–8 minutes until soft and charred at the
+  edges.
+- Warm the beans. Divide rice, beans, chicken and peppers between 4 containers and spoon salsa and lime juice over.
+- Add the avocado when you eat, so it stays green.
+tip: Keeps 4 days in the fridge.

@@ -1,0 +1,26 @@
+slug: breakfast-burritos
+name: Freezer Breakfast Burritos
+meal: breakfast
+minutes: 30
+servings: 4
+tags: [meal-prep]
+summary: Turkey, eggs, peppers and cheddar rolled into tortillas. Make four, freeze them, reheat in 3 minutes.
+ingredients:
+- {amount: 300, unit: g, item: lean ground turkey (93%), food: ground-turkey}
+- {amount: 6, item: large egg|large eggs, food: egg, grams: 300}
+- {amount: 300, unit: ml, item: liquid egg whites, food: egg-white}
+- {amount: 1, item: 'bell pepper, diced|bell peppers, diced', food: bell-pepper, grams: 150}
+- {amount: 1, item: 'small onion, diced|small onions, diced', food: onion, grams: 100}
+- {amount: 60, unit: g, item: 'cheddar, grated', food: cheddar}
+- {amount: 4, item: large whole-wheat tortilla|large whole-wheat tortillas, food: tortilla, grams: 180}
+- {amount: 120, unit: g, item: salsa, food: salsa}
+- {amount: 1, unit: tsp, item: each ground cumin and smoked paprika}
+- {item: salt and pepper}
+steps:
+- Brown the turkey with the cumin, paprika and a pinch of salt in a large non-stick pan, 6–7 minutes. Add the pepper
+  and onion and cook 4 minutes more. Tip into a bowl.
+- Whisk the eggs and egg whites, pour into the same pan and stir over medium-low heat until just set.
+- Fold the turkey mix into the eggs.
+- Divide over the tortillas, top with cheddar and salsa, fold in the sides and roll up tightly.
+- 'To store: cool, wrap each in foil and refrigerate (4 days) or freeze (3 months). Reheat unwrapped in a paper
+  towel: 1–2 minutes from the fridge, 3–4 from frozen.'

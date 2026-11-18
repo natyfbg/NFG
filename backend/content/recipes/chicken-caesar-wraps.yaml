@@ -1,0 +1,23 @@
+slug: chicken-caesar-wraps
+name: Chicken Caesar Wraps
+meal: lunch
+minutes: 20
+servings: 2
+summary: 'A lighter Caesar: Greek yogurt dressing, crisp romaine, parmesan and sliced chicken in a wrap.'
+ingredients:
+- {amount: 300, unit: g, item: chicken breast, food: chicken-breast}
+- {amount: 1, unit: tsp, item: olive oil, food: olive-oil, grams: 5}
+- {amount: 80, unit: g, item: nonfat Greek yogurt, food: greek-yogurt}
+- {amount: 20, unit: g, item: 'parmesan, finely grated', food: parmesan}
+- {amount: 1, unit: tbsp, item: lemon juice, food: lemon-juice, grams: 15}
+- {amount: 1, item: 'small garlic clove, grated|small garlic cloves, grated', food: garlic, grams: 3}
+- {amount: 1, unit: tsp, item: Dijon mustard}
+- {amount: 120, unit: g, item: 'romaine, chopped', food: romaine}
+- {amount: 2, item: large whole-wheat tortilla|large whole-wheat tortillas, food: tortilla, grams: 90}
+- {item: salt and black pepper}
+steps:
+- Season the chicken with salt and pepper and cook in the oil over medium-high heat, 6–7 minutes per side. Rest,
+  then slice.
+- Whisk the yogurt, half the parmesan, the lemon juice, garlic, mustard and plenty of black pepper.
+- Toss the romaine with the dressing and the rest of the parmesan.
+- Lay the chicken and salad down the middle of each tortilla, fold in the ends, roll tightly and cut in half.
