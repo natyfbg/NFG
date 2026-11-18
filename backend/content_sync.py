@@ -401,11 +401,14 @@ def plan_sync(db, exercises: List[dict], only_slug: Optional[str] = None) -> dic
     """Compare files with the DB. Returns {creates, updates, unchanged, drifted, unmanaged}."""
     plan = {"creates": [], "updates": [], "unchanged": [], "drifted": [], "unmanaged": []}
     file_slugs = set()
+    wanted = [ex["slug"] for ex in exercises if not only_slug or ex["slug"] == only_slug]
+    # One read for every file's current doc (not one per file: Atlas round trips add up).
+    existing_by_slug = {d["slug"]: d for d in db.workouts.find({"slug": {"$in": wanted}})}
     for ex in exercises:
         if only_slug and ex["slug"] != only_slug:
             continue
         file_slugs.add(ex["slug"])
-        existing = db.workouts.find_one({"slug": ex["slug"]})
+        existing = existing_by_slug.get(ex["slug"])
         desired = build_doc(ex)
         desired.update(image_fields(ex, existing))
         if not existing:

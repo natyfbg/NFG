@@ -4,7 +4,7 @@ slug: 16-week-muscle-building
 title: 16-Week Muscle Building
 accent: "#C8402F"
 order: 3
-status: published
+status: draft  # Nate reviews as admin on the live site, then this becomes published
 goal: Build muscle (bulk)
 summary: >-
   Five days a week, Push, Pull, Legs, Upper and Lower, with more volume and heavier

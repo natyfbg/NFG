@@ -389,7 +389,29 @@ def test_program_cards_go_to_todays_day_once_started(synced, client):
     assert "day=full-body-b" in home
 
 
+def _publish_new_programs(db):
+    """The 12- and 16-week files start as drafts; this stands in for Nate's approval."""
+    db.programs.update_many(
+        {"$or": [{"slug": {"$regex": f"^{RECOMP}"}}, {"slug": {"$regex": f"^{BUILD}"}}]},
+        {"$set": {"publish_status": "published"}},
+    )
+
+
+def test_new_programs_start_as_drafts_only_admin_sees(synced, client, monkeypatch):
+    from werkzeug.security import generate_password_hash
+
+    assert synced.db.programs.find_one({"slug": RECOMP})["publish_status"] == "draft"
+    listing = client.get("/programs").get_data(as_text=True)
+    assert "8 Week Challenge" in listing and "12-Week Body" not in listing
+    assert client.get(f"/programs/{RECOMP}").status_code == 404
+    monkeypatch.setattr(synced, "ADMIN_PASSWORD_HASH", generate_password_hash("pw"))
+    client.post("/login", data={"username": "admin", "password": "pw"})
+    assert client.get(f"/programs/{RECOMP}").status_code == 200
+    assert "12-Week Body" in client.get("/programs").get_data(as_text=True)
+
+
 def test_programs_list_in_file_order_with_accents(synced, client):
+    _publish_new_programs(synced.db)
     html = client.get("/programs").get_data(as_text=True)
     assert (
         html.index("8 Week Challenge") < html.index("12-Week Body") < html.index("16-Week Muscle")
@@ -398,6 +420,7 @@ def test_programs_list_in_file_order_with_accents(synced, client):
 
 
 def test_single_level_program_shows_level_as_text(synced, client):
+    _publish_new_programs(synced.db)
     html = client.get(f"/programs/{RECOMP}").get_data(as_text=True)
     assert "Written for intermediate lifters" in html
     assert "Push" in html and "Day 1" in html

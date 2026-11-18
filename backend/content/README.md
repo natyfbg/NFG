@@ -129,6 +129,10 @@ with its colour, so a trailing A/B/C only keeps two same-type days apart. Give t
 two lifts of a day the `main` scheme and mark the rest `role: accessory`, or every
 compound gets the heavy sets and long rests.
 
+A new program starts with `status: draft`: after a sync only a signed-in admin sees it
+on the site, so it can be checked in the real app. Change it to `published` and sync
+again to open it to everyone. In production, sync from **Admin → Content sync**.
+
 `content_sync.py check` validates programs too: every slug must exist, Home tracks may
 only use home equipment, and phases must cover every week once. `sync` writes one track
 per level × Home/Gym/Hybrid (the app only offers Home and Gym now; Hybrid tracks stay for

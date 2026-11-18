@@ -63,7 +63,12 @@ docker compose exec app python content_sync.py sync --apply   # write (local DB)
 ```
 
 `sync --apply` refuses non-local databases unless `--allow-remote` is passed —
-production syncs need Nate's go-ahead every time.
+production syncs need Nate's go-ahead every time. In production the normal way is
+**Admin → Content sync** (`/admin/content-sync`, `content_admin.py`): Nate sees the dry
+run and presses Apply himself; it runs inside the app (no connection string leaves
+Render), in a background thread, one run at a time, recorded in `content_sync_runs`.
+Program tracks carry a `content_hash`, so unchanged tracks are skipped; a track is only
+"unchanged" when its weeks are all there.
 
 CI (`.github/workflows/ci.yml`) runs lint, tests and a Docker build on pushes to
 main/dev/windows-dev and PRs into main/dev.
@@ -176,6 +181,18 @@ as committer, so GitHub shows them as Verified.
   the reply is the same whether or not the email has an account. A reset bumps the
   user's `auth_gen`, which is part of the session id (`member:<id>:<gen>`), so every
   other session is signed out.
+- **Per-viewer data is listed in `VIEWER_COLLECTIONS`** (app.py). Export (`/account/export`),
+  delete account (`/account/delete`) and "Forget this device" (`/privacy/forget-device`)
+  all go by it; `tests/test_trust.py` fails if code writes `viewer_id` rows to a
+  collection that isn't listed. New per-viewer data: add it there and to the
+  guest→member migration.
+- **Error alerts:** a 500 emails `ALERT_EMAIL` (Render env) through Resend, one per error
+  type + route every 15 minutes, 20 a day (`error_alerts`, TTL 2 days). The email has the
+  route pattern, exception type and file:line, never the message or the URL.
+  `CONTACT_EMAIL` (optional env) shows on Privacy and Terms.
+- **Programs start as drafts:** a new program file has `status: draft`, so a sync puts it
+  on the live site where only an admin sees it; flipping the file to `published` and
+  syncing again opens it to everyone.
 - `robots.txt` and `sitemap.xml` are routes (public pages, published exercises,
   program hubs; no drafts even for an admin).
 - **Theme tokens:** every colour in `app.css` is a `:root` variable; dark mode is the
@@ -410,6 +427,17 @@ as committer, so GitHub shows them as Verified.
   per-request memo of a hub's tracks and of the viewer's trained tracks (program page
   18 → 11 queries, day page 13 → 8), Home's Continue card reuses the program cards
   (24 → 12 queries for someone mid-plan), unused CSS removed.
+- 2026-11-18 — **Trust and operations:** Admin → Content sync (dry run + Apply from a
+  browser; batched planning reads, background apply, status page, one run at a time,
+  failures recorded by exception type only). The 12- and 16-week programs start as
+  drafts for Nate to review as admin. **Privacy** and **Terms** pages (plain language,
+  linked in the footer and on sign-up, in the sitemap), **Download my data** (JSON of
+  the account and every per-viewer collection), **Delete my account** (needs the
+  password; removes the account, its data and reset tokens, signs out), **Forget this
+  device** for guests. **Error alert emails** to `ALERT_EMAIL`. Backups: Atlas free
+  clusters keep a daily snapshot (last four) once Backup is switched on in Atlas —
+  Nate's toggle. Draft exercises are reviewed in a Sheet ("Draft Exercise Review",
+  a Publish? checkbox per exercise); Claude flips the ticked ones to `published`.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
@@ -433,9 +461,9 @@ Next six sprints, in order:
    — awaiting Nate's review. ✅ Core batch (15 new, 82 total): holds, crunches, leg raises,
    Pallof press, woodchop, suitcase carry; the program's Plank/Side Plank lines now link
    to real exercises and Coach's Picks resolves fully.
-5. Accounts and trust — new design for auth/account; ✅ password reset (email, 2026-11-16);
-   delete account + export; privacy/terms; skippable training profile; error alerts;
-   backups confirmed.
+5. Accounts and trust — ✅ account page (2026-11-17); ✅ password reset (email, 2026-11-16);
+   ✅ delete account + export, privacy/terms, error alerts (2026-11-18); backups (Atlas
+   toggle, Nate); still to do: new sign-in/sign-up design, skippable training profile.
 6. Workouts + session mode — saved workouts (exercise + sets/reps/rest), "Save as workout",
    set logging, rest timer, swap exercise, history (guests and members).
 Alongside: full body (S3), cardio + mobility (S5), first 12 recipes (S6).
@@ -445,4 +473,5 @@ native/wearables research · paid tier.
 Standing decisions: workouts/session mode is the signature feature; programs and recipes
 are content-as-code (Claude drafts, Nate approves); form images are consistent illustrated
 figures (Nate, 2026-11-16) until real photos exist, never AI-generated photos; admin is
-frozen except the Coach's Picks screen; guests stay first-class; analytics cookie-free.
+frozen except the Coach's Picks and Content sync screens; guests stay first-class;
+analytics cookie-free.

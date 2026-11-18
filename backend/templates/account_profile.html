@@ -119,6 +119,26 @@
     </div>
   </section>
 
+  {# Your data #}
+  <section class="nfg-section" id="your-data">
+    {{ ui.section_head(None, "Your data") }}
+    <div class="nfg-acct-data">
+      <a class="nfg-act is-ghost" href="{{ url_for('account_export') }}" download>{{ ui.icon('download') }} Download my data</a>
+      <a class="nfg-section-link" href="{{ url_for('privacy_page') }}">How we use it</a>
+    </div>
+    <details class="nfg-acct-password nfg-acct-delete">
+      <summary>Delete my account</summary>
+      <form method="post" action="{{ url_for('account_delete') }}" class="nfg-acct-password-form"
+            onsubmit="return confirm('Delete your account and everything saved with it? This can\'t be undone.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <p class="nfg-prog-note">This removes your account, training progress, saved items and macros straight away. It can't be undone. Download your data first if you want a copy.</p>
+        <input type="text" name="username" value="{{ name }}" autocomplete="username" hidden>
+        <label class="nfg-field"><span>Your password</span><input type="password" name="password" autocomplete="current-password" required></label>
+        <button class="nfg-act is-danger" type="submit">Delete my account</button>
+      </form>
+    </details>
+  </section>
+
   {# Account #}
   <section class="nfg-section" id="password">
     <details class="nfg-acct-password">

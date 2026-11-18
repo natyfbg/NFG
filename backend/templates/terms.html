@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Terms – {{ app_name }}{% endblock %}
+{% block meta_description %}The terms for using {{ app_name }}: general fitness guidance, your account, and what you can expect from us.{% endblock %}
+{% block back_url %}{{ url_for('about_page') }}{% endblock %}
+
+{% block page %}
+<div class="nfg-discover nfg-legal">
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">Last updated {{ updated }}</div>
+    <h1 class="nfg-page-title">Terms</h1>
+    <p class="nfg-prog-summary">The short version: train sensibly, look after your account, and don't misuse the app.</p>
+  </header>
+
+  <section class="nfg-legal-section">
+    <h2>Fitness and nutrition guidance</h2>
+    <p>Exercises, programs, recipes and macro targets on {{ app_name }} are general guidance, not medical advice, and they aren't tailored to your health. Check with a doctor before starting a new training or eating plan, especially if you have an injury, a health condition or are pregnant. Stop if something hurts. You train at your own risk.</p>
+    <p>Calorie and macro numbers are estimates worked out from standard formulas and typical food values. Your body may respond differently.</p>
+  </section>
+
+  <section class="nfg-legal-section">
+    <h2>Your account</h2>
+    <p>Keep your password to yourself. You're responsible for what happens under your account. You can download your data or delete your account at any time from your account page. We may close accounts that abuse the service.</p>
+  </section>
+
+  <section class="nfg-legal-section">
+    <h2>Using {{ app_name }}</h2>
+    <p>Use it for your own training. Don't try to break, overload or scrape the site, get into other people's accounts, or copy its content to republish. Exercise demo videos belong to their creators on YouTube.</p>
+  </section>
+
+  <section class="nfg-legal-section">
+    <h2>The service</h2>
+    <p>{{ app_name }} is provided as it is. We work to keep it running and your data safe, but we can't promise it will always be available or error-free. Features may change. As far as the law allows, we aren't liable for indirect losses from using the app.</p>
+  </section>
+
+  <section class="nfg-legal-section">
+    <h2>Changes</h2>
+    <p>If these terms change in a way that matters, we'll update this page and the date at the top.{% if contact_email %} Questions: <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.{% endif %}</p>
+  </section>
+
+  <p class="nfg-legal-links"><a href="{{ url_for('privacy_page') }}">Privacy</a> · <a href="{{ url_for('about_page') }}">About {{ app_name }}</a></p>
+</div>
+{% endblock %}
