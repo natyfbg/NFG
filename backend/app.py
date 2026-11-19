@@ -477,9 +477,9 @@ def _log_request(resp):
 
 
 def _member_oid() -> Optional[ObjectId]:
-    """The signed-in member's user id (None for guests and the admin)."""
-    if not getattr(current_user, "is_authenticated", False) or getattr(
-        current_user, "is_admin", False
+    """The signed-in member's user id (None for guests and the backup admin login)."""
+    if not getattr(current_user, "is_authenticated", False) or not getattr(
+        current_user, "is_member", False
     ):
         return None
     oid = getattr(current_user, "user_oid", None)
@@ -586,6 +586,22 @@ if ADMIN_PASSWORD_HASH and ADMIN_PASSWORD_HASH.count("$") < 2:
     )
 
 
+# Member accounts with admin rights: anyone signed in with their normal account whose email
+# is listed here (comma-separated, Render env) can open /admin too, keeping their own
+# workouts and progress, and a forgotten password is reset by email. The username/password
+# admin login above (/login) stays as a backup. Only list an email that already has an
+# account: sign-up doesn't verify email ownership.
+def _parse_admin_emails(raw: Optional[str]) -> frozenset:
+    return frozenset(e.strip().lower() for e in (raw or "").split(",") if e.strip())
+
+
+ADMIN_EMAILS = _parse_admin_emails(os.getenv("ADMIN_EMAILS"))
+
+
+def _is_admin_email(email) -> bool:
+    return bool(email) and str(email).strip().lower() in ADMIN_EMAILS
+
+
 def _hosted_config_problems(
     is_hosted: bool, secret_key: str, admin_password_hash: str
 ) -> List[str]:
@@ -624,15 +640,18 @@ class User(UserMixin):
         role: str = "member",
         user_oid: Optional[str] = None,
         username: Optional[str] = None,
+        admin: bool = False,
     ):
         self.id = user_id
-        self.role = role
+        self.role = role  # "admin" = the backup /login identity, "member" = an account
         self.user_oid = user_oid
         self.username = username
+        self.admin = admin  # a member whose email is in ADMIN_EMAILS
 
     @property
     def is_admin(self) -> bool:
-        return self.role == "admin"
+        """May open /admin and see drafts. Use is_member for "has an account"."""
+        return self.role == "admin" or self.admin
 
     @property
     def is_member(self) -> bool:
@@ -660,6 +679,7 @@ def load_user(user_id):
                 role="member",
                 user_oid=str(doc.get("_id")),
                 username=doc.get("username"),
+                admin=_is_admin_email(doc.get("email_lower") or doc.get("email")),
             )
     return None
 
@@ -696,7 +716,7 @@ def _check_admin_credentials(username: str, password: str) -> bool:
 def _member_owner_key() -> Optional[str]:
     if not getattr(current_user, "is_authenticated", False):
         return None
-    if getattr(current_user, "is_admin", False):
+    if not getattr(current_user, "is_member", False):  # the backup admin login has no data
         return None
     oid = getattr(current_user, "user_oid", None)
     if not oid:
@@ -5654,13 +5674,11 @@ def logout():
 
 @app.route("/account/register", methods=["GET", "POST"])
 def account_register():
-    if getattr(current_user, "is_authenticated", False) and not getattr(
-        current_user, "is_admin", False
+    if getattr(current_user, "is_authenticated", False) and getattr(
+        current_user, "is_member", False
     ):
         return redirect(url_for("account_profile"))
-    if getattr(current_user, "is_authenticated", False) and getattr(
-        current_user, "is_admin", False
-    ):
+    if getattr(current_user, "is_authenticated", False):  # the backup admin login
         return redirect(url_for("admin_index"))
 
     if request.method == "POST":
@@ -5722,13 +5740,11 @@ def account_register():
 
 @app.route("/account/login", methods=["GET", "POST"])
 def account_login():
-    if getattr(current_user, "is_authenticated", False) and not getattr(
-        current_user, "is_admin", False
+    if getattr(current_user, "is_authenticated", False) and getattr(
+        current_user, "is_member", False
     ):
         return redirect(url_for("account_profile"))
-    if getattr(current_user, "is_authenticated", False) and getattr(
-        current_user, "is_admin", False
-    ):
+    if getattr(current_user, "is_authenticated", False):  # the backup admin login
         return redirect(url_for("admin_index"))
 
     if request.method == "POST":
@@ -5787,7 +5803,7 @@ def account_login():
 def account_logout():
     if not getattr(current_user, "is_authenticated", False):
         return redirect(url_for("account_login"))
-    if getattr(current_user, "is_admin", False):
+    if not getattr(current_user, "is_member", False):
         return redirect(url_for("admin_index"))
     logout_user()
     flash("Signed out.", "success")
@@ -6150,7 +6166,7 @@ def account_profile():
     if not getattr(current_user, "is_authenticated", False):
         return redirect(url_for("account_login", next=request.path))
 
-    if getattr(current_user, "is_admin", False):
+    if not getattr(current_user, "is_member", False):
         return redirect(url_for("admin_index"))
 
     owner_key = _member_owner_key()

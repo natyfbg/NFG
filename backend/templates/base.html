@@ -123,10 +123,10 @@
              data-bs-toggle="collapse" data-bs-target="#topSearchDrawer" aria-controls="topSearchDrawer"
              aria-expanded="false" aria-label="Search">{{ ui.icon('search') }}</a>
           {% if current_user.is_authenticated %}
-            {% if current_user.is_admin %}
-              <a class="nfg-pill{% if ep in admin_eps %} is-active{% endif %}" href="{{ url_for('admin_index') }}">Admin</a>
-            {% else %}
+            {% if current_user.is_member %}
               <a class="nfg-iconbtn{% if ep in account_eps %} is-active{% endif %}" href="{{ url_for('account_profile') }}" aria-label="Your account" title="Your account">{{ ui.icon('person-circle') }}</a>
+            {% else %}
+              <a class="nfg-pill{% if ep in admin_eps %} is-active{% endif %}" href="{{ url_for('admin_index') }}">Admin</a>
             {% endif %}
           {% else %}
             <a class="nfg-pill is-quiet{% if ep == 'account_login' %} is-active{% endif %}" href="{{ url_for('account_login') }}">Sign in</a>
@@ -155,7 +155,7 @@
               </form>
               <div class="nfg-menu-sep" role="separator"></div>
               {% if current_user.is_authenticated %}
-                {% if current_user.is_admin %}
+                {% if not current_user.is_member %}
                   <a class="dropdown-item nfg-menu-link" href="{{ url_for('admin_index') }}">{{ ui.icon('gear') }} Admin</a>
                   <form action="{{ url_for('logout') }}" method="post" class="m-0">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -163,6 +163,7 @@
                   </form>
                 {% else %}
                   <a class="dropdown-item nfg-menu-link{% if ep in account_eps %} is-active{% endif %}" href="{{ url_for('account_profile') }}">{{ ui.icon('person-circle') }} Your account</a>
+                  {% if current_user.is_admin %}<a class="dropdown-item nfg-menu-link{% if ep in admin_eps %} is-active{% endif %}" href="{{ url_for('admin_index') }}">{{ ui.icon('gear') }} Admin</a>{% endif %}
                   <form action="{{ url_for('account_logout') }}" method="post" class="m-0">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="dropdown-item nfg-menu-link" type="submit">{{ ui.icon('box-arrow-right') }} Sign out</button>
