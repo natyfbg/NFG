@@ -79,7 +79,7 @@
             </label>
           {% endfor %}
         </div>
-        <button class="nfg-btn nfg-session-go" type="submit">Show exercises</button>
+        <button class="nfg-btn nfg-session-go" type="submit">Build a workout</button>
       </form>
       <script type="application/json" id="sessionIndex">{{ session_index | tojson }}</script>
     {% endif %}
@@ -140,8 +140,8 @@
       var n = index.filter(function (groups) {
         return groups.some(function (g) { return picked.indexOf(g) !== -1; });
       }).length;
-      button.disabled = false;
-      button.textContent = 'Show ' + n + ' exercise' + (n === 1 ? '' : 's');
+      button.disabled = n === 0;
+      button.textContent = n ? 'Build a workout' : 'Nothing here for these yet';
     }
     form.addEventListener('change', update);
     update();

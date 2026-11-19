@@ -210,3 +210,29 @@
     <button class="nfg-act is-ghost nfg-save-workout" type="submit" aria-label="Save as a workout">{{ icon('journal-check') }} Save</button>
   </form>
 {% endmacro %}
+
+{# One-line progress chart (built by nutrition.line_chart): area, line, a tooltip on
+   every point, the last value labelled. Same look as the macros charts. #}
+{% macro progress_chart(c, label, suffix="") %}
+  {% set line = c.lines[0] %}
+  <svg class="nfg-chart is-small" viewBox="0 0 {{ c.width }} {{ c.height }}" role="img" aria-label="{{ label }}">
+    {% for t in c.ticks %}
+      <line class="nfg-chart-grid" x1="{{ c.left }}" x2="{{ c.right }}" y1="{{ t.y }}" y2="{{ t.y }}"></line>
+      <text class="nfg-chart-tick" x="{{ c.left - 6 }}" y="{{ t.y + 3 }}" text-anchor="end">{{ t.label }}</text>
+    {% endfor %}
+    <path class="nfg-chart-area" d="{{ line.area }}"></path>
+    <path class="nfg-chart-line" d="{{ line.path }}"></path>
+    {% for pt in line.points %}
+      <g class="nfg-chart-pt">
+        <circle class="nfg-chart-dot is-pt" cx="{{ pt.x }}" cy="{{ pt.y }}" r="3"></circle>
+        <circle class="nfg-chart-hitdot" cx="{{ pt.x }}" cy="{{ pt.y }}" r="9"></circle>
+        <title>{{ pt.label }}: {{ pt.value }}{{ suffix }}</title>
+      </g>
+    {% endfor %}
+    <circle class="nfg-chart-dot" cx="{{ line.last.x }}" cy="{{ line.last.y }}" r="4.5"></circle>
+    <text class="nfg-chart-end" x="{{ line.last.x + 8 }}" y="{{ line.last.label_y + 4 }}">{{ line.last.value }}{{ suffix }}</text>
+    {% for xl in c.x_labels %}
+      <text class="nfg-chart-x" x="{{ xl.x }}" y="{{ c.label_y }}" text-anchor="{{ xl.anchor }}">{{ xl.label }}</text>
+    {% endfor %}
+  </svg>
+{% endmacro %}

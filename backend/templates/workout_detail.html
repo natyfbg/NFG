@@ -50,6 +50,11 @@
           {{ ui.start_workout(train_key, train_fields, "Log your sets", variant="is-ghost") }}
           <a class="nfg-act is-ghost" href="{{ url_for('train_add_menu', slug=w.slug) }}">{{ ui.icon('plus-lg') }} Add to workout</a>
         </div>
+        {% if history %}
+          <a class="nfg-ex-last" href="#your-history">{{ ui.icon('clock-history') }}
+            <span>Last time{% if history.last_date %} ({{ history.last_date }}){% endif %}: <b>{{ history.last_text }}</b>{% if history.best_text and history.count > 1 %} · best <b>{{ history.best_text }}</b>{% endif %}</span>
+          </a>
+        {% endif %}
       {% endif %}
     </header>
 
@@ -93,6 +98,31 @@
 
     <div class="nfg-ex-info">
       {% if w.info %}<p class="nfg-ex-summary">{{ w.info }}</p>{% endif %}
+
+      {% if history %}
+        <section class="nfg-ex-history" id="your-history" aria-labelledby="historyTitle">
+          <h2 class="nfg-form-title" id="historyTitle">Your history <small>{{ history.count }} workout{{ 's' if history.count != 1 }}</small></h2>
+          <div class="nfg-train-stats nfg-ex-history-stats">
+            <span><b>{{ history.best_text }}</b><small>best set{% if history.best_date %} · {{ history.best_date }}{% endif %}</small></span>
+            {% if history.e1rm %}<span><b>{{ history.e1rm }}</b><small>estimated one-rep max</small></span>{% endif %}
+          </div>
+          {% if history.chart %}
+            <h3 class="nfg-chart-title">{{ history.metric }} <small>per workout</small></h3>
+            {{ ui.progress_chart(history.chart, history.metric ~ " per workout, last " ~ history['values']|length ~ " workouts", history.chart_suffix) }}
+          {% endif %}
+          <details class="nfg-chart-table">
+            <summary>Every workout</summary>
+            <table>
+              <thead><tr><th>Day</th><th>Sets</th></tr></thead>
+              <tbody>
+                {% for e in history.entries %}
+                  <tr><td><a href="{{ url_for('train_history_detail', session_id=e.session_id) }}">{{ e.date }}</a></td><td>{{ e.sets }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </details>
+        </section>
+      {% endif %}
 
       {% if form_steps %}
         <section class="nfg-form" aria-labelledby="formTitle">
