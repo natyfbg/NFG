@@ -145,6 +145,41 @@ def _local_date_label(value: str) -> str:
     return day.strftime("%a %d %b").replace(" 0", " ")
 
 
+def viewer_units(db, owner: str) -> str:
+    """lb or kg: the `nfg_units` cookie, else the macros profile's units, else lb."""
+    chosen = request.cookies.get(UNITS_COOKIE)
+    if chosen in tr.UNITS:
+        return chosen
+    profile = db.macro_profiles.find_one({"viewer_id": owner}, {"units": 1}) if owner else None
+    return tr.norm_units((profile or {}).get("units"))
+
+
+def exercise_history(db, owner: str, slug: str) -> Optional[dict]:
+    """The viewer's history with one exercise for its page (None if never logged):
+    last time, best set, the chart and the last workouts. One indexed query."""
+    if not owner or not slug:
+        return None
+    sessions = (
+        db.training_sessions.find(
+            {"viewer_id": owner, "status": "done", "items.slug": slug},
+            {"items": 1, "local_date": 1, "finished_at": 1},
+        )
+        .sort("finished_at", -1)
+        .limit(40)
+    )
+    units = viewer_units(db, owner)
+    summary = tr.exercise_summary(tr.exercise_log(sessions, slug), units)
+    if summary and len(summary["values"]) >= 2:
+        unit = summary["unit"]
+
+        def fmt(v: float) -> str:
+            return tr.show_number(v)
+
+        summary["chart"] = nutrition.line_chart([summary["values"]], summary["labels"], fmt)
+        summary["chart_suffix"] = f" {unit}"
+    return summary
+
+
 # -----------------------------------------------------------------------------
 # Routes
 # -----------------------------------------------------------------------------
@@ -172,12 +207,7 @@ def register(
     saved_items = saved_items or (lambda owner: {"exercises": [], "programs": []})
 
     def units() -> str:
-        chosen = request.cookies.get(UNITS_COOKIE)
-        if chosen in tr.UNITS:
-            return chosen
-        key = owner_key()
-        profile = db.macro_profiles.find_one({"viewer_id": key}, {"units": 1}) if key else None
-        return tr.norm_units((profile or {}).get("units"))
+        return viewer_units(db, owner_key())
 
     def wants_json() -> bool:
         return "application/json" in (request.headers.get("Accept") or "")
@@ -430,9 +460,24 @@ def register(
             flash("Nothing was logged, so there was nothing to save.", "info")
             return redirect(source_url(doc, url_for("train_index")))
         now = utcnow()
+        slugs = [it.get("slug") for it in doc.get("items") or [] if it.get("slug")]
+        previous = (
+            db.training_sessions.find(
+                {
+                    "viewer_id": owner,
+                    "status": "done",
+                    "items.slug": {"$in": slugs},
+                    "_id": {"$ne": doc["_id"]},
+                },
+                {"items.slug": 1, "items.rows": 1},
+            ).limit(400)
+            if slugs
+            else []
+        )
+        prs = tr.personal_bests(doc.get("items") or [], previous)
         db.training_sessions.update_one(
             {"_id": doc["_id"], "status": "active"},
-            {"$set": {"status": "done", "finished_at": now, "updated_at": now}},
+            {"$set": {"status": "done", "finished_at": now, "updated_at": now, "prs": prs}},
         )
         source = doc.get("source") or {}
         if source.get("kind") == "saved" and source.get("id"):
@@ -578,9 +623,14 @@ def register(
                 sets=[tr.show_row(r, item.get("kind") or "weight_reps", u) for r in rows],
             )
             (done_items if rows else skipped).append(view)
+        prs = doc.get("prs") or []
+        pr_slugs = {p.get("slug") for p in prs}
+        for view in done_items:
+            view["is_pr"] = view.get("slug") in pr_slugs
         return render_template(
             "train_history_detail.html",
             workout=doc,
+            prs=[tr.pr_text(p, u) for p in prs],
             info=entry(doc, u),
             items=done_items,
             skipped=skipped,

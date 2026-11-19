@@ -603,3 +603,193 @@ def swap_items(items: List[dict], index: int, new_item: dict) -> List[dict]:
     out[index] = dict(old, rows=done, sets_target=len(done))
     out.insert(index + 1, new_item)
     return out
+
+
+# -----------------------------------------------------------------------------
+# Progress: an exercise's history, its bests, and personal bests in a workout
+# -----------------------------------------------------------------------------
+METRIC_LABELS = {
+    "weight_reps": "Heaviest set",
+    "reps": "Most reps in a set",
+    "seconds": "Longest hold",
+    "minutes": "Longest",
+}
+CHART_POINTS = 12
+
+
+def epley(kg: float, reps: int) -> float:
+    """Estimated one-rep max (Epley). One rep is the weight itself."""
+    return kg * (1 + reps / 30) if reps and reps > 1 else kg
+
+
+def _weighted(rows: Iterable[dict]) -> List[dict]:
+    return [r for r in rows if r.get("weight_kg") is not None and r.get("reps")]
+
+
+def best_set(rows: List[dict], kind: str) -> Optional[dict]:
+    """The best done set: heaviest (then more reps) for weighted lifts, else the most
+    reps, the longest hold or the longest cardio."""
+    rows = [r for r in rows if r.get("done", True)]
+    if not rows:
+        return None
+    if kind == "minutes":
+        return max(rows, key=lambda r: r.get("minutes") or 0)
+    if kind == "seconds":
+        return max(rows, key=lambda r: r.get("seconds") or 0)
+    weighted = _weighted(rows) if kind == "weight_reps" else []
+    if weighted:
+        return max(weighted, key=lambda r: (r["weight_kg"], r["reps"]))
+    return max(rows, key=lambda r: r.get("reps") or 0)
+
+
+def top_value(rows: List[dict], kind: str) -> Optional[float]:
+    """One number per workout for the chart (in kg for weights)."""
+    best = best_set(rows, kind)
+    if not best:
+        return None
+    if kind == "minutes":
+        return float(best.get("minutes") or 0)
+    if kind == "seconds":
+        return float(best.get("seconds") or 0)
+    if best.get("weight_kg") is not None:
+        return float(best["weight_kg"])
+    return float(best.get("reps") or 0)
+
+
+def exercise_log(sessions: Iterable[dict], slug: str) -> List[dict]:
+    """Each finished workout that logged `slug`: date, kind and the done sets.
+    `sessions` come newest first; so does the result."""
+    out = []
+    for sess in sessions:
+        for item in sess.get("items") or []:
+            if item.get("slug") != slug:
+                continue
+            rows = done_rows(item)
+            if rows:
+                out.append(
+                    {
+                        "date": sess.get("local_date") or "",
+                        "finished_at": sess.get("finished_at"),
+                        "kind": item.get("kind") or "weight_reps",
+                        "rows": rows,
+                        "session_id": str(sess.get("_id") or ""),
+                    }
+                )
+            break
+    return out
+
+
+def _date_label(value: str, fmt: str = "%a %d %b") -> str:
+    try:
+        return dt.date.fromisoformat(value).strftime(fmt).replace(" 0", " ")
+    except (ValueError, TypeError):
+        return ""
+
+
+def exercise_summary(log: List[dict], units: str) -> Optional[dict]:
+    """What the exercise page shows: last time, best set, and the chart values."""
+    if not log:
+        return None
+    kind = log[0]["kind"]
+    same_kind = [e for e in log if e["kind"] == kind]
+    last = log[0]
+    every = [r for e in same_kind for r in e["rows"]]
+    best = best_set(every, kind)
+    best_entry = next((e for e in same_kind if best in e["rows"]), None)
+    weighted = _weighted(every) if kind == "weight_reps" else []
+    max_e1rm = max((epley(r["weight_kg"], r["reps"]) for r in weighted), default=0)
+    points = [(e["date"], top_value(e["rows"], kind)) for e in reversed(same_kind[:CHART_POINTS])]
+    points = [(d, v) for d, v in points if v is not None]
+    by_weight = kind == "weight_reps" and bool(weighted)
+    to_unit = (lambda kg: from_kg(kg, units)) if by_weight else (lambda v: v)
+    return {
+        "kind": kind,
+        "count": len(log),
+        "last_date": _date_label(last["date"]),
+        "last_text": last_time_text({"kind": kind}, last["rows"], units),
+        "best_text": show_row(best, kind, units) if best else "",
+        "best_date": _date_label(best_entry["date"]) if best_entry else "",
+        "e1rm": (f"{show_weight(max_e1rm, units)} {unit_label(units)}" if max_e1rm else ""),
+        "metric": METRIC_LABELS[
+            "weight_reps" if by_weight else ("reps" if kind == "weight_reps" else kind)
+        ],
+        "unit": (
+            unit_label(units) if by_weight else {"seconds": "s", "minutes": "min"}.get(kind, "reps")
+        ),
+        "values": [round(to_unit(v), 1) for _, v in points],
+        "labels": [_date_label(d, "%d %b") for d, _ in points],
+        "entries": [
+            {
+                "date": _date_label(e["date"]),
+                "sets": ", ".join(show_row(r, e["kind"], units) for r in e["rows"]),
+                "session_id": e["session_id"],
+            }
+            for e in log[:CHART_POINTS]
+        ],
+    }
+
+
+PR_TYPES = {
+    "heaviest": "Heaviest yet",
+    "best_set": "Best set yet",
+    "reps": "Most reps yet",
+    "seconds": "Longest hold yet",
+    "minutes": "Longest yet",
+}
+
+
+def personal_bests(items: Iterable[dict], previous: Iterable[dict]) -> List[dict]:
+    """New bests in a finished workout, against every earlier workout. An exercise
+    logged for the first time sets no "best" (there's nothing to beat yet)."""
+    before: Dict[str, List[dict]] = {}
+    for sess in previous:
+        for it in sess.get("items") or []:
+            if it.get("slug"):
+                before.setdefault(it["slug"], []).extend(done_rows(it))
+    out = []
+    for item in items:
+        slug, kind = item.get("slug"), item.get("kind") or "weight_reps"
+        rows = done_rows(item)
+        old = before.get(slug or "")
+        if not slug or not rows or not old:
+            continue
+        pr = None
+        if kind == "weight_reps" and _weighted(rows):
+            cur, prev = _weighted(rows), _weighted(old)
+            top = max(cur, key=lambda r: (r["weight_kg"], r["reps"]))
+            if not prev or top["weight_kg"] > max(r["weight_kg"] for r in prev) + 1e-6:
+                pr = ("heaviest", top)
+            else:
+                best = max(cur, key=lambda r: epley(r["weight_kg"], r["reps"]))
+                if (
+                    epley(best["weight_kg"], best["reps"])
+                    > max(epley(r["weight_kg"], r["reps"]) for r in prev) + 1e-6
+                ):
+                    pr = ("best_set", best)
+        elif kind in ("weight_reps", "reps"):
+            top = max(rows, key=lambda r: r.get("reps") or 0)
+            if (top.get("reps") or 0) > max((r.get("reps") or 0) for r in old):
+                pr = ("reps", top)
+        elif kind in ("seconds", "minutes"):
+            top = max(rows, key=lambda r: r.get(kind) or 0)
+            if (top.get(kind) or 0) > max((r.get(kind) or 0) for r in old):
+                pr = (kind, top)
+        if pr:
+            row = {
+                k: v for k, v in pr[1].items() if k in ("weight_kg", "reps", "seconds", "minutes")
+            }
+            out.append(
+                {
+                    "slug": slug,
+                    "name": item.get("name") or "",
+                    "kind": kind,
+                    "type": pr[0],
+                    "row": row,
+                }
+            )
+    return out
+
+
+def pr_text(pr: dict, units: str) -> str:
+    label = PR_TYPES.get(pr.get("type"), "New best")
+    return f"{label}: {show_row(pr.get('row') or {}, pr.get('kind') or 'weight_reps', units)}"

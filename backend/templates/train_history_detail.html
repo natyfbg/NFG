@@ -14,6 +14,13 @@
     {% if source.kind == 'program' and source.label %}<p class="nfg-prog-summary">{{ source.label }}{% if just_done %} · day marked complete{% endif %}</p>{% endif %}
   </header>
 
+  {% if prs %}
+    <section class="nfg-train-prs" aria-label="New bests">
+      <h2 class="nfg-train-prs-title">{{ ui.icon('trophy') }} New best{{ 's' if prs|length != 1 }}</h2>
+      <ul>{% for p in prs %}<li>{{ p }}</li>{% endfor %}</ul>
+    </section>
+  {% endif %}
+
   <div class="nfg-train-stats">
     <span><b>{{ info.duration }}</b><small>time</small></span>
     <span><b>{{ info.summary.sets }}</b><small>set{{ 's' if info.summary.sets != 1 }}</small></span>
@@ -31,10 +38,11 @@
     {% endif %}
   {% endif %}
 
+
   <ol class="nfg-train-log">
     {% for it in items %}
       <li style="--row: {{ it.color }};">
-        <span class="nfg-train-log-name">{% if it.doc %}<a href="{{ url_for('workout_detail', slug=it.slug) }}">{{ it.name }}</a>{% else %}{{ it.name }}{% endif %}</span>
+        <span class="nfg-train-log-name">{% if it.doc %}<a href="{{ url_for('workout_detail', slug=it.slug) }}">{{ it.name }}</a>{% else %}{{ it.name }}{% endif %}{% if it.is_pr %} <span class="nfg-pr-badge">{{ ui.icon('trophy') }} Best</span>{% endif %}</span>
         <ol class="nfg-train-log-sets">
           {% for s in it.sets %}<li><span>{{ loop.index }}</span>{{ s }}</li>{% endfor %}
         </ol>

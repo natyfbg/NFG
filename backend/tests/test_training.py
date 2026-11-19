@@ -273,3 +273,97 @@ def test_swap_items_keeps_logged_sets():
     ]
     assert len(out[0]["rows"]) == 1 and out[0]["rows"][0]["done"]
     assert len(out[1]["rows"]) == 2
+
+
+# ---- phase 3: history, bests, personal bests ---------------------------------------
+def _sess(date, rows, slug="barbell-bench-press", kind="weight_reps", sid="x"):
+    return {"_id": sid, "local_date": date, "items": [{"slug": slug, "kind": kind, "rows": rows}]}
+
+
+def _w(kg, reps):
+    return {"done": True, "weight_kg": kg, "reps": reps}
+
+
+def test_best_set_top_value_and_epley():
+    rows = [_w(60, 10), _w(70, 5), _w(70, 6), {"done": False}]
+    assert tr.best_set(rows, "weight_reps") == _w(70, 6)
+    assert tr.top_value(rows, "weight_reps") == 70
+    assert (
+        tr.best_set([{"done": True, "reps": 12}, {"done": True, "reps": 15}], "reps")["reps"] == 15
+    )
+    assert (
+        tr.top_value([{"done": True, "seconds": 40}, {"done": True, "seconds": 55}], "seconds")
+        == 55
+    )
+    assert tr.top_value([{"done": True, "reps": 8}], "weight_reps") == 8  # no weights logged
+    assert tr.epley(100, 1) == 100 and round(tr.epley(100, 10), 1) == 133.3
+    assert tr.best_set([], "reps") is None
+
+
+def test_exercise_summary():
+    sessions = [
+        _sess("2026-11-18", [_w(72.5, 6), _w(72.5, 5)], sid="c"),
+        _sess("2026-11-15", [_w(70, 8), _w(70, 7)], sid="b"),
+        {
+            "_id": "z",
+            "local_date": "2026-11-14",
+            "items": [{"slug": "other", "rows": [_w(10, 10)]}],
+        },
+        _sess("2026-11-12", [_w(60, 10), {"done": False}], sid="a"),
+    ]
+    log = tr.exercise_log(sessions, "barbell-bench-press")
+    assert [e["session_id"] for e in log] == ["c", "b", "a"] and len(log[2]["rows"]) == 1
+    s = tr.exercise_summary(log, "metric")
+    assert s["count"] == 3 and s["last_date"] == "Wed 18 Nov" and s["last_text"] == "72.5 kg × 6, 5"
+    assert s["best_text"] == "72.5 kg × 6" and s["best_date"] == "Wed 18 Nov"
+    assert s["metric"] == "Heaviest set" and s["unit"] == "kg"
+    assert s["values"] == [60, 70, 72.5] and s["labels"] == ["12 Nov", "15 Nov", "18 Nov"]
+    assert s["e1rm"] == "88.7 kg"  # 70 × 8 (88.7) beats 72.5 × 6 (87.0)
+    assert tr.exercise_summary([], "metric") is None
+    holds = tr.exercise_summary(
+        tr.exercise_log(
+            [_sess("2026-11-18", [{"done": True, "seconds": 45}], kind="seconds")],
+            "barbell-bench-press",
+        ),
+        "metric",
+    )
+    assert holds["metric"] == "Longest hold" and holds["unit"] == "s" and holds["e1rm"] == ""
+
+
+def test_personal_bests():
+    previous = [_sess("2026-11-15", [_w(70, 8), _w(70, 7)])]
+    heavier = [
+        {
+            "slug": "barbell-bench-press",
+            "name": "Bench",
+            "kind": "weight_reps",
+            "rows": [_w(72.5, 5), _w(70, 6)],
+        }
+    ]
+    prs = tr.personal_bests(heavier, previous)
+    assert prs == [
+        {
+            "slug": "barbell-bench-press",
+            "name": "Bench",
+            "kind": "weight_reps",
+            "type": "heaviest",
+            "row": {"weight_kg": 72.5, "reps": 5},
+        }
+    ]
+    assert tr.pr_text(prs[0], "metric") == "Heaviest yet: 72.5 kg × 5"
+    more_reps = [dict(heavier[0], rows=[_w(70, 10)])]
+    assert tr.personal_bests(more_reps, previous)[0]["type"] == "best_set"
+    same = [dict(heavier[0], rows=[_w(70, 8)])]
+    assert tr.personal_bests(same, previous) == []
+    first_time = [dict(heavier[0], slug="new-one")]
+    assert tr.personal_bests(first_time, previous) == []  # nothing to beat yet
+    hold_prev = [_sess("d", [{"done": True, "seconds": 40}], slug="plank", kind="seconds")]
+    hold = [
+        {
+            "slug": "plank",
+            "name": "Plank",
+            "kind": "seconds",
+            "rows": [{"done": True, "seconds": 50}],
+        }
+    ]
+    assert tr.pr_text(tr.personal_bests(hold, hold_prev)[0], "metric") == "Longest hold yet: 50 s"

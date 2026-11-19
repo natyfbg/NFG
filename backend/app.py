@@ -5316,6 +5316,7 @@ def workout_detail(slug):
         is_saved=is_saved,
         train_key=_train_key("exercise", w.get("slug")),
         train_fields=[("from", "exercise"), ("slug", w.get("slug"))],
+        history=training_routes.exercise_history(db, _progress_owner_key(), w.get("slug")),
     )
 
 

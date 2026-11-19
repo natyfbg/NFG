@@ -37,14 +37,14 @@
   --bottom-nav-gap: 12px;
   --swipe-rail-h: 34px;
   /* Mustard like the Join pill (--gold-a → --gold-b), slightly see-through; dark ink on it.
-     The active tab is a black pill. Same in both themes. */
+     The active tab is a soft light pill (Nate, 2026-11-18). Same in both themes. */
   --bottom-nav-bg-top: rgba(214,184,90,.9);
   --bottom-nav-bg: rgba(184,149,47,.9);
   --bottom-nav-border: rgba(255,246,214,.38);
   --bottom-nav-muted: rgba(23,23,20,.78);
-  --bottom-nav-active: #171714;
-  --bottom-nav-active-fg: #f7f3e6;
-  --bottom-nav-indicator: #E2C76C;
+  --bottom-nav-active: rgba(250,248,242,.94);   /* soft light pill on the mustard */
+  --bottom-nav-active-fg: #171714;
+  --bottom-nav-indicator: #9B7D21;
   --bottom-nav-ink: #121512;
   --bottom-nav-accent: #9de84d;   /* green highlight on dark cards (workout in progress) */
   /* Floating dark bars over the page (rest timer) */
@@ -1142,7 +1142,7 @@ body{
 .bottom-nav a.active{
   color: var(--bottom-nav-active-fg);
   background: var(--bottom-nav-active);
-  box-shadow: 0 6px 18px rgba(0,0,0,.22);
+  box-shadow: 0 4px 14px rgba(90,70,10,.18);
 }
 .bottom-nav a.is-pending{
   color: var(--bottom-nav-ink);
@@ -5292,3 +5292,23 @@ body:has(.offcanvas.showing) .mobile-swipe-rail{ z-index: 1030; }
 .nfg-add-row{ width: 100%; text-align: left; grid-template-columns: auto minmax(0, 1fr); cursor: pointer; font: inherit; color: var(--app-text); }
 .nfg-add-icon{ width: 36px; height: 36px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--app-surface-inset); color: var(--app-text); }
 .nfg-add-icon .nfg-icon{ width: 1rem; height: 1rem; }
+
+
+/* Session mode, phase 3: history on exercise pages, new bests */
+.nfg-ex-last{ display: inline-flex; align-items: flex-start; gap: .4rem; margin-top: .7rem; font-size: .85rem; color: var(--app-text-muted); text-decoration: none; line-height: 1.35; }
+.nfg-ex-last .nfg-icon{ width: 1em; height: 1em; flex: none; margin-top: .15em; }
+.nfg-ex-last b{ color: var(--app-text); font-weight: 750; }
+.nfg-ex-last:hover{ color: var(--app-text); }
+.nfg-ex-history{ display: grid; gap: .6rem; margin: .2rem 0 1.4rem; scroll-margin-top: 4.5rem; }
+.nfg-ex-history .nfg-form-title{ margin: 0; }
+.nfg-ex-history .nfg-form-title small{ font-size: .8rem; font-weight: 700; color: var(--app-text-soft); margin-left: .3rem; }
+.nfg-ex-history-stats{ margin: 0; }
+.nfg-ex-history-stats small{ line-height: 1.25; }
+.nfg-chart-dot.is-pt{ stroke-width: 1.5; }
+.nfg-chart-table td a{ color: inherit; }
+.nfg-train-prs{ padding: .9rem 1rem; margin-bottom: 1rem; border-radius: var(--radius-md); background: var(--app-accent-soft); border: 1px solid color-mix(in srgb, var(--app-accent) 45%, transparent); }
+.nfg-train-prs-title{ display: flex; align-items: center; gap: .45rem; margin: 0 0 .35rem; font-size: 1rem; font-weight: 800; }
+.nfg-train-prs-title .nfg-icon{ width: 1.1rem; height: 1.1rem; color: var(--app-accent-strong); }
+.nfg-train-prs ul{ margin: 0; padding-left: 1.6rem; display: grid; gap: .15rem; font-size: .9rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.nfg-pr-badge{ display: inline-flex; align-items: center; gap: .25rem; margin-left: .35rem; padding: .1rem .5rem; border-radius: 999px; background: var(--app-accent-soft); color: var(--app-accent-strong); font-size: .72rem; font-weight: 800; vertical-align: middle; }
+.nfg-pr-badge .nfg-icon{ width: .85em; height: .85em; }

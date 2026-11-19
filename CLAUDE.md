@@ -173,6 +173,13 @@ as committer, so GitHub shows them as Verified.
   progress, to a saved workout, or swap with `swap=<item key>`); `tr.alternatives`
   ranks swaps: same name family ("Bench Press"), same movement, same loading, level.
   A swap keeps sets already logged on the old exercise (`swap_items`).
+  Progress comes from `training_sessions` itself, no extra collection:
+  `training_routes.exercise_history` (one indexed query, last 40 workouts) feeds the
+  exercise page; `tr.personal_bests` runs once at Finish and the result is stored on the
+  workout as `prs` (so a summary never changes later). Bests: heaviest weight, else a
+  better set by estimated one-rep max (Epley), most reps, longest hold / cardio; an
+  exercise logged for the first time sets no best. The chart reuses
+  `nutrition.line_chart` and `ui.progress_chart`.
 - `backend/taxonomy.py` is the single source of truth for muscle/group/equipment/
   movement keys. Keys are stored in the DB and content files — never rename one
   without a migration. It has no Flask/Mongo imports on purpose.
@@ -483,10 +490,17 @@ as committer, so GitHub shows them as Verified.
   is logged). Exercise pages: **Add to workout** (in progress, a saved one, or new).
   The Saved tab lists saved exercises and programs (the "Saved page in the menu" item).
   Nate (same day): **bottom nav is mustard** like the Join pill (`--bottom-nav-bg-top` →
-  `--bottom-nav-bg`, 90% opaque, dark labels, black active pill with a gold marker);
+  `--bottom-nav-bg`, 90% opaque, dark labels; the active tab is a soft light pill with
+  a deep-gold marker, after Nate found the black pill too heavy);
   the rest timer keeps its own dark `--float-*` style. Home's muscle chips are
   `.nfg-mixchip` (they used `.nfg-pick`, the Mixer's outlined chip, and showed a double
   ring).
+- 2026-11-18 — **Session mode, phase 3:** exercise pages show "Last time … · best …"
+  under the buttons and a **Your history** section (best set, estimated one-rep max,
+  a chart of the heaviest set / most reps / longest hold per workout over the last 12,
+  and every workout as a table with links). The summary opens with **New best** when a
+  workout beats every earlier one, and marks those exercises. Home's mix button says
+  "Build a workout" (the Mixer builds one now). Active nav tab: soft light pill (Nate).
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
@@ -517,8 +531,8 @@ Next six sprints, in order:
    ✅ phase 1 (2026-11-18): Start from program day / session / Mixer / exercise, set
    logging, rest timer, units, finish + summary, program-day completion, Home resume card,
    My workouts history. ✅ Phase 2 (2026-11-18): saved workouts, "Save as workout",
-   empty workout + add exercise, swap mid-workout, Saved tab. Phase 3: last time / best
-   on exercise pages, personal bests, per-exercise chart.
+   empty workout + add exercise, swap mid-workout, Saved tab. ✅ Phase 3 (2026-11-18):
+   last time / best / chart on exercise pages, personal bests in the summary.
 Alongside: full body (S3), cardio + mobility (S5), first 12 recipes (S6).
 Later, each gated: progress analytics · PWA · personalised Home · nutrition · AI coach ·
 native/wearables research · paid tier.

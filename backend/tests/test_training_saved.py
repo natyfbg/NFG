@@ -245,3 +245,43 @@ def test_saved_workouts_follow_the_account(synced, client, make_user):
     assert export["saved_workouts"] and export["saved_workouts"][0]["title"] == "Push"
     client.post("/account/delete", data={"password": "password123"})
     assert synced.db.saved_workouts.count_documents({}) == 0
+
+
+# ---- phase 3: exercise history, bests -----------------------------------------------
+def _bench_workout(client, db, weight, reps):
+    client.post("/train/start", data={"from": "exercise", "slug": "barbell-bench-press"})
+    item = _active(db)["items"][0]
+    _log(client, item, 0, weight=weight, reps=reps)
+    return client.post("/train/finish")
+
+
+def test_exercise_page_shows_your_history(synced, client, nfg_app):
+    page = client.get("/workouts/barbell-bench-press").get_data(as_text=True)
+    assert "Your history" not in page and "Last time" not in page
+    _bench_workout(client, synced.db, 135, 8)
+    page = client.get("/workouts/barbell-bench-press").get_data(as_text=True)
+    assert "Your history" in page and "Last time" in page and "135 lb × 8" in page
+    assert 'class="nfg-chart is-small"' not in page  # one workout: no chart yet
+    _bench_workout(client, synced.db, 145, 5)
+    page = client.get("/workouts/barbell-bench-press").get_data(as_text=True)
+    assert 'class="nfg-chart is-small"' in page and "Heaviest set" in page
+    assert "best <b>145 lb × 5</b>" in page and "Every workout" in page
+    # Someone else sees nothing of it.
+    assert "Your history" not in nfg_app.app.test_client().get(
+        "/workouts/barbell-bench-press"
+    ).get_data(as_text=True)
+
+
+def test_new_bests_on_the_summary(synced, client):
+    first = _bench_workout(client, synced.db, 135, 8)
+    assert "New best" not in client.get(first.headers["Location"]).get_data(as_text=True)
+    second = _bench_workout(client, synced.db, 145, 5)
+    html = client.get(second.headers["Location"]).get_data(as_text=True)
+    assert "New best" in html and "Heaviest yet: 145 lb × 5" in html and "nfg-pr-badge" in html
+    third = _bench_workout(client, synced.db, 135, 6)
+    assert "New best" not in client.get(third.headers["Location"]).get_data(as_text=True)
+
+
+def test_home_mix_button_says_build(synced, client):
+    html = client.get("/").get_data(as_text=True)
+    assert "Build a workout" in html and "Show exercises" not in html
