@@ -190,6 +190,12 @@ as committer, so GitHub shows them as Verified.
   on a member's `users.training_profile` (`_sync_training_profile`), so it follows the
   account; sign-in brings it back (`onboarding.apply_profile`). Goals map to programs to
   recommend (first one that's published) and to the macros calculator's starting goal.
+- **Two ways to be admin:** the backup `/login` identity (`ADMIN_USERNAME` +
+  `ADMIN_PASSWORD_HASH`, `role="admin"`, no account or data behind it) and members whose
+  email is in `ADMIN_EMAILS` (Render env; `User.admin`, decided on every request in
+  `load_user`, so removing an email takes effect at once). `is_admin` = may open /admin and
+  see drafts; `is_member` = has an account. Code that means "has an account / has data"
+  must check `is_member` (or `user_oid`), never `not is_admin`.
 - Auth pages (sign in, create account, forgot, reset, admin `/login`) extend
   `auth_base.html` (card layout, `password()` macro with a show/hide toggle). Error
   re-renders pass back what was typed (`form`, `identity`), never passwords.
@@ -543,6 +549,12 @@ as committer, so GitHub shows them as Verified.
   `overflow-x: clip`. Bottom nav active tab: warm gray pill, lighter at the top
   (`--bottom-nav-active-top` → `--bottom-nav-active`, cream label, light-gold marker),
   after the light pill read too light.
+- 2026-11-18 — **Admin on your own account** (Nate kept forgetting the admin password):
+  `ADMIN_EMAILS` lists account emails that get admin when they sign in normally; they keep
+  their workouts and progress, see Admin in the menu, and reset a forgotten password by
+  email. The username/password admin login stays as a backup (hosted start-up still
+  requires `ADMIN_PASSWORD_HASH`). Only list emails that already have an account, since
+  sign-up doesn't verify email ownership.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 

@@ -23,6 +23,8 @@ services:
         value: admin
       - key: ADMIN_PASSWORD_HASH
         sync: false   # set in Render dashboard
+      - key: ADMIN_EMAILS
+        sync: false   # emails of existing accounts that also get admin (comma-separated)
       - key: UPLOAD_FOLDER
         value: /app/static/uploads
       - key: CANONICAL_HOST
