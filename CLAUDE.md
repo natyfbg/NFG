@@ -389,8 +389,9 @@ as committer, so GitHub shows them as Verified.
   Equipment · Level · more) on the Exercises page and browse. Muscles are
   multi-select and combine with AND (`group=a&group=b`: every group worked, at least
   one as a main target; exercises with more of them as main targets first); equipment
-  and level are one each. The panel (`_filterpanel.html`) is a bottom sheet on phones
-  and a popup under the bar on desktop, with a live "Show N exercises" count from
+  and level are one each. The panel (`_filterpanel.html`; 2026-11-18: chip dropdowns, see
+  below) is a bottom sheet on phones and a popup under the bar on desktop, with a live
+  "Show N exercises" count from
   `/workouts/browse/count` and a one-tap "Remove <last muscle>" when nothing matches.
   All 12 equipment tiles show on the Exercises page.
 - 2026-11-17 — **Revamp phase 3 (sessions + Mixer):** one builder for both,
@@ -522,6 +523,18 @@ as committer, so GitHub shows them as Verified.
   switch. Members' profiles are saved on the account and come back on sign-in.
   Fixed on the way: a picked option in list-style choices (the macros calculator's
   activity list, the new setup page) had its text vanish (same colour as the card).
+- 2026-11-18 — **Exercise filters, calmer** (Nate: "cleaner, less crowded"): the filter bar
+  is the Filters button (sliders, shows how many filters are on) | Muscles · Equipment ·
+  Level. Each chip opens a **dropdown with only that filter** under the bar
+  (`data-mode` on `#filterPanel`): Equipment and Level are lists that apply on tap, Muscles
+  is a chip grid (colour dot, filled with the group colour when picked) with Clear and the
+  live "Show N". The bar stays tappable while a dropdown is open (switch dropdowns, tap the
+  same chip or anywhere outside to close). The Filters button opens everything: Muscles and
+  Equipment fold into rows showing the current choice, Level / Training at / Sort are
+  switches. Same form, field names and count endpoint; without JS every chip opens the full
+  panel at `#filterPanel`. Bottom nav active tab: warm gray pill, lighter at the top
+  (`--bottom-nav-active-top` → `--bottom-nav-active`, cream label, light-gold marker),
+  after the light pill read too light.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 

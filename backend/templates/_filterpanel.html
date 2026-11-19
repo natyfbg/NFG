@@ -1,66 +1,91 @@
-{# Filter panel: a bottom sheet on phones, a popup under the filter bar on desktop.
-   Muscles combine (AND), equipment and level are one each. The button shows the live
-   result count. Lives in {% block overlays %} (fixed positioning). #}
+{# Exercise filters. One form, two ways in:
+   - Muscles / Equipment / Level chips open a dropdown under the filter bar with just
+     that filter (data-mode="muscles|equipment|level"). Equipment and level apply on
+     tap; muscles combine (AND), so they get a "Show N" button.
+   - The Filters button opens everything (data-mode="all"): Muscles and Equipment fold
+     into rows that show the current choice; Level, Training at and Sort are switches.
+   Without JS the chips jump to #filterPanel (CSS :target) in the "all" layout.
+   Lives in {% block overlays %} (fixed positioning). #}
 {% import "_components.html" as ui %}
-<div class="nfg-fpanel" id="filterPanel" data-filter-panel data-no-page-swipe role="dialog"
+{% set group_labels = group_choices|selectattr('key', 'in', f_groups)|map(attribute='label')|list %}
+<div class="nfg-fpanel" id="filterPanel" data-filter-panel data-mode="all" data-no-page-swipe role="dialog"
      aria-modal="true" aria-labelledby="filterPanelTitle">
   <a class="nfg-fpanel-backdrop" href="#" data-filter-close aria-label="Close filters" tabindex="-1"></a>
   <form class="nfg-fpanel-card" method="get" action="{{ url_for('workouts_browse') }}" data-filter-form
         data-count-url="{{ url_for('workouts_browse_count') }}">
     <div class="nfg-sheet-head">
-      <h2 class="nfg-sheet-title" id="filterPanelTitle">Filters</h2>
+      <h2 class="nfg-sheet-title" id="filterPanelTitle" data-filter-title>Filters</h2>
       <a class="nfg-iconbtn is-dark" href="#" data-filter-close aria-label="Close">{{ ui.icon('x-lg') }}</a>
     </div>
     <div class="nfg-sheet-body">
       {% if f_q %}<input type="hidden" name="q" value="{{ f_q }}">{% endif %}
 
-      <fieldset class="nfg-fieldset" data-filter-section="muscles">
-        <legend>Muscles <span class="nfg-legend-note">pick one or more · shows exercises that work all of them</span></legend>
-        <div class="nfg-choices">
-          {% for g in group_choices %}
-            <label class="nfg-choice is-group" style="--group-color: {{ g.color }};">
-              <input type="checkbox" name="group" value="{{ g.key }}" data-label="{{ g.label }}" {% if g.key in f_groups %}checked{% endif %}>
-              <span>{{ g.label }}</span>
-            </label>
-          {% endfor %}
-        </div>
+      <fieldset class="nfg-fsec" data-filter-section="muscles">
+        <legend class="visually-hidden">Muscles</legend>
+        <details class="nfg-fsec-fold" data-fold>
+          <summary class="nfg-fsec-row">
+            <span class="nfg-fsec-name">Muscles</span>
+            <span class="nfg-fsec-value" data-filter-value="muscles">{% if group_labels|length > 2 %}{{ group_labels|length }} picked{% elif group_labels %}{{ group_labels|join(', ') }}{% else %}Any{% endif %}</span>
+            {{ ui.icon('chevron-down') }}
+          </summary>
+          <div class="nfg-fsec-body">
+            <p class="nfg-fsec-note">Exercises that work all the muscles you pick.</p>
+            <div class="nfg-fopts is-chips">
+              {% for g in group_choices %}
+                <label class="nfg-fopt is-group" style="--group-color: {{ g.color }};">
+                  <input type="checkbox" name="group" value="{{ g.key }}" data-label="{{ g.label }}" {% if g.key in f_groups %}checked{% endif %}>
+                  <span><i class="nfg-fopt-dot" aria-hidden="true"></i>{{ g.label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+        </details>
       </fieldset>
 
-      <fieldset class="nfg-fieldset" data-filter-section="equipment">
-        <legend>Equipment</legend>
-        <div class="nfg-choices">
-          <label class="nfg-choice"><input type="radio" name="eq" value="" {% if not f_eq %}checked{% endif %}><span>Any</span></label>
-          {% for key, label in equipment_choices %}
-            <label class="nfg-choice"><input type="radio" name="eq" value="{{ key }}" {% if key == f_eq %}checked{% endif %}><span>{{ label }}</span></label>
-          {% endfor %}
-        </div>
+      <fieldset class="nfg-fsec" data-filter-section="equipment">
+        <legend class="visually-hidden">Equipment</legend>
+        <details class="nfg-fsec-fold" data-fold>
+          <summary class="nfg-fsec-row">
+            <span class="nfg-fsec-name">Equipment</span>
+            <span class="nfg-fsec-value" data-filter-value="equipment">{{ eq_label or 'Any' }}</span>
+            {{ ui.icon('chevron-down') }}
+          </summary>
+          <div class="nfg-fsec-body">
+            <div class="nfg-fopts is-list">
+              <label class="nfg-fopt"><input type="radio" name="eq" value="" data-label="Any" {% if not f_eq %}checked{% endif %}><span>Any equipment {{ ui.icon('check-lg') }}</span></label>
+              {% for key, label in equipment_choices %}
+                <label class="nfg-fopt"><input type="radio" name="eq" value="{{ key }}" data-label="{{ label }}" {% if key == f_eq %}checked{% endif %}><span>{{ label }} {{ ui.icon('check-lg') }}</span></label>
+              {% endfor %}
+            </div>
+          </div>
+        </details>
       </fieldset>
 
-      <fieldset class="nfg-fieldset" data-filter-section="level">
-        <legend>Level</legend>
-        <div class="nfg-choices">
-          <label class="nfg-choice"><input type="radio" name="level" value="" {% if not f_level %}checked{% endif %}><span>Any</span></label>
+      <fieldset class="nfg-fsec is-inline" data-filter-section="level">
+        <legend class="nfg-fsec-name">Level</legend>
+        <div class="nfg-fopts is-seg">
+          <label class="nfg-fopt"><input type="radio" name="level" value="" {% if not f_level %}checked{% endif %}><span><span>Any<span class="nfg-fopt-x"> level</span></span> {{ ui.icon('check-lg') }}</span></label>
           {% for label in level_choices %}
-            <label class="nfg-choice"><input type="radio" name="level" value="{{ label }}" {% if label == f_level %}checked{% endif %}><span>{{ label }}</span></label>
+            <label class="nfg-fopt"><input type="radio" name="level" value="{{ label }}" {% if label == f_level %}checked{% endif %}><span>{{ label }} {{ ui.icon('check-lg') }}</span></label>
           {% endfor %}
         </div>
       </fieldset>
 
-      <fieldset class="nfg-fieldset" data-filter-section="more">
-        <legend>Training at</legend>
-        <div class="nfg-choices">
-          <label class="nfg-choice"><input type="radio" name="env" value="" {% if not f_env %}checked{% endif %}><span>Anywhere</span></label>
+      <fieldset class="nfg-fsec is-inline" data-filter-section="more">
+        <legend class="nfg-fsec-name">Training at</legend>
+        <div class="nfg-fopts is-seg">
+          <label class="nfg-fopt"><input type="radio" name="env" value="" {% if not f_env %}checked{% endif %}><span>Anywhere</span></label>
           {% for key, e in environments.items() %}
-            <label class="nfg-choice"><input type="radio" name="env" value="{{ key }}" {% if key == f_env %}checked{% endif %}><span>{{ e.label }}</span></label>
+            <label class="nfg-fopt"><input type="radio" name="env" value="{{ key }}" {% if key == f_env %}checked{% endif %}><span>{{ e.label }}</span></label>
           {% endfor %}
         </div>
       </fieldset>
 
-      <fieldset class="nfg-fieldset">
-        <legend>Sort</legend>
-        <div class="nfg-choices">
+      <fieldset class="nfg-fsec is-inline" data-filter-section="sort">
+        <legend class="nfg-fsec-name">Sort</legend>
+        <div class="nfg-fopts is-seg">
           {% for key, label in sorts.items() %}
-            <label class="nfg-choice"><input type="radio" name="sort" value="{{ key }}" {% if key == f_sort %}checked{% endif %}><span>{{ label }}</span></label>
+            <label class="nfg-fopt"><input type="radio" name="sort" value="{{ key }}" {% if key == f_sort %}checked{% endif %}><span>{{ label }}</span></label>
           {% endfor %}
         </div>
       </fieldset>
@@ -70,59 +95,85 @@
       <button type="button" class="nfg-linkbtn" data-filter-drop>Remove <span data-filter-drop-label></span></button>
     </p>
     <div class="nfg-sheet-foot">
-      <a class="nfg-btn is-ghost" href="{{ url_for('workouts_browse') }}">Clear all</a>
+      <a class="nfg-btn is-ghost" href="{{ url_for('workouts_browse') }}" data-filter-clear>Clear all</a>
       <button class="nfg-btn" type="submit" data-filter-submit>Show results</button>
     </div>
   </form>
 </div>
 <script>
-  /* Filter panel: open at a section, live result count, close on Escape/backdrop. */
+  /* Filters: a dropdown per chip, or everything from the Filters button. Live result
+     count; single-choice dropdowns apply on tap; Escape / backdrop close. */
   (function () {
     var panel = document.querySelector('[data-filter-panel]');
     if (!panel) return;
     var form = panel.querySelector('[data-filter-form]');
     var submit = panel.querySelector('[data-filter-submit]');
+    var clear = panel.querySelector('[data-filter-clear]');
+    var title = panel.querySelector('[data-filter-title]');
     var empty = panel.querySelector('[data-filter-empty]');
     var dropBtn = panel.querySelector('[data-filter-drop]');
     var dropLabel = panel.querySelector('[data-filter-drop-label]');
     var bar = document.querySelector('[data-filterbar]');
+    var TITLES = { all: 'Filters', muscles: 'Muscles', equipment: 'Equipment', level: 'Level' };
     var picked = [];  /* muscles in the order they were ticked */
     form.querySelectorAll('input[name="group"]:checked').forEach(function (i) { picked.push(i.value); });
     var lastOpener = null, timer = null, seq = 0;
 
-    function place() {
-      if (!bar || window.matchMedia('(max-width: 767.98px)').matches) {
-        panel.style.removeProperty('--panel-top');
-        return;
+    function mode() { return panel.dataset.mode || 'all'; }
+    function phone() { return window.matchMedia('(max-width: 767.98px)').matches; }
+    function place(opener) {
+      var top = bar ? Math.max(64, Math.round(bar.getBoundingClientRect().bottom + 6)) : 120;
+      panel.style.setProperty('--panel-top', top + 'px');
+      if (mode() !== 'all' && opener && !phone()) {
+        var r = opener.getBoundingClientRect();
+        var width = Math.min(mode() === 'muscles' ? 440 : 300, window.innerWidth - 32);
+        var left = Math.min(Math.max(16, r.left), window.innerWidth - width - 16);
+        panel.style.setProperty('--panel-left', left + 'px');
+        panel.style.setProperty('--panel-width', width + 'px');
       }
-      var r = bar.getBoundingClientRect();
-      panel.style.setProperty('--panel-top', Math.max(64, Math.round(r.bottom + 6)) + 'px');
     }
-    function open(section, opener) {
+    function summarise() {
+      var groups = Array.prototype.map.call(form.querySelectorAll('input[name="group"]:checked'), function (i) { return i.dataset.label; });
+      var m = panel.querySelector('[data-filter-value="muscles"]');
+      if (m) m.textContent = groups.length > 2 ? groups.length + ' picked' : (groups.join(', ') || 'Any');
+      var eq = form.querySelector('input[name="eq"]:checked');
+      var e = panel.querySelector('[data-filter-value="equipment"]');
+      if (e && eq) e.textContent = eq.dataset.label || 'Any';
+    }
+    function expanded(opener) {
+      document.querySelectorAll('[data-filter-open]').forEach(function (a) {
+        a.setAttribute('aria-expanded', a === opener ? 'true' : 'false');
+      });
+    }
+    function open(which, opener) {
       lastOpener = opener || null;
-      place();
+      expanded(opener);
+      panel.dataset.mode = TITLES[which] ? which : 'all';
+      title.textContent = TITLES[mode()];
+      clear.textContent = mode() === 'all' ? 'Clear all' : 'Clear';
+      form.querySelectorAll('[data-fold]').forEach(function (d) {
+        d.open = mode() !== 'all' && d.closest('[data-filter-section]').dataset.filterSection === mode();
+      });
+      place(opener);
       panel.classList.add('is-open');
       document.documentElement.classList.add('nfg-fpanel-open');
-      var target = section && form.querySelector('[data-filter-section="' + section + '"]');
       var body = form.querySelector('.nfg-sheet-body');
-      if (body) {
-        body.scrollTop = 0;
-        if (target && body.scrollHeight > body.clientHeight + 4) {
-          var top = target.getBoundingClientRect().top - body.getBoundingClientRect().top;
-          body.scrollTop = Math.max(0, top - 8);
-        }
-      }
-      form.querySelectorAll('.is-focus').forEach(function (el) { el.classList.remove('is-focus'); });
-      if (target) target.classList.add('is-focus');
-      var first = (target || form).querySelector('input:checked, input');
+      if (body) body.scrollTop = 0;
+      var first = mode() === 'all'
+        ? form.querySelector('summary')
+        : form.querySelector('[data-filter-section="' + mode() + '"] input:checked, [data-filter-section="' + mode() + '"] input');
       if (first) first.focus({ preventScroll: true });
       refresh();
     }
     function close() {
+      expanded(null);
       panel.classList.remove('is-open');
       document.documentElement.classList.remove('nfg-fpanel-open');
       if (location.hash === '#filterPanel') history.replaceState(null, '', location.pathname + location.search);
       if (lastOpener) lastOpener.focus({ preventScroll: true });
+    }
+    function send() {
+      if (form.requestSubmit) form.requestSubmit(); else { form.dispatchEvent(new Event('submit')); form.submit(); }
     }
     function refresh() {
       clearTimeout(timer);
@@ -149,7 +200,17 @@
       }, 120);
     }
     document.querySelectorAll('[data-filter-open]').forEach(function (a) {
-      a.addEventListener('click', function (e) { e.preventDefault(); open(a.dataset.filterOpen, a); });
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (panel.classList.contains('is-open') && lastOpener === a) close();  /* same chip: toggle */
+        else open(a.dataset.filterOpen, a);
+      });
+    });
+    /* A dropdown leaves the page above it live: a tap anywhere outside it closes it. */
+    document.addEventListener('pointerdown', function (e) {
+      if (!panel.classList.contains('is-open') || mode() === 'all') return;
+      if (e.target.closest('.nfg-fpanel, [data-filter-open]')) return;  /* its own backdrop closes it too */
+      close();
     });
     panel.querySelectorAll('[data-filter-close]').forEach(function (a) {
       a.addEventListener('click', function (e) { e.preventDefault(); close(); });
@@ -157,18 +218,32 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && panel.classList.contains('is-open')) close();
     });
+    clear.addEventListener('click', function (e) {
+      if (mode() === 'all') return;  /* the link clears everything */
+      e.preventDefault();
+      var section = form.querySelector('[data-filter-section="' + mode() + '"]');
+      section.querySelectorAll('input[type="checkbox"]').forEach(function (i) { i.checked = false; });
+      var any = section.querySelector('input[type="radio"][value=""]');
+      if (any) any.checked = true;
+      picked = [];
+      send();
+    });
     form.addEventListener('change', function (e) {
       var t = e.target;
       if (t.name === 'group') {
         picked = picked.filter(function (v) { return v !== t.value; });
         if (t.checked) picked.push(t.value);
       }
+      summarise();
+      /* A dropdown with one choice applies it straight away. */
+      if ((mode() === 'equipment' && t.name === 'eq') || (mode() === 'level' && t.name === 'level')) { send(); return; }
       refresh();
     });
     dropBtn.addEventListener('click', function () {
       var key = picked.pop();
       var box = key && form.querySelector('input[name="group"][value="' + key + '"]');
       if (box) box.checked = false;
+      summarise();
       refresh();
     });
     form.addEventListener('submit', function () {
@@ -178,10 +253,10 @@
         if (i.name === 'sort' && i.value === 'name') i.disabled = true;
       });
     });
-    window.addEventListener('resize', function () { if (panel.classList.contains('is-open')) place(); });
+    window.addEventListener('resize', function () { if (panel.classList.contains('is-open')) place(lastOpener); });
     window.addEventListener('pageshow', function () {
       form.querySelectorAll('input:disabled').forEach(function (i) { i.disabled = false; });
     });
-    if (location.hash === '#filterPanel') open(null, null);
+    if (location.hash === '#filterPanel') open('all', null);
   })();
 </script>
