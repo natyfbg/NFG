@@ -1,10 +1,11 @@
-{# Exercise filters. One form, two ways in:
-   - Muscles / Equipment / Level chips open a dropdown under the filter bar with just
-     that filter (data-mode="muscles|equipment|level"). Equipment and level apply on
-     tap; muscles combine (AND), so they get a "Show N" button.
-   - The Filters button opens everything (data-mode="all"): Muscles and Equipment fold
+{# Exercise filters. One form; every view drops down right under the filter buttons:
+   - Muscles / Equipment / Level chips show just that filter
+     (data-mode="muscles|equipment|level"). Equipment and level apply on tap; muscles
+     combine (AND), so they get a "Show N" button.
+   - The Filters button shows everything (data-mode="all"): Muscles and Equipment fold
      into rows that show the current choice; Level, Training at and Sort are switches.
-   Without JS the chips jump to #filterPanel (CSS :target) in the "all" layout.
+   If there isn't room below the buttons, the filter bar slides up to its sticky spot
+   first (and back on close). Without JS the chips jump to #filterPanel (CSS :target).
    Lives in {% block overlays %} (fixed positioning). #}
 {% import "_components.html" as ui %}
 {% set group_labels = group_choices|selectattr('key', 'in', f_groups)|map(attribute='label')|list %}
@@ -117,20 +118,36 @@
     var TITLES = { all: 'Filters', muscles: 'Muscles', equipment: 'Equipment', level: 'Level' };
     var picked = [];  /* muscles in the order they were ticked */
     form.querySelectorAll('input[name="group"]:checked').forEach(function (i) { picked.push(i.value); });
-    var lastOpener = null, timer = null, seq = 0;
+    var lastOpener = null, timer = null, seq = 0, savedScroll = null;
 
     function mode() { return panel.dataset.mode || 'all'; }
     function phone() { return window.matchMedia('(max-width: 767.98px)').matches; }
     function place(opener) {
-      var top = bar ? Math.max(64, Math.round(bar.getBoundingClientRect().bottom + 6)) : 120;
+      /* Right under the row of buttons (not under the active-filter chips below it). */
+      var anchor = (opener && opener.closest('.nfg-fchips')) || bar;
+      var top = anchor ? Math.max(64, Math.round(anchor.getBoundingClientRect().bottom + 8)) : 120;
       panel.style.setProperty('--panel-top', top + 'px');
-      if (mode() !== 'all' && opener && !phone()) {
-        var r = opener.getBoundingClientRect();
-        var width = Math.min(mode() === 'muscles' ? 440 : 300, window.innerWidth - 32);
+      if (!phone()) {
+        var r = (opener || anchor || document.body).getBoundingClientRect();
+        var want = mode() === 'all' ? 520 : (mode() === 'muscles' ? 440 : 300);
+        var width = Math.min(want, window.innerWidth - 32);
         var left = Math.min(Math.max(16, r.left), window.innerWidth - width - 16);
         panel.style.setProperty('--panel-left', left + 'px');
         panel.style.setProperty('--panel-width', width + 'px');
       }
+      return top;
+    }
+    function makeRoom(opener, top) {
+      /* Not enough room below the buttons? Slide the filter bar up to its sticky spot. */
+      if (!bar) return;
+      var body = form.querySelector('.nfg-sheet-body');
+      var need = Math.min(form.offsetHeight - body.clientHeight + body.scrollHeight, 560);
+      if (window.innerHeight - top - 12 >= need) return;
+      var gap = bar.getBoundingClientRect().top - (parseFloat(getComputedStyle(bar).top) || 0);
+      if (gap < 1) return;
+      if (savedScroll === null) savedScroll = window.scrollY;
+      window.scrollTo({ top: window.scrollY + gap, behavior: 'instant' });
+      place(opener);
     }
     function summarise() {
       var groups = Array.prototype.map.call(form.querySelectorAll('input[name="group"]:checked'), function (i) { return i.dataset.label; });
@@ -154,8 +171,8 @@
       form.querySelectorAll('[data-fold]').forEach(function (d) {
         d.open = mode() !== 'all' && d.closest('[data-filter-section]').dataset.filterSection === mode();
       });
-      place(opener);
       panel.classList.add('is-open');
+      makeRoom(opener, place(opener));
       document.documentElement.classList.add('nfg-fpanel-open');
       var body = form.querySelector('.nfg-sheet-body');
       if (body) body.scrollTop = 0;
@@ -169,6 +186,7 @@
       expanded(null);
       panel.classList.remove('is-open');
       document.documentElement.classList.remove('nfg-fpanel-open');
+      if (savedScroll !== null) { window.scrollTo({ top: savedScroll, behavior: 'instant' }); savedScroll = null; }
       if (location.hash === '#filterPanel') history.replaceState(null, '', location.pathname + location.search);
       if (lastOpener) lastOpener.focus({ preventScroll: true });
     }
@@ -206,9 +224,9 @@
         else open(a.dataset.filterOpen, a);
       });
     });
-    /* A dropdown leaves the page above it live: a tap anywhere outside it closes it. */
+    /* The dropdown leaves the page above it live: a tap anywhere outside it closes it. */
     document.addEventListener('pointerdown', function (e) {
-      if (!panel.classList.contains('is-open') || mode() === 'all') return;
+      if (!panel.classList.contains('is-open')) return;
       if (e.target.closest('.nfg-fpanel, [data-filter-open]')) return;  /* its own backdrop closes it too */
       close();
     });

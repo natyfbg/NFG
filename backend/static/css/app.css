@@ -151,8 +151,10 @@
 /* Basic page scaling */
 h1.page-title{ font-size: clamp(1.75rem, 2.5vw, 2.25rem); }
 
-/* Prevent horizontal jiggle on mobile */
-html, body{ overflow-x: hidden; }
+/* Prevent horizontal jiggle on mobile. `clip`, not `hidden`: hidden makes <body> a scroll
+   container, which silently stops every position: sticky (top bar, filter bar) from
+   sticking. Browsers without `clip` keep the `hidden` line. */
+html, body{ overflow-x: hidden; overflow-x: clip; }
 html{ background: var(--app-bg); }
 
 body{
@@ -2482,81 +2484,47 @@ html[data-nav-dir="prev"]::view-transition-new(root){ animation: nfgInLeft 260ms
   .nfg-filterbar .nfg-searchbar{ max-width: 560px; }
 }
 
-/* Filters. One form, two layouts (data-mode on .nfg-fpanel):
-   "all" (the Filters button): bottom sheet on phones, popup under the bar on desktop;
-     Muscles / Equipment fold into rows, Level / Training at / Sort are switches.
-   "muscles" | "equipment" | "level" (a chip): a dropdown under the filter bar with only
-     that filter; the bar stays tappable (switch dropdowns), the page below dims a little. */
-.nfg-fpanel{ position: fixed; inset: 0; z-index: 1100; display: none; }
+/* Filters: every view drops down right under the filter buttons (data-mode on
+   .nfg-fpanel). "all" (the Filters button): Muscles / Equipment fold into rows, Level /
+   Training at / Sort are switches. "muscles" | "equipment" | "level" (a chip): only that
+   filter. The bar above stays tappable (another chip switches, the same chip closes);
+   the page below dims a little. */
+.nfg-fpanel{ position: fixed; inset: 0; z-index: 1100; display: none; pointer-events: none; }
 .nfg-fpanel.is-open, .nfg-fpanel:target{ display: block; }
-.nfg-fpanel-backdrop{ position: absolute; inset: 0; background: rgba(0,0,0,.42); }
+.nfg-fpanel-backdrop{
+  position: absolute;
+  inset: var(--panel-top, 120px) 0 0 0;
+  background: rgba(0,0,0,.14);
+  pointer-events: auto;
+}
 .nfg-fpanel-card{
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  max-height: 86vh;
-  max-height: 86svh;
-  border-radius: 22px 22px 0 0;
-  background: var(--app-bg);
-  box-shadow: 0 -12px 40px rgba(0,0,0,.25);
-  animation: nfg-sheet-up .2s ease-out;
-}
-@keyframes nfg-sheet-up{ from{ transform: translateY(24px); opacity: .6; } to{ transform: none; opacity: 1; } }
-@keyframes nfg-pop-down{ from{ transform: translateY(-6px); opacity: 0; } to{ transform: none; opacity: 1; } }
-@media (min-width: 768px){
-  .nfg-fpanel-backdrop{ background: rgba(0,0,0,.18); }
-  .nfg-fpanel-card{
-    top: var(--panel-top, 120px);
-    bottom: auto;
-    left: 50%;
-    right: auto;
-    width: min(560px, calc(100vw - 2rem));
-    max-height: calc(100vh - var(--panel-top, 120px) - 24px);
-    transform: translateX(-50%);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--app-border);
-    box-shadow: 0 18px 48px rgba(0,0,0,.22);
-    animation: none;
-  }
-}
-html.nfg-fpanel-open{ overflow: hidden; }
-
-/* Dropdown (one filter) */
-.nfg-fpanel:not([data-mode="all"]){ pointer-events: none; }
-.nfg-fpanel:not([data-mode="all"]) .nfg-fpanel-backdrop{
   top: var(--panel-top, 120px);
-  background: rgba(0,0,0,.12);
-  pointer-events: auto;
-}
-.nfg-fpanel:not([data-mode="all"]) .nfg-fpanel-card{
-  pointer-events: auto;
-  top: var(--panel-top, 120px);
-  bottom: auto;
   left: 12px;
   right: 12px;
-  width: auto;
-  max-height: calc(100vh - var(--panel-top, 120px) - 16px);
-  max-height: calc(100svh - var(--panel-top, 120px) - 16px - env(safe-area-inset-bottom));
-  transform: none;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - var(--panel-top, 120px) - 12px);
+  max-height: calc(100svh - var(--panel-top, 120px) - 12px - env(safe-area-inset-bottom));
   border-radius: 18px;
   border: 1px solid var(--app-border);
   background: var(--app-surface-strong);
   box-shadow: 0 16px 36px rgba(0,0,0,.18);
+  pointer-events: auto;
   animation: nfg-pop-down .14s ease-out;
 }
+@keyframes nfg-pop-down{ from{ transform: translateY(-6px); opacity: 0; } to{ transform: none; opacity: 1; } }
 @media (min-width: 768px){
-  .nfg-fpanel:not([data-mode="all"]) .nfg-fpanel-card{
+  .nfg-fpanel-card{
     left: var(--panel-left, 16px);
     right: auto;
     width: var(--panel-width, 320px);
     max-height: calc(100vh - var(--panel-top, 120px) - 24px);
   }
 }
-@media (prefers-reduced-motion: reduce){ .nfg-fpanel-card, .nfg-fpanel:not([data-mode="all"]) .nfg-fpanel-card{ animation: none; } }
-.nfg-fpanel:not([data-mode="all"]) .nfg-sheet-head,
+@media (prefers-reduced-motion: reduce){ .nfg-fpanel-card{ animation: none; } }
+html.nfg-fpanel-open{ overflow: hidden; }
+.nfg-fpanel .nfg-sheet-head,
 .nfg-fpanel:not([data-mode="all"]) .nfg-fsec-row,
 .nfg-fpanel:not([data-mode="all"]) .nfg-fsec.is-inline > legend,
 .nfg-fpanel[data-mode="muscles"] .nfg-fsec:not([data-filter-section="muscles"]),
@@ -2564,19 +2532,18 @@ html.nfg-fpanel-open{ overflow: hidden; }
 .nfg-fpanel[data-mode="level"] .nfg-fsec:not([data-filter-section="level"]),
 .nfg-fpanel[data-mode="equipment"] .nfg-sheet-foot,
 .nfg-fpanel[data-mode="level"] .nfg-sheet-foot{ display: none; }
+
+/* Body, footer, sections */
+.nfg-fpanel .nfg-sheet-body{ padding: .15rem 1rem; }
 .nfg-fpanel:not([data-mode="all"]) .nfg-sheet-body{ padding: .35rem; }
 .nfg-fpanel[data-mode="muscles"] .nfg-sheet-body{ padding: .9rem .9rem .5rem; }
 .nfg-fpanel:not([data-mode="all"]) .nfg-fsec{ padding: 0; border: 0; }
 .nfg-fpanel:not([data-mode="all"]) .nfg-fsec-body{ padding: 0; }
-.nfg-fpanel:not([data-mode="all"]) .nfg-sheet-foot{ padding: .6rem .9rem .8rem; }
-
-/* Head, footer, sections */
-.nfg-fpanel .nfg-sheet-head{ align-items: center; padding: .85rem 1.1rem .25rem; }
-.nfg-fpanel .nfg-sheet-body{ padding: 0 1.1rem; }
-.nfg-fpanel .nfg-sheet-foot .nfg-btn{ height: 46px; padding: 0 1.1rem; font-size: .95rem; white-space: nowrap; }
+.nfg-fpanel .nfg-sheet-foot{ padding: .65rem 1rem .8rem; }
+.nfg-fpanel .nfg-sheet-foot .nfg-btn{ height: 44px; padding: 0 1.1rem; font-size: .95rem; white-space: nowrap; }
 .nfg-fpanel .nfg-sheet-foot [data-filter-clear]{ flex: 0 0 auto; }
 .nfg-fpanel:not([data-mode="all"]) .nfg-sheet-foot .nfg-btn{ height: 42px; }
-.nfg-fsec{ min-width: 0; margin: 0; padding: .8rem 0; border: 0; border-bottom: 1px solid var(--app-border); }
+.nfg-fsec{ min-width: 0; margin: 0; padding: .7rem 0; border: 0; border-bottom: 1px solid var(--app-border); }
 .nfg-fsec:last-child{ border-bottom: 0; }
 .nfg-fsec-row{ display: flex; align-items: center; gap: .6rem; min-height: 40px; cursor: pointer; list-style: none; }
 .nfg-fsec-row::-webkit-details-marker{ display: none; }
