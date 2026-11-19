@@ -179,3 +179,97 @@ def test_stale_rules():
     item["rows"][0] = {"done": True, "reps": 5, "at": t0 + dt.timedelta(minutes=20)}
     assert tr.has_logged(sess)
     assert tr.finished_at_for_stale(sess) == t0 + dt.timedelta(minutes=20)
+
+
+# ---- phase 2: saved workouts, editing, swaps --------------------------------------
+SQUAT = dict(
+    BENCH,
+    slug="barbell-back-squat",
+    name="Barbell Back Squat",
+    movement="squat",
+    primary_groups=["quads"],
+)
+DB_BENCH = dict(
+    BENCH,
+    slug="dumbbell-bench-press",
+    name="Dumbbell Bench Press",
+    equipment=["dumbbell", "bench"],
+    level="Beginner",
+)
+INCLINE = dict(
+    BENCH, slug="incline-push-up", name="Incline Push-Up", equipment=[], level="Beginner"
+)
+FLY = dict(
+    BENCH,
+    slug="cable-fly",
+    name="Cable Fly",
+    movement="isolation",
+    mechanics="isolation",
+    equipment=["cable"],
+)
+HOLD = dict(PLANK, primary_groups=["chest"], slug="chest-hold", name="Chest Hold")
+
+
+def test_saved_items_round_trip():
+    item = tr.make_item(BENCH, sets=4, reps="6–8", rest="2 min")
+    item["rows"].append({"done": False})  # five sets by the end
+    saved = tr.saved_item_from(item)
+    assert saved["sets"] == 5 and saved["reps"] == "6–8" and saved["kind"] == "weight_reps"
+    back = tr.items_from_saved({"items": [saved]}, {"barbell-bench-press": BENCH})
+    assert back[0]["slug"] == "barbell-bench-press" and len(back[0]["rows"]) == 5
+    assert back[0]["rest_seconds"] == 120
+    # The exercise is gone from the library: the snapshot stands.
+    gone = tr.items_from_saved({"items": [dict(saved, kind="reps")]}, {})
+    assert gone[0]["name"] == "Barbell Bench Press" and gone[0]["slug"] == ""
+    assert gone[0]["kind"] == "reps" and gone[0]["group"] == "chest"
+
+
+def test_editing_helpers():
+    assert tr.clean_title("  My   push  day ") == "My push day"
+    assert len(tr.clean_title("x" * 200)) == tr.TITLE_MAX
+    assert tr.clean_sets("5") == 5 and tr.clean_sets("40") == 12 and tr.clean_sets("x", 3) == 3
+    assert tr.clean_reps(" 8–12 ") == "8–12" and tr.clean_rest("90s") == "90s"
+    assert tr.clean_rest("forever") == ""
+    a, b, c = ({"key": k} for k in "abc")
+    assert [i["key"] for i in tr.move([a, b, c], "b", -1)] == ["b", "a", "c"]
+    assert [i["key"] for i in tr.move([a, b, c], "c", 1)] == ["a", "b", "c"]
+    assert tr.estimate_minutes([{"sets": 3, "rest": "90s"}]) > 5
+
+
+def test_alternatives_same_group_and_kind():
+    library = [BENCH, DB_BENCH, INCLINE, FLY, HOLD, SQUAT]
+    alts = tr.alternatives(BENCH, library, exclude=["incline-push-up"], level="intermediate")
+    slugs = [d["slug"] for d in alts]
+    assert "barbell-bench-press" not in slugs and "barbell-back-squat" not in slugs
+    assert "chest-hold" not in slugs and "incline-push-up" not in slugs
+    assert slugs[0] == "dumbbell-bench-press" and "cable-fly" in slugs  # same exercise first
+    # A weighted lift prefers weighted swaps over bodyweight ones of the same movement.
+    pushes = tr.alternatives(
+        BENCH,
+        [
+            PUSH_UP,
+            DB_BENCH,
+            dict(DB_BENCH, slug="smith-press", name="Smith Machine Press", equipment=["smith"]),
+        ],
+        level="intermediate",
+    )
+    assert [d["slug"] for d in pushes][-1] == "push-up"
+    assert tr.alternatives(None, library) == []
+
+
+def test_swap_items_keeps_logged_sets():
+    a = tr.make_item(BENCH, sets=3)
+    b = tr.make_item(SQUAT, sets=3)
+    new = tr.make_item(DB_BENCH, sets=3)
+    out = tr.swap_items([a, b], 0, new)
+    assert [i["slug"] for i in out] == ["dumbbell-bench-press", "barbell-back-squat"]
+    assert len(out[0]["rows"]) == 3 and out[0]["swapped_from"] == "Barbell Bench Press"
+    a["rows"][0] = {"done": True, "reps": 8, "weight_kg": 60}
+    out = tr.swap_items([a, b], 0, new)
+    assert [i["slug"] for i in out] == [
+        "barbell-bench-press",
+        "dumbbell-bench-press",
+        "barbell-back-squat",
+    ]
+    assert len(out[0]["rows"]) == 1 and out[0]["rows"][0]["done"]
+    assert len(out[1]["rows"]) == 2

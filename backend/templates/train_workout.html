@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+
+{% block title %}{{ saved.title }} – My workouts – {{ app_name }}{% endblock %}
+{% block back_url %}{{ url_for('train_index') }}{% endblock %}
+
+{% macro edit_form(action, key="") %}
+  <form method="post" action="{{ url_for('train_workout_edit', workout_id=wid) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="{{ action }}">
+    {% if key %}<input type="hidden" name="key" value="{{ key }}">{% endif %}
+    {{ caller() }}
+  </form>
+{% endmacro %}
+
+{% block page %}
+<div class="nfg-discover nfg-saved">
+  <a class="nfg-back" href="{{ url_for('train_index') }}">{{ ui.icon('chevron-left') }} My workouts</a>
+
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">Saved workout</div>
+    <h1 class="nfg-page-title">{{ saved.title }}</h1>
+    <div class="nfg-prog-facts">
+      <span>{{ items|length }} exercise{{ 's' if items|length != 1 }}</span>
+      {% if minutes %}<span>~{{ minutes }} min</span>{% endif %}
+    </div>
+  </header>
+
+  <details class="nfg-saved-rename">
+    <summary>Rename</summary>
+    {% call edit_form('rename') %}
+      <label class="nfg-field"><span>Name</span><input name="title" value="{{ saved.title }}" maxlength="60" required></label>
+      <button class="nfg-act is-ghost" type="submit">Save name</button>
+    {% endcall %}
+  </details>
+
+  {% if items %}
+    <div class="nfg-pday-start">{{ ui.start_workout(train_key, train_fields, "Start workout") }}</div>
+  {% endif %}
+
+  <ol class="nfg-saved-items">
+    {% for it in items %}
+      <li class="nfg-saved-item" id="it-{{ it.key }}" style="--row: {{ it.color }};">
+        <div class="nfg-saved-item-main">
+          <span class="nfg-tex-thumb">
+            {% if it.doc %}<img src="{{ ui.exercise_image(it.doc) }}" alt="" loading="lazy">{% endif %}
+            <span class="nfg-tex-n">{{ loop.index }}</span>
+          </span>
+          <span class="nfg-tex-body">
+            <span class="nfg-tex-name">{% if it.doc %}<a href="{{ url_for('workout_detail', slug=it.slug) }}">{{ it.name }}</a>{% else %}{{ it.name }}{% endif %}</span>
+            <span class="nfg-tex-meta"><span>{{ it.sets }} × {{ it.reps or 'reps' }}</span>{% if it.rest %}<span>Rest {{ it.rest }}</span>{% endif %}</span>
+          </span>
+          <span class="nfg-saved-tools">
+            {% call edit_form('up', it.key) %}<button class="nfg-saved-btn" type="submit" aria-label="Move {{ it.name }} up"{% if loop.first %} disabled{% endif %}>{{ ui.icon('chevron-down', 'is-up') }}</button>{% endcall %}
+            {% call edit_form('down', it.key) %}<button class="nfg-saved-btn" type="submit" aria-label="Move {{ it.name }} down"{% if loop.last %} disabled{% endif %}>{{ ui.icon('chevron-down') }}</button>{% endcall %}
+            {% call edit_form('remove', it.key) %}<button class="nfg-saved-btn is-remove" type="submit" aria-label="Remove {{ it.name }}">{{ ui.icon('x-lg') }}</button>{% endcall %}
+          </span>
+        </div>
+        <details class="nfg-saved-edit">
+          <summary>Sets, reps and rest</summary>
+          {% call edit_form('item', it.key) %}
+            <div class="nfg-saved-edit-fields">
+              <label class="nfg-field"><span>Sets</span><input name="sets" type="number" min="1" max="12" inputmode="numeric" value="{{ it.sets }}"></label>
+              <label class="nfg-field"><span>Reps</span><input name="reps" value="{{ it.reps }}" maxlength="24" placeholder="8–12"></label>
+              <label class="nfg-field"><span>Rest</span>
+                <select name="rest">
+                  {% for r in rest_options %}<option value="{{ r }}"{% if r == it.rest %} selected{% endif %}>{{ r or 'None' }}</option>{% endfor %}
+                </select>
+              </label>
+            </div>
+            <button class="nfg-act is-ghost" type="submit">Save</button>
+          {% endcall %}
+        </details>
+      </li>
+    {% endfor %}
+  </ol>
+
+  {% if items|length < max_items %}
+    <a class="nfg-act is-ghost nfg-saved-add" href="{{ url_for('train_pick', to=wid) }}">{{ ui.icon('plus-lg') }} Add exercise</a>
+  {% endif %}
+  {% if not items %}<p class="nfg-train-hint">Add the exercises you want, then set the sets, reps and rest for each.</p>{% endif %}
+
+  <form method="post" action="{{ url_for('train_workout_delete', workout_id=wid) }}" class="nfg-train-delete"
+        onsubmit="return confirm('Delete this saved workout? Your history keeps the times you did it.');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="nfg-tex-link is-danger" type="submit">{{ ui.icon('trash3') }} Delete this workout</button>
+  </form>
+</div>
+{% endblock %}

@@ -58,6 +58,7 @@
 
           <div class="nfg-tex-panel">
             {% if it.last_text %}<p class="nfg-tex-last">{{ ui.icon('clock-history') }} Last time: {{ it.last_text }}</p>{% endif %}
+            {% if it.swapped_from %}<p class="nfg-tex-note">{{ ui.icon('arrow-counterclockwise') }} Instead of {{ it.swapped_from }}</p>{% endif %}
             {% if it.note %}<p class="nfg-tex-note">{{ it.note }}</p>{% endif %}
 
             <div class="nfg-tsets is-{{ it.kind }}">
@@ -115,6 +116,14 @@
                   <button class="nfg-tex-link" type="submit">{{ ui.icon('dash-lg') }} Remove set</button>
                 </form>
               {% endif %}
+              <a class="nfg-tex-link" href="{{ url_for('train_pick', to='session', swap=it.key) }}">{{ ui.icon('shuffle') }} Swap</a>
+              {% if not it.done %}
+                <form method="post" action="{{ url_for('train_remove_item') }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="key" value="{{ it.key }}">
+                  <button class="nfg-tex-link" type="submit">{{ ui.icon('x-lg') }} Remove exercise</button>
+                </form>
+              {% endif %}
               {% if it.doc %}<a class="nfg-tex-link is-how" href="{{ url_for('workout_detail', slug=it.slug) }}">{{ ui.icon('question-lg') }} How to</a>{% endif %}
             </div>
           </div>
@@ -122,6 +131,13 @@
       </li>
     {% endfor %}
   </ol>
+
+  {% if not items %}
+    <p class="nfg-train-hint">Add the exercises you're doing today. Each one gets three sets to start; add or remove sets as you go.</p>
+  {% endif %}
+  {% if items|length < 30 %}
+    <a class="nfg-act is-ghost nfg-train-addex" href="{{ url_for('train_pick', to='session') }}">{{ ui.icon('plus-lg') }} Add exercise</a>
+  {% endif %}
 
   <section class="nfg-train-end">
     <form method="post" action="{{ url_for('train_finish') }}">

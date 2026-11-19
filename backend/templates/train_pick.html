@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+
+{% block title %}{% if swap_item %}Swap {{ swap_item.name }}{% else %}Add an exercise{% endif %} – {{ app_name }}{% endblock %}
+{% block back_url %}{{ back }}{% endblock %}
+
+{% block page %}
+<div class="nfg-discover nfg-pick-page">
+  <a class="nfg-back" href="{{ back }}">{{ ui.icon('chevron-left') }} {{ target_title or 'Back' }}</a>
+
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">{% if swap_item %}Swap an exercise{% else %}Add to {{ target_title or 'your workout' }}{% endif %}</div>
+    <h1 class="nfg-page-title">{% if swap_item %}Instead of {{ swap_item.name }}{% else %}Add an exercise{% endif %}</h1>
+  </header>
+
+  <form class="nfg-pick-search" method="get" action="{{ url_for('train_pick') }}" role="search">
+    <input type="hidden" name="to" value="{{ to }}">
+    {% if swap %}<input type="hidden" name="swap" value="{{ swap }}">{% endif %}
+    <input type="hidden" name="env" value="{{ env }}">
+    <label class="visually-hidden" for="pick-q">Search exercises</label>
+    <span class="nfg-pick-search-box">
+      {{ ui.icon('search') }}
+      <input id="pick-q" name="q" type="search" value="{{ q }}" placeholder="Search exercises" autocomplete="off" enterkeyhint="search">
+    </span>
+  </form>
+
+  <div class="nfg-pick-filters">
+    <div class="nfg-seg is-env" role="group" aria-label="Where you train">
+      {% for key, label, href in env_links %}
+        <a class="nfg-seg-opt{% if key == env %} is-on{% endif %}" href="{{ href }}"{% if key == env %} aria-current="true"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </div>
+    <div class="nfg-pick-groups" data-no-page-swipe>
+      {% for key, label, color, href in group_links %}
+        <a class="nfg-pick{% if key == group %} is-on{% endif %}" href="{{ href }}" style="--group-color: {{ color }};"{% if key == group %} aria-pressed="true"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% set ns = namespace(any=false) %}
+  {% for s in sections %}
+    {% if s.docs %}
+      {% set ns.any = true %}
+      <section class="nfg-section">
+        {% if s.title %}<h2 class="nfg-results-head">{{ s.title }}</h2>{% endif %}
+        <div class="nfg-pick-list">
+          {% for w in s.docs %}
+            {% set g = w.primary_groups[0] if w.primary_groups else '' %}
+            <form class="nfg-pick-row" method="post" action="{{ url_for('train_add') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="to" value="{{ to }}">
+              <input type="hidden" name="slug" value="{{ w.slug }}">
+              {% if swap %}<input type="hidden" name="swap" value="{{ swap }}">{% endif %}
+              {% if to != 'session' %}<input type="hidden" name="next" value="{{ back }}">{% endif %}
+              <span class="nfg-tex-thumb"><img src="{{ ui.exercise_image(w) }}" alt="" loading="lazy"></span>
+              <span class="nfg-tex-body">
+                <span class="nfg-tex-name">{{ w.name }}</span>
+                <span class="nfg-tex-meta"><span>{{ w.equipment_label or 'Bodyweight' }}</span>{% if w.level %}<span>{{ w.level }}</span>{% endif %}</span>
+              </span>
+              {% if w.slug in in_workout and not swap %}
+                <span class="nfg-pick-in">In it</span>
+              {% else %}
+                <button class="nfg-act is-ghost nfg-pick-add" type="submit" aria-label="{{ 'Swap in' if swap else 'Add' }} {{ w.name }}">{{ 'Swap' if swap else 'Add' }}</button>
+              {% endif %}
+            </form>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  {% endfor %}
+
+  {% if not ns.any %}
+    <p class="nfg-train-hint">
+      {% if q or group %}Nothing matches{% if q %} "{{ q }}"{% endif %} here. <a href="{{ clear_url }}">Clear</a> or try another setting.
+      {% else %}Search for an exercise or pick a muscle group.{% endif %}
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

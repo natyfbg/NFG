@@ -46,7 +46,10 @@
         {% if w.level %}<span class="nfg-mchip is-neutral">{{ w.level }}</span>{% endif %}
       </div>
       {% if w.publish_status != 'draft' %}
-        <div class="nfg-ex-train">{{ ui.start_workout(train_key, train_fields, "Log your sets", variant="is-ghost") }}</div>
+        <div class="nfg-ex-train">
+          {{ ui.start_workout(train_key, train_fields, "Log your sets", variant="is-ghost") }}
+          <a class="nfg-act is-ghost" href="{{ url_for('train_add_menu', slug=w.slug) }}">{{ ui.icon('plus-lg') }} Add to workout</a>
+        </div>
       {% endif %}
     </header>
 
