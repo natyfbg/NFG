@@ -22,6 +22,7 @@ import re
 from typing import Callable, Dict, List, Optional
 
 import macros as mx
+import onboarding
 import recipes_content as rc
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -504,6 +505,9 @@ def register(app, *, db, owner_key: Callable[[], str], is_safe_path: Callable[[s
 
     def _calculator(profile: Optional[dict], form=None, errors=None, status=200):
         values = dict(form or {})
+        if not form and not profile:
+            # First time: start from the goal in the training profile, if there is one.
+            values["goal"] = onboarding.macros_goal_default()
         if not form and profile:
             units = profile.get("units") or "imperial"
             values = {

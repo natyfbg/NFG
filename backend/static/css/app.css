@@ -4880,7 +4880,10 @@ body:has(.offcanvas.showing) .mobile-swipe-rail{ z-index: 1030; }
 .nfg-choose.is-list .nfg-choose-opt b, .nfg-choose.is-list .nfg-choose-opt small{ grid-column: 2; }
 .nfg-choose-opt input:checked + span{ background: var(--switch-bg); color: var(--switch-fg); }
 .nfg-choose-opt input:checked + span small{ color: inherit; opacity: .78; }
-.nfg-choose.is-list .nfg-choose-opt input:checked + span{ border-color: var(--switch-bg); }
+/* List cards stay light when picked (a strong border and a filled dot); the solid
+   switch colours above are for the segmented style. Without this the text vanished. */
+.nfg-choose.is-list .nfg-choose-opt input:checked + span{ border-color: var(--switch-bg); background: var(--app-surface-strong); color: var(--app-text); box-shadow: 0 0 0 1px var(--switch-bg); }
+.nfg-choose.is-list .nfg-choose-opt input:checked + span small{ color: var(--app-text-muted); opacity: 1; }
 .nfg-choose.is-list .nfg-choose-opt input:checked + span::before{ border-color: var(--gold-a); background: var(--gold-a); box-shadow: inset 0 0 0 3px var(--switch-bg); }
 .nfg-choose-opt input:focus-visible + span{ outline: 3px solid var(--app-accent); outline-offset: 1px; }
 .nfg-calc:has(#units-imperial:checked) .is-metric,
@@ -5312,3 +5315,54 @@ body:has(.offcanvas.showing) .mobile-swipe-rail{ z-index: 1030; }
 .nfg-train-prs ul{ margin: 0; padding-left: 1.6rem; display: grid; gap: .15rem; font-size: .9rem; font-weight: 650; font-variant-numeric: tabular-nums; }
 .nfg-pr-badge{ display: inline-flex; align-items: center; gap: .25rem; margin-left: .35rem; padding: .1rem .5rem; border-radius: 999px; background: var(--app-accent-soft); color: var(--app-accent-strong); font-size: .72rem; font-weight: 800; vertical-align: middle; }
 .nfg-pr-badge .nfg-icon{ width: .85em; height: .85em; }
+
+
+/* Sign in / create account / password reset / admin sign in */
+.nfg-auth{ display: grid; justify-items: center; gap: .9rem; padding-top: .5rem; }
+.nfg-auth-card{ width: min(100%, 420px); display: grid; gap: .55rem; padding: 1.5rem 1.3rem 1.3rem; border-radius: var(--radius-lg); background: var(--app-surface-strong); border: 1px solid var(--app-border); box-shadow: var(--shadow-sm); }
+.nfg-auth-mark{ justify-self: start; display: inline-flex; margin-bottom: .2rem; }
+.nfg-auth-mark img{ width: 48px; height: 48px; border-radius: 13px; box-shadow: var(--shadow-sm); }
+.nfg-auth-title{ margin: 0; font-size: 1.6rem; font-weight: 850; letter-spacing: -.01em; }
+.nfg-auth-sub{ margin: 0 0 .4rem; color: var(--app-text-muted); font-size: .92rem; line-height: 1.45; }
+.nfg-auth-sub b{ color: var(--app-text); }
+.nfg-auth-form{ display: grid; gap: .8rem; }
+.nfg-auth-form .nfg-field input{ height: 48px; }
+.nfg-field-help{ font-size: .74rem; color: var(--app-text-soft); font-weight: 600; }
+.nfg-field-help.is-under{ margin-top: -.55rem; }
+.nfg-pass{ position: relative; display: block; }
+.nfg-pass input{ padding-right: 3rem; }
+.nfg-pass-toggle{ position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: var(--app-text-soft); display: inline-flex; align-items: center; justify-content: center; }
+.nfg-pass-toggle:hover{ color: var(--app-text); background: var(--app-surface-inset); }
+.nfg-pass-toggle .nfg-icon{ width: 1.1rem; height: 1.1rem; }
+.nfg-pass-toggle .is-hide,
+.nfg-pass-toggle[aria-pressed="true"] .is-show{ display: none; }
+.nfg-pass-toggle[aria-pressed="true"] .is-hide{ display: inline-flex; }
+.nfg-auth-aside{ justify-self: end; margin-top: -.35rem; font-size: .82rem; font-weight: 700; color: var(--app-text-muted); }
+.nfg-auth-submit{ width: 100%; justify-content: center; height: 50px; font-size: 1rem; margin-top: .2rem; }
+.nfg-auth-legal, .nfg-auth-note{ margin: 0; font-size: .76rem; color: var(--app-text-soft); text-align: center; }
+.nfg-auth-legal a, .nfg-auth-note a, .nfg-auth-aside{ color: var(--app-text-muted); }
+.nfg-auth-foot{ margin: 0; font-size: .9rem; color: var(--app-text-muted); text-align: center; }
+.nfg-auth-foot a{ color: var(--app-text); font-weight: 800; }
+.nfg-auth-foot.is-quiet{ font-size: .78rem; }
+.nfg-auth-foot.is-quiet a{ color: var(--app-text-soft); font-weight: 700; }
+
+/* Training profile: /start and the Home card */
+.nfg-onboard-form{ display: grid; gap: 1.2rem; max-width: 560px; }
+.nfg-onboard-q{ display: grid; gap: .55rem; margin: 0; padding: 0; border: 0; min-width: 0; }
+.nfg-onboard-q legend{ display: flex; align-items: center; gap: .5rem; margin: 0 0 .2rem; font-size: 1.02rem; font-weight: 800; }
+.nfg-onboard-n{ width: 24px; height: 24px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--gold-a); color: var(--on-gold); font-size: .78rem; font-weight: 900; flex: none; }
+.nfg-onboard-actions{ display: flex; flex-wrap: wrap; gap: .5rem; }
+.nfg-onboard-actions .nfg-act.is-primary{ flex: 1 1 200px; justify-content: center; height: 50px; }
+.nfg-onboard-actions .nfg-act.is-ghost{ height: 50px; }
+.nfg-setup-card{ display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .85rem .9rem .85rem 1.1rem; margin-bottom: .7rem; border-radius: var(--radius-lg); background: var(--app-accent-soft); border: 1px solid color-mix(in srgb, var(--app-accent) 40%, transparent); }
+.nfg-setup-body{ display: grid; gap: .1rem; min-width: 0; }
+.nfg-setup-body b{ font-size: 1rem; font-weight: 800; }
+.nfg-setup-body span{ font-size: .84rem; color: var(--app-text-muted); }
+.nfg-setup-actions{ display: flex; align-items: center; gap: .25rem; flex: none; }
+.nfg-setup-actions form{ margin: 0; }
+.nfg-setup-actions .nfg-act{ height: 40px; }
+.nfg-setup-skip{ width: 36px; height: 36px; border: 0; border-radius: 999px; background: transparent; color: var(--app-text-muted); display: inline-flex; align-items: center; justify-content: center; }
+.nfg-setup-skip:hover{ background: var(--app-surface-inset); color: var(--app-text); }
+.nfg-setup-skip .nfg-icon{ width: .95rem; height: .95rem; }
+.nfg-badge.is-foryou{ background: var(--gold-a); color: var(--on-gold); }
+.nfg-goal-links .nfg-seg-opt{ padding: 0 .65rem; }

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+{% block title %}Set up – {{ app_name }}{% endblock %}
+{% block back_url %}{{ next or url_for('home') }}{% endblock %}
+
+{% macro choice(name, value, label, hint, checked) %}
+  <label class="nfg-choose-opt">
+    <input type="radio" name="{{ name }}" value="{{ value }}"{% if checked %} checked{% endif %}>
+    <span><b>{{ label }}</b>{% if hint %}<small>{{ hint }}</small>{% endif %}</span>
+  </label>
+{% endmacro %}
+
+{% block page %}
+<div class="nfg-discover nfg-onboard">
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">Set up</div>
+    <h1 class="nfg-page-title">Make {{ app_name }} yours</h1>
+    <p class="nfg-prog-summary">Three quick answers so sessions, programs and macros start in the right place. Skip any you like; you can change them later.</p>
+  </header>
+
+  <form class="nfg-onboard-form" method="post" action="{{ url_for('onboarding_start') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+    <fieldset class="nfg-onboard-q">
+      <legend><span class="nfg-onboard-n">1</span> How long have you been training?</legend>
+      <div class="nfg-choose is-list">
+        {% for key, label, hint in levels %}{{ choice('level', key, label, hint, current.level == key) }}{% endfor %}
+      </div>
+    </fieldset>
+
+    <fieldset class="nfg-onboard-q">
+      <legend><span class="nfg-onboard-n">2</span> Where do you train?</legend>
+      <div class="nfg-choose is-list">
+        {% for key, label, hint in environments %}{{ choice('env', key, label, hint, current.env == key) }}{% endfor %}
+      </div>
+    </fieldset>
+
+    <fieldset class="nfg-onboard-q">
+      <legend><span class="nfg-onboard-n">3</span> What's your main goal?</legend>
+      <div class="nfg-choose is-list">
+        {% for key, label, hint in goals %}{{ choice('goal', key, label, hint, current.goal == key) }}{% endfor %}
+      </div>
+    </fieldset>
+
+    <div class="nfg-onboard-actions">
+      <button class="nfg-act is-primary" type="submit">Save</button>
+      <button class="nfg-act is-ghost" type="submit" name="action" value="skip">Skip for now</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

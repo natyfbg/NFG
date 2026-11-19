@@ -1,37 +1,19 @@
-{% extends "base.html" %}
+{% extends "auth_base.html" %}
 {% block title %}Choose a new password – {{ app_name }}{% endblock %}
 
-{% block content %}
-<div class="d-flex justify-content-center">
-  <div class="card shadow-sm p-4" style="max-width: 440px; width: 100%;">
-    {% if expired %}
-      <h1 class="h4 mb-2 text-center">This link has expired</h1>
-      <p class="text-muted text-center mb-3">
-        Reset links work once, for one hour. Ask for a new one and use the latest email.
-      </p>
-      <a class="btn btn-dark w-100" href="{{ url_for('account_forgot') }}">Send a new link</a>
-    {% else %}
-      <h1 class="h4 mb-3 text-center">Choose a new password</h1>
-
-      <form method="post" novalidate>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="mb-3">
-          <label class="form-label" for="reset-password">New password</label>
-          <input class="form-control" id="reset-password" type="password" name="password"
-                 minlength="8" autocomplete="new-password" required autofocus>
-          <div class="form-text">At least 8 characters.</div>
-        </div>
-        <div class="mb-3">
-          <label class="form-label" for="reset-confirm">Type it again</label>
-          <input class="form-control" id="reset-confirm" type="password" name="confirm_password"
-                 minlength="8" autocomplete="new-password" required>
-        </div>
-        <button type="submit" class="btn btn-dark w-100">Save and sign in</button>
-      </form>
-      <div class="small text-muted mt-3 text-center">
-        This signs you out everywhere else.
-      </div>
-    {% endif %}
-  </div>
-</div>
+{% block auth %}
+  {% if expired %}
+    <h1 class="nfg-auth-title">This link has expired</h1>
+    <p class="nfg-auth-sub">Reset links work once, for one hour. Ask for a new one and use the latest email.</p>
+    <a class="nfg-act is-primary nfg-auth-submit" href="{{ url_for('account_forgot') }}">Send a new link</a>
+  {% else %}
+    <h1 class="nfg-auth-title">Choose a new password</h1>
+    <p class="nfg-auth-sub">At least 8 characters. This signs you out everywhere else.</p>
+    <form class="nfg-auth-form" method="post" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {{ password('password', 'New password', 'new-password', 'reset-password', minlength=8, autofocus=True) }}
+      {{ password('confirm_password', 'Type it again', 'new-password', 'reset-confirm', minlength=8) }}
+      <button type="submit" class="nfg-act is-primary nfg-auth-submit">Save and sign in</button>
+    </form>
+  {% endif %}
 {% endblock %}

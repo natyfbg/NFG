@@ -23,6 +23,7 @@ import curation
 import formfigures
 import mailer
 import nutrition
+import onboarding
 import program_content
 import session_builder as sb
 import taxonomy as tx
@@ -459,6 +460,8 @@ def _log_request(resp):
     for cookie, value in (
         (ENV_COOKIE, getattr(g, "_set_env", None)),
         (LEVEL_COOKIE, getattr(g, "_set_level", None)),
+        (onboarding.GOAL_COOKIE, getattr(g, "_set_goal", None)),
+        (onboarding.DONE_COOKIE, getattr(g, "_set_onboarded", None)),
     ):
         if value:
             resp.set_cookie(
@@ -469,7 +472,45 @@ def _log_request(resp):
                 secure=IS_HOSTED,
                 httponly=True,
             )
+    _sync_training_profile()
     return resp
+
+
+def _member_oid() -> Optional[ObjectId]:
+    """The signed-in member's user id (None for guests and the admin)."""
+    if not getattr(current_user, "is_authenticated", False) or getattr(
+        current_user, "is_admin", False
+    ):
+        return None
+    oid = getattr(current_user, "user_oid", None)
+    return ObjectId(oid) if oid and ObjectId.is_valid(str(oid)) else None
+
+
+def _sync_training_profile() -> None:
+    """A member's level / setting / goal follow the account: whenever this request
+    changed one (sessions, programs, the account page, /start), save it on the user."""
+    if getattr(g, "_profile_from_account", False):
+        return
+    fields = {
+        key: value
+        for key, value in (
+            ("level", getattr(g, "_set_level", None)),
+            ("env", getattr(g, "_set_env", None)),
+            ("goal", getattr(g, "_set_goal", None)),
+        )
+        if value
+    }
+    if not fields:
+        return
+    try:
+        oid = _member_oid()
+        if oid is None:
+            return
+        update = {f"training_profile.{k}": v for k, v in fields.items()}
+        update["training_profile.updated_at"] = datetime.datetime.utcnow()
+        db.users.update_one({"_id": oid}, {"$set": update})
+    except Exception as e:  # a preference is never worth a failed page
+        app.logger.warning("training profile sync failed: %s", type(e).__name__)
 
 
 @app.after_request
@@ -3910,10 +3951,11 @@ def home():
         coach_picks_meta=picks,
         saved_exercises=_saved_exercises(owner_key),
         featured_programs=featured_programs,
-        home_programs=program_cards,
+        home_programs=onboarding.with_recommendation(onboarding.goal_of(), program_cards),
         favorite_programs=favorite_programs,
         continue_plan=continue_plan,
         active_workout=training_routes.active_card(db, owner_key),
+        show_setup=onboarding.needs_setup(),
     )
 
 
@@ -5325,6 +5367,13 @@ def workout_detail(slug):
 # -----------------------------------------------------------------------------
 # Recipes, macros calculator and tracker: nutrition.py (content files, no recipe sync).
 nutrition.register(app, db=db, owner_key=_progress_owner_key, is_safe_path=_is_safe_local_path)
+onboarding.register(
+    app,
+    is_safe_path=_is_safe_local_path,
+    levels=tx.LEVELS,
+    environments=tx.ENVIRONMENTS,
+    level_keys=sb.LEVELS,
+)
 
 
 # -----------------------------------------------------------------------------
@@ -5622,27 +5671,27 @@ def account_register():
 
         if not username or not email or not password:
             flash("Username, email, and password are required.", "danger")
-            return render_template("account_register.html")
+            return render_template("account_register.html", form=request.form)
         if password != confirm:
             flash("Passwords do not match.", "danger")
-            return render_template("account_register.html")
+            return render_template("account_register.html", form=request.form)
         if len(password) < 8:
             flash("Password must be at least 8 characters.", "danger")
-            return render_template("account_register.html")
+            return render_template("account_register.html", form=request.form)
         if not re.match(r"^[a-zA-Z0-9_]{3,30}$", username):
             flash(
                 "Username must be 3-30 characters and only letters, numbers, underscore.", "danger"
             )
-            return render_template("account_register.html")
+            return render_template("account_register.html", form=request.form)
 
         username_lower = username.lower()
         email_lower = email.lower()
         if db.users.find_one({"username_lower": username_lower}):
             flash("That username is already taken.", "danger")
-            return render_template("account_register.html")
+            return render_template("account_register.html", form=request.form)
         if db.users.find_one({"email_lower": email_lower}):
             flash("An account with that email already exists.", "danger")
-            return render_template("account_register.html")
+            return render_template("account_register.html", form=request.form)
 
         doc = {
             "username": username,
@@ -5664,9 +5713,11 @@ def account_register():
         login_user(member_user)
         _migrate_guest_state_to_member(_viewer_id(), f"user:{res.inserted_id}")
         flash("Account created.", "success")
-        return redirect(url_for("home"))
+        # Three quick questions next (skippable); answers already given come along.
+        nxt = (request.form.get("next") or "").strip()
+        return redirect(url_for("onboarding_start", next=nxt if _is_safe_local_path(nxt) else None))
 
-    return render_template("account_register.html")
+    return render_template("account_register.html", form=request.form)
 
 
 @app.route("/account/login", methods=["GET", "POST"])
@@ -5684,14 +5735,17 @@ def account_login():
         throttle_key = _login_throttle_key("member")
         if not _allowed_login_attempt(throttle_key):
             flash("Too many failed sign-in attempts. Try again in ~15 minutes.", "danger")
-            return render_template("account_login.html"), 429
+            return (
+                render_template("account_login.html", identity=request.form.get("identity", "")),
+                429,
+            )
 
         identity = (request.form.get("identity") or "").strip().lower()
         password = (request.form.get("password") or "").strip()
 
         if not identity or not password:
             flash("Email/username and password are required.", "danger")
-            return render_template("account_login.html")
+            return render_template("account_login.html", identity=request.form.get("identity", ""))
 
         doc = db.users.find_one({"$or": [{"email_lower": identity}, {"username_lower": identity}]})
         if (
@@ -5701,10 +5755,10 @@ def account_login():
         ):
             _record_failed_login(throttle_key)
             flash("Invalid login.", "danger")
-            return render_template("account_login.html")
+            return render_template("account_login.html", identity=request.form.get("identity", ""))
         if doc.get("active") is False:
             flash("This account is inactive.", "danger")
-            return render_template("account_login.html")
+            return render_template("account_login.html", identity=request.form.get("identity", ""))
 
         _clear_failed_logins(throttle_key)
         member_key = f"user:{doc['_id']}"
@@ -5721,6 +5775,8 @@ def account_login():
             {"_id": doc["_id"]},
             {"$set": {"last_login_at": datetime.datetime.utcnow()}},
         )
+        onboarding.apply_profile(doc.get("training_profile"), sb.LEVELS, tx.ENVIRONMENTS)
+        g._profile_from_account = True
         flash("Signed in.", "success")
         return redirect(_safe_next_url(default_endpoint="home"))
 
@@ -5999,6 +6055,7 @@ def account_export():
             "email": user.get("email"),
             "created_at": user.get("created_at"),
             "password_changed_at": user.get("password_changed_at"),
+            "training_profile": user.get("training_profile"),
         },
     }
     for name in VIEWER_COLLECTIONS:
@@ -6149,6 +6206,11 @@ def account_profile():
         ],
         env_options=[
             (k, e["label"], url_for("account_profile", env=k)) for k, e in tx.ENVIRONMENTS.items()
+        ],
+        goal=onboarding.goal_of(),
+        goal_options=[
+            (k, v["label"], url_for("onboarding_goal", goal=k, next=url_for("account_profile")))
+            for k, v in onboarding.GOALS.items()
         ],
     )
 

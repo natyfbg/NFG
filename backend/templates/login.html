@@ -1,27 +1,22 @@
-{% extends "base.html" %}
-{% block title %}Sign in – {{ app_name }}{% endblock %}
+{% extends "auth_base.html" %}
+{% block title %}Admin sign in – {{ app_name }}{% endblock %}
+{% block back_url %}{{ url_for('home') }}{% endblock %}
 
-{% block content %}
-<div class="d-flex justify-content-center">
-  <div class="card shadow-sm p-4" style="max-width: 420px; width: 100%;">
-    <h1 class="h4 mb-3 text-center">Sign in</h1>
+{% block auth %}
+  <div class="app-page-kicker">Admin</div>
+  <h1 class="nfg-auth-title">Sign in</h1>
+  <form class="nfg-auth-form" method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if request.values.get('next') %}<input type="hidden" name="next" value="{{ request.values.get('next') }}">{% endif %}
+    <label class="nfg-field" for="admin-username">
+      <span>Username</span>
+      <input id="admin-username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
+    </label>
+    {{ password('password', 'Password', 'current-password', 'admin-password') }}
+    <button type="submit" class="nfg-act is-primary nfg-auth-submit">Sign in</button>
+  </form>
+{% endblock %}
 
-    <form method="post" novalidate>
-      <!-- CSRF -->
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-      <div class="mb-3">
-        <label class="form-label">Username</label>
-        <input class="form-control" name="username" required>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Password</label>
-        <input class="form-control" type="password" name="password" required>
-      </div>
-
-      <button type="submit" class="btn btn-primary w-100">Sign in</button>
-    </form>
-  </div>
-</div>
+{% block auth_foot %}
+  <p class="nfg-auth-foot is-quiet"><a href="{{ url_for('account_login') }}">Member sign in</a></p>
 {% endblock %}

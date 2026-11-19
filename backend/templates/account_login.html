@@ -1,43 +1,24 @@
-{% extends "base.html" %}
+{% extends "auth_base.html" %}
 {% block title %}Sign in – {{ app_name }}{% endblock %}
 {% block back_url %}{{ url_for('home') }}{% endblock %}
 
-{% block content %}
-<div class="d-flex justify-content-center">
-  <div class="card shadow-sm p-4" style="max-width: 440px; width: 100%;">
-    <h1 class="h4 mb-3 text-center">Sign in</h1>
+{% block auth %}
+  <h1 class="nfg-auth-title">Welcome back</h1>
+  <p class="nfg-auth-sub">Sign in to pick up where you left off.</p>
+  <form class="nfg-auth-form" method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if request.values.get('next') %}<input type="hidden" name="next" value="{{ request.values.get('next') }}">{% endif %}
+    <label class="nfg-field" for="login-identity">
+      <span>Email or username</span>
+      <input id="login-identity" name="identity" value="{{ identity or '' }}" autocomplete="username" autocapitalize="none" spellcheck="false" required{% if not identity %} autofocus{% endif %}>
+    </label>
+    {{ password('password', 'Password', 'current-password', 'login-password', autofocus=identity) }}
+    {% if mail_enabled %}<a class="nfg-auth-aside" href="{{ url_for('account_forgot') }}">Forgot your password?</a>{% endif %}
+    <button type="submit" class="nfg-act is-primary nfg-auth-submit">Sign in</button>
+  </form>
+{% endblock %}
 
-    <form method="post" novalidate>
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      {% if request.args.get('next') %}
-        <input type="hidden" name="next" value="{{ request.args.get('next') }}">
-      {% endif %}
-
-      <div class="mb-3">
-        <label class="form-label" for="login-identity">Email or Username</label>
-        <input class="form-control" id="login-identity" name="identity" autocomplete="username" required>
-      </div>
-
-      <div class="mb-3">
-        <div class="d-flex justify-content-between align-items-baseline">
-          <label class="form-label" for="login-password">Password</label>
-          {% if mail_enabled %}
-            <a class="small" href="{{ url_for('account_forgot') }}">Forgot your password?</a>
-          {% endif %}
-        </div>
-        <input class="form-control" id="login-password" type="password" name="password"
-               autocomplete="current-password" required>
-      </div>
-
-      <button type="submit" class="btn btn-dark w-100">Sign in</button>
-    </form>
-
-    <div class="small text-muted mt-3 text-center">
-      New here?
-      <a href="{{ url_for('account_register') }}">Create account</a>
-      •
-      <a href="{{ url_for('login') }}">Admin sign in</a>
-    </div>
-  </div>
-</div>
+{% block auth_foot %}
+  <p class="nfg-auth-foot">New to {{ app_name }}? <a href="{{ url_for('account_register', next=request.values.get('next')) }}">Create an account</a></p>
+  <p class="nfg-auth-foot is-quiet"><a href="{{ url_for('login') }}">Admin sign in</a></p>
 {% endblock %}
