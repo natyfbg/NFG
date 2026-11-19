@@ -374,6 +374,11 @@ def register(
         doc = get_active(db, owner)
         if not doc:
             return fail("This workout has already ended.", 409)
+        # A set kept on the phone while offline names its workout; never let it land in a
+        # newer one that happens to share an exercise key.
+        wid = (request.form.get("wid") or "").strip()
+        if wid and wid != str(doc["_id"]):
+            return fail("This workout has already ended.", 409)
         idx = item_index(doc, request.form.get("key") or "")
         if idx is None:
             return fail("That exercise isn't in this workout.")

@@ -91,6 +91,8 @@ Optional:
 - `ADMIN_USERNAME`
 - `ADMIN_EMAILS` (comma-separated emails of existing accounts that also get admin when
   they sign in with their normal account)
+- `PWA_ENABLED` (default on; `0` switches off install-to-home-screen and offline, and the
+  service worker removes itself from phones)
 
 **Production database is MongoDB Atlas.** `MONGO_URI` is set manually as a Render
 secret (`sync: false`) pointing at the Atlas cluster. Render no longer hosts a Mongo

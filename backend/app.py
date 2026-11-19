@@ -25,6 +25,7 @@ import mailer
 import nutrition
 import onboarding
 import program_content
+import pwa
 import session_builder as sb
 import taxonomy as tx
 import training as tr
@@ -45,6 +46,7 @@ from flask import (
     render_template_string,
     request,
     send_from_directory,
+    session,
     url_for,
 )
 from flask_compress import Compress
@@ -538,7 +540,27 @@ def _security_headers(resp):
     return resp
 
 
+# Form tokens last as long as the sign-in (not an hour): a set logged with no signal is
+# sent later from the same page, and an installed app can stay open for a long time.
+app.config.setdefault("WTF_CSRF_TIME_LIMIT", None)
 csrf = CSRFProtect(app)
+
+# Stay signed in for 30 days (sliding), also in the installed app, where closing the app
+# can end a browser session. The backup admin login (/login) keeps a browser-session
+# cookie. A password reset still signs every device out (auth_gen in the session id).
+app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(days=30)
+
+
+@app.after_request
+def _session_lifetime(resp):
+    # After the request, so signing in / out on this very request counts.
+    if request.path.startswith("/static/"):
+        return resp
+    keep = getattr(current_user, "role", None) != "admin"
+    if session.permanent != keep:
+        session.permanent = keep
+    return resp
+
 
 # Compress text responses (HTML, CSS, JS, SVG, JSON). app.css alone goes from ~90 KB
 # to ~15 KB; Render's proxy does not compress on our behalf.
@@ -5393,6 +5415,12 @@ onboarding.register(
     levels=tx.LEVELS,
     environments=tx.ENVIRONMENTS,
     level_keys=sb.LEVELS,
+)
+# Install to home screen + offline: /manifest.webmanifest, /sw.js, /offline.
+pwa.register(
+    app,
+    app_name=APP_NAME,
+    asset_version=lambda: _asset_version() if DEV_RELOAD else ASSET_VERSION,
 )
 
 

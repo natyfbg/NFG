@@ -190,6 +190,19 @@ as committer, so GitHub shows them as Verified.
   on a member's `users.training_profile` (`_sync_training_profile`), so it follows the
   account; sign-in brings it back (`onboarding.apply_profile`). Goals map to programs to
   recommend (first one that's published) and to the macros calculator's starting goal.
+- **Install + offline lives in `pwa.py`** (`/manifest.webmanifest`, `/sw.js` rendered from
+  `templates/sw.js` with the asset version, `/offline`). The worker keeps pages
+  network-first (max 40, never `NO_KEEP_PREFIXES`: account, admin, sign-in), static files
+  and Bootstrap cache-first (max 160), and deletes kept pages on a POST to
+  `CLEAR_ON_POST` (sign out, delete account, forget device). It never replays requests:
+  the workout logger keeps offline sets in a localStorage journal (`nfg_train_journal`,
+  per workout id) and sends them itself (on `online`, on load, every 20 s, and before
+  Finish / add set / units / discard); `/train/set` refuses a `wid` that isn't the active
+  workout, and posting the same set twice is harmless. `PWA_ENABLED=0` (env) makes `/sw.js`
+  delete its caches and unregister on every phone. Sessions are permanent (30 days,
+  sliding) except the backup admin login, and CSRF tokens last as long as the session
+  (`WTF_CSRF_TIME_LIMIT=None`), so a page kept for hours can still send its sets. New
+  per-viewer pages that must not sit on a shared phone go in `NO_KEEP_PREFIXES`.
 - **Two ways to be admin:** the backup `/login` identity (`ADMIN_USERNAME` +
   `ADMIN_PASSWORD_HASH`, `role="admin"`, no account or data behind it) and members whose
   email is in `ADMIN_EMAILS` (Render env; `User.admin`, decided on every request in
@@ -555,6 +568,16 @@ as committer, so GitHub shows them as Verified.
   email. The username/password admin login stays as a backup (hosted start-up still
   requires `ADMIN_PASSWORD_HASH`). Only list emails that already have an account, since
   sign-up doesn't verify email ownership.
+- 2026-11-18 — **Install to home screen + works without signal** (Nate: "a great final
+  step while I test"): manifest (name, cream splash, top-bar colour, 192/512/maskable
+  icons, shortcuts to My workouts / Exercises / Macros), "Add to home screen" in the menu
+  (Android's install prompt; on iPhone a tip: Share → Add to Home Screen; hidden once
+  installed), a service worker that keeps pages you've opened for offline use and an
+  offline page for the rest. The logger logs sets with no signal ("No signal · 2 sets
+  saved on this phone"), keeps them through a reload, and sends them when the phone is
+  back online; Finish and the other buttons wait for signal and send waiting sets first.
+  Members now stay signed in for 30 days (closing an installed app could end a browser
+  session); the backup admin login doesn't.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
@@ -588,8 +611,8 @@ Next six sprints, in order:
    empty workout + add exercise, swap mid-workout, Saved tab. ✅ Phase 3 (2026-11-18):
    last time / best / chart on exercise pages, personal bests in the summary.
 Alongside: full body (S3), cardio + mobility (S5), first 12 recipes (S6).
-Later, each gated: progress analytics · PWA · personalised Home · nutrition · AI coach ·
-native/wearables research · paid tier.
+Later, each gated: ✅ PWA (2026-11-18) · progress analytics · personalised Home · AI coach ·
+native/wearables research · paid tier (to-do list: project doc `qiltsim-todo.md`).
 
 Standing decisions: workouts/session mode is the signature feature; programs and recipes
 are content-as-code (Claude drafts, Nate approves); form images are consistent illustrated
