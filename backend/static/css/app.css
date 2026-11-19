@@ -5437,3 +5437,52 @@ body:has(.offcanvas.showing) .mobile-swipe-rail{ z-index: 1030; }
 .nfg-setup-skip .nfg-icon{ width: .95rem; height: .95rem; }
 .nfg-badge.is-foryou{ background: var(--gold-a); color: var(--on-gold); }
 .nfg-goal-links .nfg-seg-opt{ padding: 0 .65rem; }
+
+/* =====================================================================
+   Install to home screen + offline (pwa.py, templates/sw.js)
+   ===================================================================== */
+/* The logger's "No signal · 3 sets saved on this phone" line. */
+.nfg-train-offline{
+  display: flex; align-items: flex-start; gap: .45rem;
+  margin: .55rem 0 0; padding: .5rem .7rem; border-radius: var(--radius-sm);
+  background: var(--app-accent-soft); color: var(--app-text);
+  font-size: .82rem; font-weight: 650; line-height: 1.35;
+}
+.nfg-train-offline .nfg-icon{ flex: none; width: 1em; height: 1em; margin-top: .12em; }
+.nfg-train-offline[hidden]{ display: none; }
+
+/* iPhone/iPad: how to add the app (Safari has no install button). */
+.nfg-install-tip{
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 1095;
+  bottom: calc(var(--bottom-nav-h) + var(--bottom-nav-gap) + 10px + env(safe-area-inset-bottom));
+  width: min(420px, calc(100% - 24px));
+  display: flex; align-items: flex-start; gap: .5rem;
+  padding: .85rem .6rem .85rem 1rem; border-radius: var(--radius-md);
+  background: var(--app-surface-strong); color: var(--app-text);
+  border: 1px solid var(--app-border); box-shadow: var(--shadow-lg);
+}
+.nfg-install-tip[hidden]{ display: none; }
+.nfg-install-tip p{ margin: 0; flex: 1 1 auto; font-size: .9rem; line-height: 1.45; }
+.nfg-install-tip p > b:first-child{ display: block; margin-bottom: .15rem; font-size: .95rem; }
+.nfg-install-tip .nfg-icon{ width: 1.05em; height: 1.05em; vertical-align: -.15em; }
+@media (min-width: 992px){ .nfg-install-tip{ bottom: 24px; } }
+
+/* The page shown with no signal when a page isn't saved on the phone yet. */
+body.nfg-offline{
+  min-height: 100vh; min-height: 100svh; margin: 0;
+  display: grid; place-items: center;
+  padding: 24px max(16px, env(safe-area-inset-right)) 24px max(16px, env(safe-area-inset-left));
+  background: var(--app-bg); color: var(--app-text);
+  /* No Bootstrap on this page (it must load from the phone alone): same system font. */
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5; -webkit-text-size-adjust: 100%;
+}
+body.nfg-offline *, body.nfg-offline *::before, body.nfg-offline *::after{ box-sizing: border-box; }
+body.nfg-offline button{ font-family: inherit; cursor: pointer; }
+.nfg-offline-mark{ width: 48px; height: 48px; border-radius: 13px; box-shadow: var(--shadow-sm); }
+.nfg-offline-kicker{
+  display: inline-flex; align-items: center; gap: .4rem; margin: .4rem 0 0;
+  font-size: .74rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--app-text-muted);
+}
+.nfg-offline-kicker .nfg-icon{ width: 1.1em; height: 1.1em; }
+.nfg-offline-actions{ display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .4rem; }

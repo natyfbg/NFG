@@ -13,7 +13,7 @@
 {% endmacro %}
 
 {% block page %}
-<div class="nfg-discover nfg-train" data-train>
+<div class="nfg-discover nfg-train" data-train data-workout="{{ workout._id }}" data-unit="{{ units }}">
 
   <div class="nfg-train-top">
   <header class="nfg-train-head">
@@ -34,12 +34,13 @@
     <span class="nfg-program-bar"><span data-sets-bar style="width: {{ (progress.done * 100 / progress.total)|round|int if progress.total else 0 }}%;"></span></span>
     <span class="nfg-train-progress-n"><b data-sets-done>{{ progress.done }}</b> of <span data-sets-total>{{ progress.total }}</span> sets</span>
   </div>
+  <p class="nfg-train-offline" data-offline-note hidden role="status">{{ ui.icon('wifi-off') }} <span data-offline-text></span></p>
   </div>
 
   <ol class="nfg-train-list">
     {% for it in items %}
       {% set complete = it.total and it.done >= it.total %}
-      <li class="nfg-tex{% if complete %} is-complete{% endif %}" id="ex-{{ it.key }}" style="--row: {{ it.color }};" data-ex>
+      <li class="nfg-tex{% if complete %} is-complete{% endif %}" id="ex-{{ it.key }}" style="--row: {{ it.color }};" data-ex data-rest-seconds="{{ it.rest_seconds or 0 }}">
         <details{% if loop.index0 == current %} open{% endif %}>
           <summary class="nfg-tex-head">
             <span class="nfg-tex-thumb">
@@ -72,8 +73,9 @@
               </div>
               {% for row in it.rows %}
                 {% set i = loop.index0 %}{% set ph = it.ph[i] %}{% set shown = it.shown[i] %}
-                <form class="nfg-tset{% if row.done %} is-done{% endif %}" method="post" action="{{ url_for('train_set') }}" data-tset>
+                <form class="nfg-tset{% if row.done %} is-done{% endif %}" method="post" action="{{ url_for('train_set') }}" data-tset data-key="{{ it.key }}" data-row="{{ i }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="wid" value="{{ workout._id }}">
                   <input type="hidden" name="key" value="{{ it.key }}">
                   <input type="hidden" name="row" value="{{ i }}">
                   <input type="hidden" name="action" value="{{ 'undo' if row.done else 'done' }}" data-action>
@@ -230,7 +232,57 @@
     try { var saved = parseInt(localStorage.getItem(KEY) || "0", 10); if (saved > Date.now()) start((saved - Date.now()) / 1000); } catch (e) {}
   }
 
-  /* ---- logging a set in the background (the forms still work without this) ---- */
+  /* ---- logging a set in the background (the forms still work without this) ----
+     Every tick also goes into a small journal on the phone. With no signal the set stays
+     there ("pending"), shows as logged, and is sent once the phone is back online; a
+     reload from the copy of this page kept for offline use re-applies the journal. */
+  var WID = root.getAttribute("data-workout") || "";
+  var UNIT = root.getAttribute("data-unit") || "";
+  var JKEY = "nfg_train_journal";
+  var FIELDS = ["weight", "reps", "seconds", "minutes"];
+  var note = root.querySelector("[data-offline-note]");
+  var noteText = root.querySelector("[data-offline-text]");
+
+  function readJ() {
+    try { var j = JSON.parse(localStorage.getItem(JKEY) || "null"); if (j && j.workout === WID && j.entries) return j; } catch (e) {}
+    return { workout: WID, entries: {} };
+  }
+  function writeJ(j) { try { localStorage.setItem(JKEY, JSON.stringify(j)); } catch (e) {} }
+  function pendingList() {
+    var j = readJ();
+    return Object.keys(j.entries).map(function (k) { return j.entries[k]; })
+      .filter(function (en) { return en.state === "pending"; })
+      .sort(function (a, b) { return a.at - b.at; });
+  }
+  function formFor(key, row) {
+    return root.querySelector('[data-tset][data-key="' + key + '"][data-row="' + row + '"]');
+  }
+  function plural(n) { return n + " set" + (n === 1 ? "" : "s"); }
+  function showNote(msg) { if (!note) return; noteText.textContent = msg; note.hidden = !msg; }
+  function updateNote() {
+    var n = pendingList().length;
+    if (!navigator.onLine) showNote(n ? "No signal · " + plural(n) + " saved on this phone. They'll send when you're back online." : "No signal · sets you log are saved on this phone.");
+    else showNote(n ? "Sending " + plural(n) + "…" : "");
+  }
+
+  function markRow(form, done, shown) {
+    form.querySelectorAll("input[name]:not([type=hidden])").forEach(function (i) {
+      if (done) { if (shown && shown[i.name] !== undefined && shown[i.name] !== "") i.value = shown[i.name]; i.disabled = true; }
+      else { i.disabled = false; i.value = ""; }
+    });
+    form.classList.toggle("is-done", done);
+    form.querySelector("[data-action]").value = done ? "undo" : "done";
+    var tickBtn = form.querySelector(".nfg-tset-tick");
+    tickBtn.setAttribute("aria-pressed", done ? "true" : "false");
+    tickBtn.setAttribute("aria-label", (done ? "Undo" : "Log") + tickBtn.getAttribute("aria-label").replace(/^(Undo|Log)/, ""));
+  }
+  function counted(form) {
+    var ex = form.closest("[data-ex]");
+    return {
+      item: { done: ex.querySelectorAll("[data-tset].is-done").length, total: ex.querySelectorAll("[data-tset]").length },
+      sets: { done: root.querySelectorAll("[data-tset].is-done").length, total: root.querySelectorAll("[data-tset]").length }
+    };
+  }
   function setProgress(form, data) {
     var ex = form.closest("[data-ex]");
     var done = data.item.done, total = data.item.total;
@@ -254,54 +306,212 @@
       next.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
     }
   }
+  function afterTick(form, ex, done, undo, rest, item) {
+    if (done) {
+      start(rest);
+      if (item.done >= item.total) openNext(ex);
+      else {
+        var nextRow = form.nextElementSibling;
+        var nextInput = nextRow && nextRow.querySelector("input[name]:not([type=hidden]):not(:disabled)");
+        if (nextInput && !nextRow.classList.contains("is-done")) nextInput.focus({ preventScroll: true });
+      }
+    } else if (undo) {
+      var firstInput = form.querySelector("input[name]:not([type=hidden])");
+      if (firstInput) firstInput.focus();
+    }
+  }
+
+  /* One POST; resolves {network: true} when there's no connection (or it hangs). */
+  function post(body) {
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var t = ctrl ? setTimeout(function () { ctrl.abort(); }, 10000) : null;
+    return fetch("{{ url_for('train_set') }}", { method: "POST", body: body, credentials: "same-origin", headers: { "Accept": "application/json" }, signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) {
+        clearTimeout(t);
+        return r.json().then(function (data) { return { status: r.status, data: data }; }, function () { return { status: r.status, data: null }; });
+      }, function () { clearTimeout(t); return { network: true }; });
+  }
+  /* A token from an old copy of the page: fetch the page once for a fresh one. */
+  function freshToken() {
+    return fetch(location.pathname, { credentials: "same-origin", cache: "no-store" })
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        var m = /name="csrf_token" value="([^"]+)"/.exec(html);
+        if (!m) return null;
+        doc.querySelectorAll('input[name="csrf_token"]').forEach(function (i) { i.value = m[1]; });
+        return m[1];
+      })
+      .catch(function () { return null; });
+  }
+  function send(body) {
+    return post(body).then(function (res) {
+      if (res.network || res.data || res.status !== 400) return res;
+      return freshToken().then(function (token) {
+        if (!token) return res;
+        body.set("csrf_token", token);
+        return post(body);
+      });
+    });
+  }
+
+  function entryFrom(form, body) {
+    var en = { key: form.getAttribute("data-key"), row: form.getAttribute("data-row"), action: body.get("action"), unit: UNIT, at: Date.now(), fields: {}, ph: {} };
+    FIELDS.forEach(function (f) {
+      if (body.has(f)) en.fields[f] = body.get(f) || "";
+      if (body.has("ph_" + f)) en.ph[f] = body.get("ph_" + f) || "";
+    });
+    en.id = en.key + "|" + en.row;
+    return en;
+  }
+  function bodyFrom(en) {
+    var b = new FormData();
+    var token = root.querySelector('input[name="csrf_token"]');
+    b.set("csrf_token", token ? token.value : "");
+    b.set("wid", WID); b.set("key", en.key); b.set("row", en.row); b.set("action", en.action);
+    Object.keys(en.fields).forEach(function (f) { b.set(f, en.fields[f]); });
+    Object.keys(en.ph).forEach(function (f) { b.set("ph_" + f, en.ph[f]); });
+    return b;
+  }
+  function remember(en) { var j = readJ(); j.entries[en.id] = en; writeJ(j); }
+
+  /* No signal: check the numbers we can, keep the set on the phone, show it as logged. */
+  function keep(form, en, err, undo) {
+    var shown = {};
+    if (en.action !== "undo") {
+      Object.keys(en.fields).forEach(function (f) { shown[f] = en.fields[f] || en.ph[f] || ""; });
+      var count = ["reps", "seconds", "minutes"].filter(function (f) { return f in shown; })[0];
+      if (count && !shown[count]) {
+        err.textContent = "Enter your numbers first."; err.hidden = false;
+        var first = form.querySelector("input[name=" + count + "]");
+        if (first) first.focus();
+        return;
+      }
+    }
+    err.hidden = true;
+    en.state = "pending"; en.shown = shown;
+    remember(en);
+    var done = en.action !== "undo";
+    markRow(form, done, shown);
+    var data = counted(form);
+    var ex = setProgress(form, data);
+    var rest = parseInt(ex.getAttribute("data-rest-seconds") || "0", 10);
+    afterTick(form, ex, done, undo, done ? rest : 0, data.item);
+    updateNote();
+  }
+
   root.addEventListener("submit", function (e) {
     var form = e.target.closest("[data-tset]");
-    if (!form || !window.fetch) return;
+    if (!form) { guardLeave(e); return; }
+    if (!window.fetch) return;
     e.preventDefault();
     if (form.classList.contains("is-busy")) return;
     var err = form.querySelector(".nfg-tset-err");
     var undo = form.querySelector("[data-action]").value === "undo";
     var body = new FormData(form);
     form.querySelectorAll("input[name]:not([type=hidden])").forEach(function (i) { if (i.disabled) body.set(i.name, i.value); });
+    var en = entryFrom(form, body);
+    if (!navigator.onLine) { keep(form, en, err, undo); return; }
     form.classList.add("is-busy");
-    // getAttribute: the hidden input named "action" shadows form.action.
-    fetch(form.getAttribute("action"), { method: "POST", body: body, credentials: "same-origin", headers: { "Accept": "application/json" } })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        form.classList.remove("is-busy");
-        if (!data.ok) {
-          err.textContent = data.error || "Couldn't save that set."; err.hidden = false;
-          var first = form.querySelector("input[name=reps], input[name=seconds], input[name=minutes]");
-          if (first) first.focus();
-          return;
-        }
-        err.hidden = true;
-        var inputs = form.querySelectorAll("input[name]:not([type=hidden])");
-        inputs.forEach(function (i) {
-          if (data.done) { i.value = data.shown[i.name] === undefined ? i.value : data.shown[i.name]; i.disabled = true; }
-          else { i.disabled = false; i.value = ""; }
-        });
-        form.classList.toggle("is-done", data.done);
-        form.querySelector("[data-action]").value = data.done ? "undo" : "done";
-        var tickBtn = form.querySelector(".nfg-tset-tick");
-        tickBtn.setAttribute("aria-pressed", data.done ? "true" : "false");
-        tickBtn.setAttribute("aria-label", (data.done ? "Undo" : "Log") + tickBtn.getAttribute("aria-label").replace(/^(Undo|Log)/, ""));
-        var ex = setProgress(form, data);
-        if (data.done) {
-          start(data.rest);
-          if (data.item.done >= data.item.total) openNext(ex);
-          else {
-            var nextRow = form.nextElementSibling;
-            var nextInput = nextRow && nextRow.querySelector("input[name]:not([type=hidden]):not(:disabled)");
-            if (nextInput && !nextRow.classList.contains("is-done")) nextInput.focus({ preventScroll: true });
-          }
-        } else if (undo) {
-          var firstInput = form.querySelector("input[name]:not([type=hidden])");
-          if (firstInput) firstInput.focus();
-        }
-      })
-      .catch(function () { form.classList.remove("is-busy"); form.submit(); });
+    send(body).then(function (res) {
+      form.classList.remove("is-busy");
+      if (res.network) { keep(form, en, err, undo); return; }
+      var data = res.data;
+      if (!data) { form.submit(); return; }  /* an error page: let the plain form show it */
+      if (!data.ok) {
+        err.textContent = data.error || "Couldn't save that set."; err.hidden = false;
+        var first = form.querySelector("input[name=reps], input[name=seconds], input[name=minutes]");
+        if (first) first.focus();
+        return;
+      }
+      err.hidden = true;
+      markRow(form, data.done, data.shown);
+      en.state = "sent"; en.shown = data.shown; remember(en);
+      var ex = setProgress(form, data);
+      afterTick(form, ex, data.done, undo, data.rest, data.item);
+    });
   });
+
+  /* Send kept sets, oldest first; stop at the first one that finds no connection. */
+  var flushing = null;
+  function flush() {
+    if (flushing) return flushing;
+    if (!navigator.onLine) { updateNote(); return Promise.resolve(); }
+    var list = pendingList();
+    if (!list.length) { updateNote(); return Promise.resolve(); }
+    updateNote();
+    flushing = list.reduce(function (chain, en) {
+      return chain.then(function (go) {
+        if (!go) return false;
+        return send(bodyFrom(en)).then(function (res) {
+          if (res.network) return false;
+          var j = readJ(), cur = j.entries[en.id];
+          var form = formFor(en.key, en.row);
+          if (res.data && res.data.ok) {
+            if (cur && cur.at === en.at) { cur.state = "sent"; cur.shown = res.data.shown; }
+          } else {
+            /* The server said no (workout over, numbers it can't take): stop retrying. */
+            if (cur && cur.at === en.at) delete j.entries[en.id];
+            if (form && en.action !== "undo") {
+              markRow(form, false, null);
+              setProgress(form, counted(form));
+              var err = form.querySelector(".nfg-tset-err");
+              err.textContent = (res.data && res.data.error) || "Couldn't save that set."; err.hidden = false;
+            }
+          }
+          writeJ(j);
+          return true;
+        });
+      });
+    }, Promise.resolve(true)).then(function () { flushing = null; updateNote(); }, function () { flushing = null; updateNote(); });
+    return flushing;
+  }
+
+  /* Finish, add/remove a set, swap units, discard: those need the server. With no signal,
+     say so; with sets still on the phone, send them first. */
+  function guardLeave(e) {
+    if (e.defaultPrevented || !window.fetch) return;
+    var form = e.target;
+    if (form.getAttribute("data-flushed")) { form.removeAttribute("data-flushed"); return; }
+    if (!navigator.onLine) {
+      e.preventDefault();
+      var n = pendingList().length;
+      showNote("No signal · try that again once you're back online." + (n ? " " + plural(n) + " saved on this phone." : ""));
+      return;
+    }
+    if (!pendingList().length) return;
+    e.preventDefault();
+    var submitter = e.submitter || null;
+    flush().then(function () {
+      if (pendingList().length) { updateNote(); return; }
+      form.setAttribute("data-flushed", "1");
+      if (form.requestSubmit) form.requestSubmit(submitter); else form.submit();
+    });
+  }
+
+  /* On load: re-apply what this phone knows that the page may not (an older copy kept for
+     offline use, or sets still waiting to send), then send anything waiting. */
+  (function restore() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(JKEY) || "null");
+      if (raw && raw.workout !== WID) localStorage.removeItem(JKEY);  /* another workout: it's over */
+    } catch (e) {}
+    var j = readJ();
+    var touched = [];
+    Object.keys(j.entries).forEach(function (id) {
+      var en = j.entries[id], form = formFor(en.key, en.row);
+      if (!form || (en.unit !== UNIT && en.state !== "pending")) return;
+      var done = en.action !== "undo";
+      if (form.classList.contains("is-done") === done && en.state !== "pending") return;
+      markRow(form, done, en.shown);
+      touched.push(form);
+    });
+    touched.forEach(function (form) { setProgress(form, counted(form)); });
+    updateNote();
+    flush();
+  })();
+  window.addEventListener("online", flush);
+  window.addEventListener("offline", updateNote);
+  setInterval(function () { if (pendingList().length) flush(); }, 20000);
 })();
 </script>
 {% endblock %}

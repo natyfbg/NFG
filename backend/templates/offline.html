@@ -1,0 +1,35 @@
+<!doctype html>
+{#- Kept on the phone by the service worker and shown when there's no signal and the page
+    asked for isn't saved yet. Standalone (no base.html): the copy on the phone can't know
+    who is signed in, so it shows nothing personal. -#}
+{% import "_components.html" as ui %}
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#121512">
+    <title>You're offline – {{ app_name }}</title>
+    <script>
+      (function () {
+        var m = /(^|; )nfg_theme=(light|dark)/.exec(document.cookie);
+        var t = m ? m[2] : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.dataset.theme = t;
+      })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v=asset_v) }}">
+  </head>
+  <body class="nfg-offline">
+    <main class="nfg-auth-card nfg-offline-card">
+      {% if brand_logo %}<img class="nfg-offline-mark" src="{{ brand_logo }}" alt="" width="48" height="48">{% endif %}
+      <p class="nfg-offline-kicker">{{ ui.icon('wifi-off') }} No signal</p>
+      <h1 class="nfg-auth-title">You're offline</h1>
+      <p class="nfg-auth-sub">This page isn't saved on your phone yet. Pages you've opened before still work, and sets you log in a workout are kept on your phone and sent once you're back online.</p>
+      <div class="nfg-offline-actions">
+        <button class="nfg-act is-primary" type="button" onclick="location.reload()">Try again</button>
+        <a class="nfg-act is-ghost" href="{{ url_for('train_index') }}">My workouts</a>
+        <a class="nfg-act is-ghost" href="{{ url_for('home') }}">Home</a>
+      </div>
+    </main>
+  </body>
+</html>

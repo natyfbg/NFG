@@ -59,6 +59,13 @@
     </script>
     {% if brand_icon_32 %}<link rel="icon" type="image/png" sizes="32x32" href="{{ brand_icon_32 }}">{% endif %}
     {% if brand_icon_180 %}<link rel="apple-touch-icon" href="{{ brand_icon_180 }}">{% endif %}
+    {% if pwa_enabled %}
+      {# Add to Home Screen: opens full-screen with the top bar's colour (pwa.py). #}
+      <link rel="manifest" href="{{ url_for('pwa_manifest') }}">
+      <meta name="mobile-web-app-capable" content="yes">
+      <meta name="apple-mobile-web-app-capable" content="yes">
+      <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    {% endif %}
 
     <!-- App CSS (moved out of base.html for maintainability) -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v=asset_v) }}">
@@ -142,6 +149,7 @@
               <a class="dropdown-item nfg-menu-link{% if ep == 'macros' %} is-active{% endif %}" href="{{ url_for('macros') }}">{{ ui.icon('pie-chart') }} Macros</a>
               <a class="dropdown-item nfg-menu-link{% if ep == 'search' %} is-active{% endif %}" href="{{ url_for('search') }}">{{ ui.icon('search') }} Search</a>
               <a class="dropdown-item nfg-menu-link{% if ep == 'about_page' %} is-active{% endif %}" href="{{ url_for('about_page') }}">{{ ui.icon('info-circle') }} About {{ app_name }}</a>
+              {% if pwa_enabled %}<button class="dropdown-item nfg-menu-link" type="button" data-install hidden>{{ ui.icon('phone') }} Add to home screen</button>{% endif %}
               <div class="nfg-menu-sep" role="separator"></div>
               <form class="nfg-theme-row" action="{{ url_for('set_theme') }}" method="post" data-theme-switch>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -229,6 +237,13 @@
 
     {# Bottom sheets / modals go here, outside #page-shell (see CLAUDE.md). #}
     {% block overlays %}{% endblock %}
+    {% if pwa_enabled %}
+      {# iPhone/iPad: Safari has no install button for sites, so the menu item shows how. #}
+      <div class="nfg-install-tip" data-install-tip hidden role="dialog" aria-label="Add {{ app_name }} to your home screen">
+        <p><b>Add {{ app_name }} to your home screen</b>Tap {{ ui.icon('box-arrow-up') }} <b>Share</b> at the bottom of Safari, then <b>Add to Home Screen</b>.</p>
+        <button class="nfg-iconbtn" type="button" data-install-close aria-label="Close">{{ ui.icon('x-lg') }}</button>
+      </div>
+    {% endif %}
 
     <footer class="container nfg-footer">
       <a href="{{ url_for('about_page') }}">About {{ app_name }}</a>
@@ -615,5 +630,32 @@
         });
       })();
     </script>
+    {% if pwa_enabled %}
+    <script>
+      /* Install to home screen + offline (pwa.py, templates/sw.js). */
+      (function () {
+        if ('serviceWorker' in navigator && window.isSecureContext) {
+          window.addEventListener('load', function () {
+            navigator.serviceWorker.register('{{ url_for('pwa_service_worker') }}', { scope: '/' }).catch(function () {});
+          });
+        }
+        var item = document.querySelector('[data-install]');
+        var tip = document.querySelector('[data-install-tip]');
+        if (!item) return;
+        var installed = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        if (installed) return;
+        var prompt = null;
+        var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); prompt = e; item.hidden = false; });
+        window.addEventListener('appinstalled', function () { prompt = null; item.hidden = true; });
+        if (ios && tip) item.hidden = false;
+        item.addEventListener('click', function () {
+          if (prompt) { prompt.prompt(); prompt.userChoice.finally(function () { prompt = null; item.hidden = true; }); return; }
+          if (tip) tip.hidden = false;
+        });
+        if (tip) tip.querySelector('[data-install-close]').addEventListener('click', function () { tip.hidden = true; });
+      })();
+    </script>
+    {% endif %}
   </body>
 </html>
