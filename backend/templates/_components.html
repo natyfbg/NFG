@@ -111,6 +111,7 @@
       {% if p.category %}<span class="nfg-badge">{{ p.category }}</span>{% endif %}
       {% if p.duration_label %}<span class="nfg-badge is-light">{{ p.duration_label }}</span>{% endif %}
       {% if saved %}<span class="nfg-badge is-saved">Saved</span>{% endif %}
+      {% if p.for_you is defined and p.for_you %}<span class="nfg-badge is-foryou">For your goal</span>{% endif %}
     </span>
     <span class="nfg-program-title">{{ p.title or 'Program' }}</span>
     {% if started %}

@@ -11,6 +11,24 @@
     <h1 class="nfg-hero-title">What are we training today?</h1>
   </header>
 
+  {# First visit: three quick questions, or "not now" and Home stops asking. #}
+  {% if show_setup and not active_workout %}
+    <section class="nfg-setup-card" aria-label="Set up {{ app_name }}">
+      <div class="nfg-setup-body">
+        <b>Make {{ app_name }} yours</b>
+        <span>Your level, where you train and your goal. Three taps.</span>
+      </div>
+      <div class="nfg-setup-actions">
+        <a class="nfg-act is-primary" href="{{ url_for('onboarding_start', next=url_for('home')) }}">Set up</a>
+        <form method="post" action="{{ url_for('onboarding_start') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="skip">
+          <button class="nfg-setup-skip" type="submit" aria-label="Not now">{{ ui.icon('x-lg') }}</button>
+        </form>
+      </div>
+    </section>
+  {% endif %}
+
   {# A workout in progress comes first: one tap back into the logger. #}
   {% if active_workout %}
     <a class="nfg-continue is-compact is-live" href="{{ url_for('train_session') }}">

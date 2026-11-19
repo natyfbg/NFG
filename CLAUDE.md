@@ -180,6 +180,16 @@ as committer, so GitHub shows them as Verified.
   better set by estimated one-rep max (Epley), most reps, longest hold / cardio; an
   exercise logged for the first time sets no best. The chart reuses
   `nutrition.line_chart` and `ui.progress_chart`.
+- **Training profile lives in `onboarding.py`** (`/start`, `/start/goal`): level / setting
+  are the existing `nfg_level` / `nfg_env` cookies, goal is `nfg_goal`, `nfg_onboarded`
+  = set up or skipped. Routes only queue `g._set_level` / `_set_env` / `_set_goal` /
+  `_set_onboarded`; app.py's after-request hook sets the cookies **and** saves any change
+  on a member's `users.training_profile` (`_sync_training_profile`), so it follows the
+  account; sign-in brings it back (`onboarding.apply_profile`). Goals map to programs to
+  recommend (first one that's published) and to the macros calculator's starting goal.
+- Auth pages (sign in, create account, forgot, reset, admin `/login`) extend
+  `auth_base.html` (card layout, `password()` macro with a show/hide toggle). Error
+  re-renders pass back what was typed (`form`, `identity`), never passwords.
 - `backend/taxonomy.py` is the single source of truth for muscle/group/equipment/
   movement keys. Keys are stored in the DB and content files — never rename one
   without a migration. It has no Flask/Mongo imports on purpose.
@@ -379,8 +389,9 @@ as committer, so GitHub shows them as Verified.
   Equipment · Level · more) on the Exercises page and browse. Muscles are
   multi-select and combine with AND (`group=a&group=b`: every group worked, at least
   one as a main target; exercises with more of them as main targets first); equipment
-  and level are one each. The panel (`_filterpanel.html`) is a bottom sheet on phones
-  and a popup under the bar on desktop, with a live "Show N exercises" count from
+  and level are one each. The panel (`_filterpanel.html`; 2026-11-18: chip dropdowns, see
+  below) is a bottom sheet on phones and a popup under the bar on desktop, with a live
+  "Show N exercises" count from
   `/workouts/browse/count` and a one-tap "Remove <last muscle>" when nothing matches.
   All 12 equipment tiles show on the Exercises page.
 - 2026-11-17 — **Revamp phase 3 (sessions + Mixer):** one builder for both,
@@ -501,6 +512,29 @@ as committer, so GitHub shows them as Verified.
   and every workout as a table with links). The summary opens with **New best** when a
   workout beats every earlier one, and marks those exercises. Home's mix button says
   "Build a workout" (the Mixer builds one now). Active nav tab: soft light pill (Nate).
+- 2026-11-18 — **Sign-in pages and training profile:** sign in, create account, forgot /
+  reset password and admin sign-in share one card layout in the app's style (brand mark,
+  gold button, show/hide password, typed values kept on errors, "everything you've
+  done here comes with you"). New accounts go to **/start**: three skippable questions
+  (experience, where you train, goal) that set the level and setting sessions / the
+  Mixer / programs use; the goal puts a **For your goal** program first on Home and sets
+  the macros calculator's starting goal. Home shows a one-time "Make Qiltsim yours" card
+  (× = not now) to visitors who haven't set a level. The account page gains a Goal
+  switch. Members' profiles are saved on the account and come back on sign-in.
+  Fixed on the way: a picked option in list-style choices (the macros calculator's
+  activity list, the new setup page) had its text vanish (same colour as the card).
+- 2026-11-18 — **Exercise filters, calmer** (Nate: "cleaner, less crowded"): the filter bar
+  is the Filters button (sliders, shows how many filters are on) | Muscles · Equipment ·
+  Level. Each chip opens a **dropdown with only that filter** under the bar
+  (`data-mode` on `#filterPanel`): Equipment and Level are lists that apply on tap, Muscles
+  is a chip grid (colour dot, filled with the group colour when picked) with Clear and the
+  live "Show N". The bar stays tappable while a dropdown is open (switch dropdowns, tap the
+  same chip or anywhere outside to close). The Filters button opens everything: Muscles and
+  Equipment fold into rows showing the current choice, Level / Training at / Sort are
+  switches. Same form, field names and count endpoint; without JS every chip opens the full
+  panel at `#filterPanel`. Bottom nav active tab: warm gray pill, lighter at the top
+  (`--bottom-nav-active-top` → `--bottom-nav-active`, cream label, light-gold marker),
+  after the light pill read too light.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
@@ -526,7 +560,7 @@ Next six sprints, in order:
    to real exercises and Coach's Picks resolves fully.
 5. Accounts and trust — ✅ account page (2026-11-17); ✅ password reset (email, 2026-11-16);
    ✅ delete account + export, privacy/terms, error alerts (2026-11-18); backups (Atlas
-   toggle, Nate); still to do: new sign-in/sign-up design, skippable training profile.
+   toggle, Nate); ✅ sign-in/sign-up redesign + skippable training profile (2026-11-18).
 6. Workouts + session mode (plan: project doc `qiltsim-session-mode-plan-2026-11-18`) —
    ✅ phase 1 (2026-11-18): Start from program day / session / Mixer / exercise, set
    logging, rest timer, units, finish + summary, program-day completion, Home resume card,

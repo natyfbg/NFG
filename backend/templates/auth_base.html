@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+{#- Sign in, create account, password reset, admin sign in: one quiet layout. -#}
+
+{% macro password(name, label, autocomplete, id, minlength=None, autofocus=False) %}
+  <label class="nfg-field" for="{{ id }}">
+    <span>{{ label }}</span>
+    <span class="nfg-pass">
+      <input id="{{ id }}" type="password" name="{{ name }}" autocomplete="{{ autocomplete }}"{% if minlength %} minlength="{{ minlength }}"{% endif %} required{% if autofocus %} autofocus{% endif %}>
+      <button class="nfg-pass-toggle" type="button" data-pass-toggle aria-controls="{{ id }}" aria-label="Show password" aria-pressed="false">
+        <span class="is-show">{{ ui.icon('eye') }}</span><span class="is-hide">{{ ui.icon('eye-slash') }}</span>
+      </button>
+    </span>
+  </label>
+{% endmacro %}
+
+{% block page %}
+<div class="nfg-discover nfg-auth">
+  <div class="nfg-auth-card">
+    <a class="nfg-auth-mark" href="{{ url_for('home') }}" aria-label="{{ app_name }} home">
+      {% if brand_logo %}<img src="{{ brand_logo }}" alt="" width="44" height="44" decoding="async">{% endif %}
+    </a>
+    {% block auth %}{% endblock %}
+  </div>
+  {% block auth_foot %}{% endblock %}
+</div>
+<script>
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-pass-toggle]');
+    if (!btn) return;
+    var input = document.getElementById(btn.getAttribute('aria-controls'));
+    if (!input) return;
+    var show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+    btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    input.focus();
+  });
+</script>
+{% endblock %}

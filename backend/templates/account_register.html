@@ -1,44 +1,32 @@
-{% extends "base.html" %}
+{% extends "auth_base.html" %}
 {% block title %}Create account – {{ app_name }}{% endblock %}
 {% block back_url %}{{ url_for('home') }}{% endblock %}
 
-{% block content %}
-<div class="d-flex justify-content-center">
-  <div class="card shadow-sm p-4" style="max-width: 480px; width: 100%;">
-    <h1 class="h4 mb-3 text-center">Create account</h1>
+{% block auth %}
+  <h1 class="nfg-auth-title">Create your account</h1>
+  <p class="nfg-auth-sub">Free. Your workouts, plans and macros on every device, and everything you've already done here comes with you.</p>
+  <form class="nfg-auth-form" method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% set nxt = request.values.get('next') %}
+    {% if nxt %}<input type="hidden" name="next" value="{{ nxt }}">{% endif %}
+    <label class="nfg-field" for="reg-username">
+      <span>Username</span>
+      <input id="reg-username" name="username" value="{{ form.username if form else '' }}" minlength="3" maxlength="30" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      <small class="nfg-field-help">Letters, numbers and _ · 3–30 characters</small>
+    </label>
+    <label class="nfg-field" for="reg-email">
+      <span>Email</span>
+      <input id="reg-email" type="email" name="email" value="{{ form.email if form else '' }}" autocomplete="email" inputmode="email" maxlength="254" required>
+      <small class="nfg-field-help">Only for resetting your password. No newsletters.</small>
+    </label>
+    {{ password('password', 'Password', 'new-password', 'reg-password', minlength=8) }}
+    <small class="nfg-field-help is-under">At least 8 characters</small>
+    {{ password('confirm_password', 'Password again', 'new-password', 'reg-confirm', minlength=8) }}
+    <button type="submit" class="nfg-act is-primary nfg-auth-submit">Create account</button>
+    <p class="nfg-auth-legal">By creating an account you agree to the <a href="{{ url_for('terms_page') }}">Terms</a> and <a href="{{ url_for('privacy_page') }}">Privacy</a> policy.</p>
+  </form>
+{% endblock %}
 
-    <form method="post" novalidate>
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-      <div class="mb-3">
-        <label class="form-label">Username</label>
-        <input class="form-control" name="username" minlength="3" maxlength="30" required>
-        <div class="form-text">Letters, numbers, underscore. 3–30 chars.</div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Email</label>
-        <input class="form-control" type="email" name="email" required>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Password</label>
-        <input class="form-control" type="password" name="password" minlength="8" required>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Confirm Password</label>
-        <input class="form-control" type="password" name="confirm_password" minlength="8" required>
-      </div>
-
-      <button type="submit" class="btn btn-dark w-100">Create account</button>
-      <p class="small text-muted mt-2 mb-0 text-center">By creating an account you agree to the <a href="{{ url_for('terms_page') }}">Terms</a> and <a href="{{ url_for('privacy_page') }}">Privacy</a> policy.</p>
-    </form>
-
-    <div class="small text-muted mt-3 text-center">
-      Already have an account?
-      <a href="{{ url_for('account_login') }}">Sign in</a>
-    </div>
-  </div>
-</div>
+{% block auth_foot %}
+  <p class="nfg-auth-foot">Already have an account? <a href="{{ url_for('account_login', next=request.values.get('next')) }}">Sign in</a></p>
 {% endblock %}

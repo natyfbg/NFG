@@ -1,6 +1,6 @@
 {# Always-visible filter bar (Exercises page and browse). Needs _filter_panel_context().
-   The chips open the filter panel (_filterpanel.html) at their section; without JS they
-   jump to it via #filterPanel. #}
+   The Filters button opens every filter; Muscles / Equipment / Level open a dropdown with
+   just that one (_filterpanel.html). Without JS they all jump to #filterPanel. #}
 {% import "_components.html" as ui %}
 <div class="nfg-filterbar" data-filterbar>
   <form class="nfg-searchbar" action="{{ url_for('workouts_browse') }}" method="get" role="search">
@@ -10,23 +10,26 @@
       {% if v is string %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% else %}{% for x in v %}<input type="hidden" name="{{ k }}" value="{{ x }}">{% endfor %}{% endif %}
     {% endfor %}
   </form>
+  {% set n_filters = f_groups|length + (1 if f_eq else 0) + (1 if f_level else 0) + (1 if f_env else 0) %}
   <div class="nfg-fchips" data-no-page-swipe>
+    <a class="nfg-fchip is-icon is-filters{% if n_filters %} is-on{% endif %}" href="#filterPanel" data-filter-open="all"
+       aria-haspopup="dialog" aria-controls="filterPanel" aria-expanded="false"
+       aria-label="All filters{% if n_filters %} ({{ n_filters }} on){% endif %}">
+      {{ ui.icon('sliders') }}{% if n_filters %}<span class="nfg-fchip-count">{{ n_filters }}</span>{% endif %}
+    </a>
+    <span class="nfg-fchips-sep" aria-hidden="true"></span>
     <a class="nfg-fchip{% if f_groups %} is-on{% endif %}" href="#filterPanel" data-filter-open="muscles"
-       aria-haspopup="dialog" aria-controls="filterPanel">
+       aria-haspopup="true" aria-controls="filterPanel" aria-expanded="false">
       <span>{% if f_groups|length == 1 %}{{ group_choices|selectattr('key', 'equalto', f_groups[0])|map(attribute='label')|first }}{% elif f_groups %}{{ f_groups|length }} muscles{% else %}Muscles{% endif %}</span>
       {{ ui.icon('chevron-down') }}
     </a>
     <a class="nfg-fchip{% if f_eq %} is-on{% endif %}" href="#filterPanel" data-filter-open="equipment"
-       aria-haspopup="dialog" aria-controls="filterPanel">
+       aria-haspopup="true" aria-controls="filterPanel" aria-expanded="false">
       <span>{{ eq_label or 'Equipment' }}</span>{{ ui.icon('chevron-down') }}
     </a>
     <a class="nfg-fchip{% if f_level %} is-on{% endif %}" href="#filterPanel" data-filter-open="level"
-       aria-haspopup="dialog" aria-controls="filterPanel">
+       aria-haspopup="true" aria-controls="filterPanel" aria-expanded="false">
       <span>{{ f_level or 'Level' }}</span>{{ ui.icon('chevron-down') }}
-    </a>
-    <a class="nfg-fchip is-icon{% if f_env or f_sort != 'name' %} is-on{% endif %}" href="#filterPanel" data-filter-open="more"
-       aria-haspopup="dialog" aria-controls="filterPanel" aria-label="More filters">
-      {{ ui.icon('sliders') }}
     </a>
   </div>
   {% if active_filters %}

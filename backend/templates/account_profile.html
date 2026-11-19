@@ -103,6 +103,10 @@
         {{ ui.seg_links(env_options, env, "Where you train") }}
       </div>
       <div class="nfg-acct-pref">
+        <span class="nfg-acct-pref-label">Goal <small>the program Home suggests, and macros</small></span>
+        {{ ui.seg_links(goal_options, goal, "Goal", "nfg-goal-links") }}
+      </div>
+      <div class="nfg-acct-pref">
         <span class="nfg-acct-pref-label">Theme</span>
         <div class="nfg-seg" role="group" aria-label="Theme">
           {% for key, label in [('light', 'Light'), ('dark', 'Dark'), ('system', 'Auto')] %}

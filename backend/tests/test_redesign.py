@@ -152,11 +152,27 @@ def test_browse_paginates_with_numbers(client, library):
 def test_browse_filter_panel_present(client, library):
     html = client.get("/workouts/browse").get_data(as_text=True)
     assert 'id="filterPanel"' in html and "data-filterbar" in html
-    assert "<legend>Muscles <span" in html  # several muscles at once
-    for legend in ("Training at", "Equipment", "Level", "Sort"):
-        assert f"<legend>{legend}</legend>" in html
+    # The Filters button opens everything; each chip opens a dropdown with just its filter.
+    assert 'data-filter-open="all"' in html
+    for section in ("muscles", "equipment", "level"):
+        assert f'data-filter-open="{section}"' in html
+        assert f'data-filter-section="{section}"' in html
+    for legend in ("Muscles", "Equipment"):  # rows that fold open in the full panel
+        assert f'<legend class="visually-hidden">{legend}</legend>' in html
+    for legend in ("Level", "Training at", "Sort"):  # switches
+        assert f'<legend class="nfg-fsec-name">{legend}</legend>' in html
     assert 'type="checkbox" name="group"' in html  # muscles: many
     assert 'type="radio" name="eq"' in html and 'type="radio" name="level"' in html  # one each
+
+
+def test_browse_filter_bar_counts_active_filters(client, library):
+    url = "/workouts/browse?group=chest&eq=bodyweight&level=Beginner"
+    html = client.get(url).get_data(as_text=True)
+    assert 'aria-label="All filters (3 on)"' in html
+    assert '<span class="nfg-fchip-count">3</span>' in html
+    assert '<span class="nfg-fsec-value" data-filter-value="equipment">Bodyweight</span>' in html
+    plain = client.get("/workouts/browse").get_data(as_text=True)
+    assert 'aria-label="All filters"' in plain and "nfg-fchip-count" not in plain
 
 
 # --------------------------------------------------------------------------
