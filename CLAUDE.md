@@ -115,6 +115,9 @@ as committer, so GitHub shows them as Verified.
   as ui %}`). Full-width pages override `{% block page %}` in `base.html`.
 - Grid layouts containing rails need `min-width: 0` on grid children, or the rail's
   content stretches the page wider than the phone screen.
+- **`position: sticky` needs `overflow-x: clip`, not `hidden`,** on html/body (and on any
+  ancestor): `hidden` makes that element a scroll container and sticky children stop
+  sticking without any error (it hid a broken top bar and filter bar until 2026-11-18).
 - **Bottom sheets / modals go in `{% block overlays %}`**, never inside `page`/`content`:
   `#page-shell` gets a transform while being swiped, which traps `position: fixed`
   children inside it and under the bottom nav. Same for any fixed bar (the workout rest
@@ -531,8 +534,13 @@ as committer, so GitHub shows them as Verified.
   live "Show N". The bar stays tappable while a dropdown is open (switch dropdowns, tap the
   same chip or anywhere outside to close). The Filters button opens everything: Muscles and
   Equipment fold into rows showing the current choice, Level / Training at / Sort are
-  switches. Same form, field names and count endpoint; without JS every chip opens the full
-  panel at `#filterPanel`. Bottom nav active tab: warm gray pill, lighter at the top
+  switches. Nate (same evening): **every view drops down right under the buttons** (the full
+  panel was a bottom sheet on phones); when there isn't room, the filter bar first slides up
+  to its sticky spot and goes back on close. Same form, field names and count endpoint;
+  without JS every chip opens the full panel at `#filterPanel`. Fixed on the way: nothing
+  had ever stuck (top bar, filter bar, the exercise page's media column) because
+  `html, body{ overflow-x: hidden }` made `<body>` a scroll container; it is now
+  `overflow-x: clip`. Bottom nav active tab: warm gray pill, lighter at the top
   (`--bottom-nav-active-top` → `--bottom-nav-active`, cream label, light-gold marker),
   after the light pill read too light.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
