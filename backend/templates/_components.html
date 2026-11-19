@@ -184,3 +184,18 @@
     </nav>
   {% endif %}
 {% endmacro %}
+
+{# Session mode: "Start workout" (a form) or "Resume workout" when this very workout is
+   in progress. `key` comes from the route (_train_key) so it matches the server. #}
+{% macro start_workout(key, fields, label="Start workout", cls="", variant="is-primary") %}
+  {% if key and train_active_key() == key %}
+    <a class="nfg-act is-primary nfg-start {{ cls }}" href="{{ url_for('train_session') }}">{{ icon('play-fill') }} Resume workout</a>
+  {% else %}
+    <form class="nfg-start-form {{ cls }}" method="post" action="{{ url_for('train_start') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% for name, value in fields %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+      <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+      <button class="nfg-act {{ variant }} nfg-start" type="submit">{{ icon('play-fill') }} {{ label }}</button>
+    </form>
+  {% endif %}
+{% endmacro %}

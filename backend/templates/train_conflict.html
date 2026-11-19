@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+
+{% block title %}Workout in progress – {{ app_name }}{% endblock %}
+{% block back_url %}{{ url_for('train_index') }}{% endblock %}
+
+{% block page %}
+<div class="nfg-discover nfg-train-conflict">
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">One workout at a time</div>
+    <h1 class="nfg-page-title">You're in the middle of {{ active.title }}</h1>
+    <p class="nfg-prog-summary">{{ active_sets.done }} of {{ active_sets.total }} sets logged. What should happen to it?</p>
+  </header>
+
+  <div class="nfg-train-choices">
+    <a class="nfg-act is-primary" href="{{ url_for('train_session') }}">{{ ui.icon('play-fill') }} Resume {{ active.title }}</a>
+    <form method="post" action="{{ url_for('train_start') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% for name, value in resend %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+      <input type="hidden" name="replace" value="1">
+      <button class="nfg-act is-ghost" type="submit">
+        {% if active_logged %}Save it and start {{ new_title }}{% else %}Start {{ new_title }} instead{% endif %}
+      </button>
+    </form>
+  </div>
+  {% if active_logged %}<p class="nfg-prog-note">Saving keeps the sets you logged in your history.</p>{% endif %}
+</div>
+{% endblock %}

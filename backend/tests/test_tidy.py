@@ -68,7 +68,9 @@ def test_home_reads_the_library_once_then_from_cache(client, library, cached, qu
     assert client.get("/").status_code == 200
     again = [c for c in query_log if c[0] == "workouts"]
     assert len(first) == 1 and again == []
-    assert len(query_log) <= 5  # whole page, warm cache
+    # Whole page, warm cache. mongomock counts a find_one as find_one + find; the last
+    # pair is the "workout in progress" check (one indexed lookup).
+    assert len(query_log) <= 7, query_log
 
 
 def test_exercises_page_uses_the_snapshot(client, library, cached, query_log):

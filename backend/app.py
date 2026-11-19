@@ -26,6 +26,8 @@ import nutrition
 import program_content
 import session_builder as sb
 import taxonomy as tx
+import training as tr
+import training_routes
 from bson.objectid import ObjectId
 from bson.regex import Regex
 from dotenv import load_dotenv
@@ -692,6 +694,7 @@ def _migrate_guest_state_to_member(guest_viewer_id: str, member_key: str) -> Non
         return
 
     nutrition.migrate_guest(db, guest, member_key)
+    training_routes.migrate_guest(db, guest, member_key)
 
     guest_favs = list(db.program_favorites.find({"viewer_id": guest}))
     for row in guest_favs:
@@ -3705,6 +3708,8 @@ def workouts_mix():
         "mix.html",
         preset=None,
         mix_title=" + ".join(p["label"] for p in picked),
+        train_key=_train_key("mix", ",".join(groups), level, env) if groups else "",
+        train_fields=[("from", "mix"), ("level", level), ("env", env)] + [("g", k) for k in groups],
         env=env,
         level=level,
         level_choices=LEVEL_CHOICES,
@@ -3748,6 +3753,20 @@ def _session_adds(split_key: str) -> List[str]:
     return out
 
 
+def _train_key(kind: str, *parts) -> str:
+    """Identity of a workout source ("program:<track>:<week>:<day>"…): pressing Start on
+    the workout already in progress resumes it, and its page says "Resume"."""
+    return ":".join([kind] + [str(p) for p in parts])
+
+
+def _session_title(preset: dict, split: dict) -> str:
+    if preset["label"] == split["label"]:
+        return preset["label"]
+    if preset["label"].startswith("Full"):
+        return split["label"]
+    return f"{split['label']} · {preset['label']}"
+
+
 def _render_session(preset: dict, env: str, level: str):
     """A session page, e.g. /workouts/mix?p=pull-vertical&level=intermediate&add=traps."""
     split = next(s for s in tx.SESSION_SPLITS if s["key"] == preset["split"])
@@ -3782,20 +3801,15 @@ def _render_session(preset: dict, env: str, level: str):
                 "href": session_url(next_adds=nxt),
             }
         )
-    title = (
-        preset["label"]
-        if preset["label"] == split["label"]
-        else (
-            split["label"]
-            if preset["label"].startswith("Full")
-            else f"{split['label']} · {preset['label']}"
-        )
-    )
+    title = _session_title(preset, split)
     return render_template(
         "mix.html",
         # Not "session": that name is Flask's session object in every template.
         preset=preset,
         session_title=title,
+        train_key=_train_key("session", preset["key"], level, env, ",".join(adds)),
+        train_fields=[("from", "session"), ("p", preset["key"]), ("level", level), ("env", env)]
+        + [("add", a) for a in adds],
         focus_options=focus_options if len(focus_options) > 1 else [],
         add_options=add_options,
         added=[o for o in add_options if o["on"]],
@@ -3899,6 +3913,7 @@ def home():
         home_programs=program_cards,
         favorite_programs=favorite_programs,
         continue_plan=continue_plan,
+        active_workout=training_routes.active_card(db, owner_key),
     )
 
 
@@ -4460,6 +4475,21 @@ def program_hub_week_detail(hub_slug, week_number: int):
         week=week,
         week_number=week_number,
         day=day,
+        train_key=(
+            _train_key("program", track.get("slug"), week_number, day["key"]) if day else ""
+        ),
+        train_fields=(
+            [
+                ("from", "program"),
+                ("hub", hub_slug),
+                ("week", week_number),
+                ("day", day["key"]),
+                ("level", level),
+                ("env", env),
+            ]
+            if day
+            else []
+        ),
         next_day=next_day,
         next_week=next_week,
         progress=progress,
@@ -4468,6 +4498,85 @@ def program_hub_week_detail(hub_slug, week_number: int):
         level_meta=tx.LEVELS,
         muscle_groups=tx.MUSCLE_GROUPS,
     )
+
+
+def _set_program_day_done(
+    owner_key: str,
+    hub_slug: str,
+    level: str,
+    env: str,
+    track: dict,
+    week_number: int,
+    day_key: str,
+    done: bool = True,
+    via: str = "",
+) -> None:
+    """Mark a program day done (or undo it) and keep the week's completion in step.
+    Used by "Mark complete" and by finishing a workout started from that day."""
+    query = {
+        "viewer_id": owner_key,
+        "track_slug": track.get("slug"),
+        "week_number": week_number,
+        "day_key": day_key,
+    }
+    if not done:
+        db.program_day_progress.delete_one(query)
+    else:
+        fields = {
+            "completed_at": datetime.datetime.utcnow(),
+            "hub_slug": hub_slug,
+            "level": level,
+            "env": env,
+        }
+        if via:
+            fields["via"] = via
+        db.program_day_progress.update_one(query, {"$set": fields}, upsert=True)
+
+    week_doc = db.program_weeks.find_one(
+        {"program_id": track.get("_id"), "week_number": week_number},
+        {"_id": 1},
+    )
+    if not week_doc:
+        return
+    week_items = list(
+        db.program_items.find(
+            {"week_id": week_doc["_id"]},
+            {"day": 1, "day_label": 1, "label": 1, "title": 1, "custom_name": 1},
+        ).sort([("order", 1), ("created_at", 1)])
+    )
+    day_keys = []
+    seen_day_keys = set()
+    for i, it in enumerate(week_items):
+        dk = _day_key_from_program_item(it, i + 1)
+        if dk in seen_day_keys:
+            continue
+        seen_day_keys.add(dk)
+        day_keys.append(dk)
+    if not day_keys:
+        return
+    week_query = {
+        "viewer_id": owner_key,
+        "track_slug": track.get("slug"),
+        "week_number": week_number,
+    }
+    done_count = db.program_day_progress.count_documents(
+        dict(week_query, day_key={"$in": day_keys})
+    )
+    if done_count >= len(day_keys):
+        db.program_week_progress.update_one(
+            week_query,
+            {
+                "$set": {
+                    "completed_at": datetime.datetime.utcnow(),
+                    "hub_slug": hub_slug,
+                    "level": level,
+                    "env": env,
+                }
+            },
+            upsert=True,
+        )
+    else:
+        db.program_week_progress.delete_one(week_query)
 
 
 @app.route("/programs/<hub_slug>/week/<int:week_number>/day-status", methods=["POST"])
@@ -4484,82 +4593,9 @@ def program_hub_week_day_status(hub_slug, week_number: int):
 
     owner_key = _progress_owner_key()
     if day_key and owner_key:
-        query = {
-            "viewer_id": owner_key,
-            "track_slug": track.get("slug"),
-            "week_number": week_number,
-            "day_key": day_key,
-        }
-        if action == "undo":
-            db.program_day_progress.delete_one(query)
-        else:
-            db.program_day_progress.update_one(
-                query,
-                {
-                    "$set": {
-                        "completed_at": datetime.datetime.utcnow(),
-                        "hub_slug": hub_slug,
-                        "level": level,
-                        "env": env,
-                    }
-                },
-                upsert=True,
-            )
-
-        week_doc = db.program_weeks.find_one(
-            {"program_id": track.get("_id"), "week_number": week_number},
-            {"_id": 1},
+        _set_program_day_done(
+            owner_key, hub_slug, level, env, track, week_number, day_key, done=action != "undo"
         )
-        if week_doc:
-            week_items = list(
-                db.program_items.find(
-                    {"week_id": week_doc["_id"]},
-                    {"day": 1, "day_label": 1, "label": 1, "title": 1, "custom_name": 1},
-                ).sort([("order", 1), ("created_at", 1)])
-            )
-            day_keys = []
-            seen_day_keys = set()
-            for i, it in enumerate(week_items):
-                dk = _day_key_from_program_item(it, i + 1)
-                if dk in seen_day_keys:
-                    continue
-                seen_day_keys.add(dk)
-                day_keys.append(dk)
-
-            if day_keys:
-                done_count = db.program_day_progress.count_documents(
-                    {
-                        "viewer_id": owner_key,
-                        "track_slug": track.get("slug"),
-                        "week_number": week_number,
-                        "day_key": {"$in": day_keys},
-                    }
-                )
-                if done_count >= len(day_keys):
-                    db.program_week_progress.update_one(
-                        {
-                            "viewer_id": owner_key,
-                            "track_slug": track.get("slug"),
-                            "week_number": week_number,
-                        },
-                        {
-                            "$set": {
-                                "completed_at": datetime.datetime.utcnow(),
-                                "hub_slug": hub_slug,
-                                "level": level,
-                                "env": env,
-                            }
-                        },
-                        upsert=True,
-                    )
-                else:
-                    db.program_week_progress.delete_one(
-                        {
-                            "viewer_id": owner_key,
-                            "track_slug": track.get("slug"),
-                            "week_number": week_number,
-                        }
-                    )
 
     target_day = next_day_key or day_key
     args = {
@@ -5278,6 +5314,8 @@ def workout_detail(slug):
         related=related,
         back_to_week_url=back_to_week_url,
         is_saved=is_saved,
+        train_key=_train_key("exercise", w.get("slug")),
+        train_fields=[("from", "exercise"), ("slug", w.get("slug"))],
     )
 
 
@@ -5286,6 +5324,164 @@ def workout_detail(slug):
 # -----------------------------------------------------------------------------
 # Recipes, macros calculator and tracker: nutrition.py (content files, no recipe sync).
 nutrition.register(app, db=db, owner_key=_progress_owner_key, is_safe_path=_is_safe_local_path)
+
+
+# -----------------------------------------------------------------------------
+# Session mode: start a workout from a program day, session, mix or exercise; log it.
+# Routes in training_routes.py, rules in training.py.
+# -----------------------------------------------------------------------------
+def _form_choice(form, name: str, allowed, default: str) -> str:
+    value = _norm_choice(form.get(name))
+    return value if value in allowed else default
+
+
+def _training_source(form) -> Optional[Tuple[str, dict, List[dict]]]:
+    """A Start form -> (title, source, items), or None if it doesn't describe a workout.
+    `source.key` identifies "the same workout" (pressing Start twice resumes it)."""
+    kind = _norm_choice(form.get("from"))
+    env = _form_choice(form, "env", tx.ENVIRONMENTS, _current_env())
+    level = _form_choice(form, "level", sb.LEVELS, _current_level())
+    if kind == "session":
+        preset = tx.SESSION_PRESETS.get(_norm_choice(form.get("p")))
+        if not preset:
+            return None
+        split = next(s for s in tx.SESSION_SPLITS if s["key"] == preset["split"])
+        allowed = sb.add_options_for(split["key"])
+        adds: List[str] = []
+        for value in form.getlist("add"):
+            key = _norm_choice(value)
+            if key in allowed and key not in adds:
+                adds.append(key)
+        built = sb.build_session(_library_for_env(env), preset, level, adds)
+        title = _session_title(preset, split)
+        url = url_for("workouts_mix", p=preset["key"], add=adds, level=level, env=env)
+        key = _train_key("session", preset["key"], level, env, ",".join(adds))
+        source = {"kind": "session", "key": key, "label": title, "url": url}
+        return title, source, tr.items_from_session(built)
+    if kind == "mix":
+        groups: List[str] = []
+        for value in form.getlist("g"):
+            key = _norm_choice(value)
+            if key in tx.MUSCLE_GROUPS and key not in groups:
+                groups.append(key)
+        groups = groups[:MIX_MAX_GROUPS]
+        if not groups:
+            return None
+        built = sb.build_mix(_library_for_env(env), groups, level)
+        main = [item for tier in built["tiers"] for item in tier["items"]]
+        title = " + ".join(tx.MUSCLE_GROUPS[k]["label"] for k in groups)
+        url = url_for("workouts_mix", g=groups, level=level, env=env)
+        key = _train_key("mix", ",".join(groups), level, env)
+        source = {"kind": "mix", "key": key, "label": "Muscle Mixer", "url": url}
+        return title, source, tr.items_from_session({"main": main})
+    if kind == "program":
+        hub_slug = slugify(form.get("hub") or "")
+        day_key = slugify(form.get("day") or "")
+        week_number = _safe_int(str(form.get("week") or ""), default=0)
+        if not hub_slug or not day_key or week_number < 1:
+            return None
+        hub = db.programs.find_one(_public_program_query({"slug": hub_slug, "kind": "hub"}))
+        level_, env_, track = _program_choice(hub_slug, form.get("level"), form.get("env"))
+        if not hub or not track:
+            return None
+        duration = _week_count_from_duration_label(
+            track.get("duration_label") or hub.get("duration_label")
+        )
+        plan = _track_plan(track, duration)
+        _plan_progress(_progress_owner_key(), track, plan)  # sets each week's "unlocked"
+        week = next((w for w in plan if w["number"] == week_number), None)
+        if not week or not week.get("unlocked"):
+            return None
+        day = next((d for d in week["days"] if d["key"] == day_key), None)
+        if not day or not day["items"]:
+            return None
+        title = f"{day.get('name') or day.get('label') or 'Day'} · Week {week_number}"
+        url = url_for(
+            "program_hub_week_detail",
+            hub_slug=hub_slug,
+            week_number=week_number,
+            level=level_,
+            env=env_,
+            day=day_key,
+        )
+        source = {
+            "kind": "program",
+            "key": _train_key("program", track.get("slug"), week_number, day_key),
+            "label": hub.get("title") or "Program",
+            "url": url,
+            "hub": hub_slug,
+            "track": track.get("slug"),
+            "week": week_number,
+            "day": day_key,
+            "level": level_,
+            "env": env_,
+        }
+        return title, source, tr.items_from_program_day(day["items"])
+    if kind == "exercise":
+        slug = slugify(form.get("slug") or "")
+        doc = next((d for d in _public_library() if d.get("slug") == slug), None)
+        if not doc:
+            return None
+        doc = _with_metadata_fallbacks(dict(doc))
+        source = {
+            "kind": "exercise",
+            "key": _train_key("exercise", slug),
+            "label": doc.get("name") or "Exercise",
+            "url": url_for("workout_detail", slug=slug),
+        }
+        return doc.get("name") or "Workout", source, tr.items_from_exercise(doc, level)
+    return None
+
+
+def _training_complete_program(owner: str, source: dict) -> None:
+    """A finished workout from a program day marks that day done (like Mark complete)."""
+    level, env, track = _program_choice(
+        source.get("hub") or "", source.get("level"), source.get("env")
+    )
+    if not track or track.get("slug") != source.get("track"):
+        return
+    _set_program_day_done(
+        owner,
+        source.get("hub") or "",
+        level,
+        env,
+        track,
+        int(source.get("week") or 0),
+        source.get("day") or "",
+        via="workout",
+    )
+
+
+def _training_exercise_lookup(slugs: List[str]) -> Dict[str, dict]:
+    wanted = set(slugs)
+    return {
+        d["slug"]: _with_metadata_fallbacks(dict(d))
+        for d in _public_library()
+        if d.get("slug") in wanted
+    }
+
+
+def _train_active_key() -> str:
+    """The source key of the viewer's workout in progress ("" if none), for "Resume"
+    buttons. Templates call it; it costs one query, once per request."""
+    if not hasattr(g, "_train_active_key"):
+        source = training_routes.active_source(db, _progress_owner_key())
+        g._train_active_key = (source or {}).get("key") or ""
+    return g._train_active_key
+
+
+app.jinja_env.globals["train_active_key"] = _train_active_key
+
+training_routes.register(
+    app,
+    db=db,
+    owner_key=_progress_owner_key,
+    build_source=_training_source,
+    complete_program_day=_training_complete_program,
+    exercise_lookup=_training_exercise_lookup,
+    is_safe_path=_is_safe_local_path,
+    muscle_groups=tx.MUSCLE_GROUPS,
+)
 
 
 SEARCH_EXERCISE_LIMIT = 24
@@ -5712,6 +5908,7 @@ VIEWER_COLLECTIONS = (
     "macro_profiles",
     "food_log",
     "weight_log",
+    "training_sessions",
 )
 CONTACT_EMAIL = (os.getenv("CONTACT_EMAIL") or "").strip()
 LEGAL_UPDATED = "18 November 2026"
@@ -8641,7 +8838,7 @@ def healthz():
 # -----------------------------------------------------------------------------
 # Search engines: robots.txt and sitemap.xml
 # -----------------------------------------------------------------------------
-ROBOTS_DISALLOW = ("/admin", "/account", "/login", "/favorites", "/search")
+ROBOTS_DISALLOW = ("/admin", "/account", "/login", "/favorites", "/search", "/train")
 
 
 @app.route("/robots.txt")

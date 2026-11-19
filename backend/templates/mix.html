@@ -78,6 +78,7 @@
   </div>
 
   {% if main_results %}
+    <div class="nfg-session-start">{{ ui.start_workout(train_key, train_fields, "Start workout") }}</div>
     <section class="nfg-section nfg-session-block">
       <h2 class="nfg-results-head">Main lifts <span class="nfg-results-n">{{ main_results|length }}</span></h2>
       <div class="nfg-ex-list">
@@ -168,6 +169,7 @@
         {% if groups|length > 1 %}<span class="nfg-results-key"><span class="nfg-hit is-primary">Main target</span> <span class="nfg-hit">Also works</span></span>{% endif %}
       </h2>
       {% if tiers %}
+        <div class="nfg-session-start">{{ ui.start_workout(train_key, train_fields, "Start workout") }}</div>
         {% set ns = namespace(n=0) %}
         {% for tier in tiers %}
           {% if tier.label %}<h3 class="nfg-tier">{{ tier.label }}</h3>{% endif %}

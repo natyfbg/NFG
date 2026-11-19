@@ -17,6 +17,7 @@
     <ul>
       <li><b>Your account</b>, if you make one: username, email and a scrambled version of your password (the password itself is never stored).</li>
       <li><b>Your training</b>: days you mark complete, which plan, level and setting you use, and exercises or programs you save.</li>
+      <li><b>Your workouts</b>, if you log them: the exercises, sets, reps, weights and times you enter, and when. They're used to show your history and what you did last time.</li>
       <li><b>Your macros</b>, if you use the calculator or tracker: sex, age, height, weight, activity level, goal, optional tape measurements, the food you log and weigh-ins. These are only used to work out and show your numbers.</li>
       <li><b>Without an account</b>, the same things are kept against a random ID stored in a cookie on your device. If you sign up later, they move to your account.</li>
       <li><b>Basic server logs</b> (pages requested, time, IP address) for security and fixing errors. They're kept briefly by our host.</li>
@@ -31,6 +32,7 @@
       <li><code>nfg_vid</code> is your device's random ID for progress and saved items.</li>
       <li><code>nfg_env</code>, <code>nfg_level</code> and <code>nfg_theme</code> remember where you train, your level and light or dark mode.</li>
       <li><code>nfg_tzo</code> is your time-zone offset, so the macros tracker's "today" is your own day.</li>
+      <li><code>nfg_units</code> remembers whether you log weights in lb or kg.</li>
     </ul>
   </section>
 
@@ -56,7 +58,7 @@
     </ul>
     {% if not current_user.is_authenticated %}
       <form method="post" action="{{ url_for('privacy_forget_device') }}" class="nfg-legal-form"
-            onsubmit="return confirm('Delete your progress, saved items and macros on this device?');">
+            onsubmit="return confirm('Delete your progress, workouts, saved items and macros on this device?');">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="nfg-act is-ghost" type="submit">{{ ui.icon('trash3') }} Forget this device</button>
       </form>

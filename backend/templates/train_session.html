@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+
+{% block title %}{{ workout.title }} – Workout – {{ app_name }}{% endblock %}
+{% block back_url %}{{ url_for('train_index') }}{% endblock %}
+
+{% macro field(name, it, i, ph, value, done, label, mode="numeric") %}
+  <label class="nfg-tset-field">
+    <span class="visually-hidden">{{ label }}, set {{ i + 1 }}</span>
+    <input name="{{ name }}" inputmode="{{ mode }}" autocomplete="off" enterkeyhint="done"
+           value="{{ value if done else '' }}" placeholder="{{ ph }}"{% if done %} disabled{% endif %}>
+  </label>
+{% endmacro %}
+
+{% block page %}
+<div class="nfg-discover nfg-train" data-train>
+
+  <div class="nfg-train-top">
+  <header class="nfg-train-head">
+    <div class="nfg-train-id">
+      <div class="app-page-kicker">
+        {{ workout.source.label if workout.source and workout.source.label and workout.source.label != workout.title else 'Workout' }}
+        · <span data-elapsed data-start="{{ started_iso }}">{{ ui.icon('stopwatch') }}<span data-elapsed-text>0 min</span></span>
+      </div>
+      <h1 class="nfg-page-title">{{ workout.title }}</h1>
+    </div>
+    <form method="post" action="{{ url_for('train_finish') }}" class="nfg-train-finish-top">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="nfg-act is-primary" type="submit">Finish</button>
+    </form>
+  </header>
+
+  <div class="nfg-train-progress" aria-label="Sets done">
+    <span class="nfg-program-bar"><span data-sets-bar style="width: {{ (progress.done * 100 / progress.total)|round|int if progress.total else 0 }}%;"></span></span>
+    <span class="nfg-train-progress-n"><b data-sets-done>{{ progress.done }}</b> of <span data-sets-total>{{ progress.total }}</span> sets</span>
+  </div>
+  </div>
+
+  <ol class="nfg-train-list">
+    {% for it in items %}
+      {% set complete = it.total and it.done >= it.total %}
+      <li class="nfg-tex{% if complete %} is-complete{% endif %}" id="ex-{{ it.key }}" style="--row: {{ it.color }};" data-ex>
+        <details{% if loop.index0 == current %} open{% endif %}>
+          <summary class="nfg-tex-head">
+            <span class="nfg-tex-thumb">
+              {% if it.doc %}<img src="{{ ui.exercise_image(it.doc) }}" alt="" loading="lazy">{% endif %}
+              <span class="nfg-tex-n">{% if complete %}{{ ui.icon('check-lg') }}{% else %}{{ loop.index }}{% endif %}</span>
+            </span>
+            <span class="nfg-tex-body">
+              <span class="nfg-tex-name">{{ it.name }}</span>
+              <span class="nfg-tex-meta">
+                {% if it.reps %}<span>{{ it.total }} × {{ it.reps }}</span>{% endif %}
+                {% if it.rest %}<span>Rest {{ it.rest }}</span>{% endif %}
+              </span>
+            </span>
+            <span class="nfg-tex-count"><b data-ex-done>{{ it.done }}</b>/<span data-ex-total>{{ it.total }}</span></span>
+          </summary>
+
+          <div class="nfg-tex-panel">
+            {% if it.last_text %}<p class="nfg-tex-last">{{ ui.icon('clock-history') }} Last time: {{ it.last_text }}</p>{% endif %}
+            {% if it.note %}<p class="nfg-tex-note">{{ it.note }}</p>{% endif %}
+
+            <div class="nfg-tsets is-{{ it.kind }}">
+              <div class="nfg-tset-head" aria-hidden="true">
+                <span>Set</span>
+                {% if it.kind == 'weight_reps' %}<span>{{ unit }}</span><span>Reps</span>
+                {% elif it.kind == 'reps' %}<span>Reps</span>
+                {% elif it.kind == 'seconds' %}<span>Seconds</span>
+                {% else %}<span>Minutes</span>{% endif %}
+                <span></span>
+              </div>
+              {% for row in it.rows %}
+                {% set i = loop.index0 %}{% set ph = it.ph[i] %}{% set shown = it.shown[i] %}
+                <form class="nfg-tset{% if row.done %} is-done{% endif %}" method="post" action="{{ url_for('train_set') }}" data-tset>
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="key" value="{{ it.key }}">
+                  <input type="hidden" name="row" value="{{ i }}">
+                  <input type="hidden" name="action" value="{{ 'undo' if row.done else 'done' }}" data-action>
+                  {% if ph.from_history %}
+                    <input type="hidden" name="ph_weight" value="{{ ph.weight }}">
+                    <input type="hidden" name="ph_reps" value="{{ ph.reps }}">
+                    <input type="hidden" name="ph_seconds" value="{{ ph.seconds }}">
+                    <input type="hidden" name="ph_minutes" value="{{ ph.minutes }}">
+                  {% endif %}
+                  <span class="nfg-tset-n">{{ i + 1 }}</span>
+                  {% if it.kind == 'weight_reps' %}
+                    {{ field('weight', it, i, ph.weight, shown.weight, row.done, unit, 'decimal') }}
+                    {{ field('reps', it, i, ph.reps or ph.target or 'reps', shown.reps, row.done, 'Reps') }}
+                  {% elif it.kind == 'reps' %}
+                    {{ field('reps', it, i, ph.reps or ph.target or 'reps', shown.reps, row.done, 'Reps') }}
+                  {% elif it.kind == 'seconds' %}
+                    {{ field('seconds', it, i, ph.seconds or (ph.target|replace(' s', '')) or 'sec', shown.seconds, row.done, 'Seconds') }}
+                  {% else %}
+                    {{ field('minutes', it, i, ph.minutes or (ph.target|replace(' min', '')) or 'min', shown.minutes, row.done, 'Minutes', 'decimal') }}
+                  {% endif %}
+                  <button class="nfg-tset-tick" type="submit" aria-pressed="{{ 'true' if row.done else 'false' }}"
+                          aria-label="{{ 'Undo' if row.done else 'Log' }} set {{ i + 1 }}">{{ ui.icon('check-lg') }}</button>
+                  <span class="nfg-tset-err" role="alert" hidden></span>
+                </form>
+              {% endfor %}
+            </div>
+
+            <div class="nfg-tex-foot">
+              <form method="post" action="{{ url_for('train_rows') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="key" value="{{ it.key }}">
+                <input type="hidden" name="action" value="add">
+                <button class="nfg-tex-link" type="submit"{% if it.rows|length >= 12 %} disabled{% endif %}>{{ ui.icon('plus-lg') }} Add set</button>
+              </form>
+              {% if it.rows|length > 1 and not it.rows[-1].done %}
+                <form method="post" action="{{ url_for('train_rows') }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="key" value="{{ it.key }}">
+                  <input type="hidden" name="action" value="remove">
+                  <button class="nfg-tex-link" type="submit">{{ ui.icon('dash-lg') }} Remove set</button>
+                </form>
+              {% endif %}
+              {% if it.doc %}<a class="nfg-tex-link is-how" href="{{ url_for('workout_detail', slug=it.slug) }}">{{ ui.icon('question-lg') }} How to</a>{% endif %}
+            </div>
+          </div>
+        </details>
+      </li>
+    {% endfor %}
+  </ol>
+
+  <section class="nfg-train-end">
+    <form method="post" action="{{ url_for('train_finish') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="nfg-act is-primary nfg-train-finish" type="submit">{{ ui.icon('check-lg') }} Finish workout</button>
+    </form>
+    <div class="nfg-train-tools">
+      <form method="post" action="{{ url_for('train_units') }}" class="nfg-seg" role="group" aria-label="Weight unit">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ url_for('train_session') }}">
+        {% for key, label in [('imperial', 'lb'), ('metric', 'kg')] %}
+          <button class="nfg-seg-opt{% if units == key %} is-on{% endif %}" type="submit" name="units" value="{{ key }}"
+                  aria-pressed="{{ 'true' if units == key else 'false' }}">{{ label }}</button>
+        {% endfor %}
+      </form>
+      <form method="post" action="{{ url_for('train_discard') }}"
+            onsubmit="return confirm('Discard this workout? Sets you logged in it will be lost.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="nfg-tex-link is-danger" type="submit">{{ ui.icon('trash3') }} Discard</button>
+      </form>
+    </div>
+  </section>
+
+
+</div>
+
+{% endblock %}
+
+{# Outside the page shell: the shell moves with swipes, which would carry a fixed bar along. #}
+{% block overlays %}
+<div class="nfg-rest" data-rest hidden role="timer" aria-live="off">
+    <span class="nfg-rest-label">{{ ui.icon('stopwatch') }} <span data-rest-label>Rest</span></span>
+    <b class="nfg-rest-left" data-rest-left>0:00</b>
+    <button class="nfg-rest-btn" type="button" data-rest-add>+15s</button>
+    <button class="nfg-rest-btn" type="button" data-rest-skip>Skip</button>
+</div>
+<script>
+(function () {
+  "use strict";
+  var root = document.querySelector("[data-train]");
+  var doc = document;
+  if (!root) return;
+
+  /* ---- elapsed time ---- */
+  var el = root.querySelector("[data-elapsed]");
+  var elText = root.querySelector("[data-elapsed-text]");
+  var started = el ? Date.parse(el.getAttribute("data-start")) : NaN;
+  function elapsed() {
+    if (!elText || isNaN(started)) return;
+    var m = Math.max(0, Math.floor((Date.now() - started) / 60000));
+    elText.textContent = m < 60 ? m + " min" : Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min";
+  }
+  elapsed(); setInterval(elapsed, 30000);
+
+  /* ---- keep the screen on while logging (where the phone allows it) ---- */
+  var lock = null;
+  function wake() {
+    if (!("wakeLock" in navigator) || document.visibilityState !== "visible") return;
+    navigator.wakeLock.request("screen").then(function (l) { lock = l; }).catch(function () {});
+  }
+  wake();
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible" && !lock) wake(); });
+
+  /* ---- rest timer: runs on clock time, so a locked screen or a reload keeps it ---- */
+  var KEY = "nfg_rest_until";
+  var bar = doc.querySelector("[data-rest]");
+  var left = doc.querySelector("[data-rest-left]");
+  var label = doc.querySelector("[data-rest-label]");
+  var until = 0, timer = null, buzzed = false;
+  function store(v) { try { v ? localStorage.setItem(KEY, String(v)) : localStorage.removeItem(KEY); } catch (e) {} }
+  function fmt(s) { return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+  function tick() {
+    var s = Math.ceil((until - Date.now()) / 1000);
+    if (s > 0) { left.textContent = fmt(s); label.textContent = "Rest"; bar.classList.remove("is-over"); return; }
+    left.textContent = "0:00"; label.textContent = "Rest over"; bar.classList.add("is-over");
+    if (!buzzed) { buzzed = true; if (navigator.vibrate) navigator.vibrate([180, 90, 180]); }
+    if (Date.now() - until > 4000) stop();
+  }
+  function start(seconds) {
+    if (!(seconds > 0) || !bar) return;
+    until = Date.now() + seconds * 1000; buzzed = false; store(until);
+    bar.hidden = false; tick(); clearInterval(timer); timer = setInterval(tick, 250);
+  }
+  function stop() { clearInterval(timer); timer = null; until = 0; store(0); if (bar) bar.hidden = true; }
+  if (bar) {
+    doc.querySelector("[data-rest-add]").addEventListener("click", function () {
+      until = Math.max(until, Date.now()) + 15000; buzzed = false; store(until); tick();
+    });
+    doc.querySelector("[data-rest-skip]").addEventListener("click", stop);
+    try { var saved = parseInt(localStorage.getItem(KEY) || "0", 10); if (saved > Date.now()) start((saved - Date.now()) / 1000); } catch (e) {}
+  }
+
+  /* ---- logging a set in the background (the forms still work without this) ---- */
+  function setProgress(form, data) {
+    var ex = form.closest("[data-ex]");
+    var done = data.item.done, total = data.item.total;
+    ex.querySelector("[data-ex-done]").textContent = done;
+    ex.classList.toggle("is-complete", total > 0 && done >= total);
+    var n = ex.querySelector(".nfg-tex-n");
+    if (n && total > 0) {
+      var idx = Array.prototype.indexOf.call(ex.parentNode.children, ex) + 1;
+      n.innerHTML = done >= total ? '<span class="nfg-icon">' + root.querySelector(".nfg-tset-tick .nfg-icon").innerHTML + "</span>" : String(idx);
+    }
+    root.querySelector("[data-sets-done]").textContent = data.sets.done;
+    root.querySelector("[data-sets-bar]").style.width = (data.sets.total ? Math.round(data.sets.done * 100 / data.sets.total) : 0) + "%";
+    return ex;
+  }
+  function openNext(ex) {
+    var items = Array.prototype.slice.call(root.querySelectorAll("[data-ex]"));
+    var next = items.slice(items.indexOf(ex) + 1).concat(items).find(function (x) { return !x.classList.contains("is-complete"); });
+    ex.querySelector("details").open = false;
+    if (next && next !== ex) {
+      next.querySelector("details").open = true;
+      next.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    }
+  }
+  root.addEventListener("submit", function (e) {
+    var form = e.target.closest("[data-tset]");
+    if (!form || !window.fetch) return;
+    e.preventDefault();
+    if (form.classList.contains("is-busy")) return;
+    var err = form.querySelector(".nfg-tset-err");
+    var undo = form.querySelector("[data-action]").value === "undo";
+    var body = new FormData(form);
+    form.querySelectorAll("input[name]:not([type=hidden])").forEach(function (i) { if (i.disabled) body.set(i.name, i.value); });
+    form.classList.add("is-busy");
+    // getAttribute: the hidden input named "action" shadows form.action.
+    fetch(form.getAttribute("action"), { method: "POST", body: body, credentials: "same-origin", headers: { "Accept": "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        form.classList.remove("is-busy");
+        if (!data.ok) {
+          err.textContent = data.error || "Couldn't save that set."; err.hidden = false;
+          var first = form.querySelector("input[name=reps], input[name=seconds], input[name=minutes]");
+          if (first) first.focus();
+          return;
+        }
+        err.hidden = true;
+        var inputs = form.querySelectorAll("input[name]:not([type=hidden])");
+        inputs.forEach(function (i) {
+          if (data.done) { i.value = data.shown[i.name] === undefined ? i.value : data.shown[i.name]; i.disabled = true; }
+          else { i.disabled = false; i.value = ""; }
+        });
+        form.classList.toggle("is-done", data.done);
+        form.querySelector("[data-action]").value = data.done ? "undo" : "done";
+        var tickBtn = form.querySelector(".nfg-tset-tick");
+        tickBtn.setAttribute("aria-pressed", data.done ? "true" : "false");
+        tickBtn.setAttribute("aria-label", (data.done ? "Undo" : "Log") + tickBtn.getAttribute("aria-label").replace(/^(Undo|Log)/, ""));
+        var ex = setProgress(form, data);
+        if (data.done) {
+          start(data.rest);
+          if (data.item.done >= data.item.total) openNext(ex);
+          else {
+            var nextRow = form.nextElementSibling;
+            var nextInput = nextRow && nextRow.querySelector("input[name]:not([type=hidden]):not(:disabled)");
+            if (nextInput && !nextRow.classList.contains("is-done")) nextInput.focus({ preventScroll: true });
+          }
+        } else if (undo) {
+          var firstInput = form.querySelector("input[name]:not([type=hidden])");
+          if (firstInput) firstInput.focus();
+        }
+      })
+      .catch(function () { form.classList.remove("is-busy"); form.submit(); });
+  });
+})();
+</script>
+{% endblock %}

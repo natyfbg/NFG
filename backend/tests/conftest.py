@@ -47,6 +47,7 @@ _USER_STATE_COLLECTIONS = (
     "macro_profiles",
     "food_log",
     "weight_log",
+    "training_sessions",
 )
 
 

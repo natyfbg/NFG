@@ -41,6 +41,10 @@
 
     {% if week.notes and day_n == 1 %}<p class="nfg-prog-note">{{ week.notes }}</p>{% endif %}
 
+    {% if day['items'] %}
+      <div class="nfg-pday-start">{{ ui.start_workout(train_key, train_fields, "Start workout") }}</div>
+    {% endif %}
+
     <ol class="nfg-pday-list">
       {% for it in day['items'] %}
         {% set w = it.exercise %}

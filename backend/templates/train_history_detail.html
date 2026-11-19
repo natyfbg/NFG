@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+
+{% block title %}{{ workout.title }} – My workouts – {{ app_name }}{% endblock %}
+{% block back_url %}{{ url_for('train_index') }}{% endblock %}
+
+{% block page %}
+<div class="nfg-discover nfg-train-done">
+  <a class="nfg-back" href="{{ url_for('train_index') }}">{{ ui.icon('chevron-left') }} My workouts</a>
+
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">{% if just_done %}Workout complete{% else %}{{ info.date }}{% endif %}</div>
+    <h1 class="nfg-page-title">{{ workout.title }}</h1>
+    {% if source.kind == 'program' and source.label %}<p class="nfg-prog-summary">{{ source.label }}{% if just_done %} · day marked complete{% endif %}</p>{% endif %}
+  </header>
+
+  <div class="nfg-train-stats">
+    <span><b>{{ info.duration }}</b><small>time</small></span>
+    <span><b>{{ info.summary.sets }}</b><small>set{{ 's' if info.summary.sets != 1 }}</small></span>
+    <span><b>{{ info.summary.exercises }}</b><small>exercise{{ 's' if info.summary.exercises != 1 }}</small></span>
+    {% if info.volume %}<span><b>{{ info.volume }}</b><small>lifted</small></span>{% endif %}
+  </div>
+
+  {% if just_done %}
+    <div class="nfg-train-next">
+      {% if source_href %}<a class="nfg-act is-primary" href="{{ source_href }}">{% if source.kind == 'program' %}Back to the program{% else %}Back to {{ source.label or 'the workout' }}{% endif %} {{ ui.icon('arrow-right') }}</a>{% endif %}
+      <a class="nfg-act is-ghost" href="{{ url_for('home') }}">Home</a>
+    </div>
+    {% if not current_user.is_authenticated %}
+      <p class="nfg-prog-note">Saved on this device. <a href="{{ url_for('account_register') }}">Create an account</a> to keep your workouts on every device.</p>
+    {% endif %}
+  {% endif %}
+
+  <ol class="nfg-train-log">
+    {% for it in items %}
+      <li style="--row: {{ it.color }};">
+        <span class="nfg-train-log-name">{% if it.doc %}<a href="{{ url_for('workout_detail', slug=it.slug) }}">{{ it.name }}</a>{% else %}{{ it.name }}{% endif %}</span>
+        <ol class="nfg-train-log-sets">
+          {% for s in it.sets %}<li><span>{{ loop.index }}</span>{{ s }}</li>{% endfor %}
+        </ol>
+      </li>
+    {% endfor %}
+  </ol>
+
+  {% if skipped %}
+    <p class="nfg-prog-note">Skipped: {{ skipped|map(attribute='name')|join(', ') }}</p>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('train_history_delete', session_id=info.id) }}" class="nfg-train-delete"
+        onsubmit="return confirm('Delete this workout from your history?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="nfg-tex-link is-danger" type="submit">{{ ui.icon('trash3') }} Delete this workout</button>
+  </form>
+</div>
+{% endblock %}
