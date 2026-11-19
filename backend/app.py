@@ -5472,6 +5472,20 @@ def _train_active_key() -> str:
 
 app.jinja_env.globals["train_active_key"] = _train_active_key
 
+
+def _training_saved_items(owner: str) -> dict:
+    """My workouts → Saved: the exercises and programs the viewer saved."""
+    saved_program_slugs = set(_favorite_slug_set_for_request())
+    programs = []
+    if saved_program_slugs:
+        programs = list(
+            db.programs.find(
+                _public_program_query({"kind": "hub", "slug": {"$in": list(saved_program_slugs)}})
+            ).sort([("order", 1), ("created_at", -1)])
+        )
+    return {"exercises": _saved_exercises(owner, limit=60), "programs": programs}
+
+
 training_routes.register(
     app,
     db=db,
@@ -5481,6 +5495,11 @@ training_routes.register(
     exercise_lookup=_training_exercise_lookup,
     is_safe_path=_is_safe_local_path,
     muscle_groups=tx.MUSCLE_GROUPS,
+    environments=tx.ENVIRONMENTS,
+    library_for_env=_library_for_env,
+    current_env=_current_env,
+    current_level=_current_level,
+    saved_items=_training_saved_items,
 )
 
 
@@ -5909,6 +5928,7 @@ VIEWER_COLLECTIONS = (
     "food_log",
     "weight_log",
     "training_sessions",
+    "saved_workouts",
 )
 CONTACT_EMAIL = (os.getenv("CONTACT_EMAIL") or "").strip()
 LEGAL_UPDATED = "18 November 2026"

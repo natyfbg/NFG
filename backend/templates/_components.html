@@ -199,3 +199,14 @@
     </form>
   {% endif %}
 {% endmacro %}
+
+{# "Save" next to Start on a session / Mixer page: keeps this build as a saved workout. #}
+{% macro save_workout(fields) %}
+  <form class="nfg-start-form" method="post" action="{{ url_for('train_save') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="what" value="source">
+    {% for name, value in fields %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+    <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+    <button class="nfg-act is-ghost nfg-save-workout" type="submit" aria-label="Save as a workout">{{ icon('journal-check') }} Save</button>
+  </form>
+{% endmacro %}

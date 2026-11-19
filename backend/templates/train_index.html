@@ -4,6 +4,17 @@
 {% block title %}My workouts – {{ app_name }}{% endblock %}
 {% block back_url %}{{ url_for('home') }}{% endblock %}
 
+{% macro history_row(e) %}
+  <a class="nfg-list-row nfg-train-hist-row" href="{{ url_for('train_history_detail', session_id=e.id) }}">
+    <span class="nfg-train-hist-dots" aria-hidden="true">{% for c in e.colors %}<i style="--dot: {{ c }};"></i>{% endfor %}</span>
+    <span class="nfg-list-main">
+      <span class="nfg-list-title">{{ e.title }}</span>
+      <span class="nfg-list-meta">{{ e.date }} · {{ e.duration }} · {{ e.summary.sets }} set{{ 's' if e.summary.sets != 1 }}{% if e.volume %} · {{ e.volume }}{% endif %}</span>
+    </span>
+    {{ ui.icon('chevron-right') }}
+  </a>
+{% endmacro %}
+
 {% block page %}
 <div class="nfg-discover nfg-train-index">
   <header class="nfg-page-head">
@@ -23,37 +34,101 @@
     </a>
   {% endif %}
 
-  <section class="nfg-section">
-    {{ ui.section_head(None, "History") }}
-    {% if months %}
-      {% for m in months %}
-        <h3 class="nfg-tier">{{ m.label }}</h3>
-        <div class="nfg-list nfg-train-hist">
-          {% for e in m.entries %}
-            <a class="nfg-list-row nfg-train-hist-row" href="{{ url_for('train_history_detail', session_id=e.id) }}">
-              <span class="nfg-train-hist-dots" aria-hidden="true">{% for c in e.colors %}<i style="--dot: {{ c }};"></i>{% endfor %}</span>
+  {{ ui.seg_links(tabs, tab, "My workouts", "nfg-train-tabs") }}
+
+  {% if tab == 'workouts' %}
+    <section class="nfg-section">
+      {% if saved %}
+        <div class="nfg-list nfg-saved-list">
+          {% for w in saved %}
+            <a class="nfg-list-row nfg-saved-row" href="{{ url_for('train_workout', workout_id=w.id) }}">
+              <span class="nfg-train-hist-dots" aria-hidden="true">{% for c in w.colors %}<i style="--dot: {{ c }};"></i>{% endfor %}</span>
               <span class="nfg-list-main">
-                <span class="nfg-list-title">{{ e.title }}</span>
-                <span class="nfg-list-meta">{{ e.date }} · {{ e.duration }} · {{ e.summary.sets }} set{{ 's' if e.summary.sets != 1 }}{% if e.volume %} · {{ e.volume }}{% endif %}</span>
+                <span class="nfg-list-title">{{ w.title }}</span>
+                <span class="nfg-list-meta">{{ w.count }} exercise{{ 's' if w.count != 1 }}{% if w.minutes %} · ~{{ w.minutes }} min{% endif %}{% if w.last %} · last done {{ w.last }}{% endif %}</span>
               </span>
               {{ ui.icon('chevron-right') }}
             </a>
           {% endfor %}
         </div>
-      {% endfor %}
-      {% if older %}<a class="nfg-act is-ghost nfg-train-older" href="{{ url_for('train_index', before=older) }}">Older workouts</a>{% endif %}
-    {% else %}
-      <div class="nfg-train-empty">
-        <p>Workouts you log show up here. Start one from a program day, a session on Home or the Muscle Mixer, then tick off each set as you go.</p>
-        <div class="nfg-train-empty-go">
-          <a class="nfg-act is-primary" href="{{ url_for('home') }}">Pick a session</a>
-          <a class="nfg-act is-ghost" href="{{ url_for('programs_index') }}">Coach's Plans</a>
-        </div>
+      {% else %}
+        <p class="nfg-train-hint">Save a workout you like and it lives here, ready to start again. Tap <b>Save</b> on a session or Mixer workout, or <b>Save as workout</b> after you finish one.</p>
+      {% endif %}
+      <div class="nfg-train-new">
+        {% if can_add %}
+          <form method="post" action="{{ url_for('train_workout_new') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="nfg-act is-ghost" type="submit">{{ ui.icon('plus-lg') }} New workout</button>
+          </form>
+        {% endif %}
+        {% if not active %}
+          <form method="post" action="{{ url_for('train_start') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="from" value="empty">
+            <button class="nfg-act is-ghost" type="submit">{{ ui.icon('play-fill') }} Start an empty workout</button>
+          </form>
+        {% endif %}
       </div>
-    {% endif %}
-  </section>
+    </section>
 
-  {% if not current_user.is_authenticated and months %}
+    {% if recent %}
+      <section class="nfg-section">
+        {{ ui.section_head(None, "Recent", url_for('train_index', tab='history') if more_history else None, "All history") }}
+        <div class="nfg-list nfg-train-hist">
+          {% for e in recent %}{{ history_row(e) }}{% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+  {% elif tab == 'history' %}
+    <section class="nfg-section">
+      {% if months %}
+        {% for m in months %}
+          <h3 class="nfg-tier">{{ m.label }}</h3>
+          <div class="nfg-list nfg-train-hist">
+            {% for e in m.entries %}{{ history_row(e) }}{% endfor %}
+          </div>
+        {% endfor %}
+        {% if older %}<a class="nfg-act is-ghost nfg-train-older" href="{{ url_for('train_index', tab='history', before=older) }}">Older workouts</a>{% endif %}
+      {% else %}
+        <div class="nfg-train-empty">
+          <p>Workouts you log show up here. Start one from a program day, a session on Home or the Muscle Mixer, then tick off each set as you go.</p>
+          <div class="nfg-train-empty-go">
+            <a class="nfg-act is-primary" href="{{ url_for('home') }}">Pick a session</a>
+            <a class="nfg-act is-ghost" href="{{ url_for('programs_index') }}">Coach's Plans</a>
+          </div>
+        </div>
+      {% endif %}
+    </section>
+
+  {% else %}
+    {% if programs %}
+      <section class="nfg-section">
+        {{ ui.section_head(None, "Programs") }}
+        <div class="nfg-list">
+          {% for p in programs %}
+            <a class="nfg-list-row" href="{{ url_for('program_detail', slug=p.slug) }}">
+              <span class="nfg-list-main"><span class="nfg-list-title">{{ p.title }}</span><span class="nfg-list-meta">{{ p.duration_label or 'Program' }}</span></span>
+              {{ ui.icon('chevron-right') }}
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+    {% if exercises %}
+      <section class="nfg-section">
+        {{ ui.section_head(None, "Exercises") }}
+        <div class="nfg-card-grid">
+          {% for w in exercises %}{{ ui.exercise_card(w) }}{% endfor %}
+        </div>
+      </section>
+    {% endif %}
+    {% if not programs and not exercises %}
+      <p class="nfg-train-hint">Tap <b>Save</b> on an exercise or a program and it shows up here.</p>
+    {% endif %}
+  {% endif %}
+
+  {% if not current_user.is_authenticated and (recent or months or saved) %}
     <p class="nfg-prog-note nfg-train-guest">Your workouts are saved on this device. <a href="{{ url_for('account_register') }}">Create an account</a> to keep them on every device.</p>
   {% endif %}
 </div>

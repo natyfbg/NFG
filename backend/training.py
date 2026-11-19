@@ -432,3 +432,174 @@ def show_duration(minutes: int) -> str:
     if minutes < 60:
         return f"{minutes} min"
     return f"{minutes // 60} h {minutes % 60:02d} min"
+
+
+# -----------------------------------------------------------------------------
+# Saved workouts (`saved_workouts`): a named list of exercises with sets, reps, rest
+#     {viewer_id, title, items: [{key, slug, name, group, kind, sets, reps, rest}],
+#      created_at, updated_at, last_done_at}
+# -----------------------------------------------------------------------------
+MAX_SAVED = 50
+TITLE_MAX = 60
+REPS_MAX = 24
+REST_OPTIONS = ("", "30s", "45s", "60s", "75s", "90s", "2 min", "2 min 30s", "3 min")
+
+
+def saved_item_from(item: dict) -> dict:
+    """A workout item (a session's, or one made by make_item) as a saved item."""
+    rows = item.get("rows")
+    sets = len(rows) if rows else item.get("sets") or item.get("sets_target") or DEFAULT_SETS
+    return {
+        "key": item.get("key") or new_key(),
+        "slug": item.get("slug") or "",
+        "name": item.get("name") or "Exercise",
+        "group": item.get("group") or "",
+        "kind": item.get("kind") or "weight_reps",
+        "sets": max(1, min(MAX_ROWS, int(sets))),
+        "reps": (item.get("reps") or "")[:REPS_MAX],
+        "rest": item.get("rest") or "",
+    }
+
+
+def saved_items_from_session(session: dict) -> List[dict]:
+    """Every exercise of a workout, with the number of sets it ended up with."""
+    return [saved_item_from(it) for it in (session.get("items") or [])][:MAX_ITEMS]
+
+
+def items_from_saved(saved: dict, docs: Dict[str, dict]) -> List[dict]:
+    """A saved workout -> workout items. The current exercise doc is used when it still
+    exists (fresh name, image, kind); otherwise the saved snapshot stands."""
+    items = []
+    for s in saved.get("items") or []:
+        doc = docs.get(s.get("slug") or "")
+        item = make_item(
+            doc,
+            name=s.get("name") or "",
+            sets=s.get("sets"),
+            reps=s.get("reps") or "",
+            rest=s.get("rest") or "",
+        )
+        if not doc:
+            item.update(slug="", group=s.get("group") or "", kind=s.get("kind") or "weight_reps")
+        items.append(item)
+    return items[:MAX_ITEMS]
+
+
+def new_saved(viewer_id: str, title: str, items: List[dict], now: dt.datetime) -> dict:
+    return {
+        "viewer_id": viewer_id,
+        "title": clean_title(title) or "My workout",
+        "items": items[:MAX_ITEMS],
+        "created_at": now,
+        "updated_at": now,
+    }
+
+
+def clean_title(raw: Optional[str]) -> str:
+    return " ".join((raw or "").split())[:TITLE_MAX]
+
+
+def clean_sets(raw: Optional[str], default: int = DEFAULT_SETS) -> int:
+    try:
+        return max(1, min(MAX_ROWS, int(str(raw or "").strip())))
+    except ValueError:
+        return default
+
+
+def clean_reps(raw: Optional[str]) -> str:
+    return " ".join((raw or "").split())[:REPS_MAX]
+
+
+def clean_rest(raw: Optional[str]) -> str:
+    return raw if raw in REST_OPTIONS else ""
+
+
+def estimate_minutes(items: Iterable[dict]) -> int:
+    """About how long a saved workout takes (sets × work + rest, plus a warm-up)."""
+    rows = [{"sets": it.get("sets") or 0, "rest": it.get("rest") or "0s"} for it in items]
+    return program_content.estimate_minutes(rows) if rows else 0
+
+
+def move(items: List[dict], key: str, step: int) -> List[dict]:
+    """Move the item with `key` one place up (-1) or down (+1)."""
+    out = list(items)
+    for i, it in enumerate(out):
+        if it.get("key") == key:
+            j = i + step
+            if 0 <= j < len(out):
+                out[i], out[j] = out[j], out[i]
+            break
+    return out
+
+
+# -----------------------------------------------------------------------------
+# Swapping an exercise
+# -----------------------------------------------------------------------------
+def _kind_family(doc: dict) -> str:
+    k = sb.kind(doc)
+    return "lift" if k in ("compound", "isolation") else k
+
+
+def alternatives(
+    doc: Optional[dict],
+    library: Iterable[dict],
+    exclude: Iterable[str] = (),
+    level: str = sb.DEFAULT_LEVEL,
+    limit: int = 8,
+) -> List[dict]:
+    """Exercises that can stand in for `doc`: same main muscle group and the same kind
+    (a lift for a lift, a hold for a hold). Closest first: the same exercise with other
+    equipment (any "Bench Press"), then the same movement, the same way of loading it
+    (weights for weights), then the best fit for the level. Exercises already in the
+    workout are left out."""
+    if not doc:
+        return []
+    group = primary_group(doc)
+    family = _kind_family(doc)
+    movement = doc.get("movement")
+    family_stem = sb.stem(doc.get("name"))
+    loading = input_kind(doc)
+    level = sb.norm_level(level)
+    skip = set(exclude) | {doc.get("slug")}
+    picks = []
+    for cand in library:
+        if cand.get("slug") in skip or primary_group(cand) != group:
+            continue
+        if _kind_family(cand) != family:
+            continue
+        fit = sb.LEVEL_FIT[level].get(cand.get("level") or "Beginner", 1.0)
+        if fit is None:
+            continue
+        score = (
+            sb.stem(cand.get("name")) != family_stem,
+            cand.get("movement") != movement,
+            input_kind(cand) != loading,
+            sb.kind(cand) != sb.kind(doc),
+            fit,
+        )
+        picks.append((score, cand.get("name") or "", cand))
+    picks.sort(key=lambda p: (p[0], p[1]))
+    return [p[2] for p in picks[:limit]]
+
+
+def swap_items(items: List[dict], index: int, new_item: dict) -> List[dict]:
+    """Put `new_item` in place of items[index]. Sets already logged stay with the old
+    exercise (kept with just those sets); the new one gets the sets that were left."""
+    out = list(items)
+    old = out[index]
+    done = done_rows(old)
+    total = len(old.get("rows") or [])
+    new_item = dict(new_item)
+    new_item["swapped_from"] = old.get("name") or ""
+    if not done:
+        count = max(1, total)
+        new_item["rows"] = [{"done": False} for _ in range(count)]
+        new_item["sets_target"] = count
+        out[index] = new_item
+        return out
+    left = max(1, total - len(done))
+    new_item["rows"] = [{"done": False} for _ in range(left)]
+    new_item["sets_target"] = left
+    out[index] = dict(old, rows=done, sets_target=len(done))
+    out.insert(index + 1, new_item)
+    return out

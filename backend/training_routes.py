@@ -13,9 +13,19 @@ Routes (all per viewer: a guest's device or a member's account):
     POST /train/units              lb / kg
     POST /train/finish             finish → summary
     POST /train/discard            throw the workout in progress away
-    GET  /train                    My workouts: in progress + history
+    GET  /train                    My workouts: in progress, saved workouts, history, saved
     GET  /train/history/<id>       one finished workout
     POST /train/history/<id>/delete
+    POST /train/save               save a finished workout, the one in progress, or a
+                                   session / Mixer build as a saved workout
+    POST /train/workouts/new       a new, empty saved workout
+    GET  /train/workouts/<id>      a saved workout: rename, reorder, edit sets/reps/rest
+    POST /train/workouts/<id>/edit
+    POST /train/workouts/<id>/delete
+    GET  /train/pick               find an exercise to add (or to swap in)
+    GET  /train/add/<slug>         "Add to workout" from an exercise page
+    POST /train/add                add / swap an exercise
+    POST /train/remove-item        drop an exercise from the workout in progress
 """
 
 from __future__ import annotations
@@ -55,6 +65,7 @@ def ensure_indexes(db) -> None:
         db.training_sessions.create_index(
             [("viewer_id", 1), ("items.slug", 1), ("finished_at", -1)]
         )
+        db.saved_workouts.create_index([("viewer_id", 1), ("updated_at", -1)])
     except Exception as e:  # pragma: no cover - index creation is best effort
         log.warning("training indexes: %s", e)
 
@@ -123,6 +134,7 @@ def migrate_guest(db, guest: str, member: str) -> None:
         for doc in list(db.training_sessions.find({"viewer_id": guest, "status": "active"})):
             _close(db, doc)
     db.training_sessions.update_many({"viewer_id": guest}, {"$set": {"viewer_id": member}})
+    db.saved_workouts.update_many({"viewer_id": guest}, {"$set": {"viewer_id": member}})
 
 
 def _local_date_label(value: str) -> str:
@@ -146,8 +158,18 @@ def register(
     exercise_lookup: Callable[[List[str]], Dict[str, dict]],
     is_safe_path: Callable[[str], bool],
     muscle_groups: Dict[str, dict],
+    environments: Optional[Dict[str, dict]] = None,
+    library_for_env: Optional[Callable[[str], List[dict]]] = None,
+    current_env: Optional[Callable[[], str]] = None,
+    current_level: Optional[Callable[[], str]] = None,
+    saved_items: Optional[Callable[[str], dict]] = None,
 ) -> None:
     ensure_indexes(db)
+    environments = environments or {}
+    library_for_env = library_for_env or (lambda env: [])
+    current_env = current_env or (lambda: "gym")
+    current_level = current_level or (lambda: tr.sb.DEFAULT_LEVEL)
+    saved_items = saved_items or (lambda owner: {"exercises": [], "programs": []})
 
     def units() -> str:
         chosen = request.cookies.get(UNITS_COOKIE)
@@ -183,14 +205,55 @@ def register(
         flash(message, "warning")
         return redirect(url_for("train_session"))
 
+    def find_saved(workout_id: str, owner: str) -> Optional[dict]:
+        try:
+            oid = ObjectId(workout_id)
+        except (InvalidId, TypeError):
+            return None
+        return db.saved_workouts.find_one({"_id": oid, "viewer_id": owner}) if owner else None
+
+    def own_source(form):
+        """Start forms this module answers itself: a saved workout, or an empty one."""
+        kind = (form.get("from") or "").strip()
+        if kind == "empty":
+            return "Workout", {"kind": "empty", "key": "", "label": "My workouts"}, []
+        if kind == "saved":
+            saved = find_saved(form.get("id") or "", owner_key())
+            if not saved:
+                return None
+            slugs = [s.get("slug") for s in saved.get("items") or [] if s.get("slug")]
+            items = tr.items_from_saved(saved, exercise_lookup(slugs))
+            wid = str(saved["_id"])
+            source = {
+                "kind": "saved",
+                "key": f"saved:{wid}",
+                "label": "My workouts",
+                "url": url_for("train_workout", workout_id=wid),
+                "id": wid,
+            }
+            return saved.get("title") or "Workout", source, items
+        return None
+
+    def saved_count(owner: str) -> int:
+        return db.saved_workouts.count_documents({"viewer_id": owner}) if owner else 0
+
+    def default_item(doc: dict) -> dict:
+        sets, reps = tr.parse_scheme(
+            tr.sb.scheme_for(doc, tr.sb.norm_level(current_level()), "main")
+        )
+        return tr.make_item(doc, sets=sets, reps=reps, role="main")
+
     # ---- start ---------------------------------------------------------------
     def train_start():
         owner = owner_key()
         if not owner:
             flash("Couldn't start a workout. Please try again.", "warning")
             return redirect(back_to(url_for("train_index")))
-        built = build_source(request.form)
-        if not built or not built[2]:
+        kind = (request.form.get("from") or "").strip()
+        built = (
+            own_source(request.form) if kind in ("saved", "empty") else build_source(request.form)
+        )
+        if not built or (not built[2] and kind != "empty"):
             flash("That workout has no exercises to log yet.", "warning")
             return redirect(back_to(url_for("train_index")))
         title, source, items = built
@@ -372,6 +435,10 @@ def register(
             {"$set": {"status": "done", "finished_at": now, "updated_at": now}},
         )
         source = doc.get("source") or {}
+        if source.get("kind") == "saved" and source.get("id"):
+            saved = find_saved(source["id"], owner)
+            if saved:
+                db.saved_workouts.update_one({"_id": saved["_id"]}, {"$set": {"last_done_at": now}})
         if source.get("kind") == "program":
             try:
                 complete_program_day(owner, source)
@@ -406,24 +473,32 @@ def register(
             ][:8],
         }
 
-    def train_index():
-        owner = owner_key()
-        u = units()
-        active = get_active(db, owner)
+    def saved_card(doc: dict) -> dict:
+        items = doc.get("items") or []
+        last = doc.get("last_done_at")
+        return {
+            "id": str(doc["_id"]),
+            "title": doc.get("title") or "My workout",
+            "count": len(items),
+            "minutes": tr.estimate_minutes(items),
+            "last": last.strftime("%a %d %b").replace(" 0", " ") if last else "",
+            "colors": [color_for(it.get("group") or "") for it in items][:8],
+        }
+
+    def history_months(owner: str, u: str, before: str = "", limit: int = HISTORY_PAGE):
         query: dict = {"viewer_id": owner, "status": "done"}
-        before = request.args.get("before") or ""
         if before:
             try:
                 query["finished_at"] = {"$lt": dt.datetime.fromisoformat(before)}
             except ValueError:
-                before = ""
+                pass
         docs = (
-            list(db.training_sessions.find(query).sort("finished_at", -1).limit(HISTORY_PAGE + 1))
+            list(db.training_sessions.find(query).sort("finished_at", -1).limit(limit + 1))
             if owner
             else []
         )
-        more = len(docs) > HISTORY_PAGE
-        docs = docs[:HISTORY_PAGE]
+        more = len(docs) > limit
+        docs = docs[:limit]
         months: List[dict] = []
         for doc in docs:
             e = entry(doc, u)
@@ -436,13 +511,46 @@ def register(
                 months.append({"label": label, "entries": []})
             months[-1]["entries"].append(e)
         older = docs[-1]["finished_at"].isoformat() if more and docs else ""
-        return render_template(
-            "train_index.html",
-            active=active,
-            active_sets=sets_progress((active or {}).get("items") or []),
-            months=months,
-            older=older,
+        return months, older, more
+
+    def train_index():
+        owner = owner_key()
+        u = units()
+        tab = (
+            request.args.get("tab")
+            if request.args.get("tab") in ("history", "saved")
+            else "workouts"
         )
+        active = get_active(db, owner)
+        context = {
+            "tab": tab,
+            "tabs": [
+                ("workouts", "Workouts", url_for("train_index")),
+                ("history", "History", url_for("train_index", tab="history")),
+                ("saved", "Saved", url_for("train_index", tab="saved")),
+            ],
+            "active": active,
+            "active_sets": sets_progress((active or {}).get("items") or []),
+        }
+        if tab == "workouts":
+            saved = (
+                list(db.saved_workouts.find({"viewer_id": owner}).sort("updated_at", -1))
+                if owner
+                else []
+            )
+            recent, _, more = history_months(owner, u, limit=3)
+            context.update(
+                saved=[saved_card(d) for d in saved],
+                recent=[e for m in recent for e in m["entries"]],
+                more_history=more,
+                can_add=len(saved) < tr.MAX_SAVED,
+            )
+        elif tab == "history":
+            months, older, _ = history_months(owner, u, request.args.get("before") or "")
+            context.update(months=months, older=older)
+        else:
+            context.update(saved_items(owner))
+        return render_template("train_index.html", **context)
 
     def find_done(session_id: str) -> dict:
         try:
@@ -487,6 +595,317 @@ def register(
         flash("Workout deleted.", "info")
         return redirect(url_for("train_index"))
 
+    # ---- saved workouts ---------------------------------------------------------
+    def train_save():
+        owner = owner_key()
+        what = request.form.get("what") or ""
+        now = utcnow()
+        if saved_count(owner) >= tr.MAX_SAVED:
+            flash(f"You have {tr.MAX_SAVED} saved workouts. Delete one to save another.", "warning")
+            return redirect(back_to(url_for("train_index")))
+        title, items = "", []
+        if what == "current":
+            doc = get_active(db, owner)
+            if doc:
+                title, items = doc.get("title") or "", tr.saved_items_from_session(doc)
+        elif what == "source":
+            built = build_source(request.form)
+            if built:
+                title, items = built[0], [tr.saved_item_from(it) for it in built[2]]
+        else:
+            try:
+                oid = ObjectId(what)
+            except (InvalidId, TypeError):
+                oid = None
+            doc = (
+                db.training_sessions.find_one({"_id": oid, "viewer_id": owner, "status": "done"})
+                if oid and owner
+                else None
+            )
+            if doc:
+                title, items = doc.get("title") or "", tr.saved_items_from_session(doc)
+        if not items or not owner:
+            flash("There was nothing to save.", "warning")
+            return redirect(back_to(url_for("train_index")))
+        res = db.saved_workouts.insert_one(tr.new_saved(owner, title, items, now))
+        flash("Saved to My workouts. Rename it or change the sets here.", "success")
+        return redirect(url_for("train_workout", workout_id=str(res.inserted_id)))
+
+    def train_workout_new():
+        owner = owner_key()
+        if not owner or saved_count(owner) >= tr.MAX_SAVED:
+            flash(f"You have {tr.MAX_SAVED} saved workouts. Delete one to make another.", "warning")
+            return redirect(url_for("train_index"))
+        res = db.saved_workouts.insert_one(tr.new_saved(owner, "New workout", [], utcnow()))
+        return redirect(url_for("train_workout", workout_id=str(res.inserted_id)))
+
+    def train_workout(workout_id: str):
+        saved = find_saved(workout_id, owner_key())
+        if not saved:
+            abort(404)
+        items = saved.get("items") or []
+        docs = exercise_lookup([it.get("slug") for it in items if it.get("slug")])
+        view = [
+            dict(it, doc=docs.get(it.get("slug")), color=color_for(it.get("group") or ""))
+            for it in items
+        ]
+        wid = str(saved["_id"])
+        return render_template(
+            "train_workout.html",
+            saved=saved,
+            wid=wid,
+            items=view,
+            minutes=tr.estimate_minutes(items),
+            rest_options=tr.REST_OPTIONS,
+            max_items=tr.MAX_ITEMS,
+            train_key=f"saved:{wid}",
+            train_fields=[("from", "saved"), ("id", wid)],
+        )
+
+    def train_workout_edit(workout_id: str):
+        saved = find_saved(workout_id, owner_key())
+        if not saved:
+            abort(404)
+        action = request.form.get("action") or ""
+        key = request.form.get("key") or ""
+        items = list(saved.get("items") or [])
+        title = saved.get("title") or "My workout"
+        if action == "rename":
+            title = tr.clean_title(request.form.get("title")) or title
+        elif action in ("up", "down"):
+            items = tr.move(items, key, -1 if action == "up" else 1)
+        elif action == "remove":
+            items = [it for it in items if it.get("key") != key]
+        elif action == "item":
+            for it in items:
+                if it.get("key") == key:
+                    it["sets"] = tr.clean_sets(
+                        request.form.get("sets"), it.get("sets") or tr.DEFAULT_SETS
+                    )
+                    it["reps"] = tr.clean_reps(request.form.get("reps"))
+                    it["rest"] = tr.clean_rest(request.form.get("rest"))
+        db.saved_workouts.update_one(
+            {"_id": saved["_id"]},
+            {"$set": {"title": title, "items": items, "updated_at": utcnow()}},
+        )
+        anchor = f"#it-{key}" if key and action != "remove" else ""
+        return redirect(url_for("train_workout", workout_id=workout_id) + anchor)
+
+    def train_workout_delete(workout_id: str):
+        saved = find_saved(workout_id, owner_key())
+        if not saved:
+            abort(404)
+        db.saved_workouts.delete_one({"_id": saved["_id"]})
+        flash("Workout deleted.", "info")
+        return redirect(url_for("train_index"))
+
+    # ---- finding an exercise to add or swap in -----------------------------------
+    def search(pool: List[dict], q: str) -> List[dict]:
+        words = [w for w in q.lower().split() if w]
+        scored = []
+        for doc in pool:
+            name = (doc.get("name") or "").lower()
+            hay = " ".join(
+                [name, (doc.get("equipment_label") or ""), " ".join(doc.get("muscle_groups") or [])]
+            ).lower()
+            if not all(w in hay for w in words):
+                continue
+            first = words[0]
+            rank = 0 if name.startswith(first) else (1 if f" {first}" in f" {name}" else 2)
+            scored.append((rank, doc.get("name") or "", doc))
+        scored.sort(key=lambda s: (s[0], s[1]))
+        return [s[2] for s in scored]
+
+    def recent_slugs(owner: str, limit: int = 12) -> List[str]:
+        out: List[str] = []
+        if not owner:
+            return out
+        for doc in (
+            db.training_sessions.find({"viewer_id": owner, "status": "done"}, {"items.slug": 1})
+            .sort("finished_at", -1)
+            .limit(10)
+        ):
+            for it in doc.get("items") or []:
+                s = it.get("slug")
+                if s and s not in out:
+                    out.append(s)
+        return out[:limit]
+
+    def train_pick():
+        owner = owner_key()
+        to = request.args.get("to") or "session"
+        swap = request.args.get("swap") or ""
+        q = " ".join((request.args.get("q") or "").split())[:60]
+        group = request.args.get("g") if request.args.get("g") in muscle_groups else ""
+        active = get_active(db, owner) if to == "session" else None
+        saved = None if to == "session" else find_saved(to, owner)
+        if to == "session" and not active:
+            return redirect(url_for("train_index"))
+        if to != "session" and not saved:
+            abort(404)
+        swap_item = None
+        if active and swap:
+            idx = item_index(active, swap)
+            swap_item = active["items"][idx] if idx is not None else None
+        env_arg = request.args.get("env")
+        source_env = ((active or {}).get("source") or {}).get("env")
+        env = env_arg if env_arg in environments else (source_env or current_env())
+        pool = library_for_env(env)
+        in_workout = {
+            it.get("slug") for it in ((active or saved or {}).get("items") or []) if it.get("slug")
+        }
+        sections: List[dict] = []
+        if q:
+            sections.append({"title": "", "docs": search(pool, q)[:50]})
+        elif group:
+            docs = sorted(
+                [d for d in pool if tr.primary_group(d) == group], key=lambda d: d.get("name") or ""
+            )
+            sections.append({"title": muscle_groups[group]["label"], "docs": docs[:60]})
+        else:
+            if swap_item and swap_item.get("slug"):
+                old = exercise_lookup([swap_item["slug"]]).get(swap_item["slug"])
+                alts = tr.alternatives(old, pool, in_workout, current_level())
+                sections.append({"title": "Good swaps", "docs": alts})
+            by_slug = {d.get("slug"): d for d in pool}
+            recent = [by_slug[s] for s in recent_slugs(owner) if s in by_slug]
+            if recent:
+                sections.append({"title": "Logged recently", "docs": recent})
+        shown = [d.get("slug") for s in sections for d in s["docs"]]
+        docs = exercise_lookup(shown)
+        for s in sections:
+            s["docs"] = [docs[d.get("slug")] for d in s["docs"] if d.get("slug") in docs]
+        if to == "session":
+            back = url_for("train_session") + (f"#ex-{swap}" if swap else "")
+        else:
+            back = url_for("train_workout", workout_id=to)
+
+        def link(**changes):
+            args = {"to": to, "swap": swap or None, "q": q or None, "g": group or None, "env": env}
+            args.update(changes)
+            return url_for("train_pick", **{k: v for k, v in args.items() if v})
+
+        return render_template(
+            "train_pick.html",
+            to=to,
+            swap=swap,
+            swap_item=swap_item,
+            target_title=(active or saved or {}).get("title") or "",
+            q=q,
+            group=group,
+            env=env,
+            sections=sections,
+            in_workout=in_workout,
+            back=back,
+            group_links=[
+                (k, g["label"], g["color"], link(g=None if k == group else k, q=None))
+                for k, g in muscle_groups.items()
+            ],
+            env_links=[(k, e["label"], link(env=k)) for k, e in environments.items()],
+            clear_url=link(q=None, g=None),
+        )
+
+    def train_add_menu(slug: str):
+        owner = owner_key()
+        doc = exercise_lookup([slug]).get(slug)
+        if not doc:
+            abort(404)
+        active = get_active(db, owner)
+        saved = (
+            list(db.saved_workouts.find({"viewer_id": owner}).sort("updated_at", -1))
+            if owner
+            else []
+        )
+        return render_template(
+            "train_add.html",
+            doc=doc,
+            active=active,
+            saved=[saved_card(d) for d in saved],
+            can_add=len(saved) < tr.MAX_SAVED,
+            back=url_for("workout_detail", slug=slug),
+        )
+
+    def train_add():
+        owner = owner_key()
+        slug = request.form.get("slug") or ""
+        doc = exercise_lookup([slug]).get(slug)
+        to = request.form.get("to") or ""
+        if not doc or not owner:
+            flash("That exercise couldn't be added.", "warning")
+            return redirect(back_to(url_for("train_index")))
+        now = utcnow()
+        if to == "session":
+            active = get_active(db, owner)
+            if not active:
+                flash("There's no workout in progress.", "warning")
+                return redirect(back_to(url_for("train_index")))
+            items = list(active.get("items") or [])
+            swap = request.form.get("swap") or ""
+            idx = item_index(active, swap) if swap else None
+            if idx is not None:
+                old = items[idx]
+                new = default_item(doc)
+                sets = len(old.get("rows") or []) or tr.DEFAULT_SETS
+                reps = old.get("reps") if old.get("kind") == new["kind"] else new["reps"]
+                new = tr.make_item(
+                    doc,
+                    sets=sets,
+                    reps=reps or "",
+                    rest=old.get("rest") or None,
+                    role=old.get("role") or "main",
+                )
+                items = tr.swap_items(items, idx, new)
+                flash(f"Swapped in {doc.get('name')}.", "success")
+            else:
+                if len(items) >= tr.MAX_ITEMS:
+                    flash("This workout is full.", "warning")
+                    return redirect(url_for("train_session"))
+                new = default_item(doc)
+                items.append(new)
+            db.training_sessions.update_one(
+                {"_id": active["_id"], "status": "active"},
+                {"$set": {"items": items, "updated_at": now}},
+            )
+            return redirect(url_for("train_session") + f"#ex-{new['key']}")
+        item = tr.saved_item_from(default_item(doc))
+        if to == "new":
+            if saved_count(owner) >= tr.MAX_SAVED:
+                flash(
+                    f"You have {tr.MAX_SAVED} saved workouts. Delete one to make another.",
+                    "warning",
+                )
+                return redirect(back_to(url_for("train_index")))
+            res = db.saved_workouts.insert_one(tr.new_saved(owner, "New workout", [item], now))
+            flash(f"Added {doc.get('name')} to a new workout.", "success")
+            return redirect(url_for("train_workout", workout_id=str(res.inserted_id)))
+        saved = find_saved(to, owner)
+        if not saved:
+            abort(404)
+        if len(saved.get("items") or []) >= tr.MAX_ITEMS:
+            flash("That workout is full.", "warning")
+        else:
+            db.saved_workouts.update_one(
+                {"_id": saved["_id"]},
+                {"$push": {"items": item}, "$set": {"updated_at": now}},
+            )
+            flash(f"Added {doc.get('name')} to {saved.get('title') or 'your workout'}.", "success")
+        return redirect(back_to(url_for("train_workout", workout_id=to)))
+
+    def train_remove_item():
+        owner = owner_key()
+        active = get_active(db, owner)
+        if not active:
+            return redirect(url_for("train_index"))
+        key = request.form.get("key") or ""
+        idx = item_index(active, key)
+        if idx is not None and not tr.done_rows(active["items"][idx]):
+            items = [it for i, it in enumerate(active["items"]) if i != idx]
+            db.training_sessions.update_one(
+                {"_id": active["_id"], "status": "active"},
+                {"$set": {"items": items, "updated_at": utcnow()}},
+            )
+        return redirect(url_for("train_session"))
+
     app.add_url_rule("/train/start", "train_start", train_start, methods=["POST"])
     app.add_url_rule("/train/session", "train_session", train_session)
     app.add_url_rule("/train/set", "train_set", train_set, methods=["POST"])
@@ -495,6 +914,27 @@ def register(
     app.add_url_rule("/train/finish", "train_finish", train_finish, methods=["POST"])
     app.add_url_rule("/train/discard", "train_discard", train_discard, methods=["POST"])
     app.add_url_rule("/train", "train_index", train_index)
+    app.add_url_rule("/train/save", "train_save", train_save, methods=["POST"])
+    app.add_url_rule(
+        "/train/workouts/new", "train_workout_new", train_workout_new, methods=["POST"]
+    )
+    app.add_url_rule("/train/workouts/<workout_id>", "train_workout", train_workout)
+    app.add_url_rule(
+        "/train/workouts/<workout_id>/edit",
+        "train_workout_edit",
+        train_workout_edit,
+        methods=["POST"],
+    )
+    app.add_url_rule(
+        "/train/workouts/<workout_id>/delete",
+        "train_workout_delete",
+        train_workout_delete,
+        methods=["POST"],
+    )
+    app.add_url_rule("/train/pick", "train_pick", train_pick)
+    app.add_url_rule("/train/add/<slug>", "train_add_menu", train_add_menu)
+    app.add_url_rule("/train/add", "train_add", train_add, methods=["POST"])
+    app.add_url_rule("/train/remove-item", "train_remove_item", train_remove_item, methods=["POST"])
     app.add_url_rule("/train/history/<session_id>", "train_history_detail", train_history_detail)
     app.add_url_rule(
         "/train/history/<session_id>/delete",

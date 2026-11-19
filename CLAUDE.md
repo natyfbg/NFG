@@ -167,6 +167,12 @@ as committer, so GitHub shows them as Verified.
   macros profile's units, else lb). A finished program-day workout calls
   `_set_program_day_done` (also used by Mark complete). Exercise docs keep equipment
   keys in `equipment_all`; `equipment` there is a display label.
+  Saved workouts (`saved_workouts`, per viewer, max 50 × 30 exercises) are snapshots
+  too (`saved_item_from`); starting one rebuilds items from the current exercise docs
+  (`items_from_saved`). `/train/pick` is the one exercise finder (add to the workout in
+  progress, to a saved workout, or swap with `swap=<item key>`); `tr.alternatives`
+  ranks swaps: same name family ("Bench Press"), same movement, same loading, level.
+  A swap keeps sets already logged on the old exercise (`swap_items`).
 - `backend/taxonomy.py` is the single source of truth for muscle/group/equipment/
   movement keys. Keys are stored in the DB and content files — never rename one
   without a migration. It has no Flask/Mongo imports on purpose.
@@ -467,6 +473,20 @@ as committer, so GitHub shows them as Verified.
   sign-in; covered by export, delete account and Forget this device; `/train` is in
   robots.txt. Decisions: rest by role when the source has none (main 2 min, isolation
   90s, secondary 60s, core/holds 45s, stretches 15s); lb default; bottom nav unchanged.
+- 2026-11-18 — **Session mode, phase 2:** My workouts has tabs (Workouts · History ·
+  Saved). Saved workouts: **Save** next to Start on session / Mixer pages, **Save as
+  workout** on any finished workout, **New workout**; the editor renames, reorders
+  (up/down), removes and edits sets / reps / rest (rest from a fixed list); Start runs
+  it like any other workout and stamps "last done". **Start an empty workout**, then
+  **Add exercise** (search, muscle chips, Home/Hybrid/Gym, "Logged recently").
+  Mid-workout **Swap** ("Good swaps" first) and **Remove exercise** (only before a set
+  is logged). Exercise pages: **Add to workout** (in progress, a saved one, or new).
+  The Saved tab lists saved exercises and programs (the "Saved page in the menu" item).
+  Nate (same day): **bottom nav is mustard** like the Join pill (`--bottom-nav-bg-top` →
+  `--bottom-nav-bg`, 90% opaque, dark labels, black active pill with a gold marker);
+  the rest timer keeps its own dark `--float-*` style. Home's muscle chips are
+  `.nfg-mixchip` (they used `.nfg-pick`, the Mixer's outlined chip, and showed a double
+  ring).
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 
@@ -496,9 +516,9 @@ Next six sprints, in order:
 6. Workouts + session mode (plan: project doc `qiltsim-session-mode-plan-2026-11-18`) —
    ✅ phase 1 (2026-11-18): Start from program day / session / Mixer / exercise, set
    logging, rest timer, units, finish + summary, program-day completion, Home resume card,
-   My workouts history. Phase 2: saved workouts, "Save as workout", empty workout + add
-   exercise, swap mid-workout, Saved tab. Phase 3: last time / best on exercise pages,
-   personal bests, per-exercise chart.
+   My workouts history. ✅ Phase 2 (2026-11-18): saved workouts, "Save as workout",
+   empty workout + add exercise, swap mid-workout, Saved tab. Phase 3: last time / best
+   on exercise pages, personal bests, per-exercise chart.
 Alongside: full body (S3), cardio + mobility (S5), first 12 recipes (S6).
 Later, each gated: progress analytics · PWA · personalised Home · nutrition · AI coach ·
 native/wearables research · paid tier.

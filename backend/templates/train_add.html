@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+
+{% block title %}Add {{ doc.name }} to a workout – {{ app_name }}{% endblock %}
+{% block back_url %}{{ back }}{% endblock %}
+
+{% macro add_button(to, label, sub="", icon="plus-lg") %}
+  <form method="post" action="{{ url_for('train_add') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="to" value="{{ to }}">
+    <input type="hidden" name="slug" value="{{ doc.slug }}">
+    {% if to not in ('session', 'new') %}<input type="hidden" name="next" value="{{ back }}">{% endif %}
+    <button class="nfg-list-row nfg-add-row" type="submit">
+      <span class="nfg-add-icon">{{ ui.icon(icon) }}</span>
+      <span class="nfg-list-main"><span class="nfg-list-title">{{ label }}</span>{% if sub %}<span class="nfg-list-meta">{{ sub }}</span>{% endif %}</span>
+    </button>
+  </form>
+{% endmacro %}
+
+{% block page %}
+<div class="nfg-discover nfg-add-page">
+  <a class="nfg-back" href="{{ back }}">{{ ui.icon('chevron-left') }} {{ doc.name }}</a>
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">Add to a workout</div>
+    <h1 class="nfg-page-title">{{ doc.name }}</h1>
+  </header>
+
+  <div class="nfg-list nfg-add-list">
+    {% if active %}{{ add_button('session', active.title, 'Workout in progress', 'play-fill') }}{% endif %}
+    {% for w in saved %}{{ add_button(w.id, w.title, w.count ~ ' exercise' ~ ('s' if w.count != 1 else ''), 'journal-check') }}{% endfor %}
+    {% if can_add %}{{ add_button('new', 'New workout', 'Start a saved workout with this exercise') }}{% endif %}
+  </div>
+</div>
+{% endblock %}

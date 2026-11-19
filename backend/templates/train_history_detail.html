@@ -46,6 +46,12 @@
     <p class="nfg-prog-note">Skipped: {{ skipped|map(attribute='name')|join(', ') }}</p>
   {% endif %}
 
+  <form method="post" action="{{ url_for('train_save') }}" class="nfg-train-saveas">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="what" value="{{ info.id }}">
+    <button class="nfg-act is-ghost" type="submit">{{ ui.icon('journal-check') }} Save as workout</button>
+  </form>
+
   <form method="post" action="{{ url_for('train_history_delete', session_id=info.id) }}" class="nfg-train-delete"
         onsubmit="return confirm('Delete this workout from your history?');">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
