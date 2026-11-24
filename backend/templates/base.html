@@ -94,7 +94,7 @@
 
     {# Admin endpoints (expand to cover all admin pages) #}
     {% set admin_eps = [
-      'admin_index',
+      'admin_index','admin_feedback',
       'admin_workout_new','admin_workout_edit','admin_workout_quality',
       'admin_styles','admin_style_toggle','admin_style_delete',
       'admin_home_plans','admin_home_plan_new','admin_home_plan_edit','admin_home_plan_toggle','admin_home_plan_delete',
@@ -149,6 +149,7 @@
               <a class="dropdown-item nfg-menu-link{% if ep == 'macros' %} is-active{% endif %}" href="{{ url_for('macros') }}">{{ ui.icon('pie-chart') }} Macros</a>
               <a class="dropdown-item nfg-menu-link{% if ep == 'search' %} is-active{% endif %}" href="{{ url_for('search') }}">{{ ui.icon('search') }} Search</a>
               <a class="dropdown-item nfg-menu-link{% if ep == 'about_page' %} is-active{% endif %}" href="{{ url_for('about_page') }}">{{ ui.icon('info-circle') }} About {{ app_name }}</a>
+              <a class="dropdown-item nfg-menu-link{% if ep == 'feedback' %} is-active{% endif %}" href="{{ url_for('feedback', back=request.path if ep != 'feedback' else None) }}">{{ ui.icon('chat-heart') }} Send feedback</a>
               {% if pwa_enabled %}<button class="dropdown-item nfg-menu-link" type="button" data-install hidden>{{ ui.icon('phone') }} Add to home screen</button>{% endif %}
               <div class="nfg-menu-sep" role="separator"></div>
               <form class="nfg-theme-row" action="{{ url_for('set_theme') }}" method="post" data-theme-switch>
@@ -249,6 +250,7 @@
       <a href="{{ url_for('about_page') }}">About {{ app_name }}</a>
       <a href="{{ url_for('privacy_page') }}">Privacy</a>
       <a href="{{ url_for('terms_page') }}">Terms</a>
+      <a href="{{ url_for('feedback') }}">Feedback</a>
     </footer>
 
     {% if ep in swipe_eps %}

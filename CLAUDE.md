@@ -203,6 +203,14 @@ as committer, so GitHub shows them as Verified.
   sliding) except the backup admin login, and CSRF tokens last as long as the session
   (`WTF_CSRF_TIME_LIMIT=None`), so a page kept for hours can still send its sets. New
   per-viewer pages that must not sit on a shared phone go in `NO_KEEP_PREFIXES`.
+- **Feedback lives in `feedback.py`** (`/feedback`, `/admin/feedback`). Anyone can send it
+  (menu "Send feedback" passes `?back=<page>`, footer link); rating 1-5, topic, message
+  are optional except the message; name / email only if given (prefilled for members).
+  Saved in `feedback` (in `VIEWER_COLLECTIONS`, moved on guest→member sign-in); the IP is
+  kept only as a salted hash (`ip_key`) for the 5-an-hour limit; a filled honeypot
+  (`website`) is thrown away silently. Emailed to `FEEDBACK_EMAIL` (else `CONTACT_EMAIL`,
+  else `ALERT_EMAIL`) with Reply-To = the sender, at most 40 a day, in a thread
+  (`FEEDBACK_INLINE` for tests). `mailer.send(..., reply_to=)`.
 - **Two ways to be admin:** the backup `/login` identity (`ADMIN_USERNAME` +
   `ADMIN_PASSWORD_HASH`, `role="admin"`, no account or data behind it) and members whose
   email is in `ADMIN_EMAILS` (Render env; `User.admin`, decided on every request in
@@ -578,6 +586,14 @@ as committer, so GitHub shows them as Verified.
   back online; Finish and the other buttons wait for signal and send waiting sets first.
   Members now stay signed in for 30 days (closing an installed app could end a browser
   session); the backup admin login doesn't.
+- 2026-11-24 — **Feedback** (Nate, for v1, to send people a link): `/feedback` with stars
+  (optional), a topic (Workouts, Exercises, Programs, Recipes & macros, Something's
+  broken, An idea), the message, optional name / email ("for a reply") and "may quote on
+  the website (first name only)" for real reviews later. "Send feedback" in the menu,
+  "Feedback" in the footer. Each message is saved, emailed to Nate (reply goes to the
+  sender) and listed in Admin → Feedback (average rating, 1-5 bars, New / All, Handled).
+  Email: Cloudflare Email Routing (free) forwards addresses like feedback@qiltsim.com to
+  Nate's Gmail; it only receives, so sending stays on Resend.
 - 2026-11-08 — Muscle Mixer ships first as a filter (rank exercises by selected
   muscles); "Build Workout" comes after composed workouts exist.
 

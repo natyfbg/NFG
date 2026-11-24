@@ -52,9 +52,12 @@ def send(
     text: str,
     html: Optional[str] = None,
     *,
+    reply_to: Optional[str] = None,
     post: Callable[[urllib.request.Request], dict] = _post,
 ) -> str:
-    """Send one email. Returns Resend's message id, or "logged" when no key is set."""
+    """Send one email. Returns Resend's message id, or "logged" when no key is set.
+
+    reply_to: where a reply goes (e.g. the person who sent feedback)."""
     api_key = (os.getenv("RESEND_API_KEY") or "").strip()
     if not api_key:
         log.warning(
@@ -64,6 +67,8 @@ def send(
     payload = {"from": sender(), "to": [to], "subject": subject, "text": text}
     if html:
         payload["html"] = html
+    if reply_to:
+        payload["reply_to"] = [reply_to]
     request = urllib.request.Request(
         RESEND_URL,
         data=json.dumps(payload).encode("utf-8"),
