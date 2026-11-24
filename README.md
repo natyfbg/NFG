@@ -91,6 +91,8 @@ Optional:
 - `ADMIN_USERNAME`
 - `ADMIN_EMAILS` (comma-separated emails of existing accounts that also get admin when
   they sign in with their normal account)
+- `FEEDBACK_EMAIL` (where `/feedback` messages are emailed; else `CONTACT_EMAIL`, else
+  `ALERT_EMAIL`)
 - `PWA_ENABLED` (default on; `0` switches off install-to-home-screen and offline, and the
   service worker removes itself from phones)
 

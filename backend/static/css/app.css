@@ -5486,3 +5486,100 @@ body.nfg-offline button{ font-family: inherit; cursor: pointer; }
 }
 .nfg-offline-kicker .nfg-icon{ width: 1.1em; height: 1.1em; }
 .nfg-offline-actions{ display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .4rem; }
+
+/* =====================================================================
+   Feedback (/feedback) and Admin → Feedback (feedback.py)
+   ===================================================================== */
+.nfg-feedback{ display: grid; justify-items: center; padding-top: .5rem; }
+.nfg-feedback-card{ width: min(100%, 520px); gap: .9rem; }
+.nfg-feedback-card fieldset{ margin: 0; padding: 0; border: 0; min-width: 0; }
+.nfg-feedback-card legend,
+.nfg-feedback-card .nfg-field > span:first-child{
+  float: none; width: auto; margin: 0 0 .35rem; padding: 0;
+  font-size: .76rem; font-weight: 800; line-height: 1.3; color: var(--app-text-muted);
+}
+.nfg-feedback-card legend small,
+.nfg-feedback-card .nfg-field small{ font-size: .72rem; font-weight: 600; color: var(--app-text-soft); }
+.nfg-feedback-card .nfg-field textarea{
+  width: 100%; min-width: 0; min-height: 8.5rem; resize: vertical;
+  padding: .65rem .75rem; border-radius: 12px;
+  border: 1.5px solid var(--app-border-strong); background: var(--app-surface-strong); color: var(--app-text);
+  font: inherit; font-size: 1rem; line-height: 1.45;
+}
+.nfg-feedback-card .nfg-field textarea:focus{ outline: none; border-color: var(--app-text); box-shadow: 0 0 0 3px var(--app-accent-soft); }
+.nfg-feedback-card .nfg-field textarea::placeholder{ color: var(--app-text-soft); }
+.nfg-form-errors{
+  padding: .6rem .8rem; border-radius: var(--radius-sm);
+  background: var(--app-danger-soft); color: var(--app-text); font-size: .88rem; font-weight: 600;
+}
+.nfg-form-errors p{ margin: 0; }
+.nfg-form-errors p + p{ margin-top: .25rem; }
+
+/* Stars: radios in reverse order, so a picked star lights up itself and the ones before it. */
+.nfg-stars-line{ display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.nfg-stars-row{ display: inline-flex; flex-direction: row-reverse; gap: .2rem; }
+.nfg-stars-row input{ position: absolute; opacity: 0; pointer-events: none; }
+.nfg-stars-row label{
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px;
+  color: var(--app-border-strong); cursor: pointer; transition: color .12s ease, transform .12s ease;
+}
+.nfg-stars-row label .nfg-icon{ width: 30px; height: 30px; }
+.nfg-stars-row input:checked ~ label,
+.nfg-stars-row label:hover,
+.nfg-stars-row label:hover ~ label{ color: var(--gold-a); }
+.nfg-stars-row input:checked + label{ transform: scale(1.06); }
+.nfg-stars-row input:focus-visible + label{ outline: 3px solid var(--app-accent); outline-offset: 1px; }
+.nfg-stars-word{ font-size: .9rem; font-weight: 750; color: var(--app-text); }
+
+.nfg-topic-row{ display: flex; flex-wrap: wrap; gap: .4rem; }
+.nfg-topic{ position: relative; margin: 0; cursor: pointer; }
+.nfg-topic input{ position: absolute; opacity: 0; pointer-events: none; }
+.nfg-topic span{
+  display: inline-flex; align-items: center; height: 36px; padding: 0 .85rem; border-radius: 999px;
+  border: 1px solid var(--app-border-strong); font-size: .86rem; font-weight: 650; color: var(--app-text);
+}
+.nfg-topic input:checked + span{ background: var(--switch-bg); border-color: var(--switch-bg); color: var(--switch-fg); }
+.nfg-topic input:focus-visible + span{ outline: 3px solid var(--app-accent); outline-offset: 2px; }
+
+.nfg-feedback-who{ display: grid; gap: .9rem; }
+@media (min-width: 480px){ .nfg-feedback-who{ grid-template-columns: 1fr 1fr; } }
+.nfg-check{ display: flex; align-items: flex-start; gap: .55rem; margin: 0; font-size: .9rem; line-height: 1.4; cursor: pointer; }
+.nfg-check input{ flex: none; width: 20px; height: 20px; margin-top: .05rem; accent-color: var(--gold-b); }
+.nfg-feedback-note{ margin: 0; font-size: .78rem; line-height: 1.45; color: var(--app-text-soft); }
+.nfg-feedback-note a{ color: inherit; }
+.nfg-hp{ position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.nfg-feedback-badge{
+  display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px;
+  background: var(--app-accent-soft); color: var(--app-text);
+}
+.nfg-feedback-badge .nfg-icon{ width: 26px; height: 26px; }
+.nfg-feedback-actions{ display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .2rem; }
+
+/* Admin → Feedback */
+.nfg-fb-share{ margin: .2rem 0 0; font-size: .86rem; color: var(--app-text-muted); overflow-wrap: anywhere; }
+.nfg-fb-dist{ display: grid; gap: .3rem; max-width: 360px; margin: 1rem 0; }
+.nfg-fb-dist-row{ display: grid; grid-template-columns: 2.4rem 1fr 2rem; align-items: center; gap: .5rem; font-size: .82rem; font-variant-numeric: tabular-nums; color: var(--app-text-muted); }
+.nfg-fb-dist-row > span:last-child{ text-align: right; }
+.nfg-fb-dist-bar{ height: 8px; border-radius: 999px; background: var(--app-surface-inset); overflow: hidden; }
+.nfg-fb-dist-bar span{ display: block; height: 100%; border-radius: inherit; background: var(--gold-a); }
+.nfg-fb-tabs{ margin: .4rem 0 1rem; }
+.nfg-fb-list{ list-style: none; margin: 0; padding: 0; display: grid; gap: .7rem; }
+.nfg-fb-item{
+  display: grid; gap: .5rem; padding: .9rem 1rem; border-radius: var(--radius-md);
+  background: var(--app-surface-strong); border: 1px solid var(--app-border);
+}
+.nfg-fb-item.is-handled{ opacity: .7; }
+.nfg-fb-head{ display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; }
+.nfg-fb-stars{ font-size: 1.05rem; letter-spacing: .05em; color: var(--app-border-strong); }
+.nfg-fb-stars .is-on{ color: var(--gold-a); }
+.nfg-fb-stars em{ font-size: .8rem; font-style: normal; font-weight: 650; color: var(--app-text-soft); letter-spacing: 0; }
+.nfg-fb-chip{ display: inline-flex; align-items: center; height: 24px; padding: 0 .55rem; border-radius: 999px; background: var(--app-surface-inset); font-size: .74rem; font-weight: 750; }
+.nfg-fb-chip.is-share{ background: var(--app-accent-soft); }
+.nfg-fb-when{ margin-left: auto; font-size: .76rem; color: var(--app-text-soft); }
+.nfg-fb-message{ margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .95rem; line-height: 1.5; }
+.nfg-fb-meta{ display: flex; flex-wrap: wrap; gap: .25rem .9rem; font-size: .8rem; color: var(--app-text-muted); }
+.nfg-fb-meta a{ display: inline-flex; align-items: center; gap: .25rem; color: var(--app-text); overflow-wrap: anywhere; }
+.nfg-fb-meta .nfg-icon{ width: .95em; height: .95em; }
+.nfg-fb-act{ margin: 0; }
+.nfg-fb-act .nfg-act{ height: 36px; padding: 0 .9rem; font-size: .84rem; }
+.nfg-fb-more{ margin-top: 1rem; }

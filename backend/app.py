@@ -20,6 +20,7 @@ from xml.sax.saxutils import escape as xml_escape
 import bodymap
 import content_admin
 import curation
+import feedback
 import formfigures
 import mailer
 import nutrition
@@ -778,6 +779,7 @@ def _migrate_guest_state_to_member(guest_viewer_id: str, member_key: str) -> Non
 
     nutrition.migrate_guest(db, guest, member_key)
     training_routes.migrate_guest(db, guest, member_key)
+    db.feedback.update_many({"viewer_id": guest}, {"$set": {"viewer_id": member_key}})
 
     guest_favs = list(db.program_favorites.find({"viewer_id": guest}))
     for row in guest_favs:
@@ -5424,6 +5426,26 @@ pwa.register(
 )
 
 
+def _feedback_member() -> Optional[dict]:
+    oid = _member_oid()
+    return db.users.find_one({"_id": oid}, {"username": 1, "email": 1}) if oid else None
+
+
+# Feedback: /feedback (anyone, a link Nate can send people) and Admin → Feedback.
+feedback.register(
+    app,
+    db=db,
+    owner_key=_progress_owner_key,
+    member_doc=_feedback_member,
+    is_safe_path=_is_safe_local_path,
+    client_ip=_client_ip,
+    secret=SECRET_KEY,
+    app_name=APP_NAME,
+    asset_version=lambda: _asset_version() if DEV_RELOAD else ASSET_VERSION,
+    public_url=_public_url,
+)
+
+
 # -----------------------------------------------------------------------------
 # Session mode: start a workout from a program day, session, mix or exercise; log it.
 # Routes in training_routes.py, rules in training.py.
@@ -6030,6 +6052,7 @@ VIEWER_COLLECTIONS = (
     "weight_log",
     "training_sessions",
     "saved_workouts",
+    "feedback",
 )
 CONTACT_EMAIL = (os.getenv("CONTACT_EMAIL") or "").strip()
 LEGAL_UPDATED = "18 November 2026"

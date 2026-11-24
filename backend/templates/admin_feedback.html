@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+{% block title %}Admin – Feedback{% endblock %}
+{% block back_url %}{{ url_for('admin_index') }}{% endblock %}
+
+{% block page %}
+<div class="nfg-discover nfg-admin-feedback">
+
+  <a class="nfg-back" href="{{ url_for('admin_index') }}">{{ ui.icon('chevron-left') }} Admin</a>
+
+  <header class="nfg-page-head">
+    <div class="app-page-kicker">Admin · People</div>
+    <h1 class="nfg-page-title">Feedback</h1>
+    <p class="nfg-prog-summary">
+      {{ total }} message{{ 's' if total != 1 }}{% if average %} · average <b>{{ average }}</b> ★ from {{ rated }} rating{{ 's' if rated != 1 }}{% endif %}.
+      {% if not mail_on %}Emails are off on this site (no Resend key), so feedback only shows here.
+      {% elif to %}Each one is also emailed to {{ to }}.
+      {% else %}Set <code>FEEDBACK_EMAIL</code> on Render to get each one by email.{% endif %}
+    </p>
+    <p class="nfg-fb-share">Link to send people: <a href="{{ share_url }}">{{ share_url }}</a></p>
+  </header>
+
+  {% if rated %}
+    <div class="nfg-fb-dist" aria-label="Ratings">
+      {% for n in [5, 4, 3, 2, 1] %}
+        {% set c = counts[n] %}
+        <div class="nfg-fb-dist-row">
+          <span>{{ n }} ★</span>
+          <span class="nfg-fb-dist-bar"><span style="width: {{ (c * 100 / rated)|round|int }}%;"></span></span>
+          <span>{{ c }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <nav class="nfg-seg nfg-fb-tabs" aria-label="Show">
+    <a class="nfg-seg-opt{% if show == 'new' %} is-on{% endif %}" href="{{ url_for('admin_feedback') }}">New · {{ new }}</a>
+    <a class="nfg-seg-opt{% if show == 'all' %} is-on{% endif %}" href="{{ url_for('admin_feedback', show='all') }}">All · {{ total }}</a>
+  </nav>
+
+  {% if items %}
+    <ol class="nfg-fb-list">
+      {% for f in items %}
+        <li class="nfg-fb-item{% if f.handled %} is-handled{% endif %}">
+          <div class="nfg-fb-head">
+            <span class="nfg-fb-stars" aria-label="{{ f.rating ~ ' of 5' if f.rating else 'No rating' }}">
+              {% if f.rating %}{% for i in range(1, 6) %}<span class="{{ 'is-on' if i <= f.rating }}">★</span>{% endfor %}{% else %}<em>No rating</em>{% endif %}
+            </span>
+            {% if f.topic %}<span class="nfg-fb-chip">{{ topics.get(f.topic, f.topic) }}</span>{% endif %}
+            {% if f.may_share %}<span class="nfg-fb-chip is-share">OK to quote</span>{% endif %}
+            <time class="nfg-fb-when">{{ f.created_at.strftime('%b %d, %H:%M') }} UTC</time>
+          </div>
+          <p class="nfg-fb-message">{{ f.message }}</p>
+          <div class="nfg-fb-meta">
+            <span>{{ f.name or 'No name' }}{% if f.user_id %} · member{% else %} · guest{% endif %}</span>
+            {% if f.email %}<a href="mailto:{{ f.email }}?subject={{ ('Re: your ' ~ app_name ~ ' feedback')|urlencode }}">{{ ui.icon('reply') }} {{ f.email }}</a>{% endif %}
+            {% if f.page %}<a href="{{ f.page }}">{{ f.page }}</a>{% endif %}
+            <span>{{ f.device }}{% if f.app == 'installed' %} · home-screen app{% endif %}</span>
+          </div>
+          <form method="post" action="{{ url_for('admin_feedback') }}" class="nfg-fb-act">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="id" value="{{ f._id }}">
+            <input type="hidden" name="show" value="{{ show if show == 'all' else '' }}">
+            {% if f.handled %}
+              <button class="nfg-tex-link" type="submit" name="action" value="reopen">Move back to New</button>
+            {% else %}
+              <button class="nfg-act is-ghost" type="submit" name="action" value="handled">{{ ui.icon('check-lg') }} Handled</button>
+            {% endif %}
+          </form>
+        </li>
+      {% endfor %}
+    </ol>
+    {% if more %}<a class="nfg-act is-ghost nfg-fb-more" href="{{ url_for('admin_feedback', show=show if show == 'all' else None, page=page_no + 1) }}">Older</a>{% endif %}
+  {% else %}
+    <p class="nfg-prog-note">{% if show == 'new' %}Nothing new. {% endif %}When people send feedback, it shows up here.</p>
+  {% endif %}
+</div>
+{% endblock %}

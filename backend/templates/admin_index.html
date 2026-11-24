@@ -55,6 +55,11 @@
        href="{{ url_for('admin_content_sync') }}">
       Content sync
     </a>
+
+    <a class="list-group-item list-group-item-action {% if ep == 'admin_feedback' %}active{% endif %}"
+       href="{{ url_for('admin_feedback') }}">
+      Feedback
+    </a>
   </div>
 </div>
 {% endblock %}
@@ -97,6 +102,9 @@
   </a>
   <a class="btn btn-outline-secondary" href="{{ url_for('admin_coach_picks') }}">
     Coach's Picks
+  </a>
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin_feedback') }}">
+    Feedback
   </a>
   <a class="btn btn-outline-secondary" href="{{ url_for('admin_workout_quality') }}">
     Workout Quality

@@ -49,6 +49,7 @@ _USER_STATE_COLLECTIONS = (
     "weight_log",
     "training_sessions",
     "saved_workouts",
+    "feedback",
 )
 
 

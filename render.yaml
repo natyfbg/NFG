@@ -25,6 +25,8 @@ services:
         sync: false   # set in Render dashboard
       - key: ADMIN_EMAILS
         sync: false   # emails of existing accounts that also get admin (comma-separated)
+      - key: FEEDBACK_EMAIL
+        sync: false   # where /feedback messages are emailed (else CONTACT_EMAIL, else ALERT_EMAIL)
       - key: UPLOAD_FOLDER
         value: /app/static/uploads
       - key: CANONICAL_HOST

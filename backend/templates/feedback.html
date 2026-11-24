@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% import "_components.html" as ui %}
+
+{% block title %}Send feedback – {{ app_name }}{% endblock %}
+{% block meta_description %}Tell us what's working in {{ app_name }} and what should change.{% endblock %}
+{% block back_url %}{{ values.back or url_for('home') }}{% endblock %}
+
+{% block page %}
+<div class="nfg-discover nfg-feedback">
+  {% if sent %}
+    <div class="nfg-auth-card nfg-feedback-card is-thanks" role="status">
+      <span class="nfg-feedback-badge">{{ ui.icon('chat-heart') }}</span>
+      <h1 class="nfg-auth-title">Thanks for the feedback</h1>
+      <p class="nfg-auth-sub">It goes straight to the person building {{ app_name }}. If you left your email, you may hear back.</p>
+      <div class="nfg-feedback-actions">
+        <a class="nfg-act is-primary" href="{{ values.back or url_for('home') }}">Back to {{ app_name }}</a>
+        <a class="nfg-act is-ghost" href="{{ url_for('feedback') }}">Send more</a>
+      </div>
+    </div>
+  {% else %}
+    <form class="nfg-auth-card nfg-feedback-card" method="post" action="{{ url_for('feedback') }}" novalidate data-feedback>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="back" value="{{ values.back or '' }}">
+      <input type="hidden" name="app" value="" data-app>
+      {# Only bots fill this in (it's off-screen and skipped by the keyboard). #}
+      <div class="nfg-hp" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
+
+      <div class="app-page-kicker">Feedback</div>
+      <h1 class="nfg-auth-title">How's {{ app_name }} working for you?</h1>
+      <p class="nfg-auth-sub">What you like, what's confusing, what's missing. Every note gets read.</p>
+
+      {% if errors %}
+        <div class="nfg-form-errors" role="alert">{% for e in errors %}<p>{{ e }}</p>{% endfor %}</div>
+      {% endif %}
+
+      <fieldset class="nfg-stars">
+        <legend>Your rating <small>optional</small></legend>
+        <div class="nfg-stars-line">
+          <div class="nfg-stars-row">
+            {% for n in [5, 4, 3, 2, 1] %}
+              <input type="radio" id="rate-{{ n }}" name="rating" value="{{ n }}"{% if values.rating == n %} checked{% endif %}>
+              <label for="rate-{{ n }}" title="{{ ratings[n] }}">{{ ui.icon('star-fill') }}<span class="visually-hidden">{{ n }} star{{ 's' if n > 1 }}, {{ ratings[n] }}</span></label>
+            {% endfor %}
+          </div>
+          <span class="nfg-stars-word" data-star-word aria-hidden="true">{{ ratings[values.rating] if values.rating else '' }}</span>
+        </div>
+      </fieldset>
+
+      <fieldset class="nfg-topics">
+        <legend>About <small>optional</small></legend>
+        <div class="nfg-topic-row">
+          {% for key, label in topics %}
+            <label class="nfg-topic"><input type="radio" name="topic" value="{{ key }}"{% if values.topic == key %} checked{% endif %}><span>{{ label }}</span></label>
+          {% endfor %}
+        </div>
+      </fieldset>
+
+      <label class="nfg-field" for="fb-message">
+        <span>Your feedback</span>
+        <textarea id="fb-message" name="message" rows="5" maxlength="3000" required
+                  placeholder="What's working, what isn't, what you'd add">{{ values.message or '' }}</textarea>
+      </label>
+
+      <div class="nfg-feedback-who">
+        <label class="nfg-field" for="fb-name">
+          <span>Name <small>optional</small></span>
+          <input id="fb-name" name="name" maxlength="80" autocomplete="name" value="{{ values.name or '' }}">
+        </label>
+        <label class="nfg-field" for="fb-email">
+          <span>Email <small>for a reply</small></span>
+          <input id="fb-email" type="email" name="email" maxlength="254" autocomplete="email" inputmode="email" value="{{ values.email or '' }}">
+        </label>
+      </div>
+
+      <label class="nfg-check">
+        <input type="checkbox" name="may_share" value="1"{% if values.may_share %} checked{% endif %}>
+        <span>{{ app_name }} may quote this on the website (first name only)</span>
+      </label>
+
+      <button class="nfg-act is-primary nfg-auth-submit" type="submit">Send feedback</button>
+      <p class="nfg-feedback-note">We also note the page you came from and your type of device, to help fix problems. <a href="{{ url_for('privacy_page') }}">Privacy</a></p>
+    </form>
+  {% endif %}
+</div>
+<script>
+  (function () {
+    var form = document.querySelector('[data-feedback]');
+    if (!form) return;
+    var app = form.querySelector('[data-app]');
+    if (app) app.value = (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) ? 'installed' : 'browser';
+    var word = form.querySelector('[data-star-word]');
+    var words = {{ ratings | tojson }};
+    form.addEventListener('change', function (e) {
+      if (e.target.name === 'rating' && word) word.textContent = words[e.target.value] || '';
+    });
+  })();
+</script>
+{% endblock %}
